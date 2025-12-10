@@ -4,245 +4,275 @@ A comprehensive **microservice-based manufacturing control platform** that digit
 
 ## Overview
 
-LIFE (LEGO Integrated Factory Execution) is a production-ready prototype designed to:
+LEGO Factory is a production-ready prototype designed to:
 
 - **Manage multi-stage manufacturing**: From order creation through modules assembly to final product delivery
 - **Track inventory in real-time**: Stock management across multiple workstations and warehouse locations
 - **Optimize production scheduling**: Intelligent workstation assignment and task sequencing
-- **Enable role-based operations**: Specialized dashboards for plant warehouse, modules supermarket, and manufacturing teams
+- **Enable role-based operations**: Specialized dashboards for different factory roles
 - **Provide system observability**: Comprehensive error handling, structured logging, and performance monitoring
 
 ## System Architecture
 
-LIFE uses a **6-tier microservice architecture** with an API Gateway as the central routing layer:
+The system uses a **microservice architecture** with an API Gateway as the central routing layer and complete frontend/backend separation:
 
 ```plaintext
 ┌─────────────────────────────────────────────────────────────┐
-│           React Frontend (Port 5173/5174)                    │
+│           React Frontend (Port 3000)                         │
 │  ┌──────────────┬──────────────┬──────────────────────────┐ │
 │  │ Dashboard    │ Products     │ Workstation Pages        │ │
-│  │ (Multi-role) │ Catalog      │ (Plant WH, Modules SM)   │ │
+│  │ (Multi-role) │ Catalog      │ (Admin, Manager, etc.)   │ │
 │  └──────────────┴──────────────┴──────────────────────────┘ │
 └───────────────────────────┬────────────────────────────────┘
-                            │
+                            │ API Gateway Communication
         ┌───────────────────▼────────────────────┐
-        │   API Gateway (Port 8011)              │
-        │   - Route all requests                 │
-        │   - CORS support                       │
-        │   - Load balancing                     │
+        │   API Gateway (Port 8080)              │
+        │   - Central routing                    │
+        │   - CORS handling                      │
+        │   - Service discovery                  │
         └───┬──────┬──────┬───────┬────┬────────┘
             │      │      │       │    │
        ┌────▼──┐ ┌─▼────┐┌──▼──┐┌─▼──┐┌──▼──┐
-       │ User  │ │Master││Stock││Order│ │Simal│
-       │Service│ │data  ││ mgmt││Proc.│ │Integ│
+       │ User  │ │Master││Inven-││Order│ │SIMAL│
+       │Service│ │data  ││tory ││Proc.│ │Integ│
        │ 8012  │ │ 8013 ││8014 ││ 8015│ │ 8016│
-       └───────┘ └──────┘└─────┘└────┘└─────┘
+       └───┬───┘ └──┬───┘└──┬──┘└─┬──┘└──┬──┘
+           │        │       │      │      │
+      ┌────▼────┐   └───────┴──────┴──────┴──────┐
+      │PostgreSQL│          H2 Databases         │
+      │  Port    │        (File-based per        │
+      │  5432    │         service)               │
+      └─────────┘                                 │
 ```
 
-**Backend Services**:
+## Project Structure
 
-- **User Service** (Port 8012): Authentication, authorization, user management
-- **Masterdata Service** (Port 8013): Product catalog, modules, parts, workstations
-- **Inventory Service** (Port 8014): Stock tracking and workstation inventory
-- **Order Processing Service** (Port 8015): Customer orders, fulfillment, warehouse operations
-- **SimAL Integration Service** (Port 8016): Production scheduling and simulation
+The project follows a clean microservices architecture with separated concerns:
 
-**Persistence**: Each microservice maintains its own H2 file-based database for complete data isolation.
+```
+lego-sample-factory/
+├── lego-factory-backend/                    # Backend microservices
+│   ├── docker-compose.yml                   # Service orchestration
+│   ├── .env                                 # Environment configuration
+│   ├── api-gateway/                         # Central routing (Port 8080)
+│   │   ├── src/main/java/...
+│   │   ├── Dockerfile
+│   │   └── pom.xml
+│   ├── user-service/                        # Authentication (Port 8012)
+│   │   ├── src/main/java/io/life/user_service/
+│   │   │   ├── UserServiceApplication.java
+│   │   │   ├── service/UserService.java
+│   │   │   ├── entity/User.java
+│   │   │   ├── repository/UserRepository.java
+│   │   │   └── config/SecurityConfig.java
+│   │   ├── Dockerfile
+│   │   └── pom.xml
+│   ├── masterdata-service/                  # Product data (Port 8013)
+│   ├── inventory-service/                   # Stock management (Port 8014)
+│   ├── order-processing-service/            # Order handling (Port 8015)
+│   └── simal-integration-service/           # External integration (Port 8016)
+└── lego-factory-frontend/                   # React application
+    ├── src/
+    ├── package.json
+    ├── package-lock.json
+    ├── Dockerfile
+    ├── nginx.conf
+    └── .env.development / .env.production
+```
 
 ## Technology Stack
 
-- **Backend**: Java 21, Spring Boot 3.4.2, Spring Cloud Gateway 2024.0.0, Spring Security, Maven
-- **Database**: H2 (file-based, one per service) for data isolation and easy deployment
-- **Frontend**: React 18+, Vite, Axios, React Router
-- **Tools**: Visual Studio Code, Node.js, npm
+**Backend Services**:
+- **Java 17+**: Spring Boot 3.x, Spring Cloud Gateway, Spring Security, Spring Data JPA
+- **Authentication**: JWT-based with BCrypt password encoding
+- **Database**: 
+  - PostgreSQL 15 (User Service - production auth data)
+  - H2 Database (Other services - file-based with persistence)
+- **Build**: Maven with wrapper
+- **Containerization**: Docker with multi-stage builds
 
-## Current Features & Status
+**Frontend**:
+- **React 18+**: Modern functional components with hooks
+- **Build Tool**: Vite for fast development and optimized builds
+- **HTTP Client**: Axios with interceptors for API communication
+- **Routing**: React Router for SPA navigation
+- **Deployment**: Nginx for production serving
 
-### ✅ Implemented Features
+**DevOps & Deployment**:
+- **Container Orchestration**: Docker Compose for local development
+- **CI/CD**: GitLab CI/CD pipeline with multi-stage builds
+- **Environment Management**: Separate configs for dev/production
 
-#### Authentication & Authorization
+## Security Notice ⚠️
 
-- JWT-based authentication for all API requests
-- Role-based access control (ADMIN, PLANT_WAREHOUSE, MODULES_SUPERMARKET, MANUFACTURING_OPERATOR)
-- User management dashboard (create, update, delete, assign workstations)
-- Automatic session management with localStorage
+**PostgreSQL Dependency Vulnerability**: The current PostgreSQL driver version has a HIGH severity vulnerability. Update required:
 
-#### Product & Inventory Management
+```xml
+<!-- Current (vulnerable) -->
+<dependency>
+    <groupId>org.postgresql</groupId>
+    <artifactId>postgresql</artifactId>
+    <version>42.7.4</version> <!-- or 42.7.5 -->
+</dependency>
 
-- Product variants catalog with pricing and production time estimates
-- Modular component structure (products → modules → parts)
-- Real-time inventory tracking by workstation
-- Stock record management with item type classification
+<!-- Update to -->
+<dependency>
+    <groupId>org.postgresql</groupId>
+    <artifactId>postgresql</artifactId>
+    <version>42.7.6</version> <!-- Latest secure version -->
+</dependency>
+```
 
-#### Order Processing & Fulfillment
+## Current Implementation Status
 
-- Customer order creation with multiple order items
-- Order status lifecycle (PENDING → CONFIRMED → PROCESSING → COMPLETED/CANCELLED)
-- Warehouse order management for inter-warehouse transfers
-- Fulfill/reject operations with automatic inventory adjustments
+### ✅ Completed Features
 
-#### Workstation Operations
+#### Core Infrastructure
+- **Microservices Architecture**: 6 services with API Gateway routing
+- **Database Layer**: PostgreSQL for auth + H2 for business data with persistence
+- **Security Implementation**: JWT authentication with role-based authorization
+- **Docker Integration**: Complete containerization with health checks
+- **CI/CD Pipeline**: GitLab integration with automated builds and deployments
 
-- Multi-role workstation dashboards:
-  - **Admin Dashboard**: System-wide KPIs, user management, workstation configuration
-  - **Plant Warehouse**: Incoming customer orders, fulfillment actions
-  - **Modules Supermarket**: Warehouse request handling, inventory fulfillment
-  - **Manufacturing Workstations**: Task execution pages for manufacturing and assembly
-- Real-time order/task updates with 15-30 second auto-refresh
+#### Backend Services
+- **User Service**: Complete authentication system with password encoding
+- **Entity Framework**: User, UserRole enums, repository pattern implementation
+- **API Gateway**: Service routing with CORS support for frontend integration
+- **Database Configuration**: Multi-database strategy with proper connection pools
 
-#### Production Scheduling (SimAL)
+#### Frontend Application
+- **Environment Configuration**: Separate dev/production builds with Vite
+- **API Integration**: Axios client with JWT token management
+- **Build System**: Optimized production builds with nginx serving
 
-- Intelligent workstation allocation based on work type
-- Task sequencing with ISO 8601 timestamps
-- Order-to-schedule linking with realistic time estimates
+### 🚧 In Progress
+- Service-specific business logic implementation
+- Frontend component development for each microservice
+- Integration testing between services
 
-#### Error Handling & Observability
+### 📋 Planned Features
+- Production-ready logging and monitoring
+- Advanced error handling and recovery
+- Performance optimization and caching
+- Comprehensive test suites
 
-- Global exception handlers with standardized JSON error responses
-- Structured logging with rolling file appenders (application.log, error.log, debug.log)
-- Frontend toast notifications for user-facing error feedback
-- Stack trace logging for debugging
-
-#### UI/UX Features
-
-- Compact, responsive grid layouts for product and order displays
-- Color-coded status badges and item-type indicators
-- Expandable component details (products show modules, modules show parts)
-- Mobile-friendly design with adaptive font sizes and spacing
-- Reduced header height (60% of original) for better screen utilization
-
-## Setup & Running the Application
+## Quick Start
 
 ### Prerequisites
-
-- **Java 21** (Eclipse Adoptium or equivalent)
-- **Node.js 18+** and npm
-- **PowerShell** or Bash (for running Maven and npm commands)
-
-### Build All Services
-
-From the project root directory, build all backend services:
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE"
-
-# Build each service
-cd user-service; .\mvnw clean package -DskipTests; cd ..
-cd masterdata-service; .\mvnw clean package -DskipTests; cd ..
-cd inventory-service; .\mvnw clean package -DskipTests; cd ..
-cd order-processing-service; .\mvnw clean package -DskipTests; cd ..
-cd simal-integration-service; .\mvnw clean package -DskipTests; cd ..
-cd api-gateway; .\mvnw clean package -DskipTests; cd ..
-```
+- **Docker Desktop** (for Windows)
+- **Java 17+** (for development)
+- **Node.js 18+** (for frontend development)
 
 ### Start Backend Services
 
-Open **separate terminals** for each service, in this order:
-
-1. **User Service** (Port 8012) - Required first for authentication:
-
 ```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\user-service"
-.\mvnw spring-boot:run
+# Navigate to backend directory
+cd lego-factory-backend
+
+# Ensure environment file exists
+# Copy .env.example to .env if needed
+
+# Start all services with Docker Compose
+docker-compose up -d --build
+
+# Check service health
+docker-compose ps
+docker-compose logs -f api-gateway
 ```
 
-1. **Masterdata Service** (Port 8013) - Required before gateway:
+### Start Frontend (Development)
 
 ```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\masterdata-service"
-.\mvnw spring-boot:run
-```
+# Navigate to frontend directory
+cd lego-factory-frontend
 
-1. **Inventory Service** (Port 8014):
+# Install dependencies (first time only)
+npm install
 
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\inventory-service"
-.\mvnw spring-boot:run
-```
-
-1. **Order Processing Service** (Port 8015):
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\order-processing-service"
-.\mvnw spring-boot:run
-```
-
-1. **SimAL Integration Service** (Port 8016):
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\simal-integration-service"
-.\mvnw spring-boot:run
-```
-
-1. **API Gateway** (Port 8011) - Routes all requests:
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\api-gateway"
-.\mvnw spring-boot:run
-```
-
-### Start Frontend
-
-In a new terminal, start the React development server:
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\lego-factory-frontend"
-npm install  # First time only
+# Start development server
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:5173`
+**Application URLs**:
+- Frontend: http://localhost:3000
+- API Gateway: http://localhost:8080
+- Individual services: http://localhost:801X (where X = 2-6)
 
-### Default Test Accounts
+### Environment Configuration
 
-- **Admin Account**: `legoAdmin` / `legoPass`
-  - Full system access, user management, workstation configuration
+**Backend (.env)**:
+```bash
+# Database
+POSTGRES_DB=lego_factory_auth
+POSTGRES_USER=legoapp
+POSTGRES_PASSWORD=legoapp123
 
-- **Plant Warehouse**: `warehouseOperator` / `warehousePass`
-  - Access to plant warehouse operations and customer order fulfillment
+# Security
+JWT_SECRET=your_jwt_secret_here
+SPRING_PROFILES_ACTIVE=docker
 
-- **Modules Supermarket**: `modulesSupermarketOp` / `modulesPass`
-  - Warehouse order management and module inventory fulfillment
+# Integration
+FRONTEND_URL=http://localhost:3000
+```
 
-## API Endpoints Summary
+**Frontend (.env.development)**:
+```bash
+VITE_API_BASE_URL=http://localhost:8080/api
+VITE_APP_NAME=LEGO Factory (Dev)
+VITE_DEBUG_MODE=true
+```
 
-All endpoints are routed through the API Gateway at `http://localhost:8011`
+## API Documentation
 
-**Authentication**: `POST /api/auth/login` — Submit username/password, receive JWT token
+All API endpoints are accessible through the API Gateway at `http://localhost:8080/api`
 
-**User Management** (Admin-only):
+### Authentication Endpoints
+- `POST /api/auth/login` - User authentication
+- `POST /api/auth/refresh` - Token refresh
 
-- `GET /api/users` — List all users
-- `POST /api/users` — Create new user
-- `PUT /api/users/{id}` — Update user
-- `DELETE /api/users/{id}` — Delete user
+### User Management (Admin only)
+- `GET /api/users` - List all users
+- `POST /api/users` - Create user
+- `PUT /api/users/{id}` - Update user
+- `DELETE /api/users/{id}` - Delete user
 
-**Master Data** (All authenticated users):
+### Master Data
+- `GET /api/masterdata/products` - Product catalog
+- `GET /api/masterdata/workstations` - Workstation configuration
 
-- `GET /api/masterdata/product-variants` — Product catalog
-- `GET /api/masterdata/modules` — Manufacturing modules
-- `GET /api/masterdata/parts` — Component parts
-- `GET /api/masterdata/workstations` — Workstation configuration
+### Inventory Management
+- `GET /api/inventory/stock` - Current stock levels
+- `PUT /api/inventory/stock/{id}` - Update stock
 
-**Inventory Management**:
+### Order Processing
+- `POST /api/customer-orders` - Create customer order
+- `GET /api/customer-orders` - List orders
+- `PATCH /api/customer-orders/{id}/status` - Update order status
 
-- `GET /api/stock/records` — All stock records
-- `GET /api/stock/by-workstation/{workstationId}` — Workstation inventory
-- `PUT /api/stock/records/{id}` — Update stock
+## Development Guidelines
 
-**Order Processing** (Plant Warehouse role):
+### Code Standards
+- **Java**: Follow Spring Boot best practices, use constructor injection
+- **React**: Functional components with hooks, TypeScript preferred
+- **Database**: Repository pattern, transaction management with `@Transactional`
 
-- `POST /api/customer-orders` — Create order
-- `GET /api/customer-orders` — List orders
-- `PATCH /api/customer-orders/{id}/status` — Update status
+### Testing Strategy
+- **Unit Tests**: JUnit 5 for backend services
+- **Integration Tests**: TestContainers for database testing
+- **Frontend Tests**: Jest + React Testing Library
 
-**Warehouse Orders** (Modules Supermarket role):
+### Deployment
+- **Local Development**: Docker Compose for backend, npm dev server for frontend
+- **Production**: GitLab CI/CD with Docker registry and deployment automation
 
-- `GET /api/warehouse-orders` — Pending orders
-- `POST /api/warehouse-orders/{id}/fulfill` — Fulfill order
-- `POST /api/warehouse-orders/{id}/reject` — Reject order
+## Contributing
 
-**Production Scheduling**:
+1. Follow the microservices architecture pattern
+2. Maintain separation between frontend and backend
+3. Use proper environment configuration for different deployment stages
+4. Update dependencies regularly to address security vulnerabilities
+5. Write comprehensive tests for new features
 
-- `POST /api/simal/production-order` — Submit production order
-- `GET /api/simal/scheduled-orders` — View schedules
+## License
+
+This project is a prototype for educational and demonstration purposes.
