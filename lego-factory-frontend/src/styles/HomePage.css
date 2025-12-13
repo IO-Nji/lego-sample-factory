@@ -4,35 +4,36 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 100%;
   padding: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #5a97e284 0%, #ded7e4 100%);
 }
 
 .home-hero {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.95), rgba(118, 75, 162, 0.95)),
+  background: linear-gradient(135deg,   rgba(51, 167, 217, 0.135), rgba(9, 139, 245, 0.036)),
     url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="1"/></pattern></defs><rect width="1200" height="600" fill="url(%23grid)"/></svg>');
-  color: white;
-  padding: 4rem 2rem;
+  color: rgb(30, 22, 22);
+  padding: 1rem 1rem;
   text-align: center;
 }
 
 .home-hero h2 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: bold;
   margin-bottom: 1rem;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .home-hero .subtitle {
-  font-size: 1.2rem;
+  font-size: 1rem;
   opacity: 0.95;
-  max-width: 600px;
+  max-width: 90%;
   margin: 0 auto;
 }
 
 .home-content {
   flex: 1;
-  padding: 3rem 2rem;
+  padding: 1rem 1rem;
   background: white;
   overflow-y: auto;
 }
@@ -40,19 +41,19 @@
 /* Feature Cards */
 .feature-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
   max-width: 1200px;
-  margin: 0 auto 3rem;
+  margin: 0 auto 1rem;
 }
 
 .card {
   background: white;
   border-radius: 12px;
-  padding: 2rem;
+  padding: 1rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  border-top: 4px solid #667eea;
+  border-top: 1px solid #667eea;
 }
 
 .card:hover {
@@ -63,8 +64,15 @@
 
 .card h3 {
   color: #2c3e50;
-  font-size: 1.3rem;
+  font-size: 1rem;
   margin: 0 0 1rem;
+  text-align: center;
+}
+
+.card h1 {
+  font-size: 3rem;
+  margin: 0 0 1rem;
+  text-align: center;
 }
 
 .card p {
@@ -79,10 +87,8 @@
   text-align: center;
   max-width: 600px;
   margin: 0 auto;
-  padding: 2rem;
-  background: #f8f9fa;
+  padding: none;
   border-radius: 12px;
-  border-left: 4px solid #667eea;
 }
 
 .lead-text {
@@ -132,7 +138,7 @@
 /* Page Container */
 .page-container {
   padding: 2rem;
-  max-width: 1200px;
+  max-width: 1800px;
   margin: 0 auto;
 }
 
@@ -200,6 +206,20 @@
 }
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+  .feature-cards {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .feature-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
 @media (max-width: 768px) {
   .home-hero h2 {
     font-size: 1.8rem;
