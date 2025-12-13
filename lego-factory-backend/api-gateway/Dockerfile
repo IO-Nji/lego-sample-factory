@@ -1,27 +1,53 @@
-FROM openjdk:17-jdk-slim
+# Multi-stage build for API Gateway
+FROM maven:3.9.6-openjdk-17 AS builder
 
 WORKDIR /app
 
-# Install curl for health checks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-
-# Copy Maven files
+# Copy Maven files for dependency caching
 COPY pom.xml .
-COPY src ./src
+COPY .mvn/ .mvn/
+COPY mvnw .
 
-# Install Maven and build
-RUN apt-get update && apt-get install -y maven && \
-    mvn clean package -DskipTests && \
-    apt-get remove -y maven && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*
+# Make mvnw executable and download dependencies (if mvnw exists)
+RUN chmod +x mvnw 2>/dev/null || true
+RUN if [ -f "./mvnw" ]; then ./mvnw dependency:go-offline -B; else mvn dependency:go-offline -B; fi
+
+# Copy source code and build
+COPY src ./src
+RUN if [ -f "./mvnw" ]; then ./mvnw clean package -DskipTests; else mvn clean package -DskipTests; fi
+
+# Production stage
+FROM openjdk:17-jdk-slim AS production
+
+WORKDIR /app
+
+# Install curl for health checks and create app user
+RUN apt-get update && \
+    apt-get install -y curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    addgroup --system appgroup && \
+    adduser --system --group appuser
+
+# Copy JAR from builder stage
+COPY --from=builder /app/target/*.jar app.jar
+
+# Create logs directory and set permissions
+RUN mkdir -p logs && \
+    chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
 
 # Expose port
-EXPOSE 8080
+EXPOSE ${API_GATEWAY_PORT:-8011}
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8080/actuator/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${API_GATEWAY_PORT:-8011}/actuator/health || exit 1
+
+# JVM optimization for containers
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
 
 # Run application
-CMD ["java", "-jar", "target/api-gateway-*.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

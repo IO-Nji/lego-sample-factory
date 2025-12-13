@@ -1,37 +1,52 @@
-FROM openjdk:17-jdk-slim
+# Multi-stage build for Inventory Service
+FROM maven:3.9.6-openjdk-17 AS builder
 
 WORKDIR /app
 
-# Install curl for health checks
-RUN apt-get update && apt-get install -y curl && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Create data directory for H2 database
-RUN mkdir -p /app/data && chmod 755 /app/data
-
-# Copy Maven wrapper and pom.xml
+# Copy Maven files for dependency caching
+COPY pom.xml .
 COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
+COPY mvnw .
 
-# Download dependencies
-RUN ./mvnw dependency:go-offline -B
+# Make mvnw executable and download dependencies
+RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
 
-# Copy source code
+# Copy source code and build
 COPY src ./src
+RUN ./mvnw clean package -DskipTests
 
-# Build application
-RUN ./mvnw clean package -DskipTests && \
-    mv target/*.jar app.jar
+# Production stage
+FROM openjdk:17-jdk-slim AS production
 
-# Expose Inventory Service port
-EXPOSE 8014
+WORKDIR /app
+
+# Install curl for health checks and create app user
+RUN apt-get update && \
+    apt-get install -y curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    addgroup --system appgroup && \
+    adduser --system --group appuser
+
+# Copy JAR from builder stage
+COPY --from=builder /app/target/*.jar app.jar
+
+# Create logs directory and set permissions
+RUN mkdir -p logs && \
+    chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE ${INVENTORY_SERVICE_PORT:-8014}
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8014/actuator/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${INVENTORY_SERVICE_PORT:-8014}/actuator/health || exit 1
 
-# Volume for H2 database persistence
-VOLUME ["/app/data"]
+# JVM optimization for containers
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
 
 # Run application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
