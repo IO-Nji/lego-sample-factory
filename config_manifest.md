@@ -44,7 +44,9 @@ This document serves as the central, human-readable documentation for all enviro
 - `MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=always` - Health endpoint detail level
 
 ### Frontend Configuration
-- `VITE_API_GATEWAY_URL=http://localhost:8011` - API Gateway URL for frontend
+- `VITE_API_GATEWAY_URL=http://localhost:8011` - API Gateway URL for frontend (accessed from host)
+- `FRONTEND_SERVE_PORT=5173` - Port for frontend development server
+- `FRONTEND_HOST_PORT=5173` - Host port mapping for frontend container
 
 ### API Gateway Configuration
 - `API_GATEWAY_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:80,http://localhost,http://localhost:5173` - CORS allowed origins
@@ -57,10 +59,32 @@ This document serves as the central, human-readable documentation for all enviro
 - Enhanced logging for debugging
 - CORS configured for local development ports
 
-### Docker-Specific Variables (to be added during dockerization)
+### Docker-Specific Variables (added in Step 1.2)
+- `NGINX_ROOT_PROXY_EXTERNAL_PORT=80` - The host port for the root Nginx proxy
+- `FRONTEND_INTERNAL_PORT=80` - The port the Nginx inside the frontend container listens on
+- `FRONTEND_HOST_PORT=5173` - Host port mapping for frontend service
 - `DOCKER_RESTART_POLICY=unless-stopped` - Container restart policy
 - `DOCKER_MEMORY_LIMIT=512m` - Memory limit per container
 - `DOCKER_CPU_LIMIT=1.0` - CPU limit per container
+- `DOCKER_NETWORK_NAME=lego-factory-network` - Docker Compose network name
+- `DOCKER_REGISTRY=localhost` - Docker registry for local builds
+- `DOCKER_TAG=latest` - Docker image tag for builds
+
+### Container Names and Host Port Mappings
+- `USER_SERVICE_HOST_PORT=8012` - Host port mapping for user service
+- `MASTERDATA_SERVICE_HOST_PORT=8013` - Host port mapping for masterdata service
+- `INVENTORY_SERVICE_HOST_PORT=8014` - Host port mapping for inventory service
+- `ORDER_PROCESSING_SERVICE_HOST_PORT=8015` - Host port mapping for order processing service
+- `SIMAL_INTEGRATION_SERVICE_HOST_PORT=8016` - Host port mapping for SIMAL integration service
+- `API_GATEWAY_HOST_PORT=8011` - Host port mapping for API gateway
+- `CONTAINER_*_NAME` variables - Docker container names for each service
+
+### API Gateway Docker Service URLs (for internal container communication)
+- `API_GATEWAY_USER_SERVICE_URL=http://user-service:8012` - Internal Docker URL for user service
+- `API_GATEWAY_MASTERDATA_SERVICE_URL=http://masterdata-service:8013` - Internal Docker URL for masterdata service
+- `API_GATEWAY_INVENTORY_SERVICE_URL=http://inventory-service:8014` - Internal Docker URL for inventory service
+- `API_GATEWAY_ORDER_PROCESSING_SERVICE_URL=http://order-processing-service:8015` - Internal Docker URL for order processing service
+- `API_GATEWAY_SIMAL_INTEGRATION_SERVICE_URL=http://simal-integration-service:8016` - Internal Docker URL for SIMAL integration service
 
 ## Variable Validation Rules
 
