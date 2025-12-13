@@ -10,7 +10,7 @@ spring:
     enabled: false
 
   datasource:
-    url: ${H2_DB_USER_PATH:jdbc:h2:mem:lego_factory_auth;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    url: ${H2_DB_USER_PATH:jdbc:h2:mem:lego_factory_auth;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
     driver-class-name: org.h2.Driver
     username: sa
     password: password

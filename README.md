@@ -53,19 +53,23 @@ LIFE uses a **6-tier microservice architecture** with an API Gateway as the cent
 ## Technology Stack
 
 - **Backend**: Java 21, Spring Boot 3.4.2, Spring Cloud Gateway 2024.0.0, Spring Security, Maven
-- **Database**: H2 in-memory databases (one per service) with PostgreSQL compatibility mode
+- **Database**: H2 in-memory databases (one per service) for simplified development
 - **Frontend**: React 18+, Vite, Axios, React Router
 - **Configuration**: Environment variables via .env file, Spring profiles
 - **Tools**: Visual Studio Code, Node.js, npm, PowerShell scripts
 
+**🗄️ Database Philosophy**: 
+The application uses **H2 in-memory databases exclusively** for development and testing. This eliminates the need for external database setup, making it ideal for rapid development, demos, and CI/CD environments. Each microservice maintains its own isolated H2 database that initializes automatically on startup.
+
 ## Recent Updates (December 2025)
 
 ### ✅ Configuration Improvements
-- **Standardized configuration**: All services now use consistent `application.properties` files
-- **Environment variable support**: Centralized configuration via `.env` file
+- **Simplified database setup**: Pure H2 in-memory databases eliminate external dependencies
+- **Environment variable support**: Centralized configuration via `.env` file  
 - **JMX disabled**: Prevents connection issues in development environment
 - **Java-based user initialization**: Robust UserInitializer service creates all users automatically
 - **Authentication system resolved**: Fixed SQL/Java initialization conflicts for reliable login
+- **Development-first approach**: No PostgreSQL setup required for development and testing
 
 ### ✅ Enhanced Build Process
 - **Individual service management**: Each service runs independently using Maven wrapper
@@ -171,6 +175,31 @@ LIFE uses a **6-tier microservice architecture** with an API Gateway as the cent
    ```
 
 **🌐 Access URL**: `http://localhost:5173`
+
+## Database Architecture (H2-Only)
+
+The application uses **H2 in-memory databases exclusively** for simplified development:
+
+### 🎯 **Development Benefits**
+- **Zero setup**: No external database installation required
+- **Instant startup**: Services start immediately without waiting for database connections
+- **Isolated testing**: Each service has its own database, preventing data conflicts
+- **Demo-ready**: Perfect for presentations and demonstrations
+- **CI/CD friendly**: No complex database provisioning in pipelines
+
+### 📊 **Database Distribution**
+- **User Service** (Port 8012): `jdbc:h2:mem:lego_factory_auth` - Authentication & user management
+- **Masterdata Service** (Port 8013): `jdbc:h2:mem:masterdata_db` - Product catalog & configurations  
+- **Inventory Service** (Port 8014): `jdbc:h2:mem:inventory_db` - Stock records & workstation inventory
+- **Order Processing** (Port 8015): `jdbc:h2:mem:order_processing_db` - Customer orders & fulfillment
+- **SimAL Integration** (Port 8016): `jdbc:h2:mem:simal_db` - Production scheduling & simulation
+
+### 🔍 **Database Console Access**
+Each service provides H2 console access for development debugging:
+- `http://localhost:801X/h2-console` (where X = service-specific port)
+- **JDBC URL**: Use the service-specific URL above
+- **Username**: `sa`
+- **Password**: `password`
 
 ### Simplified Development Approach
 
@@ -365,16 +394,26 @@ Each service provides health endpoints for monitoring:
 ### Common Issues
 
 **Port conflicts**: Use `netstat -ano | findstr :801X` to check port usage
-**Service dependency**: Ensure services start in the specified order
+**Service dependency**: Ensure services start in the specified order  
 **JMX errors**: These are non-fatal monitoring issues and don't affect functionality
-**Database initialization**: Check logs for SQL execution errors during startup
+**H2 console access**: If H2 console doesn't load, check service logs for startup errors
+**Memory issues**: H2 in-memory databases use JVM heap space - adjust `-Xmx` if needed
 
-### Kill all services:
+### Development Commands
+
+**Kill all services**:
 ```powershell
 taskkill /F /IM java.exe
 ```
 
-### Clean rebuild:
+**Clean restart** (clears all in-memory data):
 ```powershell
-.\build-all.ps1
+# Stop services and restart - all data is fresh since H2 is in-memory
+cd user-service
+.\mvnw.cmd spring-boot:run
 ```
+
+**View H2 database content**:
+- Navigate to `http://localhost:8012/h2-console`
+- JDBC URL: `jdbc:h2:mem:lego_factory_auth`
+- Username: `sa`, Password: `password`

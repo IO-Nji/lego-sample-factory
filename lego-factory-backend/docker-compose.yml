@@ -1,5 +1,9 @@
 version: '3.8'
 
+# NOTE: This configuration includes PostgreSQL for production deployment.
+# For development with H2 only, use docker-compose-h2.yml instead:
+#   docker-compose -f docker-compose-h2.yml up
+
 services:
   postgres-db:
     image: postgres:15
@@ -11,11 +15,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - lego-backend
+    # NOTE: PostgreSQL is kept for production deployment scenarios only
 
   user-service:
     image: ${CI_REGISTRY_IMAGE}/backend/user-service:${CI_COMMIT_SHORT_SHA:-latest}
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      # PostgreSQL connection for production (when using postgres profile)
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
