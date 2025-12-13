@@ -1,0 +1,24 @@
+-- ============================================================================
+-- USER SERVICE DATABASE - Complete User Set  
+-- ============================================================================
+-- SQL USER INSERTION DISABLED - Testing Java-based initialization
+
+-- DELETE FROM users;
+
+-- INSERT INTO users (username, password_hash, role, workstation_id) VALUES
+-- Admin user (password: password) - Using known working BCrypt hash for "password"
+-- ('lego_admin', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'ADMIN', NULL),
+-- Test users (password: password) - Using known BCrypt hash for "password"
+-- ('warehouse_operator', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'PLANT_WAREHOUSE', 7),
+-- ('modules_supermarket', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'MODULES_SUPERMARKET', 8),
+-- ('production_planning', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'PRODUCTION_PLANNING', NULL),
+-- ('production_control', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'PRODUCTION_CONTROL', 1),
+-- ('assembly_control', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'ASSEMBLY_CONTROL', 4),
+-- ('injection_molding', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'MANUFACTURING', 1),
+-- ('parts_preproduction', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'MANUFACTURING', 2),
+-- ('part_finishing', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'MANUFACTURING', 3),
+-- ('gear_assembly', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'ASSEMBLY_CONTROL', 4),
+-- ('motor_assembly', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'ASSEMBLY_CONTROL', 5),
+-- ('final_assembly', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'ASSEMBLY_CONTROL', 6),
+-- ('parts_supply_warehouse', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'PARTS_SUPPLY', 9),
+-- ('viewer_user', '$2a$10$dXJ3SW6G7P2DeApd.6Q/zOxzfHCaoxRtLS9a5x5CgKkO3CkHjFaG.', 'VIEWER', NULL);

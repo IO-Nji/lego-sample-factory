@@ -29,60 +29,78 @@ LIFE uses a **6-tier microservice architecture** with an API Gateway as the cent
         │   API Gateway (Port 8011)              │
         │   - Route all requests                 │
         │   - CORS support                       │
-        │   - Load balancing                     │
+        │   - JWT authentication                 │
         └───┬──────┬──────┬───────┬────┬────────┘
             │      │      │       │    │
        ┌────▼──┐ ┌─▼────┐┌──▼──┐┌─▼──┐┌──▼──┐
-       │ User  │ │Master││Stock││Order│ │Simal│
-       │Service│ │data  ││ mgmt││Proc.│ │Integ│
+       │ User  │ │Master││Inven-││Order│ │Simal│
+       │Service│ │data  ││tory  ││Proc.│ │Integ│
        │ 8012  │ │ 8013 ││8014 ││ 8015│ │ 8016│
        └───────┘ └──────┘└─────┘└────┘└─────┘
 ```
 
 **Backend Services**:
 
-- **User Service** (Port 8012): Authentication, authorization, user management
+- **User Service** (Port 8012): JWT authentication, authorization, user management
 - **Masterdata Service** (Port 8013): Product catalog, modules, parts, workstations
 - **Inventory Service** (Port 8014): Stock tracking and workstation inventory
 - **Order Processing Service** (Port 8015): Customer orders, fulfillment, warehouse operations
 - **SimAL Integration Service** (Port 8016): Production scheduling and simulation
+- **API Gateway** (Port 8011): Centralized routing, CORS, JWT validation
 
-**Persistence**: Each microservice maintains its own H2 file-based database for complete data isolation.
+**Persistence**: Each microservice maintains its own H2 in-memory database for complete data isolation.
 
 ## Technology Stack
 
 - **Backend**: Java 21, Spring Boot 3.4.2, Spring Cloud Gateway 2024.0.0, Spring Security, Maven
-- **Database**: H2 (file-based, one per service) for data isolation and easy deployment
+- **Database**: H2 in-memory databases (one per service) with PostgreSQL compatibility mode
 - **Frontend**: React 18+, Vite, Axios, React Router
-- **Tools**: Visual Studio Code, Node.js, npm
+- **Configuration**: Environment variables via .env file, Spring profiles
+- **Tools**: Visual Studio Code, Node.js, npm, PowerShell scripts
+
+## Recent Updates (December 2025)
+
+### ✅ Configuration Improvements
+- **Standardized configuration**: All services now use consistent `application.properties` files
+- **Environment variable support**: Centralized configuration via `.env` file
+- **JMX disabled**: Prevents connection issues in development environment
+- **Java-based user initialization**: Robust UserInitializer service creates all users automatically
+- **Authentication system resolved**: Fixed SQL/Java initialization conflicts for reliable login
+
+### ✅ Enhanced Build Process
+- **Individual service management**: Each service runs independently using Maven wrapper
+- **Service dependency management**: Proper startup order enforcement
+- **Clean build process**: Integrated Maven clean and package commands
+
+### ✅ Simplified User Management  
+- **Automatic user initialization**: UserInitializer service creates all users at startup
+- **Standardized passwords**: All test users use `password` for development ease
+- **Role-based access**: Complete UserRole enum mapping with workstation assignments
+- **Authentication reliability**: Resolved initialization conflicts for consistent login experience
 
 ## Current Features & Status
 
 ### ✅ Implemented Features
 
 #### Authentication & Authorization
-
 - JWT-based authentication for all API requests
-- Role-based access control (ADMIN, PLANT_WAREHOUSE, MODULES_SUPERMARKET, MANUFACTURING_OPERATOR)
+- Role-based access control (ADMIN, PLANT_WAREHOUSE, MODULES_SUPERMARKET, MANUFACTURING, etc.)
 - User management dashboard (create, update, delete, assign workstations)
 - Automatic session management with localStorage
 
 #### Product & Inventory Management
-
 - Product variants catalog with pricing and production time estimates
 - Modular component structure (products → modules → parts)
 - Real-time inventory tracking by workstation
 - Stock record management with item type classification
 
 #### Order Processing & Fulfillment
-
 - Customer order creation with multiple order items
 - Order status lifecycle (PENDING → CONFIRMED → PROCESSING → COMPLETED/CANCELLED)
 - Warehouse order management for inter-warehouse transfers
 - Fulfill/reject operations with automatic inventory adjustments
 
 #### Workstation Operations
-
 - Multi-role workstation dashboards:
   - **Admin Dashboard**: System-wide KPIs, user management, workstation configuration
   - **Plant Warehouse**: Incoming customer orders, fulfillment actions
@@ -91,118 +109,212 @@ LIFE uses a **6-tier microservice architecture** with an API Gateway as the cent
 - Real-time order/task updates with 15-30 second auto-refresh
 
 #### Production Scheduling (SimAL)
-
 - Intelligent workstation allocation based on work type
 - Task sequencing with ISO 8601 timestamps
 - Order-to-schedule linking with realistic time estimates
 
 #### Error Handling & Observability
-
 - Global exception handlers with standardized JSON error responses
-- Structured logging with rolling file appenders (application.log, error.log, debug.log)
+- Structured logging with proper log levels and package-specific configuration
 - Frontend toast notifications for user-facing error feedback
-- Stack trace logging for debugging
-
-#### UI/UX Features
-
-- Compact, responsive grid layouts for product and order displays
-- Color-coded status badges and item-type indicators
-- Expandable component details (products show modules, modules show parts)
-- Mobile-friendly design with adaptive font sizes and spacing
-- Reduced header height (60% of original) for better screen utilization
+- Health check endpoints for all services
 
 ## Setup & Running the Application
 
 ### Prerequisites
-
 - **Java 21** (Eclipse Adoptium or equivalent)
 - **Node.js 18+** and npm
-- **PowerShell** or Bash (for running Maven and npm commands)
+- **Terminal access** (PowerShell recommended for Windows)
 
-### Build All Services
+### Quick Start (Recommended)
 
-From the project root directory, build all backend services:
+1. **Clone and navigate to project**:
+   ```powershell
+   cd "e:\My Documents\DEV\Arduino\libraries\lego-sample-factory\lego-factory-backend"
+   ```
 
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE"
+2. **Start User Service** (Authentication foundation):
+   ```powershell
+   cd user-service
+   .\mvnw.cmd spring-boot:run
+   ```
+   ✅ **Wait for**: "User initialization completed successfully" message
 
-# Build each service
-cd user-service; .\mvnw clean package -DskipTests; cd ..
-cd masterdata-service; .\mvnw clean package -DskipTests; cd ..
-cd inventory-service; .\mvnw clean package -DskipTests; cd ..
-cd order-processing-service; .\mvnw clean package -DskipTests; cd ..
-cd simal-integration-service; .\mvnw clean package -DskipTests; cd ..
-cd api-gateway; .\mvnw clean package -DskipTests; cd ..
+3. **Start additional services** (in separate terminals as needed):
+   ```powershell
+   # Masterdata Service (Product catalog)
+   cd masterdata-service
+   .\mvnw.cmd spring-boot:run
+   
+   # Inventory Service (Stock management) 
+   cd inventory-service
+   .\mvnw.cmd spring-boot:run
+   
+   # Order Processing Service (Order workflows)
+   cd order-processing-service
+   .\mvnw.cmd spring-boot:run
+   
+   # SimAL Integration Service (Production scheduling)
+   cd simal-integration-service
+   .\mvnw.cmd spring-boot:run
+   
+   # API Gateway (Request routing)
+   cd api-gateway
+   .\mvnw.cmd spring-boot:run
+   ```
+
+4. **Start frontend** (in new terminal):
+   ```powershell
+   cd ..\lego-factory-frontend
+   npm install  # First time only
+   npm run dev
+   ```
+
+**🌐 Access URL**: `http://localhost:5173`
+
+### Simplified Development Approach
+
+**For basic development and testing**, you only need:
+
+1. **User Service** (Port 8012) - Provides authentication and user management
+2. **Frontend** (Port 5173) - React application
+
+The frontend will gracefully handle missing services and show appropriate messages for unavailable features.
+
+### Service Architecture & Ports
+
+```
+┌─────────────────────────────────────┐
+│  React Frontend (Port 5173)         │
+└─────────────┬───────────────────────┘
+              │
+    ┌─────────▼──────────┐
+    │ API Gateway (8011) │ (Optional)
+    └─────────┬──────────┘
+              │
+  ┌───────────▼───────────────────────────────┐
+  │            Core Services                   │
+  │  ┌─────────┐ ┌──────────┐ ┌─────────────┐ │
+  │  │  User   │ │Masterdata│ │  Inventory  │ │
+  │  │  8012   │ │   8013   │ │    8014     │ │
+  │  └─────────┘ └──────────┘ └─────────────┘ │
+  │  ┌─────────┐ ┌──────────┐                 │
+  │  │  Order  │ │  SimAL   │                 │
+  │  │  8015   │ │   8016   │                 │
+  │  └─────────┘ └──────────┘                 │
+  └───────────────────────────────────────────┘
 ```
 
-### Start Backend Services
+6. **API Gateway** (Port 8011) - Request routing (Optional for development):
+   ```powershell
+   cd api-gateway
+   .\mvnw.cmd spring-boot:run
+   ```
 
-Open **separate terminals** for each service, in this order:
+### Authentication Testing
 
-1. **User Service** (Port 8012) - Required first for authentication:
+Once the User Service is running, you can test authentication:
 
 ```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\user-service"
-.\mvnw spring-boot:run
+# Test admin login
+curl -X POST http://localhost:8012/api/auth/login -H "Content-Type: application/json" -d "{\"username\":\"lego_admin\",\"password\":\"password\"}"
+
+# Expected response: JWT token and user details
 ```
 
-1. **Masterdata Service** (Port 8013) - Required before gateway:
-
+### Frontend Application
 ```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\masterdata-service"
-.\mvnw spring-boot:run
-```
-
-1. **Inventory Service** (Port 8014):
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\inventory-service"
-.\mvnw spring-boot:run
-```
-
-1. **Order Processing Service** (Port 8015):
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\order-processing-service"
-.\mvnw spring-boot:run
-```
-
-1. **SimAL Integration Service** (Port 8016):
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\simal-integration-service"
-.\mvnw spring-boot:run
-```
-
-1. **API Gateway** (Port 8011) - Routes all requests:
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\api-gateway"
-.\mvnw spring-boot:run
-```
-
-### Start Frontend
-
-In a new terminal, start the React development server:
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\lego-factory-frontend"
+cd lego-factory-frontend
 npm install  # First time only
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:5173`
+**Access URL**: `http://localhost:5173`
 
-### Default Test Accounts
+## Default Test Accounts
 
-- **Admin Account**: `legoAdmin` / `legoPass`
-  - Full system access, user management, workstation configuration
+### Updated User Credentials (December 2025)
 
-- **Plant Warehouse**: `warehouseOperator` / `warehousePass`
-  - Access to plant warehouse operations and customer order fulfillment
+**🔑 Universal Password**: All users use `password` for simplified testing and development.
 
-- **Modules Supermarket**: `modulesSupermarketOp` / `modulesPass`
-  - Warehouse order management and module inventory fulfillment
+**Admin Account**:
+- **Username**: `lego_admin`
+- **Password**: `password`
+- **Role**: ADMIN
+- **Access**: Full system access, user management, workstation configuration
+
+**Warehouse Operations**:
+- **Username**: `warehouse_operator`
+- **Password**: `password`
+- **Role**: PLANT_WAREHOUSE
+- **Workstation**: 7
+- **Access**: Customer order fulfillment, plant warehouse operations
+
+- **Username**: `modules_supermarket`
+- **Password**: `password`
+- **Role**: MODULES_SUPERMARKET
+- **Workstation**: 8
+- **Access**: Warehouse order management, module inventory fulfillment
+
+- **Username**: `parts_supply_warehouse`
+- **Password**: `password`
+- **Role**: PARTS_SUPPLY
+- **Workstation**: 9
+- **Access**: Parts supply warehouse operations
+
+**Production Control**:
+- **Username**: `production_planning`
+- **Password**: `password`
+- **Role**: PRODUCTION_PLANNING
+- **Access**: Production scheduling and planning
+
+- **Username**: `production_control`
+- **Password**: `password`
+- **Role**: PRODUCTION_CONTROL
+- **Workstation**: 1
+
+**Manufacturing Workstations**:
+- **Username**: `injection_molding`
+- **Password**: `password`
+- **Role**: MANUFACTURING
+- **Workstation**: 1
+
+- **Username**: `parts_preproduction`
+- **Password**: `password`
+- **Role**: MANUFACTURING
+- **Workstation**: 2
+
+- **Username**: `part_finishing`
+- **Password**: `password`
+- **Role**: MANUFACTURING
+- **Workstation**: 3
+
+**Assembly Operations**:
+- **Username**: `assembly_control`
+- **Password**: `password`
+- **Role**: ASSEMBLY_CONTROL
+- **Workstation**: 4
+
+- **Username**: `gear_assembly`
+- **Password**: `password`
+- **Role**: ASSEMBLY_CONTROL
+- **Workstation**: 4
+
+- **Username**: `motor_assembly`
+- **Password**: `password`
+- **Role**: ASSEMBLY_CONTROL
+- **Workstation**: 5
+
+- **Username**: `final_assembly`
+- **Password**: `password`
+- **Role**: ASSEMBLY_CONTROL
+- **Workstation**: 6
+
+**Read-Only Access**:
+- **Username**: `viewer_user`
+- **Password**: `password`
+- **Role**: VIEWER
+- **Access**: Read-only system monitoring and reports
 
 ## API Endpoints Summary
 
@@ -211,38 +323,58 @@ All endpoints are routed through the API Gateway at `http://localhost:8011`
 **Authentication**: `POST /api/auth/login` — Submit username/password, receive JWT token
 
 **User Management** (Admin-only):
-
 - `GET /api/users` — List all users
 - `POST /api/users` — Create new user
 - `PUT /api/users/{id}` — Update user
 - `DELETE /api/users/{id}` — Delete user
 
 **Master Data** (All authenticated users):
-
 - `GET /api/masterdata/product-variants` — Product catalog
 - `GET /api/masterdata/modules` — Manufacturing modules
 - `GET /api/masterdata/parts` — Component parts
 - `GET /api/masterdata/workstations` — Workstation configuration
 
 **Inventory Management**:
-
 - `GET /api/stock/records` — All stock records
 - `GET /api/stock/by-workstation/{workstationId}` — Workstation inventory
 - `PUT /api/stock/records/{id}` — Update stock
 
 **Order Processing** (Plant Warehouse role):
-
 - `POST /api/customer-orders` — Create order
 - `GET /api/customer-orders` — List orders
 - `PATCH /api/customer-orders/{id}/status` — Update status
 
 **Warehouse Orders** (Modules Supermarket role):
-
 - `GET /api/warehouse-orders` — Pending orders
 - `POST /api/warehouse-orders/{id}/fulfill` — Fulfill order
 - `POST /api/warehouse-orders/{id}/reject` — Reject order
 
 **Production Scheduling**:
-
 - `POST /api/simal/production-order` — Submit production order
 - `GET /api/simal/scheduled-orders` — View schedules
+
+## Health Checks & Monitoring
+
+Each service provides health endpoints for monitoring:
+- `http://localhost:801X/actuator/health` — Service health status
+- `http://localhost:801X/actuator/info` — Service information
+- `http://localhost:801X/h2-console` — Database console (development)
+
+## Troubleshooting
+
+### Common Issues
+
+**Port conflicts**: Use `netstat -ano | findstr :801X` to check port usage
+**Service dependency**: Ensure services start in the specified order
+**JMX errors**: These are non-fatal monitoring issues and don't affect functionality
+**Database initialization**: Check logs for SQL execution errors during startup
+
+### Kill all services:
+```powershell
+taskkill /F /IM java.exe
+```
+
+### Clean rebuild:
+```powershell
+.\build-all.ps1
+```
