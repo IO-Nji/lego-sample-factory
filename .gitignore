@@ -1,1 +1,3 @@
 .ENV
+.env
+.gitlabs-ci.yml
