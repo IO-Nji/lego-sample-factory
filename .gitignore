@@ -1,4 +1,6 @@
-# Build artifacts
+.ENV
+.env
+.gitlabs-ci.yml# Build artifacts
 target/
 build/
 out/
