@@ -14,28 +14,34 @@ LIFE (LEGO Integrated Factory Execution) is a production-ready prototype designe
 
 ## System Architecture
 
-LIFE uses a **6-tier microservice architecture** with an API Gateway as the central routing layer:
+LIFE uses a **Docker containerized microservice architecture** with nginx proxy as the entry point:
 
 ```plaintext
 ┌─────────────────────────────────────────────────────────────┐
-│           React Frontend (Port 5173/5174)                    │
-│  ┌──────────────┬──────────────┬──────────────────────────┐ │
-│  │ Dashboard    │ Products     │ Workstation Pages        │ │
-│  │ (Multi-role) │ Catalog      │ (Plant WH, Modules SM)   │ │
-│  └──────────────┴──────────────┴──────────────────────────┘ │
-└───────────────────────────┬────────────────────────────────┘
-                            │
-        ┌───────────────────▼────────────────────┐
-        │   API Gateway (Port 8011)              │
-        │   - Route all requests                 │
-        │   - CORS support                       │
-        │   - JWT authentication                 │
-        └───┬──────┬──────┬───────┬────┬────────┘
+│              Nginx Root Proxy (Port 80)                      │
+│                     Entry Point                              │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+        ┌───────────────▼─────────────────────────┐
+        │         React Frontend                  │
+        │    (Containerized with Nginx)           │
+        │  ┌─────────────┬─────────────────────┐  │
+        │  │ Dashboard   │ Workstation Pages   │  │
+        │  │ (All roles) │ (Plant WH, Modules) │  │
+        │  └─────────────┴─────────────────────┘  │
+        └─────────────────┬───────────────────────┘
+                          │ /api/* requests
+        ┌─────────────────▼───────────────────────┐
+        │        API Gateway                      │
+        │   - Route all API requests              │
+        │   - JWT authentication                  │
+        │   - CORS support                        │
+        └───┬──────┬──────┬───────┬────┬─────────┘
             │      │      │       │    │
        ┌────▼──┐ ┌─▼────┐┌──▼──┐┌─▼──┐┌──▼──┐
        │ User  │ │Master││Inven-││Order│ │Simal│
        │Service│ │data  ││tory  ││Proc.│ │Integ│
-       │ 8012  │ │ 8013 ││8014 ││ 8015│ │ 8016│
+       │(H2 DB)│ │(H2DB)││(H2DB)││(H2) │ │(H2) │
        └───────┘ └──────┘└─────┘└────┘└─────┘
 ```
 
@@ -55,13 +61,22 @@ LIFE uses a **6-tier microservice architecture** with an API Gateway as the cent
 - **Backend**: Java 21, Spring Boot 3.4.2, Spring Cloud Gateway 2024.0.0, Spring Security, Maven
 - **Database**: H2 in-memory databases (one per service) for simplified development
 - **Frontend**: React 18+, Vite, Axios, React Router
+- **Containerization**: Docker, Docker Compose, multi-stage builds
+- **Proxy**: Nginx (root proxy + frontend serving)
 - **Configuration**: Environment variables via .env file, Spring profiles
-- **Tools**: Visual Studio Code, Node.js, npm, PowerShell scripts
+- **Tools**: Visual Studio Code, Docker Desktop, PowerShell scripts
 
 **🗄️ Database Philosophy**: 
 The application uses **H2 in-memory databases exclusively** for development and testing. This eliminates the need for external database setup, making it ideal for rapid development, demos, and CI/CD environments. Each microservice maintains its own isolated H2 database that initializes automatically on startup.
 
 ## Recent Updates (December 2025)
+
+### ✅ Docker Implementation Complete
+- **Full containerization**: All 8 services (nginx proxy, frontend, 6 backend services) containerized
+- **Production-ready deployment**: Multi-stage builds, health checks, service discovery
+- **Simplified startup**: Single command `./start-factory.ps1` or `docker-compose up -d`
+- **Nginx proxy**: Entry point on port 80 with automatic API routing
+- **Container networking**: Internal service communication without port conflicts
 
 ### ✅ Configuration Improvements
 - **Simplified database setup**: Pure H2 in-memory databases eliminate external dependencies
@@ -126,55 +141,74 @@ The application uses **H2 in-memory databases exclusively** for development and 
 ## Setup & Running the Application
 
 ### Prerequisites
-- **Java 21** (Eclipse Adoptium or equivalent)
-- **Node.js 18+** and npm
-- **Terminal access** (PowerShell recommended for Windows)
+- **Docker Desktop** (with Docker Compose)
+- **Git** for cloning the repository
+- **Web Browser** for accessing the application
 
-### Quick Start (Recommended)
+### 🚀 Quick Start (Docker - Recommended)
 
 1. **Clone and navigate to project**:
    ```powershell
-   cd "e:\My Documents\DEV\Arduino\libraries\lego-sample-factory\lego-factory-backend"
+   cd "e:\My Documents\DEV\Arduino\libraries\lego-sample-factory"
    ```
 
-2. **Start User Service** (Authentication foundation):
+2. **Start the entire application stack**:
    ```powershell
-   cd user-service
-   .\mvnw.cmd spring-boot:run
+   docker-compose up -d
    ```
-   ✅ **Wait for**: "User initialization completed successfully" message
+   ✅ **Wait for**: All containers to be healthy (about 2-3 minutes)
 
-3. **Start additional services** (in separate terminals as needed):
-   ```powershell
-   # Masterdata Service (Product catalog)
-   cd masterdata-service
-   .\mvnw.cmd spring-boot:run
-   
-   # Inventory Service (Stock management) 
-   cd inventory-service
-   .\mvnw.cmd spring-boot:run
-   
-   # Order Processing Service (Order workflows)
-   cd order-processing-service
-   .\mvnw.cmd spring-boot:run
-   
-   # SimAL Integration Service (Production scheduling)
-   cd simal-integration-service
-   .\mvnw.cmd spring-boot:run
-   
-   # API Gateway (Request routing)
-   cd api-gateway
-   .\mvnw.cmd spring-boot:run
-   ```
+3. **Access the application**:
+   - **Frontend**: `http://localhost` (or `http://localhost:80`)
+   - **API Gateway**: `http://localhost/api/` (proxied through nginx)
 
-4. **Start frontend** (in new terminal):
-   ```powershell
-   cd ..\lego-factory-frontend
-   npm install  # First time only
-   npm run dev
-   ```
+### 📋 Application Management Scripts
 
-**🌐 Access URL**: `http://localhost:5173`
+**Start all services**:
+```powershell
+.\start-factory.ps1
+```
+
+**Stop all services**:
+```powershell
+docker-compose down
+```
+
+**View service logs**:
+```powershell
+docker-compose logs -f [service-name]
+# Examples:
+docker-compose logs -f api-gateway
+docker-compose logs -f user-service
+docker-compose logs -f frontend
+```
+
+**Rebuild specific service**:
+```powershell
+docker-compose build --no-cache [service-name]
+docker-compose up -d [service-name]
+```
+
+### 🔧 Development Mode (Manual Services)
+
+For active development, you may want to run services manually:
+
+**Prerequisites for manual mode**:
+- **Java 21** (Eclipse Adoptium or equivalent)
+- **Node.js 18+** and npm
+
+**Start backend services individually**:
+```powershell
+cd lego-factory-backend\user-service
+.\mvnw.cmd spring-boot:run
+```
+
+**Start frontend in development mode**:
+```powershell
+cd lego-factory-frontend
+npm install  # First time only
+npm run dev  # Available at http://localhost:5173
+```
 
 ## Database Architecture (H2-Only)
 
@@ -195,11 +229,16 @@ The application uses **H2 in-memory databases exclusively** for simplified devel
 - **SimAL Integration** (Port 8016): `jdbc:h2:mem:simal_db` - Production scheduling & simulation
 
 ### 🔍 **Database Console Access**
-Each service provides H2 console access for development debugging:
-- `http://localhost:801X/h2-console` (where X = service-specific port)
-- **JDBC URL**: Use the service-specific URL above
+H2 console access is available when services are exposed (development mode):
+- **User Service**: `http://localhost:8012/h2-console` (if port exposed)
+- **JDBC URLs**: As defined in config_manifest.md
 - **Username**: `sa`
 - **Password**: `password`
+
+**Note**: In Docker mode, database consoles are internal to containers. Use `docker exec` to access:
+```powershell
+docker exec -it lego-sample-factory-user-service-1 curl http://localhost:8012/h2-console
+```
 
 ### Simplified Development Approach
 
@@ -347,7 +386,9 @@ npm run dev
 
 ## API Endpoints Summary
 
-All endpoints are routed through the API Gateway at `http://localhost:8011`
+All endpoints are routed through nginx proxy and API Gateway:
+- **Docker mode**: `http://localhost/api/...`
+- **Development mode**: `http://localhost:8011/...`
 
 **Authentication**: `POST /api/auth/login` — Submit username/password, receive JWT token
 
@@ -384,36 +425,74 @@ All endpoints are routed through the API Gateway at `http://localhost:8011`
 
 ## Health Checks & Monitoring
 
-Each service provides health endpoints for monitoring:
+**Docker mode health checks**:
+```powershell
+# Check all container status
+docker-compose ps
+
+# View container health
+docker ps
+
+# Check specific service health
+curl http://localhost/api/actuator/health
+```
+
+**Development mode health checks**:
 - `http://localhost:801X/actuator/health` — Service health status
 - `http://localhost:801X/actuator/info` — Service information
-- `http://localhost:801X/h2-console` — Database console (development)
 
 ## Troubleshooting
 
-### Common Issues
+### Common Docker Issues
 
-**Port conflicts**: Use `netstat -ano | findstr :801X` to check port usage
-**Service dependency**: Ensure services start in the specified order  
-**JMX errors**: These are non-fatal monitoring issues and don't affect functionality
-**H2 console access**: If H2 console doesn't load, check service logs for startup errors
-**Memory issues**: H2 in-memory databases use JVM heap space - adjust `-Xmx` if needed
-
-### Development Commands
-
-**Kill all services**:
+**Port conflicts**: 
 ```powershell
-taskkill /F /IM java.exe
+# Check if port 80 is in use
+netstat -ano | findstr :80
+# Stop other services using port 80
+docker-compose down
 ```
 
-**Clean restart** (clears all in-memory data):
+**Container startup issues**:
 ```powershell
-# Stop services and restart - all data is fresh since H2 is in-memory
-cd user-service
-.\mvnw.cmd spring-boot:run
+# Check container logs
+docker-compose logs [service-name]
+
+# Restart specific service
+docker-compose restart [service-name]
+
+# Force rebuild and restart
+docker-compose build --no-cache [service-name]
+docker-compose up -d [service-name]
 ```
 
-**View H2 database content**:
-- Navigate to `http://localhost:8012/h2-console`
-- JDBC URL: `jdbc:h2:mem:lego_factory_auth`
-- Username: `sa`, Password: `password`
+**Memory/Performance issues**:
+```powershell
+# Check container resource usage
+docker stats
+
+# Clean up unused containers and images
+docker system prune -f
+```
+
+### Docker Commands
+
+**Complete system restart**:
+```powershell
+docker-compose down -v  # Remove volumes
+docker-compose up -d    # Fresh start
+```
+
+**View service logs**:
+```powershell
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f user-service
+```
+
+**Access container shell**:
+```powershell
+docker exec -it lego-sample-factory-user-service-1 /bin/bash
+```

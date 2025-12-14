@@ -1,13 +1,17 @@
 # Multi-stage build
-FROM node:18-alpine AS builder
+FROM node:21-alpine AS builder
 
 WORKDIR /app
+
+# Accept build arguments for Vite environment variables
+ARG VITE_API_GATEWAY_URL
+ENV VITE_API_GATEWAY_URL=$VITE_API_GATEWAY_URL
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (including dev dependencies for build)
+RUN npm ci
 
 # Copy source
 COPY . .

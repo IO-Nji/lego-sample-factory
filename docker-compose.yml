@@ -1,31 +1,218 @@
 version: '3.8'
 
 services:
-  # Backend services via external compose file
-  backend:
-    extends:
-      file: lego-factory-backend/docker-compose.yml
-      service: api-gateway
-    profiles: ["backend"]
-
-  # Frontend
-  frontend:
+  # ==============================================
+  # ROOT NGINX PROXY - Entry point for all traffic
+  # ==============================================
+  nginx-root-proxy:
     build:
-      context: lego-factory-frontend
+      context: ./nginx-root-proxy
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "${NGINX_ROOT_PROXY_EXTERNAL_PORT:-80}:80"
     depends_on:
-      - backend
-    environment:
-      - NODE_ENV=production
+      - frontend
+      - api-gateway
+    networks:
+      - lego-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
 
+  # ==============================================
+  # FRONTEND - React Application
+  # ==============================================
+  frontend:
+    build:
+      context: ./lego-factory-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_GATEWAY_URL: /api
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - api-gateway
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==============================================
+  # API GATEWAY - Central routing service
+  # ==============================================
+  api-gateway:
+    build:
+      context: ./lego-factory-backend/api-gateway
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=${API_GATEWAY_PORT}
+      - SECURITY_JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SECURITY_JWT_EXPIRATION=${SECURITY_JWT_EXPIRATION}
+      - USER_SERVICE_URL=http://user-service:${USER_SERVICE_PORT}
+      - MASTERDATA_SERVICE_URL=http://masterdata-service:${MASTERDATA_SERVICE_PORT}
+      - INVENTORY_SERVICE_URL=http://inventory-service:${INVENTORY_SERVICE_PORT}
+      - ORDER_PROCESSING_SERVICE_URL=http://order-processing-service:${ORDER_PROCESSING_SERVICE_PORT}
+      - SIMAL_INTEGRATION_SERVICE_URL=http://simal-integration-service:${SIMAL_INTEGRATION_SERVICE_PORT}
+    depends_on:
+      - user-service
+      - masterdata-service
+      - inventory-service
+      - order-processing-service
+      - simal-integration-service
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${API_GATEWAY_PORT}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==============================================
+  # USER SERVICE - Authentication & User Management
+  # ==============================================
+  user-service:
+    build:
+      context: ./lego-factory-backend/user-service
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=${USER_SERVICE_PORT}
+      - JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SECURITY_JWT_EXPIRATION=${SECURITY_JWT_EXPIRATION}
+      - SPRING_DATASOURCE_URL=${H2_DB_USER_PATH}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
+      - H2_CONSOLE_ENABLED=true
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${USER_SERVICE_PORT}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==============================================
+  # MASTERDATA SERVICE - Master Data Management
+  # ==============================================
+  masterdata-service:
+    build:
+      context: ./lego-factory-backend/masterdata-service
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=${MASTERDATA_SERVICE_PORT}
+      - SECURITY_JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SPRING_DATASOURCE_URL=${H2_DB_MASTERDATA_PATH}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
+      - H2_CONSOLE_ENABLED=true
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${MASTERDATA_SERVICE_PORT}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==============================================
+  # INVENTORY SERVICE - Inventory Management
+  # ==============================================
+  inventory-service:
+    build:
+      context: ./lego-factory-backend/inventory-service
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=${INVENTORY_SERVICE_PORT}
+      - SECURITY_JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SPRING_DATASOURCE_URL=${H2_DB_INVENTORY_PATH}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
+      - H2_CONSOLE_ENABLED=true
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${INVENTORY_SERVICE_PORT}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==============================================
+  # ORDER PROCESSING SERVICE - Order Management
+  # ==============================================
+  order-processing-service:
+    build:
+      context: ./lego-factory-backend/order-processing-service
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=${ORDER_PROCESSING_SERVICE_PORT}
+      - SECURITY_JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SPRING_DATASOURCE_URL=${H2_DB_ORDER_PROCESSING_PATH}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
+      - H2_CONSOLE_ENABLED=true
+      - inventory.service.url=http://inventory-service:${INVENTORY_SERVICE_PORT}
+      - simal.api.base-url=http://simal-integration-service:${SIMAL_INTEGRATION_SERVICE_PORT}/api
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${ORDER_PROCESSING_SERVICE_PORT}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==============================================
+  # SIMAL INTEGRATION SERVICE - External System Integration
+  # ==============================================
+  simal-integration-service:
+    build:
+      context: ./lego-factory-backend/simal-integration-service
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=${SIMAL_INTEGRATION_SERVICE_PORT}
+      - SECURITY_JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SPRING_DATASOURCE_URL=${H2_DB_SIMAL_INTEGRATION_PATH}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
+      - H2_CONSOLE_ENABLED=true
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${SIMAL_INTEGRATION_SERVICE_PORT}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# ==============================================
+# NETWORKS
+# ==============================================
 networks:
-  default:
+  lego-network:
+    driver: bridge
     name: lego-network
-    external: true
+
+# ==============================================
+# VOLUMES (Optional - for H2 data persistence)
+# ==============================================
+volumes:
+  user_h2_data:
+  masterdata_h2_data:
+  inventory_h2_data:
+  order_processing_h2_data:
+  simal_h2_data:

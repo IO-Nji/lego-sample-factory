@@ -1,4 +1,4 @@
-package io.life.order.config;
+package io.life.masterdata.config;
 
 import java.io.IOException;
 import java.util.ArrayList;

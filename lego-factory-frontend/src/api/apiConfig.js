@@ -1,13 +1,21 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_GATEWAY_URL ?? "http://localhost:8011";
+// Force the correct API base URL for Docker deployment
+// Use nginx proxy path instead of direct API Gateway port
+const API_BASE_URL = "http://localhost";
 
-export const LOGIN_ENDPOINT = `${API_BASE_URL}/api/auth/login`;
-export const USERS_ENDPOINT = `${API_BASE_URL}/api/users`;
-export const WORKSTATIONS_ENDPOINT = `${API_BASE_URL}/api/masterdata/workstations`;
-export const PRODUCT_VARIANTS_ENDPOINT = `${API_BASE_URL}/api/masterdata/product-variants`;
-export const MODULES_ENDPOINT = `${API_BASE_URL}/api/masterdata/modules`;
-export const PARTS_ENDPOINT = `${API_BASE_URL}/api/masterdata/parts`;
+// Determine the correct API base path
+// Since we're using nginx proxy, always append /api
+const apiBasePath = `${API_BASE_URL}/api`;
+
+console.log("API Configuration:", { API_BASE_URL, apiBasePath });
+
+export const LOGIN_ENDPOINT = `${apiBasePath}/auth/login`;
+export const USERS_ENDPOINT = `${apiBasePath}/users`;
+export const WORKSTATIONS_ENDPOINT = `${apiBasePath}/masterdata/workstations`;
+export const PRODUCT_VARIANTS_ENDPOINT = `${apiBasePath}/masterdata/product-variants`;
+export const MODULES_ENDPOINT = `${apiBasePath}/masterdata/modules`;
+export const PARTS_ENDPOINT = `${apiBasePath}/masterdata/parts`;
 
 // Configure axios to automatically include JWT token in all requests
 axios.interceptors.request.use(

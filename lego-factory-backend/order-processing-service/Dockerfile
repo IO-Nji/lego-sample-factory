@@ -1,22 +1,25 @@
 # Multi-stage build for Order Processing Service
-FROM maven:3.9.6-openjdk-17 AS builder
+FROM eclipse-temurin:21-jdk AS builder
+
+# Install Maven
+RUN apt-get update && \
+    apt-get install -y maven && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Copy Maven files for dependency caching
 COPY pom.xml .
-COPY .mvn/ .mvn/
-COPY mvnw .
 
-# Make mvnw executable and download dependencies
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+# Download dependencies
+RUN mvn dependency:go-offline -B
 
 # Copy source code and build
 COPY src ./src
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
 
 # Production stage
-FROM openjdk:17-jdk-slim AS production
+FROM eclipse-temurin:21-jre AS production
 
 WORKDIR /app
 

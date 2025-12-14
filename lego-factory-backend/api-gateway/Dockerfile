@@ -1,23 +1,25 @@
 # Multi-stage build for API Gateway
-FROM maven:3.9.6-openjdk-17 AS builder
+FROM eclipse-temurin:21-jdk AS builder
+
+# Install Maven
+RUN apt-get update && \
+    apt-get install -y maven && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Copy Maven files for dependency caching
 COPY pom.xml .
-COPY .mvn/ .mvn/
-COPY mvnw .
 
-# Make mvnw executable and download dependencies (if mvnw exists)
-RUN chmod +x mvnw 2>/dev/null || true
-RUN if [ -f "./mvnw" ]; then ./mvnw dependency:go-offline -B; else mvn dependency:go-offline -B; fi
+# Download dependencies
+RUN mvn dependency:go-offline -B
 
 # Copy source code and build
 COPY src ./src
-RUN if [ -f "./mvnw" ]; then ./mvnw clean package -DskipTests; else mvn clean package -DskipTests; fi
+RUN mvn clean package -DskipTests
 
 # Production stage
-FROM openjdk:17-jdk-slim AS production
+FROM eclipse-temurin:21-jre AS production
 
 WORKDIR /app
 

@@ -4,12 +4,17 @@ import axios from 'axios';
 // In development, Vite proxy will handle the /api routing
 const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL ?? '/api';
 
+console.log('API_GATEWAY_URL configured as:', API_GATEWAY_URL);
+console.log('VITE_API_GATEWAY_URL env var:', import.meta.env.VITE_API_GATEWAY_URL);
+
 const api = axios.create({
   baseURL: API_GATEWAY_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+console.log('axios instance created with baseURL:', api.defaults.baseURL);
 
 // Add request interceptor to include JWT token
 api.interceptors.request.use(

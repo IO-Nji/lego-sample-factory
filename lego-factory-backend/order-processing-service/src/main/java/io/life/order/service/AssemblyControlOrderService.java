@@ -94,6 +94,15 @@ public class AssemblyControlOrderService {
     }
 
     /**
+     * Get all control orders.
+     */
+    public List<AssemblyControlOrderDTO> getAllOrders() {
+        return repository.findAll().stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Get all control orders for a workstation.
      */
     public List<AssemblyControlOrderDTO> getOrdersByWorkstation(Long workstationId) {

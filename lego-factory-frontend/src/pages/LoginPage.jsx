@@ -19,7 +19,9 @@ function LoginPage() {
   };
 
   const handleSubmit = async (event) => {
+    console.log('LoginPage handleSubmit called');
     event.preventDefault();
+    event.stopPropagation();
     setError("");
 
     if (!form.username.trim() || !form.password) {
@@ -28,9 +30,11 @@ function LoginPage() {
     }
 
     try {
+      console.log('Calling login function...');
       await login(form.username, form.password);
       navigate("/dashboard");
     } catch (requestError) {
+      console.error('Login request error:', requestError);
       setError(requestError.message);
     }
   };
@@ -40,7 +44,13 @@ function LoginPage() {
       <section className="form-section">
         <h2>Sign In</h2>
         <p className="form-helper">Enter your LEGO factory credentials.</p>
-        <form className="form-card" onSubmit={handleSubmit} noValidate>
+        <form 
+          className="form-card" 
+          onSubmit={handleSubmit} 
+          action="#"
+          method="post"
+          noValidate
+        >
           <label htmlFor="username">Username</label>
           <input
             id="username"

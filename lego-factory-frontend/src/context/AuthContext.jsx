@@ -1,7 +1,7 @@
-import axios from "axios";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { LOGIN_ENDPOINT, clearStoredSession, readStoredSession, storeSession } from "../api/apiConfig";
+import api from "../api/api";
+import { clearStoredSession, readStoredSession, storeSession } from "../api/apiConfig";
 
 const AuthContext = createContext(null);
 
@@ -23,10 +23,12 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (username, password) => {
     setLoading(true);
     try {
-      const response = await axios.post(LOGIN_ENDPOINT, {
+      console.log('Attempting login with POST to /auth/login');
+      const response = await api.post('/auth/login', {
         username: username.trim(),
         password,
       });
+      console.log('Login successful:', response.data);
 
       const { token, tokenType, expiresAt, user } = response.data;
       const payload = { token, tokenType, expiresAt, user };
@@ -34,6 +36,7 @@ export function AuthProvider({ children }) {
       setSession(payload);
       return payload;
     } catch (error) {
+      console.error('Login error:', error.response?.status, error.response?.data);
       const message =
         error.response?.data?.message ||
         error.response?.data?.detail ||
