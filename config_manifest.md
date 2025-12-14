@@ -1,127 +1,152 @@
 # Configuration Manifest
 
-This document serves as the central, human-readable documentation for all environment variables and configuration settings used across the LEGO Sample Factory application.
+Central documentation for all environment variables and configuration settings in the LEGO Sample Factory application.
 
-## ✅ Docker Implementation Status
+## Docker Deployment Status
 
-**COMPLETED**: Full Docker containerization has been implemented with:
-- ✅ All 8 services containerized (nginx-root-proxy, frontend, api-gateway, 5x backend services)
-- ✅ Multi-stage Docker builds for optimized images  
-- ✅ Docker Compose orchestration with health checks
-- ✅ Nginx root proxy serving as entry point (Port 80)
-- ✅ Internal container networking with service discovery
-- ✅ Environment variable configuration support
-- ✅ H2 database containerization for all microservices
+**Status**: ✅ PRODUCTION READY
 
-## Global Configuration Variables
+- All 8 services containerized (nginx-root-proxy, frontend, api-gateway, 5 backend services)
+- Multi-stage Docker builds with health checks
+- Docker Compose orchestration with service discovery
+- Nginx root proxy as entry point (Port 80)
+- Internal container networking (lego-network)
+- H2 in-memory databases for all microservices
 
-### Docker & Networking Configuration (Production Ready)
-- `NGINX_ROOT_PROXY_EXTERNAL_PORT=80` - The host port for the root Nginx proxy
-- `FRONTEND_INTERNAL_PORT=80` - The port the Nginx inside the frontend container listens on
-- `FRONTEND_SERVE_PORT=80` - Port for frontend development server
+## Configuration Variables
+
+### Docker & Networking
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `NGINX_ROOT_PROXY_EXTERNAL_PORT` | `80` | Host port for nginx root proxy |
+| `FRONTEND_INTERNAL_PORT` | `80` | Frontend nginx container port |
+| `DOCKER_NETWORK_NAME` | `lego-network` | Docker Compose network name |
 
 ### Authentication & Security
-- `SECURITY_JWT_SECRET=MySecretKeyForJWTTokenGeneration2024AtLeast32Characters` - JWT signing secret (Secret) - minimum 32 characters
-- `SECURITY_JWT_EXPIRATION=PT1H` - JWT token expiration time (ISO 8601 duration format)
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `SECURITY_JWT_SECRET` | `MySecretKeyForJWT...` | JWT signing secret (min 32 chars) |
+| `SECURITY_JWT_EXPIRATION` | `PT1H` | Token expiration (ISO 8601) |
 
-### Microservice Ports
-- `USER_SERVICE_PORT=8012` - User authentication and authorization service port
-- `MASTERDATA_SERVICE_PORT=8013` - Master data management service port  
-- `INVENTORY_SERVICE_PORT=8014` - Inventory and stock management service port
-- `ORDER_PROCESSING_SERVICE_PORT=8015` - Order processing and fulfillment service port
-- `SIMAL_INTEGRATION_SERVICE_PORT=8016` - SIMAL integration service port
-- `API_GATEWAY_PORT=8011` - API Gateway service port
+### Microservice Ports (Internal)
+| Service | Port | Purpose |
+|---------|------|---------|
+| `API_GATEWAY_PORT` | `8011` | API Gateway |
+| `USER_SERVICE_PORT` | `8012` | Authentication & users |
+| `MASTERDATA_SERVICE_PORT` | `8013` | Master data |
+| `INVENTORY_SERVICE_PORT` | `8014` | Inventory management |
+| `ORDER_PROCESSING_SERVICE_PORT` | `8015` | Order processing |
+| `SIMAL_INTEGRATION_SERVICE_PORT` | `8016` | Production scheduling |
 
-### Database Configuration (H2 In-Memory for Development)
-- `H2_DB_USER_PATH=jdbc:h2:mem:lego_factory_auth;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE` - User service H2 database URL
-- `H2_DB_MASTERDATA_PATH=jdbc:h2:mem:masterdata_db;DB_CLOSE_DELAY=-1` - Master data service H2 database URL
-- `H2_DB_INVENTORY_PATH=jdbc:h2:mem:inventory_db;DB_CLOSE_DELAY=-1` - Inventory service H2 database URL
-- `H2_DB_ORDER_PROCESSING_PATH=jdbc:h2:mem:orders_db;DB_CLOSE_DELAY=-1` - Order processing service H2 database URL
-- `H2_DB_SIMAL_INTEGRATION_PATH=jdbc:h2:mem:simal_db;DB_CLOSE_DELAY=-1` - SIMAL integration service H2 database URL
+### Database Configuration (H2 In-Memory)
+| Service | Database Name | JDBC URL |
+|---------|---------------|----------|
+| User Service | `lego_factory_auth` | `jdbc:h2:mem:lego_factory_auth;DB_CLOSE_DELAY=-1` |
+| Masterdata | `masterdata_db` | `jdbc:h2:mem:masterdata_db;DB_CLOSE_DELAY=-1` |
+| Inventory | `inventory_db` | `jdbc:h2:mem:inventory_db;DB_CLOSE_DELAY=-1` |
+| Order Processing | `orders_db` | `jdbc:h2:mem:orders_db;DB_CLOSE_DELAY=-1` |
+| SimAL Integration | `simal_db` | `jdbc:h2:mem:simal_db;DB_CLOSE_DELAY=-1` |
 
-### Spring Boot Common Configuration
-- `SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop` - Hibernate DDL auto mode for development
-- `SPRING_JPA_SHOW_SQL=true` - Enable SQL query logging for debugging
-- `SPRING_H2_CONSOLE_ENABLED=true` - Enable H2 web console for database access
-- `SPRING_H2_CONSOLE_PATH=/h2-console` - Path for H2 console access
-- `SPRING_JMX_ENABLED=false` - Disable JMX to prevent connection issues
+**Database Credentials**:
+- Username: `sa`
+- Password: `password`
+
+### Spring Boot Configuration
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `SPRING_JPA_HIBERNATE_DDL_AUTO` | `create-drop` | Hibernate DDL mode |
+| `SPRING_JPA_SHOW_SQL` | `true` | SQL logging |
+| `SPRING_H2_CONSOLE_ENABLED` | `true` | H2 web console |
+| `SPRING_H2_CONSOLE_PATH` | `/h2-console` | Console path |
+| `SPRING_JMX_ENABLED` | `false` | Disable JMX |
 
 ### Logging Configuration
-- `LOGGING_LEVEL_IO_LIFE=DEBUG` - Application-specific logging level
-- `LOG_LEVEL_ROOT=INFO` - Root logging level
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `LOGGING_LEVEL_IO_LIFE` | `DEBUG` | Application logging |
+| `LOG_LEVEL_ROOT` | `INFO` | Root logging |
 
 ### Management & Monitoring
-- `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics` - Exposed actuator endpoints
-- `MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=always` - Health endpoint detail level
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE` | `health,info,metrics` | Exposed endpoints |
+| `MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS` | `always` | Health details |
 
-### Frontend Configuration
-- `VITE_API_GATEWAY_URL=http://localhost:8011` - API Gateway URL for frontend (accessed from host)
-- `FRONTEND_SERVE_PORT=5173` - Port for frontend development server
-- `FRONTEND_HOST_PORT=5173` - Host port mapping for frontend container
+### Frontend Configuration (Development)
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `VITE_API_GATEWAY_URL` | `http://localhost:8011` | API Gateway URL |
+| `FRONTEND_SERVE_PORT` | `5173` | Development server port |
 
 ### API Gateway Configuration
-- `API_GATEWAY_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:80,http://localhost,http://localhost:5173` - CORS allowed origins
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `API_GATEWAY_CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:80,http://localhost,http://localhost:5173` | CORS origins |
 
-## Deployment Status & Notes
+### Internal Docker Service URLs
+Used for inter-service communication within Docker network:
 
-### ✅ Docker Production Deployment
-- **Status**: COMPLETED - Full Docker stack operational
-- **Access**: http://localhost (nginx proxy handles all routing)
-- **Services**: All 8 containers running with health checks
-- **Database**: H2 in-memory databases in each service container
-- **Startup**: Use `./start-factory.ps1` or `docker-compose up -d`
+| Service | Internal URL |
+|---------|-------------|
+| User Service | `http://user-service:8012` |
+| Masterdata Service | `http://masterdata-service:8013` |
+| Inventory Service | `http://inventory-service:8014` |
+| Order Processing | `http://order-processing-service:8015` |
+| SimAL Integration | `http://simal-integration-service:8016` |
 
-### Development Environment  
-- Uses H2 in-memory databases for all services
-- H2 console enabled for database inspection (within containers)
-- Enhanced logging for debugging
-- CORS configured for local development ports
+## Deployment Information
 
-### ⚠️ Migration Notes from DockerizationPlan.md
-- **All Dockerfiles created**: ✅ Frontend, nginx-proxy, all 6 backend services
-- **Docker Compose configured**: ✅ Full orchestration with networking
-- **Environment variables**: ✅ Centralized in docker-compose.yml  
-- **Multi-stage builds**: ✅ Optimized for production deployment
-- **Health checks**: ✅ All services monitored
-- **Port mapping**: ✅ Nginx on port 80, internal service discovery
-- `NGINX_ROOT_PROXY_EXTERNAL_PORT=80` - The host port for the root Nginx proxy
-- `FRONTEND_INTERNAL_PORT=80` - The port the Nginx inside the frontend container listens on
-- `FRONTEND_HOST_PORT=5173` - Host port mapping for frontend service
-- `DOCKER_RESTART_POLICY=unless-stopped` - Container restart policy
-- `DOCKER_MEMORY_LIMIT=512m` - Memory limit per container
-- `DOCKER_CPU_LIMIT=1.0` - CPU limit per container
-- `DOCKER_NETWORK_NAME=lego-factory-network` - Docker Compose network name
-- `DOCKER_REGISTRY=localhost` - Docker registry for local builds
-- `DOCKER_TAG=latest` - Docker image tag for builds
+### Docker Production Deployment
+- **Status**: ✅ Operational
+- **Access**: http://localhost
+- **Startup**: `./start-factory.ps1` or `docker-compose up -d`
+- **Services**: 8 containers with health checks
+- **Database**: H2 in-memory per service
+- **Network**: Internal Docker network (lego-network)
 
-### Container Names and Host Port Mappings
-- `USER_SERVICE_HOST_PORT=8012` - Host port mapping for user service
-- `MASTERDATA_SERVICE_HOST_PORT=8013` - Host port mapping for masterdata service
-- `INVENTORY_SERVICE_HOST_PORT=8014` - Host port mapping for inventory service
-- `ORDER_PROCESSING_SERVICE_HOST_PORT=8015` - Host port mapping for order processing service
-- `SIMAL_INTEGRATION_SERVICE_HOST_PORT=8016` - Host port mapping for SIMAL integration service
-- `API_GATEWAY_HOST_PORT=8011` - Host port mapping for API gateway
-- `CONTAINER_*_NAME` variables - Docker container names for each service
+### Environment Setup
+1. Clone repository
+2. Ensure Docker Desktop is running
+3. Run `docker-compose up -d`
+4. Wait 2-3 minutes for services to initialize
+5. Access application at http://localhost
 
-### API Gateway Docker Service URLs (for internal container communication)
-- `API_GATEWAY_USER_SERVICE_URL=http://user-service:8012` - Internal Docker URL for user service
-- `API_GATEWAY_MASTERDATA_SERVICE_URL=http://masterdata-service:8013` - Internal Docker URL for masterdata service
-- `API_GATEWAY_INVENTORY_SERVICE_URL=http://inventory-service:8014` - Internal Docker URL for inventory service
-- `API_GATEWAY_ORDER_PROCESSING_SERVICE_URL=http://order-processing-service:8015` - Internal Docker URL for order processing service
-- `API_GATEWAY_SIMAL_INTEGRATION_SERVICE_URL=http://simal-integration-service:8016` - Internal Docker URL for SIMAL integration service
+### Configuration Files
+- `docker-compose.yml`: Service orchestration
+- `.env`: Environment variables (git-ignored)
+- `config_manifest.md`: Configuration documentation
 
-## Variable Validation Rules
+## Validation Rules
 
-1. **JWT_SECRET**: Must be at least 32 characters long
-2. **Ports**: Must be unique across all services
-3. **Database URLs**: Must include proper H2 configuration parameters
-4. **Duration Values**: Must follow ISO 8601 duration format (PT1H, PT30M, etc.)
-5. **Boolean Values**: Must be 'true' or 'false'
-6. **URLs**: Must include protocol (http:// or https://)
+| Setting | Rule |
+|---------|------|
+| JWT_SECRET | Minimum 32 characters |
+| Service Ports | Must be unique (8011-8016) |
+| Database URLs | Must include H2 parameters |
+| Duration Values | ISO 8601 format (PT1H, PT30M) |
+| Boolean Values | `true` or `false` |
+| URLs | Must include protocol (http:// or https://) |
 
 ## Security Considerations
 
-- **JWT_SECRET**: Should be generated randomly and kept secure
-- **Database passwords**: Use strong passwords in production
-- **CORS origins**: Restrict to known domains in production
-- **H2 console**: Should be disabled in production environments
+| Component | Development | Production Recommendation |
+|-----------|-------------|---------------------------|
+| JWT_SECRET | Fixed value | Generate random, secure secret |
+| Database | H2 in-memory | Consider persistent database |
+| H2 Console | Enabled | **Disable** for production |
+| CORS Origins | Localhost only | Restrict to known domains |
+| User Passwords | All use `password` | Enforce strong passwords |
+
+## Troubleshooting Configuration
+
+**Port conflicts**: Check `NGINX_ROOT_PROXY_EXTERNAL_PORT` availability
+
+**Database connection**: Verify `H2_DB_*_PATH` JDBC URLs in service logs
+
+**Service communication**: Ensure Docker service names match in API Gateway configuration
+
+**Authentication**: Verify `SECURITY_JWT_SECRET` is at least 32 characters
+
+**Frontend API calls**: Check `VITE_API_GATEWAY_URL` or nginx proxy routing
+
+See [README.md](README.md) for detailed troubleshooting steps.
