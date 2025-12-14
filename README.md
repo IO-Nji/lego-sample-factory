@@ -113,85 +113,32 @@ LIFE uses a **6-tier microservice architecture** with an API Gateway as the cent
 
 ## Setup & Running the Application
 
-### Prerequisites
+1. Prerequisites:
+   - Windows with Docker Desktop running.
+   - VS Code recommended.
 
-- **Java 21** (Eclipse Adoptium or equivalent)
-- **Node.js 18+** and npm
-- **PowerShell** or Bash (for running Maven and npm commands)
+2. Create your local environment file from the blueprint:
+   - Copy the example:
+     ```
+     Copy-Item .env.example .env
+     ```
+   - Open `.env` and set values. At minimum, set a secure `SECURITY_JWT_SECRET` (32+ chars).
+   - Keep `.env` private. It should be ignored by Git.
 
-### Build All Services
+3. Build and run:
+   ```
+   docker compose up --build
+   ```
 
-From the project root directory, build all backend services:
+4. Access the app:
+   - Frontend via Nginx root proxy: http://localhost:80
+   - API Gateway (direct dev port): http://localhost:8011
+   - H2 console (per service, if enabled): http://localhost:<service-port>/h2-console
 
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE"
-
-# Build each service
-cd user-service; .\mvnw clean package -DskipTests; cd ..
-cd masterdata-service; .\mvnw clean package -DskipTests; cd ..
-cd inventory-service; .\mvnw clean package -DskipTests; cd ..
-cd order-processing-service; .\mvnw clean package -DskipTests; cd ..
-cd simal-integration-service; .\mvnw clean package -DskipTests; cd ..
-cd api-gateway; .\mvnw clean package -DskipTests; cd ..
-```
-
-### Start Backend Services
-
-Open **separate terminals** for each service, in this order:
-
-1. **User Service** (Port 8012) - Required first for authentication:
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\user-service"
-.\mvnw spring-boot:run
-```
-
-1. **Masterdata Service** (Port 8013) - Required before gateway:
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\masterdata-service"
-.\mvnw spring-boot:run
-```
-
-1. **Inventory Service** (Port 8014):
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\inventory-service"
-.\mvnw spring-boot:run
-```
-
-1. **Order Processing Service** (Port 8015):
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\order-processing-service"
-.\mvnw spring-boot:run
-```
-
-1. **SimAL Integration Service** (Port 8016):
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\simal-integration-service"
-.\mvnw spring-boot:run
-```
-
-1. **API Gateway** (Port 8011) - Routes all requests:
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\api-gateway"
-.\mvnw spring-boot:run
-```
-
-### Start Frontend
-
-In a new terminal, start the React development server:
-
-```powershell
-cd "e:\My Documents\DEV\Java\Project\LIFE\lego-factory-frontend"
-npm install  # First time only
-npm run dev
-```
-
-The frontend will be available at `http://localhost:5173`
+5. Tear down:
+   ```
+   docker compose down
+   ```
 
 ### Default Test Accounts
 

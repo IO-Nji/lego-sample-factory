@@ -1,7 +1,6 @@
 .ENV
 .env
-.gitlabs-ci.yml# Build artifacts
-target/
+.gitlabs-ci.yml
 build/
 out/
 dist/
