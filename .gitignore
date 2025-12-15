@@ -1,5 +1,4 @@
-.ENV
-.env
+
 .gitlabs-ci.yml
 build/
 out/
@@ -29,6 +28,7 @@ yarn-error.log*
 .yarn-integrity
 
 # Environment files
+.ENV
 .env
 .env.local
 .env.development.local
@@ -54,6 +54,10 @@ Thumbs.db
 # Maven
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
+
+# Maven build outputs
+**/target/
+target/
 
 # Java
 *.class
