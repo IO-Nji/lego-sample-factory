@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api/api";
 
 import { USERS_ENDPOINT, WORKSTATIONS_ENDPOINT } from "../api/apiConfig";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -50,10 +50,10 @@ function UserManagementPage() {
   const loadUsersAndWorkstations = async () => {
     try {
       const [usersRes, workstationsRes] = await Promise.all([
-        axios.get(USERS_ENDPOINT, {
+        api.get(USERS_ENDPOINT, {
           headers: { Authorization: `Bearer ${authToken}` },
         }),
-        axios.get(WORKSTATIONS_ENDPOINT, {
+        api.get(WORKSTATIONS_ENDPOINT, {
           headers: { Authorization: `Bearer ${authToken}` },
         }),
       ]);
@@ -104,7 +104,7 @@ function UserManagementPage() {
         workstationId: form.workstationId ? Number(form.workstationId) : null,
       };
 
-      const response = await axios.post(USERS_ENDPOINT, payload, {
+      const response = await api.post(USERS_ENDPOINT, payload, {
         headers: {
           Authorization: `Bearer ${authToken}`,
         },
@@ -215,7 +215,7 @@ function UserManagementPage() {
       <div className="user-management-top-section">
         {/* Create New User - Left Column (70%) */}
         <section className="form-section create-user-box">
-          <h2>Create New User</h2>
+          <h2>New User</h2>
           <p className="form-helper">
             Use your administrator token to add operators for other factory roles.
           </p>
@@ -286,7 +286,7 @@ function UserManagementPage() {
             </div>
 
             <button type="submit" className="primary-link" disabled={submitting}>
-              {submitting ? "Creating..." : "Create user"}
+              {submitting ? "Creating..." : "Create"}
             </button>
           </form>
           {feedback.message && (
@@ -317,15 +317,15 @@ function UserManagementPage() {
           <h2>Users' Status</h2>
           <div className="status-grid">
             <div className="status-stat-box">
-              <div className="status-stat-label">Total Users</div>
+              <div className="status-stat-label">Total</div>
               <div className="status-stat-value">{users.length}</div>
             </div>
             <div className="status-stat-box">
-              <div className="status-stat-label">Active Users</div>
+              <div className="status-stat-label">Active</div>
               <div className="status-stat-value">{users.filter(u => u.role !== "VIEWER").length}</div>
             </div>
             <div className="status-stat-box">
-              <div className="status-stat-label">Admin Accounts</div>
+              <div className="status-stat-label">Admin</div>
               <div className="status-stat-value">{users.filter(u => u.role === "ADMIN").length}</div>
             </div>
             <div className="status-stat-box">

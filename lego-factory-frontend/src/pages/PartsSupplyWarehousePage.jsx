@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
-import axios from "axios";
+import api from "../api/api";
 import "../styles/DashboardStandard.css";
 import "../styles/ControlPages.css";
 
@@ -23,7 +23,7 @@ function PartsSupplyWarehousePage() {
     setLoading(true);
     setError("");
     try {
-      const response = await axios.get("/api/supply-orders/warehouse", {
+      const response = await api.get("/supply-orders/warehouse", {
         params: { status: filter || undefined },
       });
       setSupplyOrders(response.data);
@@ -50,7 +50,7 @@ function PartsSupplyWarehousePage() {
   // Fulfill a supply order
   const fulfillSupplyOrder = async (orderId) => {
     try {
-      const response = await axios.put(`/api/supply-orders/${orderId}/fulfill`);
+      const response = await api.put(`/supply-orders/${orderId}/fulfill`);
       setSuccessMessage(`✓ Supply Order ${response.data.supplyOrderNumber} fulfilled successfully`);
       setTimeout(() => setSuccessMessage(""), 3000);
       fetchSupplyOrders();
@@ -67,7 +67,7 @@ function PartsSupplyWarehousePage() {
       return;
     }
     try {
-      const response = await axios.put(`/api/supply-orders/${orderId}/reject`, { reason });
+      const response = await api.put(`/supply-orders/${orderId}/reject`, { reason });
       setSuccessMessage(`✗ Supply Order ${response.data.supplyOrderNumber} rejected`);
       setTimeout(() => setSuccessMessage(""), 3000);
       setNotes("");
@@ -81,7 +81,7 @@ function PartsSupplyWarehousePage() {
   // Update order status to IN_PROGRESS
   const startFulfillment = async (orderId) => {
     try {
-      const response = await axios.patch(`/api/supply-orders/${orderId}/status`, {
+      const response = await api.patch(`/supply-orders/${orderId}/status`, {
         status: "IN_PROGRESS",
       });
       setSuccessMessage(`Supply Order ${response.data.supplyOrderNumber} marked as in progress`);

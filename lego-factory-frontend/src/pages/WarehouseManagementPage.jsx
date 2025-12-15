@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api/api";
 import { WORKSTATIONS_ENDPOINT } from "../api/apiConfig";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -23,7 +23,7 @@ function WarehouseManagementPage() {
 
   const loadWarehouses = async () => {
     try {
-      const response = await axios.get(WORKSTATIONS_ENDPOINT, {
+      const response = await api.get(WORKSTATIONS_ENDPOINT, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
       

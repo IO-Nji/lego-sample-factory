@@ -24,9 +24,9 @@ export default function ProductsPage() {
       setLoading(true);
       setError(null);
       const [productsRes, modulesRes, partsRes] = await Promise.all([
-        api.get('/api/masterdata/product-variants'),
-        api.get('/api/masterdata/modules'),
-        api.get('/api/masterdata/parts')
+        api.get('/masterdata/product-variants'),
+        api.get('/masterdata/modules'),
+        api.get('/masterdata/parts')
       ]);
       setProducts(productsRes.data);
       setModules(modulesRes.data);

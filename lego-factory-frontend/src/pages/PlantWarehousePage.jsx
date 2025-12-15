@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import axios from "axios";
+import api from "../api/api";
 import "../styles/DashboardStandard.css";
 
 /**
@@ -46,7 +46,7 @@ function PlantWarehousePage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get("/api/masterdata/product-variants");
+      const response = await api.get("/masterdata/product-variants");
       setProducts(response.data);
     } catch (err) {
       setError("Failed to load products: " + (err.response?.data?.message || err.message));
@@ -59,7 +59,7 @@ function PlantWarehousePage() {
       return;
     }
     try {
-      const response = await axios.get("/api/customer-orders/workstation/" + session.user.workstationId);
+      const response = await api.get("/customer-orders/workstation/" + session.user.workstationId);
       if (Array.isArray(response.data)) {
         setOrders(response.data);
       } else {
@@ -78,7 +78,7 @@ function PlantWarehousePage() {
   const fetchInventory = async () => {
     if (!session?.user?.workstationId) return;
     try {
-      const response = await axios.get(`/api/stock/workstation/${session.user.workstationId}`);
+      const response = await api.get(`/stock/workstation/${session.user.workstationId}`);
       if (Array.isArray(response.data)) {
         setInventory(response.data);
       } else {
@@ -122,7 +122,7 @@ function PlantWarehousePage() {
     setSuccessMessage(null);
 
     try {
-      const response = await axios.post("/api/customer-orders", {
+      const response = await api.post("/customer-orders", {
         orderItems,
         workstationId: session.user.workstationId,
         notes: "Plant warehouse order",
@@ -144,7 +144,7 @@ function PlantWarehousePage() {
     setSuccessMessage(null);
 
     try {
-      const response = await axios.put(`/api/customer-orders/${orderId}/fulfill`);
+      const response = await api.put(`/customer-orders/${orderId}/fulfill`);
       setSuccessMessage(`Order fulfilled successfully! Status: ${response.data.status}`);
       fetchOrders();
       fetchInventory();

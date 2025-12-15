@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import axios from "axios";
+import api from "../api/api";
 import "../styles/DashboardStandard.css";
 
 function ProductionPlanningPage() {
@@ -22,7 +22,7 @@ function ProductionPlanningPage() {
 
     try {
       // Fetch production control orders from the API
-      const response = await axios.get("/api/production-control-orders");
+      const response = await api.get("/production-control-orders");
       setProductionOrders(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       setError(

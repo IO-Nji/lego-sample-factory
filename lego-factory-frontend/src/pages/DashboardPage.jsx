@@ -126,7 +126,7 @@ function DashboardPage() {
   // Default fallback
   return (
     <section>
-      <h2>Factory Dashboard</h2>
+      <h2>Factory</h2>
       <p>Welcome to the LEGO Factory Control System</p>
       <p>Your role ({userRole || "Unknown"}) is currently being set up. Contact your administrator if you believe this is an error.</p>
     </section>
@@ -206,7 +206,7 @@ function AdminDashboardContent() {
   if (loading) {
     return (
       <section className="admin-dashboard">
-        <h2>🏭 Factory Admin Dashboard</h2>
+        <h2>🏭 Admin</h2>
         <div className="loading-state">Loading dashboard data...</div>
       </section>
     );
@@ -216,7 +216,7 @@ function AdminDashboardContent() {
     <section className="admin-dashboard">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
         <div>
-          <h2>🏭 Factory Admin Dashboard</h2>
+          <h2>🏭 Admin</h2>
           <p className="admin-subtitle">Real-time monitoring and control of factory operations</p>
         </div>
         <button
@@ -434,7 +434,7 @@ function PlantWarehouseDashboardContent() {
   return (
     <section className="plant-warehouse-page">
       <div className="page-header">
-        <h1 className="page-title">🏢 Plant Warehouse Dashboard</h1>
+        <h1 className="page-title">🏢 Plant Warehouse</h1>
         <p className="page-subtitle">Manage inventory and customer orders</p>
       </div>
 
@@ -1003,7 +1003,7 @@ function ProductionPlanningDashboardContent() {
     <section className="dashboard-page">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <div>
-          <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", margin: "0 0 0.5rem 0" }}>📋 Production Planning Dashboard</h2>
+          <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", margin: "0 0 0.5rem 0" }}>📋 Production Planning</h2>
           <p style={{ fontSize: "1rem", color: "#666", margin: "0" }}>Manage production orders and scheduling</p>
         </div>
         <button
@@ -1110,7 +1110,7 @@ function ProductionControlDashboardContent() {
     <section className="dashboard-page">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <div>
-          <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", margin: "0 0 0.5rem 0" }}>🏭 Production Control Dashboard</h2>
+          <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", margin: "0 0 0.5rem 0" }}>🏭 Production Control</h2>
           <p style={{ fontSize: "1rem", color: "#666", margin: "0" }}>Manage production control orders</p>
         </div>
         <button onClick={fetchControlOrders} disabled={loading} style={{ padding: "0.5rem 1rem", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "0.375rem", cursor: "pointer", fontWeight: "500" }}>
@@ -1198,7 +1198,7 @@ function AssemblyControlDashboardContent() {
 
   return (
     <section className="dashboard-page">
-      <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", marginBottom: "1rem" }}>⚙️ Assembly Control Dashboard</h2>
+      <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", marginBottom: "1rem" }}>⚙️ Assembly Control</h2>
 
       {error && <div className="error-alert">{error}</div>}
 
@@ -1250,7 +1250,7 @@ function AssemblyControlDashboardContent() {
 function ManufacturingDashboardContent() {
   return (
     <section className="dashboard-page">
-      <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394" }}>🔧 Manufacturing Workstation Dashboard</h2>
+      <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394" }}>🔧 Manufacturing Workstation</h2>
       <p>Manufacturing workstation interface - Configure your workstation-specific controls here</p>
     </section>
   );
@@ -1262,7 +1262,7 @@ function ManufacturingDashboardContent() {
 function AssemblyWorkstationDashboardContent() {
   return (
     <section className="dashboard-page">
-      <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394" }}>🔩 Assembly Workstation Dashboard</h2>
+      <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394" }}>🔩 Assembly Workstation</h2>
       <p>Assembly workstation interface - Configure your workstation-specific controls here</p>
     </section>
   );
@@ -1309,7 +1309,7 @@ function PartsSupplyWarehouseDashboardContent() {
 
   return (
     <section className="dashboard-page">
-      <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", marginBottom: "1rem" }}>📦 Parts Supply Warehouse Dashboard</h2>
+      <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", marginBottom: "1rem" }}>📦 Parts Supply Warehouse</h2>
 
       {error && <div className="error-alert">{error}</div>}
 

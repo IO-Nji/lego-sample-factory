@@ -136,7 +136,7 @@ function AdminDashboardPage() {
     <section className="admin-dashboard">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
         <div>
-          <h2>🏭 Factory Admin Dashboard</h2>
+          <h2>🏭 Dashboard</h2>
           <p className="admin-subtitle">Real-time monitoring and control of factory operations</p>
         </div>
         <button

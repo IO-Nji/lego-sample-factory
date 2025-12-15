@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import axios from "axios";
+import api from "../api/api";
 import "../styles/DashboardStandard.css";
 import "../styles/ControlPages.css";
 
@@ -32,8 +32,8 @@ function ProductionControlPage() {
     setError(null);
 
     try {
-      const response = await axios.get(
-        `/api/production-control-orders/workstation/${workstationId}`
+      const response = await api.get(
+        `/production-control-orders/workstation/${workstationId}`
       );
       const orders = Array.isArray(response.data) ? response.data : [];
       setControlOrders(orders);
@@ -58,8 +58,8 @@ function ProductionControlPage() {
   const startProduction = async (orderId) => {
     try {
       setLoading(true);
-      const response = await axios.post(
-        `/api/production-control-orders/${orderId}/start`,
+      const response = await api.post(
+        `/production-control-orders/${orderId}/start`,
         { operatorId: session?.user?.id || "UNKNOWN" }
       );
       setSelectedOrder(response.data);
@@ -81,8 +81,8 @@ function ProductionControlPage() {
 
     try {
       setLoading(true);
-      const response = await axios.patch(
-        `/api/production-control-orders/${orderId}/notes`,
+      const response = await api.patch(
+        `/production-control-orders/${orderId}/notes`,
         { notes: operatorNotes }
       );
       setSelectedOrder(response.data);
@@ -107,8 +107,8 @@ function ProductionControlPage() {
 
     try {
       setLoading(true);
-      const response = await axios.post(
-        `/api/production-control-orders/${orderId}/complete`,
+      const response = await api.post(
+        `/production-control-orders/${orderId}/complete`,
         { completionNotes: "Production completed by operator" }
       );
       setSelectedOrder(response.data);

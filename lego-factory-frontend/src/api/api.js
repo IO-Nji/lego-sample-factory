@@ -2,7 +2,15 @@ import axios from 'axios';
 
 // Use relative path for production deployment via Nginx proxy
 // In development, Vite proxy will handle the /api routing
-const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL ?? '/api';
+const rawUrl = import.meta.env.VITE_API_GATEWAY_URL;
+let API_GATEWAY_URL;
+if (!rawUrl || rawUrl === '' ) {
+  API_GATEWAY_URL = '/api';
+} else {
+  // Ensure baseURL includes /api when pointing to a gateway host
+  const hasPath = /\/api\/?$/.test(rawUrl);
+  API_GATEWAY_URL = hasPath ? rawUrl : `${rawUrl.replace(/\/$/, '')}/api`;
+}
 
 console.log('API_GATEWAY_URL configured as:', API_GATEWAY_URL);
 console.log('VITE_API_GATEWAY_URL env var:', import.meta.env.VITE_API_GATEWAY_URL);
