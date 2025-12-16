@@ -3,7 +3,8 @@ package io.life.masterdata.controller;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -50,6 +51,87 @@ public class MasterdataController {
             .collect(Collectors.toList());
     }
 
+    // --- Modules CRUD ---
+    @PostMapping("/modules")
+    public ResponseEntity<ModuleDto> createModule(@RequestBody ModuleDto dto) {
+        Module entity = toModuleEntity(dto);
+        Module saved = moduleService.save(entity);
+        return ResponseEntity.ok(toModuleDto(saved));
+    }
+
+    @PutMapping("/modules/{id}")
+    public ResponseEntity<ModuleDto> updateModule(@PathVariable Long id, @RequestBody ModuleDto dto) {
+        return moduleService.findById(id)
+            .map(existing -> {
+                existing.setName(dto.getName());
+                existing.setDescription(dto.getDescription());
+                existing.setType(dto.getType());
+                Module saved = moduleService.save(existing);
+                return ResponseEntity.ok(toModuleDto(saved));
+            })
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/modules/{id}")
+    public ResponseEntity<Void> deleteModule(@PathVariable Long id) {
+        moduleService.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // --- Parts CRUD ---
+    @PostMapping("/parts")
+    public ResponseEntity<PartDto> createPart(@RequestBody PartDto dto) {
+        Part entity = toPartEntity(dto);
+        Part saved = partService.save(entity);
+        return ResponseEntity.ok(toPartDto(saved));
+    }
+
+    @PutMapping("/parts/{id}")
+    public ResponseEntity<PartDto> updatePart(@PathVariable Long id, @RequestBody PartDto dto) {
+        return partService.findById(id)
+            .map(existing -> {
+                existing.setName(dto.getName());
+                existing.setDescription(dto.getDescription());
+                existing.setCategory(dto.getCategory());
+                existing.setUnitCost(dto.getUnitCost());
+                Part saved = partService.save(existing);
+                return ResponseEntity.ok(toPartDto(saved));
+            })
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/parts/{id}")
+    public ResponseEntity<Void> deletePart(@PathVariable Long id) {
+        partService.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // --- Workstations CRUD ---
+    @PostMapping("/workstations")
+    public ResponseEntity<WorkstationDto> createWorkstation(@RequestBody WorkstationDto dto) {
+        WorkstationDto saved = workstationService.save(dto);
+        return ResponseEntity.ok(saved);
+    }
+
+    @PutMapping("/workstations/{id}")
+    public ResponseEntity<WorkstationDto> updateWorkstation(@PathVariable Long id, @RequestBody WorkstationDto dto) {
+        WorkstationDto existing = workstationService.findById(id);
+        if (existing == null) {
+            return ResponseEntity.notFound().build();
+        }
+        // preserve id
+        dto.setId(id);
+        // simple save acts as upsert
+        WorkstationDto saved = workstationService.save(dto);
+        return ResponseEntity.ok(saved);
+    }
+
+    @DeleteMapping("/workstations/{id}")
+    public ResponseEntity<Void> deleteWorkstation(@PathVariable Long id) {
+        workstationService.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
     private ModuleDto toModuleDto(Module module) {
         return new ModuleDto(
             module.getId(),
@@ -67,5 +149,24 @@ public class MasterdataController {
             part.getCategory(),
             part.getUnitCost()
         );
+    }
+
+    private Module toModuleEntity(ModuleDto dto) {
+        Module m = new Module();
+        m.setId(dto.getId());
+        m.setName(dto.getName());
+        m.setDescription(dto.getDescription());
+        m.setType(dto.getType());
+        return m;
+    }
+
+    private Part toPartEntity(PartDto dto) {
+        Part p = new Part();
+        p.setId(dto.getId());
+        p.setName(dto.getName());
+        p.setDescription(dto.getDescription());
+        p.setCategory(dto.getCategory());
+        p.setUnitCost(dto.getUnitCost());
+        return p;
     }
 }

@@ -1,4 +1,4 @@
-package io.life.order.dto;
+package io.life.inventory.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,11 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderItemDTO {
+public class LowStockThresholdDto {
     private Long id;
+    private Long workstationId; // null for global
     private String itemType;
     private Long itemId;
-    private Integer quantity;
-    private Integer fulfilledQuantity;
-    private String notes;
+    private Integer threshold;
 }

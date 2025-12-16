@@ -21,7 +21,7 @@ public class InventoryService {
 
     private final RestTemplate restTemplate;
 
-    @Value("${inventory.service.url:http://localhost:8014}")
+    @Value("${inventory.service.url:${INVENTORY_SERVICE_URL:http://inventory-service:8014}}")
     private String inventoryServiceUrl;
 
     public InventoryService(RestTemplate restTemplate) {
@@ -38,11 +38,18 @@ public class InventoryService {
      */
     public boolean checkStock(Long workstationId, Long itemId, Integer quantity) {
         try {
-            String url = inventoryServiceUrl + "/api/stock/check?workstationId=" + workstationId
-                    + "&itemId=" + itemId + "&quantity=" + quantity;
-            Boolean result = restTemplate.getForObject(url, Boolean.class);
-            logger.info("Stock check for workstation {} item {} qty {}: {}", workstationId, itemId, quantity, result);
-            return result != null && result;
+            String url = inventoryServiceUrl + "/api/stock/workstation/" + workstationId
+                    + "/item?itemType=PRODUCT&itemId=" + itemId;
+            Map<?,?> dto = restTemplate.getForObject(url, Map.class);
+            Integer available = null;
+            if (dto != null) {
+                Object q = dto.get("quantity");
+                if (q instanceof Number) available = ((Number) q).intValue();
+                else if (q != null) available = Integer.parseInt(q.toString());
+            }
+            boolean ok = available != null && available >= quantity;
+            logger.info("Stock check for workstation {} item {} qty {}: {} (available={})", workstationId, itemId, quantity, ok, available);
+            return ok;
         } catch (RestClientException e) {
             logger.error("Failed to check stock with inventory-service", e);
             return false;
@@ -59,14 +66,17 @@ public class InventoryService {
      */
     public boolean updateStock(Long workstationId, Long itemId, Integer quantity) {
         try {
-            String url = inventoryServiceUrl + "/api/stock/update";
+            String url = inventoryServiceUrl + "/api/stock/adjust";
             Map<String, Object> request = new HashMap<>();
             request.put("workstationId", workstationId);
+            request.put("itemType", "PRODUCT");
             request.put("itemId", itemId);
-            request.put("quantity", -quantity); // Negative to deduct from stock
-            
-            restTemplate.postForObject(url, request, String.class);
-            logger.info("Stock updated for workstation {} item {} qty {}", workstationId, itemId, quantity);
+            request.put("delta", -Math.abs(quantity)); // Negative to deduct from stock
+            request.put("reason", "CUSTOMER_FULFILLMENT");
+            request.put("notes", "Direct fulfillment deduction");
+
+            restTemplate.postForObject(url, request, Map.class);
+            logger.info("Stock adjusted for workstation {} item {} delta {}", workstationId, itemId, -Math.abs(quantity));
             return true;
         } catch (RestClientException e) {
             logger.error("Failed to update stock with inventory-service", e);
@@ -83,9 +93,15 @@ public class InventoryService {
      */
     public Integer getAvailableStock(Long workstationId, Long itemId) {
         try {
-            String url = inventoryServiceUrl + "/api/stock/available?workstationId=" + workstationId
-                    + "&itemId=" + itemId;
-            Integer available = restTemplate.getForObject(url, Integer.class);
+            String url = inventoryServiceUrl + "/api/stock/workstation/" + workstationId
+                    + "/item?itemType=PRODUCT&itemId=" + itemId;
+            Map<?,?> dto = restTemplate.getForObject(url, Map.class);
+            Integer available = null;
+            if (dto != null) {
+                Object q = dto.get("quantity");
+                if (q instanceof Number) available = ((Number) q).intValue();
+                else if (q != null) available = Integer.parseInt(q.toString());
+            }
             logger.info("Available stock for workstation {} item {}: {}", workstationId, itemId, available);
             return available != null ? available : 0;
         } catch (RestClientException e) {

@@ -1,10 +1,21 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import axios from "axios";
+import api from "../api/api";
 import "../styles/DashboardStandard.css";
 import "../styles/AdminDashboard.css";
 
-function AdminDashboardPage() {
+/**
+ * Product name mapping
+ * Maps itemId to product variant name
+ */
+const PRODUCT_NAMES = {
+  1: { name: "Technic Truck Yellow" },
+  2: { name: "Technic Truck Red" },
+  3: { name: "Creator House" },
+  4: { name: "Friends Cafe" },
+};
+
+function SystemOverview() {
   const { session } = useAuth();
   const [workstations, setWorkstations] = useState([]);
   const [orders, setOrders] = useState({
@@ -13,6 +24,7 @@ function AdminDashboardPage() {
     supply: [],
   });
   const [workstationStats, setWorkstationStats] = useState({});
+  const [stockAlerts, setStockAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedWorkstation, setSelectedWorkstation] = useState(null);
@@ -31,11 +43,12 @@ function AdminDashboardPage() {
 
     try {
       // Fetch all data in parallel
-      const [wsResponse, prodResponse, asmResponse, supResponse] = await Promise.all([
-        axios.get("/api/masterdata/workstations"),
-        axios.get("/api/production-control-orders"),
-        axios.get("/api/assembly-control-orders"),
-        axios.get("/api/supply-orders/warehouse"),
+      const [wsResponse, prodResponse, asmResponse, supResponse, alertsResponse] = await Promise.all([
+        api.get("/masterdata/workstations"),
+        api.get("/production-control-orders"),
+        api.get("/assembly-control-orders"),
+        api.get("/supply-orders/warehouse"),
+        api.get("/stock/alerts"),
       ]);
 
       // Process and set all data together
@@ -43,8 +56,10 @@ function AdminDashboardPage() {
       const prodData = Array.isArray(prodResponse.data) ? prodResponse.data : [];
       const asmData = Array.isArray(asmResponse.data) ? asmResponse.data : [];
       const supData = Array.isArray(supResponse.data) ? supResponse.data : [];
+      const alertsData = Array.isArray(alertsResponse.data) ? alertsResponse.data : [];
 
       setWorkstations(wsData);
+      setStockAlerts(alertsData);
       setOrders({
         production: prodData,
         assembly: asmData,
@@ -127,10 +142,13 @@ function AdminDashboardPage() {
   }
 
   const totalOrders = orders.production.length + orders.assembly.length;
-  const activeOrdersCount = orders.production.filter((o) => o.status === "IN_PROGRESS").length +
-                           orders.assembly.filter((o) => o.status === "IN_PROGRESS").length;
-  const supplyPendingCount = orders.supply.filter((o) => o.status === "PENDING").length;
+  const pendingOrdersCount = orders.production.filter((o) => o.status === "PENDING" || o.status === "SCHEDULED").length +
+                            orders.assembly.filter((o) => o.status === "PENDING" || o.status === "SCHEDULED").length;
+  const completedOrdersCount = orders.production.filter((o) => o.status === "COMPLETED").length +
+                              orders.assembly.filter((o) => o.status === "COMPLETED").length;
   const activeWorkstations = Object.values(workstationStats).filter((ws) => ws.status === "active").length;
+  const lowStockAlertsCount = stockAlerts.filter((alert) => !alert.resolved).length;
+  const supplyPendingCount = orders.supply.filter((o) => o.status === "PENDING").length;
 
   return (
     <section className="admin-dashboard">
@@ -168,10 +186,15 @@ function AdminDashboardPage() {
           <div className="kpi-value">{totalOrders}</div>
           <div className="kpi-detail">Across all workstations</div>
         </div>
-        <div className="kpi-card active">
-          <div className="kpi-label">Active Orders</div>
-          <div className="kpi-value">{activeOrdersCount}</div>
-          <div className="kpi-detail">In progress now</div>
+        <div className="kpi-card">
+          <div className="kpi-label">Pending Orders</div>
+          <div className="kpi-value">{pendingOrdersCount}</div>
+          <div className="kpi-detail">Waiting to start</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-label">Completed Orders</div>
+          <div className="kpi-value">{completedOrdersCount}</div>
+          <div className="kpi-detail">Successfully finished</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Active Workstations</div>
@@ -179,9 +202,9 @@ function AdminDashboardPage() {
           <div className="kpi-detail">Out of {workstations.length}</div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-label">Pending Supply</div>
-          <div className="kpi-value">{supplyPendingCount}</div>
-          <div className="kpi-detail">Waiting to be fulfilled</div>
+          <div className="kpi-label">Low Stock Alerts</div>
+          <div className="kpi-value">{lowStockAlertsCount}</div>
+          <div className="kpi-detail">{lowStockAlertsCount > 0 ? "Require attention" : "All levels OK"}</div>
         </div>
       </div>
 
@@ -596,4 +619,4 @@ function AdminDashboardPage() {
   );
 }
 
-export default AdminDashboardPage;
+export default SystemOverview;

@@ -344,7 +344,7 @@ function UserManagementPage() {
           <p className="form-helper">No users found.</p>
         ) : (
           <div className="users-table-container">
-            <table className="users-table">
+            <table className="products-table">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -407,30 +407,31 @@ function UserManagementPage() {
                       </td>
                       <td>
                         {isEditing ? (
-                          <>
+                          <div className="actions">
                             <button
-                              className="primary-link"
+                              className="edit-btn"
                               onClick={() => saveUserUpdate(user.id)}
                               disabled={submitting}
                             >
-                              {submitting ? "Saving..." : "Save"}
+                              {submitting ? "Saving..." : "✓ Save"}
                             </button>
                             <button
-                              className="secondary-link"
+                              className="delete-btn"
                               onClick={cancelEdit}
                               disabled={submitting}
-                              style={{ marginLeft: "8px" }}
                             >
-                              Cancel
+                              ✕ Cancel
                             </button>
-                          </>
+                          </div>
                         ) : (
-                          <button
-                            className="primary-link"
-                            onClick={() => startEditUser(user)}
-                          >
-                            Edit
-                          </button>
+                          <div className="actions">
+                            <button
+                              className="edit-btn"
+                              onClick={() => startEditUser(user)}
+                            >
+                              ✎ Edit
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>

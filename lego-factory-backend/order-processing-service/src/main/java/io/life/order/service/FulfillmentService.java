@@ -52,14 +52,18 @@ public class FulfillmentService {
     private final InventoryService inventoryService;
     private final ProductionOrderService productionOrderService;
 
+    private final OrderAuditService orderAuditService;
+
     public FulfillmentService(CustomerOrderRepository customerOrderRepository,
                             WarehouseOrderRepository warehouseOrderRepository,
                             InventoryService inventoryService,
-                            ProductionOrderService productionOrderService) {
+                            ProductionOrderService productionOrderService,
+                            OrderAuditService orderAuditService) {
         this.customerOrderRepository = customerOrderRepository;
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.inventoryService = inventoryService;
         this.productionOrderService = productionOrderService;
+        this.orderAuditService = orderAuditService;
     }
 
     /**
@@ -74,6 +78,8 @@ public class FulfillmentService {
         }
 
         CustomerOrder order = orderOpt.get();
+        orderAuditService.record("CUSTOMER", order.getId(), "FULFILLMENT_STARTED",
+            "Fulfillment started for order " + order.getOrderNumber());
         logger.info("Starting fulfillment for order {} ({})", order.getId(), order.getOrderNumber());
 
         // Check which items are available locally
@@ -108,14 +114,22 @@ public class FulfillmentService {
 
         // Deduct all items from inventory
         boolean allUpdatesSuccessful = order.getOrderItems().stream()
-                .allMatch(item -> inventoryService.updateStock(order.getWorkstationId(), item.getItemId(), item.getQuantity()));
+                .allMatch(item -> {
+                    boolean ok = inventoryService.updateStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
+                    if (ok) {
+                        item.setFulfilledQuantity(item.getQuantity());
+                    }
+                    return ok;
+                });
 
         if (allUpdatesSuccessful) {
             order.setStatus("COMPLETED");
             logger.info("Order {} fulfilled directly. Inventory updated.", order.getOrderNumber());
+            orderAuditService.record("CUSTOMER", order.getId(), "COMPLETED", "Order fulfilled directly (Scenario 1)");
         } else {
             order.setStatus("CANCELLED");
             logger.warn("Order {} fulfillment failed during inventory update.", order.getOrderNumber());
+            orderAuditService.record("CUSTOMER", order.getId(), "CANCELLED", "Inventory update failed during direct fulfillment");
         }
 
         return mapToDTO(customerOrderRepository.save(order));
@@ -160,11 +174,13 @@ public class FulfillmentService {
         // Persist warehouse order
         warehouseOrderRepository.save(warehouseOrder);
         logger.info("Created warehouse order {} for customer order {}", warehouseOrder.getWarehouseOrderNumber(), order.getOrderNumber());
+        orderAuditService.record("CUSTOMER", order.getId(), "WAREHOUSE_ORDER_CREATED",
+            "Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created (Scenario 2)");
 
         // AUTO-TRIGGER: Create production order for shortfall (all items not available locally)
         logger.info("Auto-triggering production order for Scenario 2 shortfall");
         try {
-            ProductionOrderDTO productionOrder = productionOrderService.createProductionOrderFromWarehouse(
+                ProductionOrderDTO productionOrder = productionOrderService.createProductionOrderFromWarehouse(
                     order.getId(),                              // sourceCustomerOrderId
                     warehouseOrder.getId(),                     // sourceWarehouseOrderId
                     "NORMAL",                                   // priority (default)
@@ -174,6 +190,8 @@ public class FulfillmentService {
                     MODULES_SUPERMARKET_WORKSTATION_ID           // assignedWorkstationId (Modules Supermarket)
             );
             logger.info("Production order {} auto-created for Scenario 2 shortfall", productionOrder.getProductionOrderNumber());
+                orderAuditService.record("CUSTOMER", order.getId(), "PRODUCTION_ORDER_CREATED",
+                    "Production order auto-created for warehouse order " + warehouseOrder.getWarehouseOrderNumber());
         } catch (Exception e) {
             logger.error("Failed to auto-create production order for Scenario 2", e);
         }
@@ -181,6 +199,7 @@ public class FulfillmentService {
         // Update customer order status
         order.setStatus("PROCESSING");
         order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + "Scenario 2: Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created + Production order auto-triggered");
+        orderAuditService.record("CUSTOMER", order.getId(), "STATUS_PROCESSING", "Scenario 2 processing (waiting on warehouse)");
 
         return mapToDTO(customerOrderRepository.save(order));
     }
@@ -211,6 +230,7 @@ public class FulfillmentService {
         for (OrderItem item : order.getOrderItems()) {
             if (inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity())) {
                 inventoryService.updateStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
+                item.setFulfilledQuantity((item.getFulfilledQuantity() == null ? 0 : item.getFulfilledQuantity()) + item.getQuantity());
                 logger.info("  - Item {} fulfilled from local stock", item.getItemId());
             } else {
                 // Add to warehouse order for unavailable items
@@ -231,7 +251,9 @@ public class FulfillmentService {
         if (!warehouseOrderItems.isEmpty()) {
             warehouseOrder.setWarehouseOrderItems(warehouseOrderItems);
             warehouseOrderRepository.save(warehouseOrder);
-            logger.info("Created warehouse order {} for customer order {}", warehouseOrder.getWarehouseOrderNumber(), order.getOrderNumber());
+                logger.info("Created warehouse order {} for customer order {}", warehouseOrder.getWarehouseOrderNumber(), order.getOrderNumber());
+                orderAuditService.record("CUSTOMER", order.getId(), "WAREHOUSE_ORDER_CREATED",
+                    "Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created (Scenario 3)");
 
             // AUTO-TRIGGER: Create production order for items not available in warehouse/modules supermarket
             logger.info("Auto-triggering production order for Scenario 3 shortfall items");
@@ -246,6 +268,8 @@ public class FulfillmentService {
                         MODULES_SUPERMARKET_WORKSTATION_ID           // assignedWorkstationId (Modules Supermarket)
                 );
                 logger.info("Production order {} auto-created for Scenario 3 shortfall items", productionOrder.getProductionOrderNumber());
+                orderAuditService.record("CUSTOMER", order.getId(), "PRODUCTION_ORDER_CREATED",
+                        "Production order auto-created for warehouse order " + warehouseOrder.getWarehouseOrderNumber());
             } catch (Exception e) {
                 logger.error("Failed to auto-create production order for Scenario 3", e);
             }
@@ -257,6 +281,7 @@ public class FulfillmentService {
             notes += " (warehouse order: " + warehouseOrder.getWarehouseOrderNumber() + " + Production order auto-triggered)";
         }
         order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + notes);
+        orderAuditService.record("CUSTOMER", order.getId(), "STATUS_PROCESSING", "Scenario 3 processing (partial local fulfillment)");
 
         return mapToDTO(customerOrderRepository.save(order));
     }

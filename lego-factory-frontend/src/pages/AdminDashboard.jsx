@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import ErrorNotification from "../components/ErrorNotification";
 import { getErrorMessage } from "../utils/errorHandler";
@@ -76,8 +76,9 @@ function AdminDashboard() {
     setError(null);
     setNotification(null);
     try {
-      const response = await axios.get("/api/masterdata/workstations");
+      const response = await api.get("/masterdata/workstations");
       const stations = Array.isArray(response.data) ? response.data : [];
+      console.log('Fetched workstations:', stations.length);
       setWorkstations(stations);
       setSystemStats(prev => ({
         ...prev,
@@ -92,6 +93,7 @@ function AdminDashboard() {
       await fetchAllWorkstationsData(stations);
     } catch (err) {
       const errorMsg = getErrorMessage(err);
+      console.error('Failed to fetch workstations:', errorMsg);
       setError(errorMsg);
       setNotification({
         message: errorMsg,
@@ -108,22 +110,26 @@ function AdminDashboard() {
 
     for (const station of stations) {
       try {
-        const invResponse = await axios.get(`/api/stock/workstation/${station.id}`);
+        const invResponse = await api.get(`/stock/workstation/${station.id}`);
         inventoryMap[station.id] = Array.isArray(invResponse.data) ? invResponse.data : [];
+        console.log(`WS-${station.id} inventory:`, inventoryMap[station.id].length, 'items');
       } catch (err) {
         console.error(`Failed to fetch inventory for WS-${station.id}:`, err);
         inventoryMap[station.id] = [];
       }
 
       try {
-        const ordersResponse = await axios.get(`/api/customer-orders/workstation/${station.id}`);
+        const ordersResponse = await api.get(`/customer-orders/workstation/${station.id}`);
         ordersMap[station.id] = Array.isArray(ordersResponse.data) ? ordersResponse.data : [];
+        console.log(`WS-${station.id} orders:`, ordersMap[station.id].length, 'orders');
       } catch (err) {
-        // Silently fail - orders endpoint may not be available
+        console.error(`Failed to fetch orders for WS-${station.id}:`, err);
         ordersMap[station.id] = [];
       }
     }
 
+    console.log('Fetched inventory for', Object.keys(inventoryMap).length, 'workstations');
+    console.log('Fetched orders for', Object.keys(ordersMap).length, 'workstations');
     setWorkstationInventory(inventoryMap);
     setWorkstationOrders(ordersMap);
     calculateSystemStats(ordersMap);
@@ -131,7 +137,7 @@ function AdminDashboard() {
 
   const fetchWorkstationData = async (workstationId) => {
     try {
-      const invResponse = await axios.get(`/api/stock/workstation/${workstationId}`);
+      const invResponse = await api.get(`/stock/workstation/${workstationId}`);
       setWorkstationInventory(prev => ({
         ...prev,
         [workstationId]: Array.isArray(invResponse.data) ? invResponse.data : []
@@ -141,7 +147,7 @@ function AdminDashboard() {
     }
 
     try {
-      const ordersResponse = await axios.get(`/api/customer-orders/workstation/${workstationId}`);
+      const ordersResponse = await api.get(`/customer-orders/workstation/${workstationId}`);
       setWorkstationOrders(prev => ({
         ...prev,
         [workstationId]: Array.isArray(ordersResponse.data) ? ordersResponse.data : []
@@ -155,7 +161,7 @@ function AdminDashboard() {
   
   const fetchProductVariants = async () => {
     try {
-      const response = await axios.get("/api/masterdata/product-variants");
+      const response = await api.get("/masterdata/product-variants");
       setProductVariants(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Failed to fetch product variants:", err);
@@ -192,11 +198,11 @@ function AdminDashboard() {
 
       if (editingProductId) {
         // Update existing
-        await axios.put(`/api/masterdata/product-variants/${editingProductId}`, payload);
+        await api.put(`/masterdata/product-variants/${editingProductId}`, payload);
         setNotification({ message: "Product variant updated successfully", type: "success" });
       } else {
         // Create new
-        await axios.post("/api/masterdata/product-variants", payload);
+        await api.post("/masterdata/product-variants", payload);
         setNotification({ message: "Product variant created successfully", type: "success" });
       }
 
@@ -236,7 +242,7 @@ function AdminDashboard() {
     setError(null);
 
     try {
-      await axios.delete(`/api/masterdata/product-variants/${id}`);
+      await api.delete(`/masterdata/product-variants/${id}`);
       setNotification({ message: "Product variant deleted successfully", type: "success" });
       await fetchProductVariants();
     } catch (err) {
@@ -316,7 +322,7 @@ function AdminDashboard() {
       </div>
 
       <h3>Workstations Overview</h3>
-      <table className="overview-table">
+      <table className="products-table">
         <thead>
           <tr>
             <th>Workstation ID</th>
@@ -369,7 +375,7 @@ function AdminDashboard() {
           <div className="inventory-section">
             <h4>Inventory at {getWorkstationName(selectedWorkstationId)}</h4>
             {inventory.length > 0 ? (
-              <table className="inventory-table">
+              <table className="products-table">
                 <thead>
                   <tr>
                     <th>Product</th>
@@ -419,7 +425,7 @@ function AdminDashboard() {
                     
                     {order.orderItems && order.orderItems.length > 0 && (
                       <div className="order-items">
-                        <table className="items-table">
+                        <table className="products-table">
                           <thead>
                             <tr>
                               <th>Product Name</th>
@@ -428,9 +434,11 @@ function AdminDashboard() {
                             </tr>
                           </thead>
                           <tbody>
-                            {order.orderItems.map((item, idx) => (
+                            {order.orderItems.map((item, idx) => {
+                              const productName = PRODUCT_NAMES[item.itemId]?.name || item.productName || item.name || "Unknown";
+                              return (
                               <tr key={idx}>
-                                <td>{item.productName || item.productId || "Unknown"}</td>
+                                <td>{productName}</td>
                                 <td className="quantity-cell">{item.quantity}</td>
                                 <td>
                                   <span className={`item-type-badge ${(item.itemType || "PRODUCT").toLowerCase()}`}>
@@ -438,7 +446,8 @@ function AdminDashboard() {
                                   </span>
                                 </td>
                               </tr>
-                            ))}
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -458,7 +467,7 @@ function AdminDashboard() {
   const renderAllInventoryTab = () => (
     <div className="all-inventory-tab">
       <h3>All Workstations Inventory Summary</h3>
-      <table className="all-inventory-table">
+      <table className="products-table">
         <thead>
           <tr>
             <th>Workstation</th>
@@ -614,7 +623,7 @@ function AdminDashboard() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Product Name</th>
+                    <th>Name</th>
                     <th>Description</th>
                     <th>Price</th>
                     <th>Est. Time</th>
@@ -759,7 +768,7 @@ function AdminDashboard() {
           </div>
         ) : (
           <div className="orders-table-container">
-            <table className="orders-table">
+            <table className="products-table">
               <thead>
                 <tr>
                   <th>Order ID</th>
@@ -816,7 +825,7 @@ function AdminDashboard() {
         />
       )}
       
-      <h2>Admin Dashboard - System Overview</h2>
+      <h2>Admin Dashboard</h2>
       <p>User: <strong>{session?.user?.username || "Unknown"}</strong> (Admin)</p>
 
       {error && <div className="error-message">{error}</div>}
@@ -913,7 +922,7 @@ function AdminDashboard() {
 
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
           gap: 15px;
           margin-bottom: 30px;
         }
@@ -922,7 +931,7 @@ function AdminDashboard() {
           background: white;
           border: 1px solid #ddd;
           border-radius: 8px;
-          padding: 20px;
+          padding: 12px;
           text-align: center;
           transition: all 0.3s;
         }
@@ -1096,10 +1105,6 @@ function AdminDashboard() {
           background: white;
           border: 1px solid #e0e0e0;
           border-radius: 3px;
-        }
-
-        .items-table thead {
-          background: #f0f0f0;
         }
 
         .items-table th {
@@ -1372,11 +1377,6 @@ function AdminDashboard() {
           overflow: hidden;
         }
 
-        .products-table thead {
-          background: #e8f4f8;
-          border-bottom: 2px solid #b8d4e0;
-        }
-
         .products-table th {
           padding: 12px;
           text-align: left;
@@ -1612,11 +1612,6 @@ function AdminDashboard() {
           width: 100%;
           border-collapse: collapse;
           font-size: 13px;
-        }
-
-        .orders-table thead {
-          background: #f5f5f5;
-          border-bottom: 2px solid #ddd;
         }
 
         .orders-table th {

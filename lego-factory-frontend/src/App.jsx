@@ -6,9 +6,15 @@ import LoginPage from "./pages/LoginPage.jsx";
 import UserManagementPage from "./pages/UserManagementPage.jsx";
 import WarehouseManagementPage from "./pages/WarehouseManagementPage.jsx";
 import InventoryManagementPage from "./pages/InventoryManagementPage.jsx";
+import MasterdataAdminPage from "./pages/MasterdataAdminPage.jsx";
 import ProductsPage from "./pages/ProductsPage.jsx";
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
+import ManufacturingWorkstationPage from "./pages/ManufacturingWorkstationPage.jsx";
+import WebhooksAdminPage from "./pages/WebhooksAdminPage.jsx";
+import ProductionPlanningPage from "./pages/ProductionPlanningPage.jsx";
+import ModulesSupermarketPage from "./pages/ModulesSupermarketPage.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
+import { AuthGuard, AdminGuard } from "./components/AuthGuard.jsx";
 
 function App() {
   const { isAuthenticated, isAdmin, isPlantWarehouse, session } = useAuth();
@@ -28,130 +34,130 @@ function App() {
         <Route index element={<HomePage />} />
         <Route
           path="dashboard"
-          element={isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />}
+          element={
+            <AuthGuard>
+              <DashboardPage />
+            </AuthGuard>
+          }
         />
         <Route
           path="admin-dashboard"
           element={
-            isAdmin ? (
+            <AdminGuard>
               <AdminDashboard />
-            ) : (
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            )
+            </AdminGuard>
           }
         />
         <Route
           path="users"
           element={
-            isAdmin ? (
+            <AdminGuard>
               <UserManagementPage />
-            ) : (
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            )
+            </AdminGuard>
+          }
+        />
+        <Route
+          path="admin/masterdata"
+          element={
+            <AdminGuard>
+              <MasterdataAdminPage />
+            </AdminGuard>
           }
         />
         <Route
           path="warehouses"
           element={
-            isAdmin ? (
+            <AdminGuard>
               <WarehouseManagementPage />
-            ) : (
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            )
+            </AdminGuard>
           }
         />
         <Route
           path="inventory"
           element={
-            isAdmin ? (
+            <AdminGuard>
               <InventoryManagementPage />
-            ) : (
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            )
+            </AdminGuard>
+          }
+        />
+        <Route
+          path="admin/webhooks"
+          element={
+            <AdminGuard>
+              <WebhooksAdminPage />
+            </AdminGuard>
           }
         />
         <Route
           path="products"
-          element={isAuthenticated ? <ProductsPage /> : <Navigate to="/login" replace />}
+          element={
+            <AuthGuard>
+              <ProductsPage />
+            </AuthGuard>
+          }
         />
         <Route
           path="warehouse"
           element={
-            isPlantWarehouse ? (
+            <AuthGuard requiredRole="PLANT_WAREHOUSE">
               <DashboardPage />
-            ) : (
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            )
+            </AuthGuard>
           }
         />
         <Route
           path="modules-supermarket"
           element={
-            isModulesSupermarket ? (
-              <DashboardPage />
-            ) : (
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            )
+            <AuthGuard requiredRole="MODULES_SUPERMARKET">
+              <ModulesSupermarketPage />
+            </AuthGuard>
           }
         />
         <Route
           path="production-planning"
           element={
-            isProductionPlanning ? (
-              <DashboardPage />
-            ) : (
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            )
+            <AuthGuard requiredRole="PRODUCTION_PLANNING">
+              <ProductionPlanningPage />
+            </AuthGuard>
           }
         />
         <Route
           path="production-control"
           element={
-            isProductionControl ? (
+            <AuthGuard requiredRole="PRODUCTION_CONTROL">
               <DashboardPage />
-            ) : (
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            )
+            </AuthGuard>
           }
         />
         <Route
           path="assembly-control"
           element={
-            isAssemblyControl ? (
+            <AuthGuard requiredRole="ASSEMBLY_CONTROL">
               <DashboardPage />
-            ) : (
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            )
+            </AuthGuard>
           }
         />
         <Route
           path="parts-supply-warehouse"
           element={
-            isPartsSupplyWarehouse ? (
+            <AuthGuard requiredRole="PARTS_SUPPLY_WAREHOUSE">
               <DashboardPage />
-            ) : (
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            )
+            </AuthGuard>
           }
         />
         <Route
           path="manufacturing/:workstationType"
           element={
-            isManufacturingWorkstation ? (
+            <AuthGuard requiredRole="MANUFACTURING_WORKSTATION">
               <ManufacturingWorkstationPage />
-            ) : (
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            )
+            </AuthGuard>
           }
         />
         <Route
           path="assembly/:workstationType"
           element={
-            isAssemblyWorkstation ? (
+            <AuthGuard requiredRole="ASSEMBLY_WORKSTATION">
               <ManufacturingWorkstationPage />
-            ) : (
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            )
+            </AuthGuard>
           }
         />
       </Route>

@@ -155,6 +155,52 @@ function PlantWarehousePage() {
     }
   };
 
+  const handleConfirm = async (orderId) => {
+    setError(null); setSuccessMessage(null);
+    try {
+      await api.put(`/customer-orders/${orderId}/confirm`);
+      setSuccessMessage('Order confirmed');
+      fetchOrders();
+    } catch (err) {
+      setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleProcessing = async (orderId) => {
+    setError(null); setSuccessMessage(null);
+    try {
+      await api.put(`/customer-orders/${orderId}/processing`);
+      setSuccessMessage('Order moved to PROCESSING');
+      fetchOrders();
+    } catch (err) {
+      setError("Failed to mark processing: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleComplete = async (orderId) => {
+    setError(null); setSuccessMessage(null);
+    try {
+      await api.put(`/customer-orders/${orderId}/complete`);
+      setSuccessMessage('Order completed');
+      fetchOrders();
+      fetchInventory();
+    } catch (err) {
+      setError("Failed to complete order: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleCancel = async (orderId) => {
+    if (!window.confirm('Cancel this order?')) return;
+    setError(null); setSuccessMessage(null);
+    try {
+      await api.put(`/customer-orders/${orderId}/cancel`);
+      setSuccessMessage('Order cancelled');
+      fetchOrders();
+    } catch (err) {
+      setError("Failed to cancel order: " + (err.response?.data?.message || err.message));
+    }
+  };
+
   return (
     <section className="plant-warehouse-page">
       {/* Header */}
@@ -207,22 +253,22 @@ function PlantWarehousePage() {
           </div>
           <div className="overflow-x-auto">
             <table className="products-table w-full">
-              <thead className="bg-gray-100 border-b border-gray-200">
+              <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Product Variant</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Est. Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Quantity</th>
+                  <th>Product Variant</th>
+                  <th>Price</th>
+                  <th>Est. Time</th>
+                  <th>Quantity</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody>
                 {products.length > 0 ? (
                   products.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name || "Unknown"}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${(product.price || 0).toFixed(2)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{product.estimatedTimeMinutes || 0} min</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <tr key={product.id}>
+                      <td>{product.name || "Unknown"}</td>
+                      <td>${(product.price || 0).toFixed(2)}</td>
+                      <td>{product.estimatedTimeMinutes || 0} min</td>
+                      <td>
                         <input
                           type="number"
                           min="0"
@@ -235,7 +281,7 @@ function PlantWarehousePage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">No products available</td>
+                    <td colSpan="4" style={{ textAlign: 'center' }}>No products available</td>
                   </tr>
                 )}
               </tbody>
@@ -257,28 +303,17 @@ function PlantWarehousePage() {
           <div className="bg-blue-50 px-6 py-3 border-b border-blue-200">
             <h2 className="text-lg font-semibold text-blue-900">📦 Current Inventory</h2>
           </div>
-          <div className="overflow-x-auto flex-grow">
+          <div className="inventory-stats-grid">
             {inventory.length > 0 ? (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-100 border-b border-gray-200 sticky top-0">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Product</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Item ID</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Qty</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {inventory.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900">{PRODUCT_NAMES[item.itemId]?.name || `Product #${item.itemId}`}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-600">#{item.itemId}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-900 font-semibold">{item.quantity}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              inventory.map((item, idx) => (
+                <div key={idx} className="inventory-stat-box">
+                  <div className="inventory-stat-label">{PRODUCT_NAMES[item.itemId]?.name || `Product #${item.itemId}`}</div>
+                  <div className="inventory-stat-value">{item.quantity}</div>
+                  <div className="inventory-stat-id">ID: #{item.itemId}</div>
+                </div>
+              ))
             ) : (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-4 text-center text-gray-500" style={{ gridColumn: '1 / -1' }}>
                 <p className="text-sm">No inventory items</p>
               </div>
             )}
@@ -312,37 +347,48 @@ function PlantWarehousePage() {
                     <p className="order-number">Order #{order.orderNumber}</p>
                     {order.orderItems && order.orderItems.length > 0 ? (
                       <div className="order-items-list">
-                        <p style={{ marginBottom: '0.5rem', fontWeight: '500', color: '#666', fontSize: '0.875rem' }}>Items:</p>
-                        {order.orderItems.map((item, idx) => (
-                          <div key={idx} style={{ fontSize: '0.85rem', marginBottom: '0.25rem', paddingLeft: '1rem', color: '#333' }}>
-                            <span style={{ fontWeight: '600' }}>{item.itemType || item.name || `Item ${idx + 1}`}</span>
-                            <span style={{ color: '#999', margin: '0 0.5rem' }}>—</span>
+                        <p style={{ marginBottom: '0.25rem', fontWeight: '500', color: '#666', fontSize: '0.7rem' }}>Items:</p>
+                        {order.orderItems.map((item, idx) => {
+                          const productName = PRODUCT_NAMES[item.itemId]?.name || item.name || item.itemType || `Item ${idx + 1}`;
+                          return (
+                          <div key={idx} style={{ fontSize: '0.7rem', marginBottom: '0.15rem', paddingLeft: '0.5rem', color: '#333' }}>
+                            <span style={{ fontWeight: '600' }}>{productName}</span>
+                            <span style={{ color: '#999', margin: '0 0.25rem' }}>—</span>
                             <span>Qty: <span style={{ color: '#059669', fontWeight: '600' }}>{item.quantity}</span></span>
                             {item.status && (
                               <>
-                                <span style={{ color: '#999', margin: '0 0.5rem' }}>|</span>
-                                <span style={{ fontSize: '0.75rem', fontWeight: '500', color: '#0b5394' }}>{item.status}</span>
+                                <span style={{ color: '#999', margin: '0 0.25rem' }}>|</span>
+                                <span style={{ fontSize: '0.65rem', fontWeight: '500', color: '#0b5394' }}>{item.status}</span>
                               </>
                             )}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <p className="order-info"><strong>Items:</strong> None</p>
                     )}
                     <p className="order-date">{new Date(order.orderDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}</p>
                   </div>
-                  {order.status === "PENDING" && (
-                    <div className="order-box-footer">
-                      <button
-                        onClick={() => handleFulfillOrder(order.id)}
-                        disabled={fulfillingOrderId === order.id}
-                        className="fulfill-button"
-                      >
-                        {fulfillingOrderId === order.id ? "Processing..." : "Fulfill"}
+                  <div className="order-box-footer">
+                    <div className="actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <button className="edit-btn" onClick={() => handleConfirm(order.id)} disabled={order.status !== 'PENDING'}>
+                        Confirm
+                      </button>
+                      <button className="edit-btn" onClick={() => handleProcessing(order.id)} disabled={!(order.status === 'PENDING' || order.status === 'CONFIRMED')}>
+                        Process
+                      </button>
+                      <button className="edit-btn" onClick={() => handleFulfillOrder(order.id)} disabled={fulfillingOrderId === order.id}>
+                        {fulfillingOrderId === order.id ? 'Processing…' : 'Fulfill'}
+                      </button>
+                      <button className="edit-btn" onClick={() => handleComplete(order.id)} disabled={!(order.status === 'PROCESSING' || order.status === 'CONFIRMED')}>
+                        Complete
+                      </button>
+                      <button className="delete-btn" onClick={() => handleCancel(order.id)} disabled={order.status === 'COMPLETED'}>
+                        Cancel
                       </button>
                     </div>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -378,21 +424,27 @@ function PlantWarehousePage() {
           margin: 0;
         }
 
-        /* Two Column Layout: Create Order (70%) + Inventory (30%) */
+        /* Two Column Layout: Create Order (40%) + Inventory (40%) */
         .two-column-section {
           display: grid;
-          grid-template-columns: 70% 30%;
-          gap: 1.5rem;
+          grid-template-columns: 40% 40%;
+          gap: 2rem;
           margin-bottom: 2rem;
+          max-width: 100%;
+          overflow: hidden;
+          justify-content: center;
         }
 
         .create-order-box {
           display: flex;
           flex-direction: column;
+          max-width: 100%;
+          overflow: hidden;
         }
 
         .create-order-box .overflow-x-auto {
           flex-grow: 1;
+          overflow-x: auto;
           overflow-y: auto;
           max-height: 400px;
         }
@@ -400,12 +452,15 @@ function PlantWarehousePage() {
         .inventory-box {
           display: flex;
           flex-direction: column;
+          max-width: 100%;
+          overflow: hidden;
         }
 
-        .inventory-box .overflow-x-auto {
-          flex-grow: 1;
-          overflow-y: auto;
-          max-height: 400px;
+        .inventory-stats-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.5rem;
+          padding: 0.75rem;
         }
 
         .primary-button {
@@ -452,7 +507,7 @@ function PlantWarehousePage() {
         }
 
         .order-box-header {
-          padding: 0.75rem;
+          padding: 0.4rem 0.5rem;
           background: #f0f4f8;
           border-bottom: 1px solid #e0e0e0;
           display: flex;
@@ -461,40 +516,40 @@ function PlantWarehousePage() {
         }
 
         .order-box-body {
-          padding: 1rem;
+          padding: 0.5rem;
           flex-grow: 1;
         }
 
         .order-number {
-          font-size: 0.95rem;
+          font-size: 0.8rem;
           font-weight: 700;
           color: #0b5394;
-          margin: 0 0 0.5rem 0;
+          margin: 0 0 0.3rem 0;
         }
 
         .order-info {
-          font-size: 0.85rem;
+          font-size: 0.75rem;
           color: #666;
-          margin: 0.25rem 0;
+          margin: 0.15rem 0;
         }
 
         .order-date {
-          font-size: 0.8rem;
+          font-size: 0.7rem;
           color: #999;
-          margin: 0.5rem 0 0 0;
+          margin: 0.3rem 0 0 0;
         }
 
         .order-box-footer {
-          padding: 0.75rem;
+          padding: 0.4rem 0.5rem;
           border-top: 1px solid #e0e0e0;
           background: #fafbfc;
         }
 
         .order-status-badge {
           display: inline-block;
-          padding: 0.25rem 0.75rem;
-          border-radius: 0.375rem;
-          font-size: 0.75rem;
+          padding: 0.15rem 0.4rem;
+          border-radius: 0.25rem;
+          font-size: 0.65rem;
           font-weight: 700;
           text-transform: uppercase;
         }

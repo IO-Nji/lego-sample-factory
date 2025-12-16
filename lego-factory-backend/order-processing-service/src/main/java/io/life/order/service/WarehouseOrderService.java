@@ -30,15 +30,18 @@ public class WarehouseOrderService {
     private final InventoryService inventoryService;
     private final ProductionOrderService productionOrderService;
     private final CustomerOrderRepository customerOrderRepository;
+    private final OrderAuditService orderAuditService;
 
     public WarehouseOrderService(WarehouseOrderRepository warehouseOrderRepository,
                                  InventoryService inventoryService,
                                  ProductionOrderService productionOrderService,
-                                 CustomerOrderRepository customerOrderRepository) {
+                                 CustomerOrderRepository customerOrderRepository,
+                                 OrderAuditService orderAuditService) {
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.inventoryService = inventoryService;
         this.productionOrderService = productionOrderService;
         this.customerOrderRepository = customerOrderRepository;
+        this.orderAuditService = orderAuditService;
     }
 
     /**
@@ -104,6 +107,8 @@ public class WarehouseOrderService {
 
         WarehouseOrder order = orderOpt.get();
         logger.info("Processing warehouse order {} from Modules Supermarket (WS-8)", order.getWarehouseOrderNumber());
+        orderAuditService.record("WAREHOUSE", order.getId(), "FULFILLMENT_STARTED",
+            "Warehouse order fulfillment started: " + order.getWarehouseOrderNumber());
 
         // STEP 1: Check which items are available at Modules Supermarket (workstation 8)
         boolean allItemsAvailable = order.getWarehouseOrderItems().stream()
@@ -169,13 +174,17 @@ public class WarehouseOrderService {
 
         if (allItemsFulfilled) {
             order.setStatus("FULFILLED");
-            logger.info("Warehouse order {} fully fulfilled", order.getWarehouseOrderNumber());
+                logger.info("Warehouse order {} fully fulfilled", order.getWarehouseOrderNumber());
+                orderAuditService.record("WAREHOUSE", order.getId(), "FULFILLED",
+                    "All items fulfilled: " + order.getWarehouseOrderNumber());
             
             // Complete source customer order
             completeSourceCustomerOrder(order);
         } else {
             order.setStatus("PARTIALLY_FULFILLED");
-            logger.warn("Warehouse order {} partially fulfilled due to inventory errors", order.getWarehouseOrderNumber());
+                logger.warn("Warehouse order {} partially fulfilled due to inventory errors", order.getWarehouseOrderNumber());
+                orderAuditService.record("WAREHOUSE", order.getId(), "PARTIALLY_FULFILLED",
+                    "Partial fulfillment due to inventory errors");
         }
 
         order.setUpdatedAt(LocalDateTime.now());
@@ -187,6 +196,8 @@ public class WarehouseOrderService {
      */
     private WarehouseOrderDTO fulfillPartialAndTriggerProduction(WarehouseOrder order) {
         logger.info("Fulfilling partial items for warehouse order {}", order.getWarehouseOrderNumber());
+        orderAuditService.record("WAREHOUSE", order.getId(), "PARTIAL_FULFILLMENT",
+            "Partial items fulfilled for warehouse order " + order.getWarehouseOrderNumber());
 
         List<WarehouseOrderItem> itemsToProduceLater = new ArrayList<>();
 
@@ -234,6 +245,8 @@ public class WarehouseOrderService {
      */
     private WarehouseOrderDTO fulfillNoneAndTriggerProduction(WarehouseOrder order) {
         logger.info("No items available in Modules Supermarket - AUTO-TRIGGERING production order for entire warehouse order");
+        orderAuditService.record("WAREHOUSE", order.getId(), "NO_STOCK_PRODUCTION_TRIGGER",
+            "No stock available; production order auto-triggered");
 
         order.setStatus("PENDING_PRODUCTION");
         order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + 
@@ -265,8 +278,10 @@ public class WarehouseOrderService {
                     order.getFulfillingWorkstationId()  // Assign back to Modules Supermarket for completion
             );
             
-            logger.info("✓ Production order AUTO-CREATED for warehouse order {} with {} shortfall item(s)", 
+                logger.info("✓ Production order AUTO-CREATED for warehouse order {} with {} shortfall item(s)", 
                     order.getWarehouseOrderNumber(), shortfallItems.size());
+                orderAuditService.record("WAREHOUSE", order.getId(), "PRODUCTION_ORDER_CREATED",
+                    "Production order auto-created for shortfall items");
             
             // Update notes with auto-trigger confirmation
             order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + 

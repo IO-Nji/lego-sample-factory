@@ -1,9 +1,26 @@
 import DashboardPage from "./DashboardPage";
 import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/HomePage.css";
+import { useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 function HomePage() {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (location.state?.reason === "expired") {
+      setMessage("Your session has expired. Please sign in again.");
+      setTimeout(() => setMessage(""), 5000); // Clear after 5 seconds
+    } else if (location.state?.reason === "unauthenticated") {
+      setMessage("Please sign in to access this page.");
+      setTimeout(() => setMessage(""), 5000);
+    } else if (location.state?.reason === "unauthorized") {
+      setMessage("You do not have permission to access that page.");
+      setTimeout(() => setMessage(""), 5000);
+    }
+  }, [location.state]);
 
   // If not authenticated, show login prompt
   if (!isAuthenticated) {
@@ -23,6 +40,21 @@ function HomePage() {
             coordination between all production stages.
           </p>
         </div>
+
+        {message && (
+          <div className="alert-message" style={{
+            backgroundColor: '#fef3cd',
+            border: '1px solid #ffc107',
+            padding: '12px 20px',
+            margin: '20px auto',
+            maxWidth: '600px',
+            borderRadius: '4px',
+            textAlign: 'center',
+            color: '#856404'
+          }}>
+            {message}
+          </div>
+        )}
         
         <div className="home-actions">
           <a href="/login" className="btn btn-primary">

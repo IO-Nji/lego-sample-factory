@@ -133,3 +133,11 @@ gradle-app.setting
 
 # Yarn Integrity file
 .yarn-integrity
+ARCHITECTURE_AND_IMPLEMENTATION.md
+BusinessScenarios.md
+UI_TESTING_QUICK_START.md
+UI_Design.md
+test_warehouse_order.ps1
+STYLING_STANDARDIZATION.md
+ProjectDescription.md
+FRONTEND_TESTING_ANALYSIS.md

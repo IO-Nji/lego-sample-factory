@@ -19,14 +19,56 @@ function InventoryManagementPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [totalInventoryItems, setTotalInventoryItems] = useState(0);
   const [lowStockItems, setLowStockItems] = useState([]);
+  const [recentLedger, setRecentLedger] = useState([]);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [ledgerError, setLedgerError] = useState(null);
+  const [ledgerMode, setLedgerMode] = useState('recent'); // 'recent' | 'full'
+  const [ledgerWsFilter, setLedgerWsFilter] = useState('ALL');
+  const [ledgerTypeFilter, setLedgerTypeFilter] = useState('ALL');
 
   useEffect(() => {
     if (session?.user?.role === "ADMIN") {
       fetchWorkstations();
+      fetchRecentLedger();
     } else {
       setError("Access denied. Admin role required to manage inventory.");
     }
   }, [session]);
+
+  const fetchRecentLedger = async () => {
+    setLedgerLoading(true);
+    setLedgerError(null);
+    try {
+      const resp = await axios.get("/api/stock/ledger/recent");
+      const entries = Array.isArray(resp.data) ? resp.data : [];
+      setRecentLedger(entries);
+      setLedgerMode('recent');
+    } catch (err) {
+      setLedgerError(getErrorMessage(err));
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
+
+  const fetchFullLedger = async () => {
+    setLedgerLoading(true);
+    setLedgerError(null);
+    try {
+      const resp = await axios.get("/api/stock/ledger");
+      const entries = Array.isArray(resp.data) ? resp.data : [];
+      setRecentLedger(entries);
+      setLedgerMode('full');
+    } catch (err) {
+      setLedgerError(getErrorMessage(err));
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
+
+  const refreshLedger = () => {
+    if (ledgerMode === 'full') return fetchFullLedger();
+    return fetchRecentLedger();
+  };
 
   const fetchWorkstations = async () => {
     setLoading(true);
@@ -241,11 +283,11 @@ function InventoryManagementPage() {
       </div>
 
       {lowStockItems.length > 0 && (
-        <div className="tab-content" style={{ marginTop: '1.5rem' }}>
+        <div className="tab-content" style={{ marginTop: '1rem' }}>
           <h3>⚠️ Low Stock Alert</h3>
           <div className="dashboard-section">
             <div className="low-stock-table-container">
-              <table className="low-stock-table">
+              <table className="products-table">
                 <thead>
                   <tr>
                     <th>Workstation</th>
@@ -265,15 +307,17 @@ function InventoryManagementPage() {
                         <span className="quantity-badge low">{item.quantity}</span>
                       </td>
                       <td>
-                        <button
-                          className="primary-link"
-                          onClick={() => {
-                            setSelectedWorkstationId(item.workstationId);
-                            setActiveTab("manage");
-                          }}
-                        >
-                          Update Stock
-                        </button>
+                        <div className="actions">
+                          <button
+                            className="edit-btn"
+                            onClick={() => {
+                              setSelectedWorkstationId(item.workstationId);
+                              setActiveTab("manage");
+                            }}
+                          >
+                            ✎ Update
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -283,6 +327,100 @@ function InventoryManagementPage() {
           </div>
         </div>
       )}
+
+      <div className="tab-content" style={{ marginTop: '1rem' }}>
+        <div className="dashboard-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <h3 style={{ margin: 0, fontSize: '1rem' }}>🧾 {ledgerMode === 'full' ? 'Stock Ledger (Full)' : 'Recent Stock Ledger'}</h3>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <label className="filter-label">Workstation:</label>
+            <select
+              className="filter-select"
+              value={ledgerWsFilter}
+              onChange={(e) => setLedgerWsFilter(e.target.value)}
+            >
+              <option value="ALL">All</option>
+              {workstations.map(ws => (
+                <option key={ws.id} value={String(ws.id)}>{ws.name || `Workstation ${ws.id}`}</option>
+              ))}
+            </select>
+            <label className="filter-label">Item Type:</label>
+            <select
+              className="filter-select"
+              value={ledgerTypeFilter}
+              onChange={(e) => setLedgerTypeFilter(e.target.value)}
+            >
+              <option value="ALL">All</option>
+              {[...new Set((recentLedger || []).map(e => e.itemType).filter(Boolean))].map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <button className="secondary-link" onClick={refreshLedger} disabled={ledgerLoading}>
+              {ledgerLoading ? 'Refreshing…' : 'Refresh'}
+            </button>
+            {ledgerMode === 'full' ? (
+              <button className="primary-link" onClick={fetchRecentLedger} disabled={ledgerLoading}>View recent</button>
+            ) : (
+              <button className="primary-link" onClick={fetchFullLedger} disabled={ledgerLoading}>View full ledger</button>
+            )}
+          </div>
+        </div>
+        {ledgerError && (
+          <ErrorNotification message={ledgerError} onDismiss={() => setLedgerError(null)} />
+        )}
+        <div className="low-stock-table-container">
+          {ledgerLoading ? (
+            <div className="loading-state"><p>Loading recent stock movements…</p></div>
+          ) : recentLedger && recentLedger.length > 0 ? (
+            <table className="products-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Workstation</th>
+                  <th>Item Type</th>
+                  <th>Item ID</th>
+                  <th>Delta</th>
+                  <th>Balance</th>
+                  <th>Reason</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentLedger
+                  .filter(e => {
+                    const wsOk = ledgerWsFilter === 'ALL' || String(e.workstationId || '') === String(ledgerWsFilter);
+                    const typeOk = ledgerTypeFilter === 'ALL' || e.itemType === ledgerTypeFilter;
+                    return wsOk && typeOk;
+                  })
+                  .map((e, idx) => {
+                  const ts = e.createdAt || e.timestamp;
+                  const when = ts ? new Date(ts).toLocaleString() : '-';
+                  const wsName = e.workstationId ? getWorkstationName(e.workstationId) : '-';
+                  const delta = Number(e.delta ?? 0);
+                  const balance = e.balanceAfter ?? e.balance ?? '-';
+                  return (
+                    <tr key={idx}>
+                      <td>{when}</td>
+                      <td>{wsName}</td>
+                      <td>{e.itemType}</td>
+                      <td>#{e.itemId}</td>
+                      <td>
+                        <span className={`delta-badge ${delta > 0 ? 'positive' : delta < 0 ? 'negative' : ''}`}>
+                          {delta > 0 ? `+${delta}` : delta}
+                        </span>
+                      </td>
+                      <td>{balance}</td>
+                      <td>{e.reasonCode || '-'}</td>
+                      <td className="truncate">{e.notes || '-'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <div className="empty-state"><p>No recent stock movements</p></div>
+          )}
+        </div>
+      </div>
 
       <div className="all-workstations-section">
         <h3>📦 All Workstations Inventory Summary</h3>
@@ -344,7 +482,7 @@ function InventoryManagementPage() {
 
       <div className="inventory-table-container">
         {getCurrentInventory().length > 0 ? (
-          <table className="inventory-table">
+          <table className="products-table">
             <thead>
               <tr>
                 <th>Item Type</th>
@@ -387,27 +525,29 @@ function InventoryManagementPage() {
                   </td>
                   <td className="actions-cell">
                     {editingItemId === item.itemId ? (
-                      <div className="edit-actions">
+                      <div className="actions">
                         <button
-                          className="primary-link"
+                          className="edit-btn"
                           onClick={() => handleUpdateQuantity(selectedWorkstationId, item.itemId, editQuantity)}
                         >
-                          Save
+                          ✓ Save
                         </button>
                         <button
-                          className="secondary-link"
+                          className="delete-btn"
                           onClick={handleCancelEdit}
                         >
-                          Cancel
+                          ✕ Cancel
                         </button>
                       </div>
                     ) : (
-                      <button
-                        className="primary-link"
-                        onClick={() => handleEditClick(item)}
-                      >
-                        Edit
-                      </button>
+                      <div className="actions">
+                        <button
+                          className="edit-btn"
+                          onClick={() => handleEditClick(item)}
+                        >
+                          ✎ Edit
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -480,40 +620,40 @@ function InventoryManagementPage() {
 
       <style>{`
         .inventory-management-page {
-          padding: 2rem;
+          padding: 1rem;
           background: #f5f5f5;
         }
 
         .page-header {
-          margin-bottom: 2rem;
+          margin-bottom: 1rem;
         }
 
         .page-header h1 {
           color: #0b5394;
           margin: 0;
-          font-size: 2rem;
+          font-size: 1.5rem;
         }
 
         .page-subtitle {
           color: #666;
-          margin: 0.5rem 0 0;
-          font-size: 1rem;
+          margin: 0.25rem 0 0;
+          font-size: 0.85rem;
         }
 
         .tabs-container {
           display: flex;
-          gap: 1rem;
-          margin-bottom: 2rem;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
           border-bottom: 2px solid #e0e0e0;
         }
 
         .tab-button {
-          padding: 1rem 1.5rem;
+          padding: 0.5rem 1rem;
           border: none;
           background: transparent;
           color: #666;
           cursor: pointer;
-          font-size: 1rem;
+          font-size: 0.875rem;
           font-weight: 500;
           position: relative;
           transition: color 0.3s ease;
@@ -540,13 +680,13 @@ function InventoryManagementPage() {
         .tab-content {
           background: white;
           border-radius: 8px;
-          padding: 2rem;
+          padding: 1rem;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .loading-state {
           text-align: center;
-          padding: 3rem;
+          padding: 2rem;
           color: #666;
         }
 
@@ -554,32 +694,34 @@ function InventoryManagementPage() {
         .inventory-overview {
           display: flex;
           flex-direction: column;
-          gap: 2rem;
+          gap: 1rem;
         }
 
         .overview-stats {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 1.5rem;
+          gap: 0.5rem;
         }
 
         .stat-card {
-          background: linear-gradient(135deg, #0b5394 0%, #1565c0 100%);
-          color: white;
-          padding: 1.5rem;
-          border-radius: 8px;
-          box-shadow: 0 2px 8px rgba(11, 83, 148, 0.15);
+          background: linear-gradient(135deg, #f5f7fa 0%, #fff 100%);
+          padding: 0.5rem;
+          border-radius: 0.25rem;
+          border: 1px solid #e0e0e0;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         .stat-value {
-          font-size: 2.5rem;
-          font-weight: bold;
-          margin-bottom: 0.5rem;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1976d2;
+          margin-bottom: 0.25rem;
         }
 
         .stat-label {
-          font-size: 0.95rem;
-          opacity: 0.9;
+          font-size: 0.7rem;
+          color: #546174;
+          font-weight: 500;
         }
 
         .low-stock-section {
@@ -606,16 +748,18 @@ function InventoryManagementPage() {
         }
 
         .low-stock-table th {
-          padding: 1rem;
+          padding: 0.5rem;
           text-align: left;
           font-weight: 600;
           color: #333;
           border-bottom: 2px solid #ddd;
+          font-size: 0.85rem;
         }
 
         .low-stock-table td {
-          padding: 1rem;
+          padding: 0.5rem;
           border-bottom: 1px solid #eee;
+          font-size: 0.85rem;
         }
 
         .low-stock-row:hover {
@@ -624,10 +768,10 @@ function InventoryManagementPage() {
 
         .quantity-badge {
           display: inline-block;
-          padding: 0.5rem 1rem;
+          padding: 0.25rem 0.5rem;
           border-radius: 4px;
           font-weight: 600;
-          font-size: 0.9rem;
+          font-size: 0.75rem;
         }
 
         .quantity-badge.low {
@@ -657,13 +801,13 @@ function InventoryManagementPage() {
         .workstations-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-          gap: 1.5rem;
+          gap: 0.75rem;
         }
 
         .workstation-card {
           background: linear-gradient(135deg, #f5f7fa 0%, #e6eef5 100%);
-          padding: 1.5rem;
-          border-radius: 8px;
+          padding: 0.75rem;
+          border-radius: 0.25rem;
           border: 1px solid #d0d0d0;
           cursor: pointer;
           transition: all 0.3s ease;
@@ -677,21 +821,22 @@ function InventoryManagementPage() {
 
         .workstation-card h4 {
           color: #0b5394;
-          margin: 0 0 1rem;
-          font-size: 1.1rem;
+          margin: 0 0 0.5rem;
+          font-size: 0.95rem;
         }
 
         .ws-stat {
           display: flex;
           justify-content: space-between;
-          padding: 0.5rem 0;
+          padding: 0.25rem 0;
           border-bottom: 1px solid #ddd;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.25rem;
+          font-size: 0.8rem;
         }
 
         .ws-stat:last-of-type {
           border-bottom: none;
-          margin-bottom: 1rem;
+          margin-bottom: 0.5rem;
         }
 
         .ws-label {
@@ -821,6 +966,45 @@ function InventoryManagementPage() {
         .actions-cell {
           display: flex;
           gap: 0.5rem;
+        }
+
+        .truncate {
+          max-width: 240px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .delta-badge {
+          display: inline-block;
+          padding: 0.3rem 0.6rem;
+          border-radius: 4px;
+          font-weight: 600;
+          font-size: 0.9rem;
+          background: #f5f5f5;
+          color: #333;
+        }
+
+        .delta-badge.positive {
+          background: #e8f5e9;
+          color: #2e7d32;
+        }
+
+        .delta-badge.negative {
+          background: #ffebee;
+          color: #c62828;
+        }
+
+        .filter-label {
+          font-weight: 600;
+          color: #333;
+        }
+
+        .filter-select {
+          padding: 0.4rem 0.6rem;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          background: white;
         }
 
         .edit-actions {

@@ -46,16 +46,19 @@ function DashboardLayout() {
         <nav>
           <ul className="nav-list">
             {/* Public Navigation */}
-            <li><Link to="/">Home</Link></li>
+            <li><Link to="/">Overview</Link></li>
             
             {/* Authenticated User Navigation */}
             {isAuthenticated && <li><Link to="/products">📦 Products</Link></li>}
 
             {/* Admin Navigation */}
-            {isAdmin && <li><Link to="/admin-dashboard">📊 Admin Dashboard</Link></li>}
+            {isAdmin && <li><Link to="/admin-dashboard">📊 Dashboard</Link></li>}
+            {isAdmin && <li><Link to="/admin/masterdata">🛠️ Masterdata</Link></li>}
             {isAdmin && <li><Link to="/inventory">📦 Inventory</Link></li>}
             {isAdmin && <li><Link to="/users">👥 Users</Link></li>}
             {isAdmin && <li><Link to="/warehouses">🏭 Warehouses</Link></li>}
+            {isAdmin && <li><Link to="/admin/webhooks">🔔 Webhooks</Link></li>}
+            {isProductionPlanning && <li><Link to="/production-planning">🗓️ Production Planning</Link></li>}
 
             {/* Authentication */}
             {!isAuthenticated && <li><Link to="/login">Login</Link></li>}

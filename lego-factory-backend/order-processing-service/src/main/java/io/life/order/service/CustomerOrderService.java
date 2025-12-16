@@ -21,9 +21,11 @@ public class CustomerOrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerOrderService.class);
     private final CustomerOrderRepository customerOrderRepository;
+    private final OrderAuditService orderAuditService;
 
-    public CustomerOrderService(CustomerOrderRepository customerOrderRepository) {
+    public CustomerOrderService(CustomerOrderRepository customerOrderRepository, OrderAuditService orderAuditService) {
         this.customerOrderRepository = customerOrderRepository;
+        this.orderAuditService = orderAuditService;
     }
 
     @Transactional
@@ -42,6 +44,7 @@ public class CustomerOrderService {
                 item.setItemType(itemDTO.getItemType());
                 item.setItemId(itemDTO.getItemId());
                 item.setQuantity(itemDTO.getQuantity());
+                item.setFulfilledQuantity(itemDTO.getFulfilledQuantity() == null ? 0 : itemDTO.getFulfilledQuantity());
                 item.setNotes(itemDTO.getNotes());
                 item.setCustomerOrder(order);
                 return item;
@@ -51,7 +54,9 @@ public class CustomerOrderService {
         order.setOrderItems(orderItems);
         CustomerOrder savedOrder = customerOrderRepository.save(order);
 
-        return mapToDTO(savedOrder);
+        CustomerOrderDTO dto = mapToDTO(savedOrder);
+        orderAuditService.record("CUSTOMER", dto.getId(), "CREATED", "Customer order created: " + dto.getOrderNumber());
+        return dto;
     }
 
     @Transactional(readOnly = true)
@@ -96,12 +101,68 @@ public class CustomerOrderService {
         order.setStatus(newStatus);
         CustomerOrder updatedOrder = customerOrderRepository.save(order);
 
-        return mapToDTO(updatedOrder);
+        CustomerOrderDTO dto = mapToDTO(updatedOrder);
+        orderAuditService.record("CUSTOMER", dto.getId(), "STATUS_" + newStatus, "Order status changed to " + newStatus);
+        return dto;
     }
 
     @Transactional
     public void deleteOrder(Long id) {
         customerOrderRepository.deleteById(id);
+    }
+
+    // --- Explicit transitions with basic validation ---
+    @Transactional
+    public CustomerOrderDTO confirmOrder(Long id) {
+        CustomerOrder order = getOrThrow(id);
+        if (!"PENDING".equals(order.getStatus())) {
+            throw new IllegalStateException("Only PENDING orders can be confirmed");
+        }
+        order.setStatus("CONFIRMED");
+        CustomerOrder saved = customerOrderRepository.save(order);
+        orderAuditService.record("CUSTOMER", saved.getId(), "CONFIRMED", "Order confirmed");
+        return mapToDTO(saved);
+    }
+
+    @Transactional
+    public CustomerOrderDTO markProcessing(Long id) {
+        CustomerOrder order = getOrThrow(id);
+        if (!"CONFIRMED".equals(order.getStatus()) && !"PENDING".equals(order.getStatus())) {
+            throw new IllegalStateException("Only PENDING/CONFIRMED orders can be set to PROCESSING");
+        }
+        order.setStatus("PROCESSING");
+        CustomerOrder saved = customerOrderRepository.save(order);
+        orderAuditService.record("CUSTOMER", saved.getId(), "STATUS_PROCESSING", "Order moved to PROCESSING");
+        return mapToDTO(saved);
+    }
+
+    @Transactional
+    public CustomerOrderDTO completeOrder(Long id) {
+        CustomerOrder order = getOrThrow(id);
+        if (!"PROCESSING".equals(order.getStatus()) && !"CONFIRMED".equals(order.getStatus())) {
+            throw new IllegalStateException("Only PROCESSING/CONFIRMED orders can be completed");
+        }
+        order.setStatus("COMPLETED");
+        CustomerOrder saved = customerOrderRepository.save(order);
+        orderAuditService.record("CUSTOMER", saved.getId(), "COMPLETED", "Order completed");
+        return mapToDTO(saved);
+    }
+
+    @Transactional
+    public CustomerOrderDTO cancelOrder(Long id) {
+        CustomerOrder order = getOrThrow(id);
+        if ("COMPLETED".equals(order.getStatus())) {
+            throw new IllegalStateException("Completed orders cannot be cancelled");
+        }
+        order.setStatus("CANCELLED");
+        CustomerOrder saved = customerOrderRepository.save(order);
+        orderAuditService.record("CUSTOMER", saved.getId(), "CANCELLED", "Order cancelled");
+        return mapToDTO(saved);
+    }
+
+    private CustomerOrder getOrThrow(Long id) {
+        return customerOrderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
     }
 
     private CustomerOrderDTO mapToDTO(CustomerOrder order) {
@@ -135,6 +196,7 @@ public class CustomerOrderService {
         dto.setItemType(item.getItemType());
         dto.setItemId(item.getItemId());
         dto.setQuantity(item.getQuantity());
+        dto.setFulfilledQuantity(item.getFulfilledQuantity());
         dto.setNotes(item.getNotes());
         return dto;
     }

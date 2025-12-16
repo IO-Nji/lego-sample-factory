@@ -32,5 +32,8 @@ public class OrderItem {
     private Integer quantity;
 
     @Column
+    private Integer fulfilledQuantity; // quantity fulfilled so far
+
+    @Column
     private String notes;
 }

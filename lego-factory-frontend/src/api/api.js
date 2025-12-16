@@ -43,10 +43,16 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid, clear session and redirect to login
+      // Token expired or invalid, clear session and redirect to home
       localStorage.removeItem('authToken');
       localStorage.removeItem('authSession');
-      window.location.href = '/login';
+      
+      // Only redirect if not already on login or home page
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/' && currentPath !== '/login') {
+        console.log('401 Unauthorized - redirecting to home page');
+        window.location.href = '/';
+      }
     }
     return Promise.reject(error);
   }

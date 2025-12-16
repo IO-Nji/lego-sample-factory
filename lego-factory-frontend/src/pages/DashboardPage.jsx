@@ -148,6 +148,7 @@ function AdminDashboardContent() {
     productionOrders: [],
     orderStats: {},
   });
+  const [lowAlerts, setLowAlerts] = useState([]);
 
   const fetchDashboardData = async () => {
     try {
@@ -155,14 +156,15 @@ function AdminDashboardContent() {
       setError(null);
 
       // Fetch from correct working endpoints
-      const [wsResponse, prodResponse, asmResponse, supResponse] = await Promise.all([
+      const [wsResponse, prodResponse, asmResponse, supResponse, lowAlertsRes] = await Promise.all([
         axios.get("/api/masterdata/workstations"),
         axios.get("/api/production-control-orders"),
         axios.get("/api/assembly-control-orders"),
         axios.get("/api/supply-orders/warehouse"),
+        axios.get("/api/stock/alerts/low"),
       ]).catch((err) => {
         console.error("Dashboard API error:", err);
-        return [null, null, null, null];
+        return [null, null, null, null, null];
       });
 
       const wsData = Array.isArray(wsResponse?.data) ? wsResponse.data : [];
@@ -181,7 +183,7 @@ function AdminDashboardContent() {
         pendingOrders: pendingOrders,
         completedOrders: completedOrders,
         activeWorkstations: wsData.length,
-        lowStockItems: 0,
+        lowStockItems: Array.isArray(lowAlertsRes?.data) ? lowAlertsRes.data.length : 0,
         productionOrders: prodData.slice(0, 5),
         orderStats: {
           pending: pendingOrders,
@@ -189,6 +191,7 @@ function AdminDashboardContent() {
           completed: completedOrders,
         },
       });
+      setLowAlerts(Array.isArray(lowAlertsRes?.data) ? lowAlertsRes.data : []);
     } catch (err) {
       setError("Failed to load dashboard data: " + (err.message || "Unknown error"));
       console.error("Dashboard fetch error:", err);
@@ -261,41 +264,75 @@ function AdminDashboardContent() {
         </div>
       </div>
 
-      {/* Recent Production Orders */}
-      <div className="dashboard-section">
-        <h3>Recent Production Orders</h3>
-        {dashboardData.productionOrders.length > 0 ? (
+      {/* Low Stock Alerts + Recent Production Orders */}
+      <div className="dashboard-section" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div className="dashboard-box">
+          <h3>Low Stock Alerts ({dashboardData.lowStockItems})</h3>
           <div className="dashboard-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Order ID</th>
-                  <th>Status</th>
-                  <th>Items</th>
-                  <th>Priority</th>
-                  <th>Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dashboardData.productionOrders.map((order) => (
-                  <tr key={order.id}>
-                    <td>#{order.id}</td>
-                    <td>
-                      <span className={`status-badge status-${order.status?.toLowerCase()}`}>
-                        {order.status || "UNKNOWN"}
-                      </span>
-                    </td>
-                    <td>{order.quantity || 0}</td>
-                    <td>{order.priority || "NORMAL"}</td>
-                    <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+            {lowAlerts.length > 0 ? (
+              <table className="products-table">
+                <thead>
+                  <tr>
+                    <th>Scope</th>
+                    <th>Item</th>
+                    <th>Qty</th>
+                    <th>Threshold</th>
+                    <th>Deficit</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {lowAlerts.slice(0, 8).map((a, idx) => (
+                    <tr key={idx}>
+                      <td>{a.workstationId ? `WS#${a.workstationId}` : "Global"}</td>
+                      <td>{(a.itemType || "").toUpperCase()} #{a.itemId}</td>
+                      <td>{a.quantity}</td>
+                      <td>{a.threshold}</td>
+                      <td style={{ color: "#b91c1c", fontWeight: 700 }}>{a.deficit}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p>No low stock alerts</p>
+            )}
           </div>
-        ) : (
-          <p>No production orders at this time</p>
-        )}
+        </div>
+
+        <div className="dashboard-box">
+          <h3>Recent Production Orders</h3>
+          {dashboardData.productionOrders.length > 0 ? (
+            <div className="dashboard-table">
+              <table className="products-table">
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Status</th>
+                    <th>Items</th>
+                    <th>Priority</th>
+                    <th>Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashboardData.productionOrders.map((order) => (
+                    <tr key={order.id}>
+                      <td>#{order.id}</td>
+                      <td>
+                        <span className={`status-badge status-${order.status?.toLowerCase()}`}>
+                          {order.status || "UNKNOWN"}
+                        </span>
+                      </td>
+                      <td>{order.quantity || 0}</td>
+                      <td>{order.priority || "NORMAL"}</td>
+                      <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p>No production orders at this time</p>
+          )}
+        </div>
       </div>
     </section>
   );
@@ -431,6 +468,56 @@ function PlantWarehouseDashboardContent() {
     }
   };
 
+  const handleConfirm = async (orderId) => {
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await axios.put(`/api/customer-orders/${orderId}/confirm`);
+      setSuccessMessage("Order confirmed");
+      fetchOrders();
+    } catch (err) {
+      setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleProcessing = async (orderId) => {
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await axios.put(`/api/customer-orders/${orderId}/processing`);
+      setSuccessMessage("Order moved to PROCESSING");
+      fetchOrders();
+    } catch (err) {
+      setError("Failed to mark processing: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleComplete = async (orderId) => {
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await axios.put(`/api/customer-orders/${orderId}/complete`);
+      setSuccessMessage("Order completed");
+      fetchOrders();
+      fetchInventory();
+    } catch (err) {
+      setError("Failed to complete order: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleCancel = async (orderId) => {
+    if (!window.confirm("Cancel this order?")) return;
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await axios.put(`/api/customer-orders/${orderId}/cancel`);
+      setSuccessMessage("Order cancelled");
+      fetchOrders();
+    } catch (err) {
+      setError("Failed to cancel order: " + (err.response?.data?.message || err.message));
+    }
+  };
+
   return (
     <section className="plant-warehouse-page">
       <div className="page-header">
@@ -476,7 +563,7 @@ function PlantWarehouseDashboardContent() {
           </div>
           <div className="overflow-x-auto">
             <table className="products-table w-full">
-              <thead className="bg-gray-100 border-b border-gray-200">
+              <thead>
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Product Variant
@@ -528,8 +615,8 @@ function PlantWarehouseDashboardContent() {
           </div>
           <div className="overflow-x-auto flex-grow">
             {inventory.length > 0 ? (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-100 border-b border-gray-200 sticky top-0">
+              <table className="products-table w-full">
+                <thead>
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Product</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Item ID</th>
@@ -606,13 +693,25 @@ function PlantWarehouseDashboardContent() {
                     )}
                     <p className="order-date">{new Date(order.orderDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
                   </div>
-                  {order.status === "PENDING" && (
-                    <div className="order-box-footer">
-                      <button onClick={() => handleFulfillOrder(order.id)} disabled={fulfillingOrderId === order.id} className="fulfill-button">
-                        {fulfillingOrderId === order.id ? "Processing..." : "Fulfill"}
+                  <div className="order-box-footer">
+                    <div className="button-group">
+                      <button className="secondary-link" onClick={() => handleConfirm(order.id)} disabled={order.status !== 'PENDING'}>
+                        Confirm
+                      </button>
+                      <button className="secondary-link" onClick={() => handleProcessing(order.id)} disabled={!(order.status === 'PENDING' || order.status === 'CONFIRMED')}>
+                        Processing
+                      </button>
+                      <button className="primary-link" onClick={() => handleFulfillOrder(order.id)} disabled={fulfillingOrderId === order.id}>
+                        {fulfillingOrderId === order.id ? 'Processing…' : 'Fulfill'}
+                      </button>
+                      <button className="secondary-link" onClick={() => handleComplete(order.id)} disabled={!(order.status === 'PROCESSING' || order.status === 'CONFIRMED')}>
+                        Complete
+                      </button>
+                      <button className="danger-link" onClick={() => handleCancel(order.id)} disabled={order.status === 'COMPLETED'}>
+                        Cancel
                       </button>
                     </div>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -889,8 +988,8 @@ function ModulesSupermarketDashboardContent() {
           </div>
           <div style={{ overflowX: "auto", maxHeight: "600px" }}>
             {filteredOrders.length > 0 ? (
-              <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
-                <thead style={{ backgroundColor: "#f3f4f6", borderBottom: "1px solid #e0e0e0" }}>
+              <table className="products-table" style={{ width: "100%" }}>
+                <thead>
                   <tr>
                     <th style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: "600" }}>Order #</th>
                     <th style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: "600" }}>Items</th>
@@ -944,8 +1043,8 @@ function ModulesSupermarketDashboardContent() {
           </div>
           <div style={{ overflowX: "auto", maxHeight: "600px" }}>
             {inventory.length > 0 ? (
-              <table style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
-                <thead style={{ backgroundColor: "#f3f4f6", borderBottom: "1px solid #e0e0e0", position: "sticky", top: "0" }}>
+              <table className="products-table" style={{ width: "100%" }}>
+                <thead>
                   <tr>
                     <th style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: "600" }}>Item Type</th>
                     <th style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: "600" }}>Item ID</th>

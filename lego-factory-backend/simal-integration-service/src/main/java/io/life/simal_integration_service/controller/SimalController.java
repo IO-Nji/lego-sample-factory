@@ -72,6 +72,16 @@ public class SimalController {
     }
 
     /**
+     * Alias endpoint for scheduling production: POST /api/simal/schedule
+     * Behaves identically to /api/simal/production-order.
+     */
+    @PostMapping("/schedule")
+    public ResponseEntity<SimalScheduledOrderResponse> schedule(
+            @RequestBody SimalProductionOrderRequest request) {
+        return submitProductionOrder(request);
+    }
+
+    /**
      * Mock endpoint to retrieve all scheduled orders.
      *
      * @return List of all scheduled orders

@@ -12,7 +12,7 @@
 .home-hero {
   background: linear-gradient(135deg,   rgba(51, 167, 217, 0.135), rgba(9, 139, 245, 0.036)),
     url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="1"/></pattern></defs><rect width="1200" height="600" fill="url(%23grid)"/></svg>');
-  color: rgb(30, 22, 22);
+  color: rgb(31, 64, 84);
   padding: 1rem 1rem;
   text-align: center;
 }
@@ -77,9 +77,10 @@
 
 .card p {
   color: #7f8c8d;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   line-height: 1.6;
   margin: 0;
+  text-align: center;
 }
 
 /* Home Actions */

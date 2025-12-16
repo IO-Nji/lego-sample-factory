@@ -1,18 +1,55 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
 import "../styles/DashboardStandard.css";
 
+/**
+ * Product name mapping
+ * Maps itemId to product variant name
+ */
+const PRODUCT_NAMES = {
+  1: { name: "Technic Truck Yellow" },
+  2: { name: "Technic Truck Red" },
+  3: { name: "Creator House" },
+  4: { name: "Friends Cafe" },
+};
+
 function ProductionPlanningPage() {
   const { session } = useAuth();
   const [productionOrders, setProductionOrders] = useState([]);
+  const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [schedulesLoading, setSchedulesLoading] = useState(false);
+
+  // Planning form state
+  const [orderNumber, setOrderNumber] = useState("");
+  const [lineItems, setLineItems] = useState([
+    { itemId: 1001, itemName: "Module A", quantity: 1, workstationType: "MANUFACTURING", estimatedDuration: 30 },
+    { itemId: 2001, itemName: "Final Assembly", quantity: 1, workstationType: "ASSEMBLY", estimatedDuration: 40 },
+  ]);
+  const [planning, setPlanning] = useState(false);
+  const [planResult, setPlanResult] = useState(null);
+  const [createdControlOrders, setCreatedControlOrders] = useState(null);
+
+  // Helper: Plan from Customer Order
+  const [coIdInput, setCoIdInput] = useState("");
+
+  // Schedules filtering + pagination
+  const [schedFrom, setSchedFrom] = useState("");
+  const [schedTo, setSchedTo] = useState("");
+  const [schedWsFilter, setSchedWsFilter] = useState("ALL");
+  const [schedPage, setSchedPage] = useState(1);
+  const [schedPageSize, setSchedPageSize] = useState(10);
 
   useEffect(() => {
     fetchProductionOrders();
+    fetchSchedules();
     // ENHANCED: Refresh every 5 seconds for real-time updates
-    const interval = setInterval(fetchProductionOrders, 5000);
+    const interval = setInterval(() => {
+      fetchProductionOrders();
+      fetchSchedules();
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -34,6 +71,141 @@ function ProductionPlanningPage() {
       setLoading(false);
     }
   };
+
+  const fetchSchedules = async () => {
+    setSchedulesLoading(true);
+    try {
+      const resp = await api.get("/simal/scheduled-orders");
+      setSchedules(Array.isArray(resp.data) ? resp.data : []);
+    } catch (err) {
+      // Non-fatal; surface error in shared error banner
+      setError(
+        "Failed to load schedules: " + (err.response?.data?.message || err.message)
+      );
+    } finally {
+      setSchedulesLoading(false);
+    }
+  };
+
+  const planFromCustomerOrder = async () => {
+    if (!coIdInput.trim()) {
+      setError("Enter a Customer Order ID to plan from");
+      return;
+    }
+    try {
+      const resp = await api.get(`/customer-orders/${encodeURIComponent(coIdInput.trim())}`);
+      const order = resp.data || {};
+      const items = Array.isArray(order.orderItems) ? order.orderItems : [];
+
+      if (items.length === 0) {
+        setError("Customer Order has no items; cannot derive a plan");
+        return;
+      }
+
+      const derived = [];
+      items.forEach((it, idx) => {
+        const qty = Number(it.quantity) || 1;
+        derived.push({
+          itemId: it.itemId,
+          itemName: `Manufacture for ${it.itemType || 'ITEM'} ${it.itemId}`,
+          quantity: qty,
+          workstationType: "MANUFACTURING",
+          estimatedDuration: Math.max(15, 15 * qty),
+          sequence: (idx + 1) * 2 - 1,
+        });
+        derived.push({
+          itemId: it.itemId,
+          itemName: `Final Assembly for ${it.itemType || 'ITEM'} ${it.itemId}`,
+          quantity: qty,
+          workstationType: "ASSEMBLY",
+          estimatedDuration: Math.max(20, 20 * qty),
+          sequence: (idx + 1) * 2,
+        });
+      });
+
+      setOrderNumber(order.orderNumber || `CO-${coIdInput.trim()}`);
+      setLineItems(derived);
+
+      // Auto-plan immediately
+      setPlanning(true);
+      const payload = { orderNumber: order.orderNumber || `CO-${coIdInput.trim()}`, lineItems: derived };
+      const scheduleResp = await api.post("/simal/schedule", payload);
+      setPlanResult(scheduleResp.data);
+      setCreatedControlOrders(null);
+      fetchSchedules();
+    } catch (err) {
+      setError("Failed to plan from Customer Order: " + (err.response?.data?.message || err.message));
+    } finally {
+      setPlanning(false);
+    }
+  };
+
+  const addLine = () => {
+    setLineItems((prev) => [
+      ...prev,
+      { itemId: Date.now() % 100000, itemName: "New Task", quantity: 1, workstationType: "MANUFACTURING", estimatedDuration: 20 },
+    ]);
+  };
+
+  const removeLine = (idx) => {
+    setLineItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateLine = (idx, patch) => {
+    setLineItems((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
+  };
+
+  const submitPlan = async () => {
+    if (!orderNumber.trim()) {
+      setError("Order number is required");
+      return;
+    }
+    setPlanning(true);
+    setError(null);
+    setPlanResult(null);
+    try {
+      const payload = {
+        orderNumber,
+        lineItems: lineItems.map((l, i) => ({
+          itemId: l.itemId,
+          itemName: l.itemName,
+          quantity: Number(l.quantity) || 1,
+          workstationType: l.workstationType,
+          estimatedDuration: Number(l.estimatedDuration) || 20,
+          sequence: i + 1,
+        })),
+      };
+      const resp = await api.post("/simal/schedule", payload);
+      setPlanResult(resp.data);
+      fetchSchedules();
+    } catch (err) {
+      setError("Failed to plan schedule: " + (err.response?.data?.message || err.message));
+    } finally {
+      setPlanning(false);
+    }
+  };
+
+  const createControlOrders = async (scheduleId) => {
+    try {
+      const resp = await api.post(`/simal/scheduled-orders/${scheduleId}/create-control-orders`);
+      const payload = resp?.data || {};
+      setCreatedControlOrders(payload.controlOrdersCreated || payload.controlOrders || null);
+      fetchSchedules();
+    } catch (err) {
+      setError("Failed to create control orders: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const tasksGrouped = useMemo(() => {
+    const grp = {};
+    (planResult?.scheduledTasks || []).forEach((t) => {
+      const ws = t.workstationName || t.workstationId || "Workstation";
+      grp[ws] = grp[ws] || [];
+      grp[ws].push(t);
+    });
+    Object.values(grp).forEach((arr) => arr.sort((a, b) => (a.sequence || 0) - (b.sequence || 0)));
+    return grp;
+  }, [planResult]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -65,6 +237,118 @@ function ProductionPlanningPage() {
       {error && (
         <div className="alert alert-error" style={{ marginBottom: "1rem" }}>
           {error}
+        </div>
+      )}
+
+      {/* Planning UI */}
+      <div className="dashboard-box" style={{ marginBottom: "1rem" }}>
+        <div className="box-header box-header-primary">
+          <h3>Plan New Schedule</h3>
+          <button
+            onClick={fetchSchedules}
+            disabled={schedulesLoading}
+            style={{
+              padding: "0.5rem 1rem",
+              backgroundColor: "#3b82f6",
+              color: "white",
+              border: "none",
+              borderRadius: "0.375rem",
+              cursor: schedulesLoading ? "not-allowed" : "pointer",
+              opacity: schedulesLoading ? 0.6 : 1,
+              fontSize: "0.875rem",
+              fontWeight: "500",
+            }}
+          >
+            {schedulesLoading ? "⟳ Refreshing…" : "⟳ Refresh Schedules"}
+          </button>
+        </div>
+        <div className="box-content">
+            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center", marginBottom: "0.75rem" }}>
+              <label style={{ fontWeight: 600 }}>Plan from Customer Order</label>
+              <input value={coIdInput} onChange={(e) => setCoIdInput(e.target.value)} placeholder="Customer Order ID" />
+              <button className="secondary-link" onClick={planFromCustomerOrder} disabled={planning}>
+                {planning ? "Planning…" : "Load & Plan"}
+              </button>
+            </div>
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center", marginBottom: "0.75rem" }}>
+            <label style={{ fontWeight: 600 }}>Order Number</label>
+            <input value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)} placeholder="CO-12345" />
+            <button className="primary-link" onClick={submitPlan} disabled={planning}>
+              {planning ? "Planning…" : "Plan Schedule"}
+            </button>
+          </div>
+          <table className="products-table" style={{ width: "100%" }}>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Workstation Type</th>
+                <th>Est. Duration (min)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {lineItems.map((l, idx) => (
+                <tr key={idx}>
+                  <td>
+                    <input value={l.itemName} onChange={(e) => updateLine(idx, { itemName: e.target.value })} />
+                  </td>
+                  <td>
+                    <input type="number" min="1" value={l.quantity}
+                           onChange={(e) => updateLine(idx, { quantity: e.target.value })} />
+                  </td>
+                  <td>
+                    <select value={l.workstationType}
+                            onChange={(e) => updateLine(idx, { workstationType: e.target.value })}>
+                      <option value="MANUFACTURING">MANUFACTURING</option>
+                      <option value="ASSEMBLY">ASSEMBLY</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input type="number" min="5" step="5" value={l.estimatedDuration}
+                           onChange={(e) => updateLine(idx, { estimatedDuration: e.target.value })} />
+                  </td>
+                  <td>
+                    <button className="danger-link" onClick={() => removeLine(idx)}>Remove</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {planResult && (
+        <div className="dashboard-box" style={{ marginBottom: "1rem" }}>
+          <div className="box-header box-header-secondary">
+            <h3>Planned Schedule: {planResult.scheduleId}</h3>
+            <button className="primary-link" onClick={() => createControlOrders(planResult.scheduleId)}>
+              Create Control Orders
+            </button>
+          </div>
+          <div className="box-content">
+            <p>Order: <strong>{planResult.orderNumber}</strong> · Status: <strong>{planResult.status}</strong> · Est. complete: {planResult.estimatedCompletionTime}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "0.5rem" }}>
+              {Object.entries(tasksGrouped).map(([ws, tasks]) => (
+                <div key={ws} style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: "0.75rem", alignItems: "center" }}>
+                  <div style={{ fontWeight: 600, color: "#0b5394" }}>{ws}</div>
+                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    {tasks.map((t) => (
+                      <div key={t.taskId} title={`${t.itemName} (${t.quantity})`} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <div style={{ height: 8, width: `${Math.min(100, (t.duration || 20) * 2)}px`, background: "linear-gradient(90deg,#0b5394,#1565c0)", borderRadius: 4 }} />
+                        <div style={{ fontSize: "0.85rem", color: "#333" }}>{t.itemName} · {t.duration}m</div>
+                        {createdControlOrders && createdControlOrders[ws] && (
+                          <a href="/production-control" className="primary-link" style={{ marginLeft: 8 }}>
+                            View Order {createdControlOrders[ws]}
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -101,7 +385,7 @@ function ProductionPlanningPage() {
             </div>
           ) : (
             <div className="dashboard-table">
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <table className="products-table" style={{ width: "100%" }}>
                 <thead>
                   <tr style={{ borderBottom: "2px solid #e5e7eb", backgroundColor: "#f9fafb" }}>
                     <th style={{ textAlign: "left", padding: "0.75rem", fontWeight: "600", color: "#374151" }}>Order ID</th>
@@ -125,7 +409,9 @@ function ProductionPlanningPage() {
                       <td style={{ padding: "0.75rem" }}>
                         {order.orderItems && order.orderItems.length > 0 ? (
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                            {order.orderItems.map((item, idx) => (
+                            {order.orderItems.map((item, idx) => {
+                              const productName = PRODUCT_NAMES[item.itemId]?.name || item.name || item.itemType || "Item";
+                              return (
                               <span
                                 key={idx}
                                 style={{
@@ -137,7 +423,7 @@ function ProductionPlanningPage() {
                                   width: "fit-content",
                                 }}
                               >
-                                <span style={{ fontWeight: "600" }}>{item.itemType || item.name || "Item"}</span>
+                                <span style={{ fontWeight: "600" }}>{productName}</span>
                                 <span style={{ color: "#999", margin: "0 0.25rem" }}>×</span>
                                 <span style={{ color: "#059669", fontWeight: "600" }}>{item.quantity}</span>
                                 {item.status && (
@@ -146,7 +432,8 @@ function ProductionPlanningPage() {
                                   </span>
                                 )}
                               </span>
-                            ))}
+                              );
+                            })}
                           </div>
                         ) : (
                           <span>{order.productName || "Unknown"}</span>
@@ -189,6 +476,79 @@ function ProductionPlanningPage() {
                 </tbody>
               </table>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Scheduled Orders with filters and pagination */}
+      <div className="dashboard-box" style={{ marginTop: "1rem" }}>
+        <div className="box-header box-header-primary">
+          <h3>Scheduled Orders ({schedules.length})</h3>
+        </div>
+        <div className="box-content">
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+            <label style={{ fontWeight: 600 }}>From</label>
+            <input type="datetime-local" value={schedFrom} onChange={(e) => setSchedFrom(e.target.value)} />
+            <label style={{ fontWeight: 600 }}>To</label>
+            <input type="datetime-local" value={schedTo} onChange={(e) => setSchedTo(e.target.value)} />
+            <label style={{ fontWeight: 600 }}>Workstation</label>
+            <select value={schedWsFilter} onChange={(e) => setSchedWsFilter(e.target.value)}>
+              <option value="ALL">All</option>
+              {[...new Set((schedules || []).flatMap(s => (s.scheduledTasks || []).map(t => t.workstationName || t.workstationId)).filter(Boolean))]
+                .map(ws => (<option key={ws} value={ws}>{ws}</option>))}
+            </select>
+            <label style={{ fontWeight: 600 }}>Page</label>
+            <input type="number" min={1} value={schedPage} onChange={(e) => setSchedPage(Math.max(1, Number(e.target.value) || 1))} style={{ width: 80 }} />
+            <label style={{ fontWeight: 600 }}>Size</label>
+            <select value={schedPageSize} onChange={(e) => { setSchedPageSize(Number(e.target.value)); setSchedPage(1); }}>
+              {[10, 20, 50].map(s => (<option key={s} value={s}>{s}</option>))}
+            </select>
+          </div>
+          {schedulesLoading ? (
+            <div className="loading-state"><p>Loading schedules…</p></div>
+          ) : (
+            (() => {
+              const filtered = (schedules || []).filter(s => {
+                const est = s.estimatedCompletionTime || "";
+                const wsList = (s.scheduledTasks || []).map(t => t.workstationName || t.workstationId);
+                const inRange = (!schedFrom || (est && est >= schedFrom)) && (!schedTo || (est && est <= schedTo));
+                const wsOk = schedWsFilter === 'ALL' || wsList.includes(schedWsFilter);
+                return inRange && wsOk;
+              });
+              const start = (schedPage - 1) * schedPageSize;
+              const pageItems = filtered.slice(start, start + schedPageSize);
+              return (
+                <table className="products-table" style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th>Schedule ID</th>
+                      <th>Order Number</th>
+                      <th>Status</th>
+                      <th>Tasks</th>
+                      <th>Estimated Completion</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageItems.map((s) => (
+                      <tr key={s.scheduleId}>
+                        <td>{s.scheduleId}</td>
+                        <td>{s.orderNumber}</td>
+                        <td>{s.status}</td>
+                        <td>{s.scheduledTasks?.length || 0}</td>
+                        <td>{s.estimatedCompletionTime}</td>
+                        <td>
+                          <button className="secondary-link" onClick={() => setPlanResult(s)}>View</button>
+                          <button className="primary-link" onClick={() => createControlOrders(s.scheduleId)}>
+                            Create Control Orders
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              );
+            })()
           )}
         </div>
       </div>

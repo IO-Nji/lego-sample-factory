@@ -73,4 +73,25 @@ public class CustomerOrderController {
         CustomerOrderDTO fulfilledOrder = fulfillmentService.fulfillOrder(id);
         return ResponseEntity.ok(fulfilledOrder);
     }
+
+    // --- Explicit status transition endpoints ---
+    @PutMapping("/{id}/confirm")
+    public ResponseEntity<CustomerOrderDTO> confirm(@PathVariable Long id) {
+        return ResponseEntity.ok(customerOrderService.confirmOrder(id));
+    }
+
+    @PutMapping("/{id}/processing")
+    public ResponseEntity<CustomerOrderDTO> markProcessing(@PathVariable Long id) {
+        return ResponseEntity.ok(customerOrderService.markProcessing(id));
+    }
+
+    @PutMapping("/{id}/complete")
+    public ResponseEntity<CustomerOrderDTO> complete(@PathVariable Long id) {
+        return ResponseEntity.ok(customerOrderService.completeOrder(id));
+    }
+
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<CustomerOrderDTO> cancel(@PathVariable Long id) {
+        return ResponseEntity.ok(customerOrderService.cancelOrder(id));
+    }
 }

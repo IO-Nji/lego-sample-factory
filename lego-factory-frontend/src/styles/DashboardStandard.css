@@ -2,7 +2,7 @@
 
 /* Page Container & Header */
 .dashboard-page {
-  padding: 2rem 1rem;
+  padding: 0.75rem 0.5rem;
   max-width: 1400px;
   margin: 0 auto;
   background: #f9fafb;
@@ -10,18 +10,18 @@
 }
 
 .page-header {
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem;
 }
 
 .page-title {
-  font-size: 2rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #0b5394;
-  margin: 0 0 0.5rem 0;
+  color: #1976d2;
+  margin: 0 0 0.25rem 0;
 }
 
 .page-subtitle {
-  font-size: 1rem;
+  font-size: 0.8rem;
   color: #666;
   margin: 0;
 }
@@ -29,11 +29,11 @@
 /* Standard Box/Card Styling */
 .dashboard-box {
   background: white;
-  border-radius: 0.5rem;
+  border-radius: 0.25rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   border: 1px solid #e5e7eb;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
   transition: all 0.3s ease;
 }
 
@@ -43,41 +43,42 @@
 }
 
 .box-header {
-  background: #f3f4f6;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  background: #1976d2;
+  color: white;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid #1565c0;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .box-header h2 {
-  font-size: 1.125rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: #1f2937;
+  color: white;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 
 .box-header h3 {
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #1f2937;
+  color: white;
   margin: 0;
 }
 
 .box-content {
-  padding: 1.5rem;
+  padding: 0.5rem;
 }
 
 .box-footer {
   background: #f9fafb;
-  padding: 1rem 1.5rem;
+  padding: 0.4rem 0.5rem;
   border-top: 1px solid #e5e7eb;
   display: flex;
-  gap: 1rem;
+  gap: 0.4rem;
   justify-content: flex-end;
 }
 
@@ -173,16 +174,16 @@
 }
 
 .dashboard-table thead {
-  background: #f3f4f6;
-  border-bottom: 1px solid #e5e7eb;
+  background: #1976d2;
+  border-bottom: 1px solid #1565c0;
 }
 
 .dashboard-table th {
   padding: 0.75rem 1rem;
   text-align: left;
   font-size: 0.75rem;
-  font-weight: 600;
-  color: #374151;
+  font-weight: 700;
+  color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -340,9 +341,9 @@
 
 /* Alerts */
 .alert {
-  padding: 1rem 1.5rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1.5rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
   border-left: 4px solid;
 }
 

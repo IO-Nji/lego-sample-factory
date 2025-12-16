@@ -26,6 +26,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/api/stock/workstation/**").permitAll()
+                .requestMatchers("/api/stock/adjust").permitAll()
                 .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )

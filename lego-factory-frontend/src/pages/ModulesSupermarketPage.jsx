@@ -227,26 +227,26 @@ function ModulesSupermarketPage() {
                 <p className="text-sm">No inventory items available</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead className="bg-gray-100 border-b border-gray-200">
+              <table className="dashboard-table">
+                <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Item Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Item ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Quantity</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Last Updated</th>
+                    <th>Item Type</th>
+                    <th>Item ID</th>
+                    <th>Quantity</th>
+                    <th>Last Updated</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody>
                   {inventory.map((item, index) => (
                     <tr 
                       key={index} 
-                      className="hover:bg-blue-50 cursor-pointer transition"
                       onClick={() => setSelectedModule(item)}
+                      style={{ cursor: 'pointer' }}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemType}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{item.itemId}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{item.quantity}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{new Date(item.updatedAt).toLocaleString()}</td>
+                      <td>{item.itemType}</td>
+                      <td>{item.itemId}</td>
+                      <td><strong>{item.quantity}</strong></td>
+                      <td>{new Date(item.updatedAt).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -294,27 +294,27 @@ function ModulesSupermarketPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="products-table w-full">
-                <thead className="bg-blue-700 text-white">
+              <table className="dashboard-table">
+                <thead>
                   <tr>
-                    <th className="text-left">Order #</th>
-                    <th className="text-left">Source Order</th>
-                    <th className="text-left">Status</th>
-                    <th className="text-left">Scenario</th>
-                    <th className="text-left">Items</th>
-                    <th className="text-left">Created</th>
-                    <th className="text-left">Actions</th>
+                    <th>Order #</th>
+                    <th>Source Order</th>
+                    <th>Status</th>
+                    <th>Scenario</th>
+                    <th>Items</th>
+                    <th>Created</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredOrders.map((order) => (
                     <tr key={order.id}>
-                      <td className="font-semibold">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                      <td>
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">
                           {order.warehouseOrderNumber}
                         </span>
                       </td>
-                      <td className="text-gray-700 font-medium">
+                      <td className="font-medium">
                         CO-{order.sourceCustomerOrderId}
                       </td>
                       <td>
@@ -327,7 +327,7 @@ function ModulesSupermarketPage() {
                           {order.triggerScenario || "—"}
                         </span>
                       </td>
-                      <td className="text-gray-700">
+                      <td>
                         {Array.isArray(order.warehouseOrderItems) && order.warehouseOrderItems.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
                             {order.warehouseOrderItems.map((item) => (
@@ -344,7 +344,7 @@ function ModulesSupermarketPage() {
                           <span className="text-gray-400 text-sm">—</span>
                         )}
                       </td>
-                      <td className="text-gray-700 text-sm font-medium">
+                      <td className="text-sm font-medium">
                         {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : "—"}
                       </td>
                       <td className="space-x-1">

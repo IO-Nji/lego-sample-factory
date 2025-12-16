@@ -22,10 +22,10 @@
 .error-alert {
   background-color: #fee;
   color: #c33;
-  padding: 1rem;
-  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.25rem;
   border-left: 4px solid #c33;
-  margin-bottom: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 /* Loading State */
