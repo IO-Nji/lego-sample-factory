@@ -49,7 +49,7 @@ function WebhooksAdminPage() {
   };
 
   const remove = async (id) => {
-    if (!window.confirm("Delete this subscription?")) return;
+    if (!globalThis.confirm("Delete this subscription?")) return;
     setError(null);
     setSuccess(null);
     try {
@@ -86,8 +86,8 @@ function WebhooksAdminPage() {
         </div>
         <form onSubmit={add} style={{ padding: "1rem", display: "grid", gridTemplateColumns: "160px 1fr 1fr auto", gap: "0.75rem", alignItems: "end" }}>
           <div>
-            <label style={{ display: "block", fontSize: 12, color: "#555", marginBottom: 4 }}>Event Type</label>
-            <select name="eventType" value={form.eventType} onChange={onChange} className="input" style={{ width: "100%", padding: "0.5rem", border: "1px solid #ccc", borderRadius: 6 }}>
+            <label htmlFor="webhook-event-type" style={{ display: "block", fontSize: 12, color: "#555", marginBottom: 4 }}>Event Type</label>
+            <select id="webhook-event-type" name="eventType" value={form.eventType} onChange={onChange} className="input" style={{ width: "100%", padding: "0.5rem", border: "1px solid #ccc", borderRadius: 6 }}>
               <option value="ANY">ANY</option>
               <option value="CUSTOMER.PENDING">CUSTOMER.PENDING</option>
               <option value="CUSTOMER.CONFIRMED">CUSTOMER.CONFIRMED</option>
@@ -97,12 +97,12 @@ function WebhooksAdminPage() {
             </select>
           </div>
           <div>
-            <label style={{ display: "block", fontSize: 12, color: "#555", marginBottom: 4 }}>Target URL</label>
-            <input name="targetUrl" value={form.targetUrl} onChange={onChange} placeholder="https://example.com/webhook" className="input" style={{ width: "100%", padding: "0.5rem", border: "1px solid #ccc", borderRadius: 6 }} />
+            <label htmlFor="webhook-target-url" style={{ display: "block", fontSize: 12, color: "#555", marginBottom: 4 }}>Target URL</label>
+            <input id="webhook-target-url" name="targetUrl" value={form.targetUrl} onChange={onChange} placeholder="https://example.com/webhook" className="input" style={{ width: "100%", padding: "0.5rem", border: "1px solid #ccc", borderRadius: 6 }} />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: 12, color: "#555", marginBottom: 4 }}>Secret (optional)</label>
-            <input name="secret" value={form.secret} onChange={onChange} placeholder="shared secret" className="input" style={{ width: "100%", padding: "0.5rem", border: "1px solid #ccc", borderRadius: 6 }} />
+            <label htmlFor="webhook-secret" style={{ display: "block", fontSize: 12, color: "#555", marginBottom: 4 }}>Secret (optional)</label>
+            <input id="webhook-secret" name="secret" value={form.secret} onChange={onChange} placeholder="shared secret" className="input" style={{ width: "100%", padding: "0.5rem", border: "1px solid #ccc", borderRadius: 6 }} />
           </div>
           <div>
             <button type="submit" className="primary-link" style={{ marginTop: 0 }}>Create</button>

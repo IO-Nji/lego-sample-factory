@@ -46,6 +46,8 @@ public class FulfillmentService {
 
     private static final Logger logger = LoggerFactory.getLogger(FulfillmentService.class);
     private static final Long MODULES_SUPERMARKET_WORKSTATION_ID = 8L;
+    private static final String CUSTOMER = "CUSTOMER";
+    private static final String PROCESSING = "PROCESSING";
 
     private final CustomerOrderRepository customerOrderRepository;
     private final WarehouseOrderRepository warehouseOrderRepository;
@@ -78,7 +80,7 @@ public class FulfillmentService {
         }
 
         CustomerOrder order = orderOpt.get();
-        orderAuditService.record("CUSTOMER", order.getId(), "FULFILLMENT_STARTED",
+        orderAuditService.record(CUSTOMER, order.getId(), "FULFILLMENT_STARTED",
             "Fulfillment started for order " + order.getOrderNumber());
         logger.info("Starting fulfillment for order {} ({})", order.getId(), order.getOrderNumber());
 
@@ -125,11 +127,11 @@ public class FulfillmentService {
         if (allUpdatesSuccessful) {
             order.setStatus("COMPLETED");
             logger.info("Order {} fulfilled directly. Inventory updated.", order.getOrderNumber());
-            orderAuditService.record("CUSTOMER", order.getId(), "COMPLETED", "Order fulfilled directly (Scenario 1)");
+            orderAuditService.record(CUSTOMER, order.getId(), "COMPLETED", "Order fulfilled directly (Scenario 1)");
         } else {
             order.setStatus("CANCELLED");
             logger.warn("Order {} fulfillment failed during inventory update.", order.getOrderNumber());
-            orderAuditService.record("CUSTOMER", order.getId(), "CANCELLED", "Inventory update failed during direct fulfillment");
+            orderAuditService.record(CUSTOMER, order.getId(), "CANCELLED", "Inventory update failed during direct fulfillment");
         }
 
         return mapToDTO(customerOrderRepository.save(order));
@@ -174,7 +176,7 @@ public class FulfillmentService {
         // Persist warehouse order
         warehouseOrderRepository.save(warehouseOrder);
         logger.info("Created warehouse order {} for customer order {}", warehouseOrder.getWarehouseOrderNumber(), order.getOrderNumber());
-        orderAuditService.record("CUSTOMER", order.getId(), "WAREHOUSE_ORDER_CREATED",
+        orderAuditService.record(CUSTOMER, order.getId(), "WAREHOUSE_ORDER_CREATED",
             "Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created (Scenario 2)");
 
         // AUTO-TRIGGER: Create production order for shortfall (all items not available locally)
@@ -190,16 +192,16 @@ public class FulfillmentService {
                     MODULES_SUPERMARKET_WORKSTATION_ID           // assignedWorkstationId (Modules Supermarket)
             );
             logger.info("Production order {} auto-created for Scenario 2 shortfall", productionOrder.getProductionOrderNumber());
-                orderAuditService.record("CUSTOMER", order.getId(), "PRODUCTION_ORDER_CREATED",
+                orderAuditService.record(CUSTOMER, order.getId(), "PRODUCTION_ORDER_CREATED",
                     "Production order auto-created for warehouse order " + warehouseOrder.getWarehouseOrderNumber());
         } catch (Exception e) {
             logger.error("Failed to auto-create production order for Scenario 2", e);
         }
 
         // Update customer order status
-        order.setStatus("PROCESSING");
+        order.setStatus(PROCESSING);
         order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + "Scenario 2: Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created + Production order auto-triggered");
-        orderAuditService.record("CUSTOMER", order.getId(), "STATUS_PROCESSING", "Scenario 2 processing (waiting on warehouse)");
+        orderAuditService.record(CUSTOMER, order.getId(), "STATUS_PROCESSING", "Scenario 2 processing (waiting on warehouse)");
 
         return mapToDTO(customerOrderRepository.save(order));
     }
@@ -252,7 +254,7 @@ public class FulfillmentService {
             warehouseOrder.setWarehouseOrderItems(warehouseOrderItems);
             warehouseOrderRepository.save(warehouseOrder);
                 logger.info("Created warehouse order {} for customer order {}", warehouseOrder.getWarehouseOrderNumber(), order.getOrderNumber());
-                orderAuditService.record("CUSTOMER", order.getId(), "WAREHOUSE_ORDER_CREATED",
+                orderAuditService.record(CUSTOMER, order.getId(), "WAREHOUSE_ORDER_CREATED",
                     "Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created (Scenario 3)");
 
             // AUTO-TRIGGER: Create production order for items not available in warehouse/modules supermarket
@@ -268,20 +270,20 @@ public class FulfillmentService {
                         MODULES_SUPERMARKET_WORKSTATION_ID           // assignedWorkstationId (Modules Supermarket)
                 );
                 logger.info("Production order {} auto-created for Scenario 3 shortfall items", productionOrder.getProductionOrderNumber());
-                orderAuditService.record("CUSTOMER", order.getId(), "PRODUCTION_ORDER_CREATED",
+                orderAuditService.record(CUSTOMER, order.getId(), "PRODUCTION_ORDER_CREATED",
                         "Production order auto-created for warehouse order " + warehouseOrder.getWarehouseOrderNumber());
             } catch (Exception e) {
                 logger.error("Failed to auto-create production order for Scenario 3", e);
             }
         }
 
-        order.setStatus("PROCESSING");
+        order.setStatus(PROCESSING);
         String notes = "Scenario 3: Partial fulfillment from local + Modules Supermarket";
         if (!warehouseOrderItems.isEmpty()) {
             notes += " (warehouse order: " + warehouseOrder.getWarehouseOrderNumber() + " + Production order auto-triggered)";
         }
         order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + notes);
-        orderAuditService.record("CUSTOMER", order.getId(), "STATUS_PROCESSING", "Scenario 3 processing (partial local fulfillment)");
+        orderAuditService.record(CUSTOMER, order.getId(), "STATUS_PROCESSING", "Scenario 3 processing (partial local fulfillment)");
 
         return mapToDTO(customerOrderRepository.save(order));
     }
@@ -300,7 +302,7 @@ public class FulfillmentService {
             }
         }
 
-        order.setStatus("PROCESSING");
+        order.setStatus(PROCESSING);
         order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + "Scenario 4: Routed to Production Planning for custom items");
 
         return mapToDTO(customerOrderRepository.save(order));

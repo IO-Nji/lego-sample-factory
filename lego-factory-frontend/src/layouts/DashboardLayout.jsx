@@ -39,7 +39,7 @@ function DashboardLayout() {
           {isAuthenticated && (
             <div className="user-info">
               Signed in as <strong>{session?.user?.username}</strong>
-              {session?.user?.role && <span className="role-badge">{session.user.role.replace(/_/g, " ")}</span>}
+              {session?.user?.role && <span className="role-badge">{session.user.role.replaceAll("_", " ")}</span>}
             </div>
           )}
         </div>

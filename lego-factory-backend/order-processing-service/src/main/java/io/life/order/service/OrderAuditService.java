@@ -5,6 +5,9 @@ import io.life.order.repository.OrderAuditRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// Import WebhookService if missing
+import io.life.order.service.WebhookService;
+
 import java.util.List;
 
 @Service
@@ -18,7 +21,7 @@ public class OrderAuditService {
     }
 
     @Transactional
-    public void record(String orderType, Long orderId, String eventType, String description) {
+    public void createAuditEvent(String orderType, Long orderId, String eventType, String description) {
         OrderAudit audit = new OrderAudit();
         audit.setOrderType(orderType);
         audit.setOrderId(orderId);

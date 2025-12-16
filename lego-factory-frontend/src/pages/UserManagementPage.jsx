@@ -290,12 +290,21 @@ function UserManagementPage() {
             </button>
           </form>
           {feedback.message && (
-            <p
-              className={feedback.type === "error" ? "form-error" : "form-success"}
-              role={feedback.type === "error" ? "alert" : "status"}
-            >
-              {feedback.message}
-            </p>
+            feedback.type === "error" ? (
+              <p
+                className="form-error"
+                role="alert"
+              >
+                {feedback.message}
+              </p>
+            ) : (
+              <output
+                className="form-success"
+                htmlFor="username password role workstationId"
+              >
+                {feedback.message}
+              </output>
+            )
           )}
           {createdUser && (
             <div className="form-success-details">

@@ -332,8 +332,9 @@ function InventoryManagementPage() {
         <div className="dashboard-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <h3 style={{ margin: 0, fontSize: '1rem' }}>🧾 {ledgerMode === 'full' ? 'Stock Ledger (Full)' : 'Recent Stock Ledger'}</h3>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <label className="filter-label">Workstation:</label>
+            <label htmlFor="ledger-ws-filter" className="filter-label">Workstation:</label>
             <select
+              id="ledger-ws-filter"
               className="filter-select"
               value={ledgerWsFilter}
               onChange={(e) => setLedgerWsFilter(e.target.value)}
@@ -343,8 +344,9 @@ function InventoryManagementPage() {
                 <option key={ws.id} value={String(ws.id)}>{ws.name || `Workstation ${ws.id}`}</option>
               ))}
             </select>
-            <label className="filter-label">Item Type:</label>
+            <label htmlFor="ledger-type-filter" className="filter-label">Item Type:</label>
             <select
+              id="ledger-type-filter"
               className="filter-select"
               value={ledgerTypeFilter}
               onChange={(e) => setLedgerTypeFilter(e.target.value)}

@@ -20,6 +20,10 @@ import java.util.stream.Collectors;
 public class CustomerOrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerOrderService.class);
+    private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_CONFIRMED = "CONFIRMED";
+    private static final String STATUS_COMPLETED = "COMPLETED";
+    private static final String ORDER_TYPE_CUSTOMER = "CUSTOMER";
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderAuditService orderAuditService;
 
@@ -33,7 +37,7 @@ public class CustomerOrderService {
         CustomerOrder order = new CustomerOrder();
         order.setOrderNumber(generateOrderNumber());
         order.setOrderDate(LocalDateTime.now());
-        order.setStatus("PENDING");
+        order.setStatus(STATUS_PENDING);
         order.setWorkstationId(orderDTO.getWorkstationId());
         order.setNotes(orderDTO.getNotes());
 
@@ -55,7 +59,7 @@ public class CustomerOrderService {
         CustomerOrder savedOrder = customerOrderRepository.save(order);
 
         CustomerOrderDTO dto = mapToDTO(savedOrder);
-        orderAuditService.record("CUSTOMER", dto.getId(), "CREATED", "Customer order created: " + dto.getOrderNumber());
+        orderAuditService.record(ORDER_TYPE_CUSTOMER, dto.getId(), "CREATED", "Customer order created: " + dto.getOrderNumber());
         return dto;
     }
 
@@ -102,7 +106,7 @@ public class CustomerOrderService {
         CustomerOrder updatedOrder = customerOrderRepository.save(order);
 
         CustomerOrderDTO dto = mapToDTO(updatedOrder);
-        orderAuditService.record("CUSTOMER", dto.getId(), "STATUS_" + newStatus, "Order status changed to " + newStatus);
+        orderAuditService.record(ORDER_TYPE_CUSTOMER, dto.getId(), "STATUS_" + newStatus, "Order status changed to " + newStatus);
         return dto;
     }
 
@@ -115,48 +119,48 @@ public class CustomerOrderService {
     @Transactional
     public CustomerOrderDTO confirmOrder(Long id) {
         CustomerOrder order = getOrThrow(id);
-        if (!"PENDING".equals(order.getStatus())) {
+        if (!STATUS_PENDING.equals(order.getStatus())) {
             throw new IllegalStateException("Only PENDING orders can be confirmed");
         }
-        order.setStatus("CONFIRMED");
+        order.setStatus(STATUS_CONFIRMED);
         CustomerOrder saved = customerOrderRepository.save(order);
-        orderAuditService.record("CUSTOMER", saved.getId(), "CONFIRMED", "Order confirmed");
+        orderAuditService.record(ORDER_TYPE_CUSTOMER, saved.getId(), STATUS_CONFIRMED, "Order confirmed");
         return mapToDTO(saved);
     }
 
     @Transactional
     public CustomerOrderDTO markProcessing(Long id) {
         CustomerOrder order = getOrThrow(id);
-        if (!"CONFIRMED".equals(order.getStatus()) && !"PENDING".equals(order.getStatus())) {
+        if (!STATUS_CONFIRMED.equals(order.getStatus()) && !STATUS_PENDING.equals(order.getStatus())) {
             throw new IllegalStateException("Only PENDING/CONFIRMED orders can be set to PROCESSING");
         }
         order.setStatus("PROCESSING");
         CustomerOrder saved = customerOrderRepository.save(order);
-        orderAuditService.record("CUSTOMER", saved.getId(), "STATUS_PROCESSING", "Order moved to PROCESSING");
+        orderAuditService.record(ORDER_TYPE_CUSTOMER, saved.getId(), "STATUS_PROCESSING", "Order moved to PROCESSING");
         return mapToDTO(saved);
     }
 
     @Transactional
     public CustomerOrderDTO completeOrder(Long id) {
         CustomerOrder order = getOrThrow(id);
-        if (!"PROCESSING".equals(order.getStatus()) && !"CONFIRMED".equals(order.getStatus())) {
+        if (!"PROCESSING".equals(order.getStatus()) && !STATUS_CONFIRMED.equals(order.getStatus())) {
             throw new IllegalStateException("Only PROCESSING/CONFIRMED orders can be completed");
         }
-        order.setStatus("COMPLETED");
+        order.setStatus(STATUS_COMPLETED);
         CustomerOrder saved = customerOrderRepository.save(order);
-        orderAuditService.record("CUSTOMER", saved.getId(), "COMPLETED", "Order completed");
+        orderAuditService.record(ORDER_TYPE_CUSTOMER, saved.getId(), STATUS_COMPLETED, "Order completed");
         return mapToDTO(saved);
     }
 
     @Transactional
     public CustomerOrderDTO cancelOrder(Long id) {
         CustomerOrder order = getOrThrow(id);
-        if ("COMPLETED".equals(order.getStatus())) {
+        if (STATUS_COMPLETED.equals(order.getStatus())) {
             throw new IllegalStateException("Completed orders cannot be cancelled");
         }
         order.setStatus("CANCELLED");
         CustomerOrder saved = customerOrderRepository.save(order);
-        orderAuditService.record("CUSTOMER", saved.getId(), "CANCELLED", "Order cancelled");
+        orderAuditService.record(ORDER_TYPE_CUSTOMER, saved.getId(), "CANCELLED", "Order cancelled");
         return mapToDTO(saved);
     }
 

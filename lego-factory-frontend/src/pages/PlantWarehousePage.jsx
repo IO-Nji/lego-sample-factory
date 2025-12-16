@@ -190,7 +190,7 @@ function PlantWarehousePage() {
   };
 
   const handleCancel = async (orderId) => {
-    if (!window.confirm('Cancel this order?')) return;
+    if (!globalThis.confirm('Cancel this order?')) return;
     setError(null); setSuccessMessage(null);
     try {
       await api.put(`/customer-orders/${orderId}/cancel`);

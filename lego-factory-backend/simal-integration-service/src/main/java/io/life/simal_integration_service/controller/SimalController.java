@@ -22,6 +22,9 @@ import java.util.*;
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"})
 public class SimalController {
 
+    private static final String SCHEDULE_ID = "scheduleId";
+    private static final String STATUS = "status";
+
     // In-memory storage for scheduled orders
     private final Map<String, SimalScheduledOrderResponse> scheduledOrders = new HashMap<>();
     private final DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_DATE_TIME;
@@ -318,11 +321,11 @@ public class SimalController {
                     .createControlOrdersFromSchedule(schedule, productionOrderId);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("scheduleId", scheduleId);
+            response.put(SCHEDULE_ID, scheduleId);
             response.put("productionOrderId", productionOrderId);
             response.put("controlOrdersCreated", createdOrders);
             response.put("totalControlOrders", createdOrders.size());
-            response.put("status", "SUCCESS");
+            response.put(STATUS, "SUCCESS");
 
             return ResponseEntity.ok(response);
 
@@ -331,7 +334,7 @@ public class SimalController {
             e.printStackTrace();
 
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("status", "ERROR");
+            errorResponse.put(STATUS, "ERROR");
             errorResponse.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
@@ -362,7 +365,7 @@ public class SimalController {
             SimalScheduledOrderResponse schedule = scheduledOrders.get(scheduleId);
             if (schedule == null) {
                 failureCount++;
-                results.add(Map.of("scheduleId", scheduleId, "status", "NOT_FOUND"));
+                results.add(Map.of(SCHEDULE_ID, scheduleId, STATUS, "NOT_FOUND"));
                 continue;
             }
 
@@ -372,16 +375,16 @@ public class SimalController {
 
                 successCount++;
                 results.add(Map.of(
-                        "scheduleId", scheduleId,
+                        SCHEDULE_ID, scheduleId,
                         "productionOrderId", productionOrderId,
                         "controlOrders", createdOrders,
-                        "status", "SUCCESS"
+                        STATUS, "SUCCESS"
                 ));
             } catch (Exception e) {
                 failureCount++;
                 results.add(Map.of(
-                        "scheduleId", scheduleId,
-                        "status", "ERROR",
+                        SCHEDULE_ID, scheduleId,
+                        STATUS, "ERROR",
                         "message", e.getMessage()
                 ));
             }

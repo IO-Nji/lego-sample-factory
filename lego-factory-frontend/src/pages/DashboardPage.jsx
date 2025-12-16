@@ -406,7 +406,7 @@ function PlantWarehouseDashboardContent() {
   const handleQuantityChange = (productId, quantity) => {
     setSelectedProducts({
       ...selectedProducts,
-      [productId]: parseInt(quantity) || 0,
+      [productId]: Number.parseInt(quantity) || 0,
     });
   };
 
@@ -420,7 +420,7 @@ function PlantWarehouseDashboardContent() {
       .filter(([_, quantity]) => quantity > 0)
       .map(([productId, quantity]) => ({
         itemType: "PRODUCT",
-        itemId: parseInt(productId),
+        itemId: Number.parseInt(productId),
         quantity,
         notes: "",
       }));
@@ -506,7 +506,7 @@ function PlantWarehouseDashboardContent() {
   };
 
   const handleCancel = async (orderId) => {
-    if (!window.confirm("Cancel this order?")) return;
+    if (!globalThis.confirm("Cancel this order?")) return;
     setError(null);
     setSuccessMessage(null);
     try {

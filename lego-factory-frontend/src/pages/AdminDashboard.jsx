@@ -234,7 +234,7 @@ function AdminDashboard() {
   };
 
   const handleDeleteProduct = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this product variant?")) {
+    if (!globalThis.confirm("Are you sure you want to delete this product variant?")) {
       return;
     }
 
@@ -358,8 +358,9 @@ function AdminDashboard() {
     return (
       <div className="workstation-tab">
         <div className="workstation-selector">
-          <label>Select Workstation: </label>
+          <label htmlFor="admin-workstation-select">Select Workstation: </label>
           <select
+            id="admin-workstation-select"
             value={selectedWorkstationId || ""}
             onChange={(e) => setSelectedWorkstationId(parseInt(e.target.value))}
           >
@@ -554,8 +555,9 @@ function AdminDashboard() {
               <h4>{editingProductId ? "Edit Product Variant" : "Create New Product Variant"}</h4>
               <form onSubmit={handleSaveProduct} className="product-form">
                 <div className="form-group">
-                  <label>Product Name *</label>
+                  <label htmlFor="product-name">Product Name *</label>
                   <input
+                    id="product-name"
                     type="text"
                     name="name"
                     value={formData.name}
@@ -566,8 +568,9 @@ function AdminDashboard() {
                 </div>
 
                 <div className="form-group">
-                  <label>Description</label>
+                  <label htmlFor="product-description">Description</label>
                   <textarea
+                    id="product-description"
                     name="description"
                     value={formData.description}
                     onChange={handleProductFormChange}
@@ -578,8 +581,9 @@ function AdminDashboard() {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Price ($) *</label>
+                    <label htmlFor="product-price">Price ($) *</label>
                     <input
+                      id="product-price"
                       type="number"
                       name="price"
                       value={formData.price}
@@ -592,8 +596,9 @@ function AdminDashboard() {
                   </div>
 
                   <div className="form-group">
-                    <label>Est. Time (minutes) *</label>
+                    <label htmlFor="product-est-time">Est. Time (minutes) *</label>
                     <input
+                      id="product-est-time"
                       type="number"
                       name="estimatedTimeMinutes"
                       value={formData.estimatedTimeMinutes}

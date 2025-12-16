@@ -102,25 +102,28 @@ function ProductionPlanningPage() {
         return;
       }
 
-      const derived = [];
+      let derived = [];
       items.forEach((it, idx) => {
         const qty = Number(it.quantity) || 1;
-        derived.push({
-          itemId: it.itemId,
-          itemName: `Manufacture for ${it.itemType || 'ITEM'} ${it.itemId}`,
-          quantity: qty,
-          workstationType: "MANUFACTURING",
-          estimatedDuration: Math.max(15, 15 * qty),
-          sequence: (idx + 1) * 2 - 1,
-        });
-        derived.push({
-          itemId: it.itemId,
-          itemName: `Final Assembly for ${it.itemType || 'ITEM'} ${it.itemId}`,
-          quantity: qty,
-          workstationType: "ASSEMBLY",
-          estimatedDuration: Math.max(20, 20 * qty),
-          sequence: (idx + 1) * 2,
-        });
+        const tasks = [
+          {
+            itemId: it.itemId,
+            itemName: `Manufacture for ${it.itemType || 'ITEM'} ${it.itemId}`,
+            quantity: qty,
+            workstationType: "MANUFACTURING",
+            estimatedDuration: Math.max(15, 15 * qty),
+            sequence: (idx + 1) * 2 - 1,
+          },
+          {
+            itemId: it.itemId,
+            itemName: `Final Assembly for ${it.itemType || 'ITEM'} ${it.itemId}`,
+            quantity: qty,
+            workstationType: "ASSEMBLY",
+            estimatedDuration: Math.max(20, 20 * qty),
+            sequence: (idx + 1) * 2,
+          }
+        ];
+        derived = derived.concat(tasks);
       });
 
       setOrderNumber(order.orderNumber || `CO-${coIdInput.trim()}`);
@@ -264,15 +267,15 @@ function ProductionPlanningPage() {
         </div>
         <div className="box-content">
             <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center", marginBottom: "0.75rem" }}>
-              <label style={{ fontWeight: 600 }}>Plan from Customer Order</label>
-              <input value={coIdInput} onChange={(e) => setCoIdInput(e.target.value)} placeholder="Customer Order ID" />
+              <label htmlFor="plan-co-id" style={{ fontWeight: 600 }}>Plan from Customer Order</label>
+              <input id="plan-co-id" value={coIdInput} onChange={(e) => setCoIdInput(e.target.value)} placeholder="Customer Order ID" />
               <button className="secondary-link" onClick={planFromCustomerOrder} disabled={planning}>
                 {planning ? "Planning…" : "Load & Plan"}
               </button>
             </div>
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center", marginBottom: "0.75rem" }}>
-            <label style={{ fontWeight: 600 }}>Order Number</label>
-            <input value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)} placeholder="CO-12345" />
+            <label htmlFor="plan-order-number" style={{ fontWeight: 600 }}>Order Number</label>
+            <input id="plan-order-number" value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)} placeholder="CO-12345" />
             <button className="primary-link" onClick={submitPlan} disabled={planning}>
               {planning ? "Planning…" : "Plan Schedule"}
             </button>
@@ -337,7 +340,7 @@ function ProductionPlanningPage() {
                       <div key={t.taskId} title={`${t.itemName} (${t.quantity})`} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <div style={{ height: 8, width: `${Math.min(100, (t.duration || 20) * 2)}px`, background: "linear-gradient(90deg,#0b5394,#1565c0)", borderRadius: 4 }} />
                         <div style={{ fontSize: "0.85rem", color: "#333" }}>{t.itemName} · {t.duration}m</div>
-                        {createdControlOrders && createdControlOrders[ws] && (
+                        {createdControlOrders?.[ws] && (
                           <a href="/production-control" className="primary-link" style={{ marginLeft: 8 }}>
                             View Order {createdControlOrders[ws]}
                           </a>
@@ -487,20 +490,20 @@ function ProductionPlanningPage() {
         </div>
         <div className="box-content">
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-            <label style={{ fontWeight: 600 }}>From</label>
-            <input type="datetime-local" value={schedFrom} onChange={(e) => setSchedFrom(e.target.value)} />
-            <label style={{ fontWeight: 600 }}>To</label>
-            <input type="datetime-local" value={schedTo} onChange={(e) => setSchedTo(e.target.value)} />
-            <label style={{ fontWeight: 600 }}>Workstation</label>
-            <select value={schedWsFilter} onChange={(e) => setSchedWsFilter(e.target.value)}>
+            <label htmlFor="sched-from" style={{ fontWeight: 600 }}>From</label>
+            <input id="sched-from" type="datetime-local" value={schedFrom} onChange={(e) => setSchedFrom(e.target.value)} />
+            <label htmlFor="sched-to" style={{ fontWeight: 600 }}>To</label>
+            <input id="sched-to" type="datetime-local" value={schedTo} onChange={(e) => setSchedTo(e.target.value)} />
+            <label htmlFor="sched-ws-filter" style={{ fontWeight: 600 }}>Workstation</label>
+            <select id="sched-ws-filter" value={schedWsFilter} onChange={(e) => setSchedWsFilter(e.target.value)}>
               <option value="ALL">All</option>
               {[...new Set((schedules || []).flatMap(s => (s.scheduledTasks || []).map(t => t.workstationName || t.workstationId)).filter(Boolean))]
                 .map(ws => (<option key={ws} value={ws}>{ws}</option>))}
             </select>
-            <label style={{ fontWeight: 600 }}>Page</label>
-            <input type="number" min={1} value={schedPage} onChange={(e) => setSchedPage(Math.max(1, Number(e.target.value) || 1))} style={{ width: 80 }} />
-            <label style={{ fontWeight: 600 }}>Size</label>
-            <select value={schedPageSize} onChange={(e) => { setSchedPageSize(Number(e.target.value)); setSchedPage(1); }}>
+            <label htmlFor="sched-page" style={{ fontWeight: 600 }}>Page</label>
+            <input id="sched-page" type="number" min={1} value={schedPage} onChange={(e) => setSchedPage(Math.max(1, Number(e.target.value) || 1))} style={{ width: 80 }} />
+            <label htmlFor="sched-page-size" style={{ fontWeight: 600 }}>Size</label>
+            <select id="sched-page-size" value={schedPageSize} onChange={(e) => { setSchedPageSize(Number(e.target.value)); setSchedPage(1); }}>
               {[10, 20, 50].map(s => (<option key={s} value={s}>{s}</option>))}
             </select>
           </div>

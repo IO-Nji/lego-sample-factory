@@ -184,16 +184,18 @@ export default function MasterdataAdminPage() {
         <div className="form-card">
           <div className="form-row">
             <div className="form-group">
-              <label>Name</label>
+              <label htmlFor="module-name">Name</label>
               <input
+                id="module-name"
                 placeholder="e.g., Engine Module"
                 value={moduleForm.name}
                 onChange={(e) => setModuleForm({ ...moduleForm, name: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label>Type</label>
+              <label htmlFor="module-type">Type</label>
               <input
+                id="module-type"
                 placeholder="e.g., MODULE"
                 value={moduleForm.type}
                 onChange={(e) => setModuleForm({ ...moduleForm, type: e.target.value })}
@@ -201,8 +203,9 @@ export default function MasterdataAdminPage() {
             </div>
           </div>
           <div className="form-group">
-            <label>Description</label>
+            <label htmlFor="module-description">Description</label>
             <input
+              id="module-description"
               placeholder="Short description"
               value={moduleForm.description}
               onChange={(e) => setModuleForm({ ...moduleForm, description: e.target.value })}
@@ -254,16 +257,18 @@ export default function MasterdataAdminPage() {
         <div className="form-card">
           <div className="form-row">
             <div className="form-group">
-              <label>Name</label>
+              <label htmlFor="part-name">Name</label>
               <input
+                id="part-name"
                 placeholder="e.g., 2x4 Brick"
                 value={partForm.name}
                 onChange={(e) => setPartForm({ ...partForm, name: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label>Category</label>
+              <label htmlFor="part-category">Category</label>
               <input
+                id="part-category"
                 placeholder="e.g., BRICK"
                 value={partForm.category}
                 onChange={(e) => setPartForm({ ...partForm, category: e.target.value })}
@@ -272,8 +277,9 @@ export default function MasterdataAdminPage() {
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label>Unit Cost</label>
+              <label htmlFor="part-unit-cost">Unit Cost</label>
               <input
+                id="part-unit-cost"
                 type="number"
                 step="0.01"
                 placeholder="e.g., 0.25"
@@ -282,8 +288,9 @@ export default function MasterdataAdminPage() {
               />
             </div>
             <div className="form-group">
-              <label>Description</label>
+              <label htmlFor="part-description">Description</label>
               <input
+                id="part-description"
                 placeholder="Short description"
                 value={partForm.description}
                 onChange={(e) => setPartForm({ ...partForm, description: e.target.value })}
@@ -338,16 +345,18 @@ export default function MasterdataAdminPage() {
         <div className="form-card">
           <div className="form-row">
             <div className="form-group">
-              <label>Name</label>
+              <label htmlFor="workstation-name">Name</label>
               <input
+                id="workstation-name"
                 placeholder="e.g., Modules Supermarket"
                 value={workstationForm.name}
                 onChange={(e) => setWorkstationForm({ ...workstationForm, name: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label>Type</label>
+              <label htmlFor="workstation-type">Type</label>
               <input
+                id="workstation-type"
                 placeholder="e.g., SUPERMARKET"
                 value={workstationForm.workstationType}
                 onChange={(e) => setWorkstationForm({ ...workstationForm, workstationType: e.target.value })}
@@ -356,16 +365,18 @@ export default function MasterdataAdminPage() {
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label>Description</label>
+              <label htmlFor="workstation-description">Description</label>
               <input
+                id="workstation-description"
                 placeholder="Short description"
                 value={workstationForm.description}
                 onChange={(e) => setWorkstationForm({ ...workstationForm, description: e.target.value })}
               />
             </div>
             <div className="form-group">
-              <label>Active</label>
+              <label htmlFor="workstation-active">Active</label>
               <select
+                id="workstation-active"
                 value={workstationForm.active ? 'true' : 'false'}
                 onChange={(e) => setWorkstationForm({ ...workstationForm, active: e.target.value === 'true' })}
               >

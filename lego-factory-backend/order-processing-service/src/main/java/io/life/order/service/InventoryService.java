@@ -44,7 +44,7 @@ public class InventoryService {
             Integer available = null;
             if (dto != null) {
                 Object q = dto.get("quantity");
-                if (q instanceof Number) available = ((Number) q).intValue();
+                if (q instanceof Number number) available = number.intValue();
                 else if (q != null) available = Integer.parseInt(q.toString());
             }
             boolean ok = available != null && available >= quantity;
@@ -99,7 +99,7 @@ public class InventoryService {
             Integer available = null;
             if (dto != null) {
                 Object q = dto.get("quantity");
-                if (q instanceof Number) available = ((Number) q).intValue();
+                if (q instanceof Number number) available = number.intValue();
                 else if (q != null) available = Integer.parseInt(q.toString());
             }
             logger.info("Available stock for workstation {} item {}: {}", workstationId, itemId, available);

@@ -48,10 +48,10 @@ api.interceptors.response.use(
       localStorage.removeItem('authSession');
       
       // Only redirect if not already on login or home page
-      const currentPath = window.location.pathname;
+      const currentPath = globalThis.location.pathname;
       if (currentPath !== '/' && currentPath !== '/login') {
         console.log('401 Unauthorized - redirecting to home page');
-        window.location.href = '/';
+        globalThis.location.href = '/';
       }
     }
     return Promise.reject(error);

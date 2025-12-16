@@ -98,7 +98,7 @@ function ProductionControlPage() {
 
   const completeProduction = async (orderId) => {
     if (
-      !window.confirm(
+      !globalThis.confirm(
         "Are you sure production is complete? This action cannot be undone."
       )
     ) {
