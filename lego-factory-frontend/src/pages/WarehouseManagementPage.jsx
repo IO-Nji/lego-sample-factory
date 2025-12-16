@@ -84,7 +84,7 @@ function WarehouseManagementPage() {
         </p>
         
         {feedback.message && (
-          {feedback.type === "error" ? (
+          feedback.type === "error" ? (
             <p
               className="form-error"
               role="alert"
@@ -97,7 +97,7 @@ function WarehouseManagementPage() {
             >
               {feedback.message}
             </output>
-          )}
+          )
         )}
 
         {loading ? (

@@ -31,6 +31,12 @@ public class OrderAuditService {
         webhookService.dispatch(saved);
     }
 
+    // Alias method for backward compatibility
+    @Transactional
+    public void record(String orderType, Long orderId, String eventType, String description) {
+        createAuditEvent(orderType, orderId, eventType, description);
+    }
+
     @Transactional(readOnly = true)
     public List<OrderAudit> find(String orderType, Long orderId) {
         return repository.findByOrderTypeAndOrderIdOrderByCreatedAtDesc(orderType, orderId);
