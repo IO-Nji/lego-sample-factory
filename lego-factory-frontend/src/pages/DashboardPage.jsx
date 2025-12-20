@@ -5,6 +5,7 @@ import "../styles/DashboardStandard.css";
 import "../styles/ControlPages.css";
 import "../styles/AdminDashboard.css";
 
+import { useDashboardRefresh } from "../context/DashboardRefreshContext";
 /**
  * Product name mapping with acronyms
  * Maps itemId/productId to display name
@@ -59,13 +60,15 @@ const getInventoryStatusColor = (quantity) => {
  * Consolidates all workstation dashboards into a single page component
  */
 function DashboardPage() {
-  const { session, isAdmin, isPlantWarehouse } = useAuth();
+  const { session, isAdmin } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const { subscribe } = useDashboardRefresh();
 
-  // Determine if page has loaded to prevent flashing
   useEffect(() => {
     setIsLoading(false);
   }, []);
+
+  const userRole = session?.user?.role;
 
   if (isLoading) {
     return (
@@ -75,8 +78,6 @@ function DashboardPage() {
       </section>
     );
   }
-
-  const userRole = session?.user?.role;
 
   // Render Admin Dashboard
   if (isAdmin) {
@@ -163,9 +164,17 @@ function AdminDashboardContent() {
         axios.get("/api/supply-orders/warehouse"),
         axios.get("/api/stock/alerts/low"),
       ]).catch((err) => {
+        setError("Dashboard API error: " + (err.message || "Unknown error"));
         console.error("Dashboard API error:", err);
         return [null, null, null, null, null];
       });
+
+      // Log API responses for debugging
+      console.log("Workstations:", wsResponse?.data);
+      console.log("Production Orders:", prodResponse?.data);
+      console.log("Assembly Orders:", asmResponse?.data);
+      console.log("Supply Orders:", supResponse?.data);
+      console.log("Low Stock Alerts:", lowAlertsRes?.data);
 
       const wsData = Array.isArray(wsResponse?.data) ? wsResponse.data : [];
       const prodData = Array.isArray(prodResponse?.data) ? prodResponse.data : [];
@@ -410,6 +419,7 @@ function PlantWarehouseDashboardContent() {
     });
   };
 
+  const { refresh } = useDashboardRefresh();
   const handleCreateOrder = async () => {
     if (!session?.user?.workstationId) {
       setError("Cannot create order: workstation ID not found in session");
@@ -444,6 +454,7 @@ function PlantWarehouseDashboardContent() {
       setSuccessMessage(`Order created: ${response.data.orderNumber} - Click "Fulfill" to process`);
       setSelectedProducts({});
       fetchOrders();
+      refresh(); // Trigger global dashboard refresh
     } catch (err) {
       setError("Failed to create order: " + (err.response?.data?.message || err.message));
     } finally {
@@ -939,7 +950,7 @@ function ModulesSupermarketDashboardContent() {
     setSuccessMessage(null);
 
     try {
-      const response = await axios.put(`/api/warehouse-orders/${orderId}/fulfill`);
+      const response = await axios.put(`/api/warehouse-orders/${orderId}/fulfill-modules`);
       setSuccessMessage(`Order ${response.data.orderNumber} fulfilled successfully`);
       setTimeout(() => setSuccessMessage(null), 3000);
       fetchWarehouseOrders();

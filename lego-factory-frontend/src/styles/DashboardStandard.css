@@ -237,7 +237,7 @@
 }
 
 .btn-success {
-  background: #16a34a;
+  background: #0c642c;
   color: white;
 }
 
@@ -247,7 +247,7 @@
 }
 
 .btn-warning {
-  background: #ea580c;
+  background: #b24308;
   color: white;
 }
 
@@ -417,7 +417,7 @@
 
 .form-control:disabled {
   background: #f3f4f6;
-  color: #9ca3af;
+  color: #09337b;
   cursor: not-allowed;
 }
 

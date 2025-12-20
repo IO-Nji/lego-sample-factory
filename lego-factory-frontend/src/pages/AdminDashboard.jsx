@@ -123,7 +123,7 @@ function AdminDashboard() {
         ordersMap[station.id] = Array.isArray(ordersResponse.data) ? ordersResponse.data : [];
         console.log(`WS-${station.id} orders:`, ordersMap[station.id].length, 'orders');
       } catch (err) {
-        console.error(`Failed to fetch orders for WS-${station.id}:`, err);
+        console.error(`Failed to fetch orders for WS-${station.id}:`, err.response?.data || err.message);
         ordersMap[station.id] = [];
       }
     }
@@ -192,8 +192,8 @@ function AdminDashboard() {
       const payload = {
         name: formData.name,
         description: formData.description,
-        price: parseFloat(formData.price),
-        estimatedTimeMinutes: parseInt(formData.estimatedTimeMinutes)
+        price: Number.parseFloat(formData.price),
+        estimatedTimeMinutes: Number.parseInt(formData.estimatedTimeMinutes)
       };
 
       if (editingProductId) {
@@ -276,6 +276,8 @@ function AdminDashboard() {
       });
     });
 
+    console.log('Calculated stats - Total:', total, 'Pending:', pending, 'Processing:', processing, 'Completed:', completed);
+    
     setSystemStats(prev => ({
       ...prev,
       totalOrders: total,
@@ -362,7 +364,7 @@ function AdminDashboard() {
           <select
             id="admin-workstation-select"
             value={selectedWorkstationId || ""}
-            onChange={(e) => setSelectedWorkstationId(parseInt(e.target.value))}
+            onChange={(e) => setSelectedWorkstationId(Number.parseInt(e.target.value))}
           >
             {workstations.map(station => (
               <option key={station.id} value={station.id}>
@@ -732,7 +734,7 @@ function AdminDashboard() {
         orders.forEach(order => {
           allOrders.push({
             ...order,
-            workstationId: parseInt(wsId)
+            workstationId: Number.parseInt(wsId)
           });
         });
       }

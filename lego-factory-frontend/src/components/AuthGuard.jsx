@@ -3,10 +3,10 @@ import { useAuth } from "../context/AuthContext.jsx";
 
 /**
  * AuthGuard component to protect routes and handle authentication state
- * Redirects to home page if user is not authenticated or token has expired
+ * Redirects to login page if user is not authenticated or token has expired
  */
 export function AuthGuard({ children, requiredRole = null }) {
-  const { isAuthenticated, session } = useAuth();
+  const { isAuthenticated, session, logout } = useAuth();
   const location = useLocation();
 
   // Check if token has expired
@@ -15,17 +15,16 @@ export function AuthGuard({ children, requiredRole = null }) {
     const now = Date.now();
     
     if (now >= expiresAt) {
-      console.log('Token expired - clearing session and redirecting to home');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('authSession');
-      return <Navigate to="/" state={{ from: location, reason: 'expired' }} replace />;
+      console.log('Token expired - clearing session and redirecting to login');
+      logout();
+      return <Navigate to="/login" state={{ from: location, reason: 'expired' }} replace />;
     }
   }
 
   // Check if user is authenticated
   if (!isAuthenticated) {
-    console.log('Not authenticated - redirecting to home');
-    return <Navigate to="/" state={{ from: location, reason: 'unauthenticated' }} replace />;
+    console.log('Not authenticated - redirecting to login');
+    return <Navigate to="/login" state={{ from: location, reason: 'unauthenticated' }} replace />;
   }
 
   // Check if specific role is required

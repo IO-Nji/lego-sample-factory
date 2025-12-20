@@ -192,7 +192,7 @@ function InventoryManagementPage() {
       return;
     }
 
-    const newQty = parseInt(newQuantity);
+    const newQty = Number.parseInt(newQuantity);
     let apiSuccess = false;
 
     try {
@@ -231,8 +231,8 @@ function InventoryManagementPage() {
         if (item.quantity <= 5) {
           lowStockList.push({
             ...item,
-            workstationId: parseInt(wsId),
-            workstationName: getWorkstationName(parseInt(wsId))
+            workstationId: Number.parseInt(wsId),
+            workstationName: getWorkstationName(Number.parseInt(wsId))
           });
         }
       });

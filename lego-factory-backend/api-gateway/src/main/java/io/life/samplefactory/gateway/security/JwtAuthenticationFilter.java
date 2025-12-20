@@ -46,8 +46,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         if (!StringUtils.hasText(properties.getSecret())) {
             throw new IllegalStateException("JWT secret must be configured for the gateway");
         }
-        this.jwtParser = Jwts.parserBuilder()
-            .setSigningKey(Keys.hmacShaKeyFor(properties.getSecret().getBytes(StandardCharsets.UTF_8)))
+        this.jwtParser = Jwts.parser()
+            .verifyWith(Keys.hmacShaKeyFor(properties.getSecret().getBytes(StandardCharsets.UTF_8)))
             .build();
     }
 
@@ -67,7 +67,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         String token = authHeader.substring(BEARER_PREFIX.length());
         try {
-            Claims claims = jwtParser.parseClaimsJws(token).getBody();
+            // Use the non-deprecated parseClaimsJws method for jjwt 0.10.x and above
+            io.jsonwebtoken.Jws<io.jsonwebtoken.Claims> jws = jwtParser.parseClaimsJws(token);
+            Claims claims = jws.getPayload();
             ServerHttpRequest mutated = request.mutate()
                 .header("X-Authenticated-User", claims.getSubject())
                 .headers(headers -> {

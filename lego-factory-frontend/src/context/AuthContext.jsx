@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import api from "../api/api";
 import { clearStoredSession, readStoredSession, storeSession } from "../api/apiConfig";
@@ -48,8 +49,10 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => {
+    console.log('Logging out - clearing session');
     clearStoredSession();
     setSession(null);
+    // Navigation will be handled by the component that calls logout
   }, []);
 
   const value = useMemo(

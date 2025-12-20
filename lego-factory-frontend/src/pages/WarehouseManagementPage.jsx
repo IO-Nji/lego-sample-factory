@@ -153,32 +153,24 @@ function WarehouseManagementPage() {
                     <div className="detail-section">
                       <h3>Warehouse Information</h3>
                       
-                      <div className="detail-group">
-                        <label>ID:</label>
-                        <span>{selectedWarehouse.id}</span>
-                      </div>
-                      
-                      <div className="detail-group">
-                        <label>Type:</label>
-                        <span>{selectedWarehouse.workstationType}</span>
-                      </div>
-                      
-                      <div className="detail-group">
-                        <label>Name:</label>
-                        <span>{selectedWarehouse.name}</span>
-                      </div>
-                      
-                      <div className="detail-group">
-                        <label>Description:</label>
-                        <span>{selectedWarehouse.description || "N/A"}</span>
-                      </div>
-                      
-                      <div className="detail-group">
-                        <label>Status:</label>
-                        <span className={`status-badge ${selectedWarehouse.active ? "active" : "inactive"}`}>
+                      <dl className="detail-list">
+                        <dt>ID:</dt>
+                        <dd>{selectedWarehouse.id}</dd>
+                        
+                        <dt>Type:</dt>
+                        <dd>{selectedWarehouse.workstationType}</dd>
+                        
+                        <dt>Name:</dt>
+                        <dd>{selectedWarehouse.name}</dd>
+                        
+                        <dt>Description:</dt>
+                        <dd>{selectedWarehouse.description || "N/A"}</dd>
+                        
+                        <dt>Status:</dt>
+                        <dd className={`status-badge ${selectedWarehouse.active ? "active" : "inactive"}`}>
                           {selectedWarehouse.active ? "✓ Active" : "✗ Inactive"}
-                        </span>
-                      </div>
+                        </dd>
+                      </dl>
                     </div>
                   </div>
                   

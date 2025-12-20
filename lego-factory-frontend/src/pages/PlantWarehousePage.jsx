@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import CustomerOrderCard from "../components/CustomerOrderCard";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
@@ -93,7 +94,7 @@ function PlantWarehousePage() {
   const handleQuantityChange = (productId, quantity) => {
     setSelectedProducts({
       ...selectedProducts,
-      [productId]: parseInt(quantity) || 0,
+      [productId]: Number.arseInt(quantity) || 0,
     });
   };
 
@@ -107,7 +108,7 @@ function PlantWarehousePage() {
       .filter(([_, quantity]) => quantity > 0)
       .map(([productId, quantity]) => ({
         itemType: "PRODUCT",
-        itemId: parseInt(productId),
+        itemId: Number.parseInt(productId),
         quantity,
         notes: "",
       }));
@@ -337,39 +338,7 @@ function PlantWarehousePage() {
           {Array.isArray(orders) && orders.length > 0 ? (
             <div className="orders-grid">
               {orders.map((order) => (
-                <div key={order.id} className="order-box-card">
-                  <div className="order-box-header">
-                    <span className={`order-status-badge status-${order.status.toLowerCase()}`}>
-                      {order.status}
-                    </span>
-                  </div>
-                  <div className="order-box-body">
-                    <p className="order-number">Order #{order.orderNumber}</p>
-                    {order.orderItems && order.orderItems.length > 0 ? (
-                      <div className="order-items-list">
-                        <p style={{ marginBottom: '0.25rem', fontWeight: '500', color: '#666', fontSize: '0.7rem' }}>Items:</p>
-                        {order.orderItems.map((item, idx) => {
-                          const productName = PRODUCT_NAMES[item.itemId]?.name || item.name || item.itemType || `Item ${idx + 1}`;
-                          return (
-                          <div key={idx} style={{ fontSize: '0.7rem', marginBottom: '0.15rem', paddingLeft: '0.5rem', color: '#333' }}>
-                            <span style={{ fontWeight: '600' }}>{productName}</span>
-                            <span style={{ color: '#999', margin: '0 0.25rem' }}>—</span>
-                            <span>Qty: <span style={{ color: '#059669', fontWeight: '600' }}>{item.quantity}</span></span>
-                            {item.status && (
-                              <>
-                                <span style={{ color: '#999', margin: '0 0.25rem' }}>|</span>
-                                <span style={{ fontSize: '0.65rem', fontWeight: '500', color: '#0b5394' }}>{item.status}</span>
-                              </>
-                            )}
-                          </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="order-info"><strong>Items:</strong> None</p>
-                    )}
-                    <p className="order-date">{new Date(order.orderDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}</p>
-                  </div>
+                <CustomerOrderCard key={order.id} order={order}>
                   <div className="order-box-footer">
                     <div className="actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                       <button className="edit-btn" onClick={() => handleConfirm(order.id)} disabled={order.status !== 'PENDING'}>
@@ -389,7 +358,7 @@ function PlantWarehousePage() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </CustomerOrderCard>
               ))}
             </div>
           ) : (

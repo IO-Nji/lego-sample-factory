@@ -49,7 +49,7 @@ api.interceptors.response.use(
       
       // Only redirect if not already on login or home page
       const currentPath = globalThis.location.pathname;
-      if (currentPath !== '/' && currentPath !== '/login') {
+      if (currentPath !== '/*' && currentPath !== '/login') {
         console.log('401 Unauthorized - redirecting to home page');
         globalThis.location.href = '/';
       }

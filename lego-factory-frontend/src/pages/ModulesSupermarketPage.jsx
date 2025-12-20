@@ -265,10 +265,11 @@ function ModulesSupermarketPage() {
             {loading ? "Refreshing..." : "Refresh"}
           </button>
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end" }}>
-            <label className="text-sm font-semibold text-gray-700 uppercase whitespace-nowrap">
+            <label htmlFor="status-filter" className="text-sm font-semibold text-gray-700 uppercase whitespace-nowrap">
               Filter by Status
             </label>
             <select
+              id="status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium text-gray-700"
@@ -401,43 +402,42 @@ function ModulesSupermarketPage() {
               </div>
               <div className="modal-body">
                 <div className="detail-section">
-                  <div className="detail-group">
-                    <label className="detail-label">Item Type</label>
-                    <p className="detail-value">{selectedModule.itemType}</p>
-                  </div>
-                  <div className="detail-group">
-                    <label className="detail-label">Item ID</label>
-                    <p className="detail-value">{selectedModule.itemId}</p>
-                  </div>
+                  <dl className="detail-list">
+                    <dt className="detail-label">Item Type</dt>
+                    <dd className="detail-value">{selectedModule.itemType}</dd>
+                    
+                    <dt className="detail-label">Item ID</dt>
+                    <dd className="detail-value">{selectedModule.itemId}</dd>
+                  </dl>
                 </div>
 
                 <div className="detail-section">
-                  <div className="detail-group">
-                    <label className="detail-label">Stock Level</label>
-                    <p className="detail-value" style={{ 
+                  <dl className="detail-list">
+                    <dt className="detail-label">Stock Level</dt>
+                    <dd className="detail-value" style={{ 
                       fontSize: "1.5rem", 
                       fontWeight: "bold",
                       color: selectedModule.quantity > 0 ? "#27ae60" : "#e74c3c"
                     }}>
                       {selectedModule.quantity} units
-                    </p>
-                  </div>
+                    </dd>
+                  </dl>
                 </div>
 
                 {selectedModule.description && (
                   <div className="detail-section">
-                    <div className="detail-group">
-                      <label className="detail-label">Description</label>
-                      <p className="detail-value">{selectedModule.description}</p>
-                    </div>
+                    <dl className="detail-list">
+                      <dt className="detail-label">Description</dt>
+                      <dd className="detail-value">{selectedModule.description}</dd>
+                    </dl>
                   </div>
                 )}
 
                 <div className="detail-section">
-                  <div className="detail-group">
-                    <label className="detail-label">Last Updated</label>
-                    <p className="detail-value">{new Date(selectedModule.updatedAt).toLocaleString()}</p>
-                  </div>
+                  <dl className="detail-list">
+                    <dt className="detail-label">Last Updated</dt>
+                    <dd className="detail-value">{new Date(selectedModule.updatedAt).toLocaleString()}</dd>
+                  </dl>
                 </div>
               </div>
               <div className="modal-footer">

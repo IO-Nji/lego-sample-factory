@@ -3,6 +3,7 @@ import HomePage from "./pages/HomePage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
+import NotFoundPage from "./pages/NotFoundPage.jsx";
 import UserManagementPage from "./pages/UserManagementPage.jsx";
 import WarehouseManagementPage from "./pages/WarehouseManagementPage.jsx";
 import InventoryManagementPage from "./pages/InventoryManagementPage.jsx";
@@ -162,7 +163,7 @@ function App() {
         />
       </Route>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

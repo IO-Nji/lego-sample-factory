@@ -108,7 +108,7 @@ public class WarehouseOrderService {
 
         WarehouseOrder order = orderOpt.get();
         logger.info("Processing warehouse order {} from Modules Supermarket (WS-8)", order.getWarehouseOrderNumber());
-        orderAuditService.record(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLMENT_STARTED",
+        orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLMENT_STARTED",
             "Warehouse order fulfillment started: " + order.getWarehouseOrderNumber());
 
         // STEP 1: Check which items are available at Modules Supermarket (workstation 8)
@@ -176,7 +176,7 @@ public class WarehouseOrderService {
         if (allItemsFulfilled) {
             order.setStatus("FULFILLED");
                 logger.info("Warehouse order {} fully fulfilled", order.getWarehouseOrderNumber());
-                orderAuditService.record(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLED",
+                orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLED",
                     "All items fulfilled: " + order.getWarehouseOrderNumber());
             
             // Complete source customer order
@@ -184,7 +184,7 @@ public class WarehouseOrderService {
         } else {
             order.setStatus("PARTIALLY_FULFILLED");
                 logger.warn("Warehouse order {} partially fulfilled due to inventory errors", order.getWarehouseOrderNumber());
-                orderAuditService.record(WAREHOUSE_AUDIT_SOURCE, order.getId(), "PARTIALLY_FULFILLED",
+                orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "PARTIALLY_FULFILLED",
                     "Partial fulfillment due to inventory errors");
         }
 
@@ -197,7 +197,7 @@ public class WarehouseOrderService {
      */
     private WarehouseOrderDTO fulfillPartialAndTriggerProduction(WarehouseOrder order) {
         logger.info("Fulfilling partial items for warehouse order {}", order.getWarehouseOrderNumber());
-        orderAuditService.record(WAREHOUSE_AUDIT_SOURCE, order.getId(), "PARTIAL_FULFILLMENT",
+        orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "PARTIAL_FULFILLMENT",
             "Partial items fulfilled for warehouse order " + order.getWarehouseOrderNumber());
 
         List<WarehouseOrderItem> itemsToProduceLater = new ArrayList<>();
@@ -246,7 +246,7 @@ public class WarehouseOrderService {
      */
     private WarehouseOrderDTO fulfillNoneAndTriggerProduction(WarehouseOrder order) {
         logger.info("No items available in Modules Supermarket - AUTO-TRIGGERING production order for entire warehouse order");
-        orderAuditService.record(WAREHOUSE_AUDIT_SOURCE, order.getId(), "NO_STOCK_PRODUCTION_TRIGGER",
+        orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "NO_STOCK_PRODUCTION_TRIGGER",
             "No stock available; production order auto-triggered");
 
         order.setStatus("PENDING_PRODUCTION");
@@ -281,7 +281,7 @@ public class WarehouseOrderService {
             
                 logger.info("✓ Production order AUTO-CREATED for warehouse order {} with {} shortfall item(s)", 
                     order.getWarehouseOrderNumber(), shortfallItems.size());
-                orderAuditService.record(WAREHOUSE_AUDIT_SOURCE, order.getId(), "PRODUCTION_ORDER_CREATED",
+                orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "PRODUCTION_ORDER_CREATED",
                     "Production order auto-created for shortfall items");
             
             // Update notes with auto-trigger confirmation

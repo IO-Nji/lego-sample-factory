@@ -214,40 +214,7 @@ graph TB
 
 ### Request Flow Architecture
 
-```mermaid
-sequenceDiagram
-    participant Browser
-    participant Nginx as Nginx Proxy<br/>(:80)
-    participant Frontend as React App
-    participant Gateway as API Gateway<br/>(:8011)
-    participant Auth as User Service<br/>(:8012)
-    participant Service as Microservice<br/>(:8013-8016)
-    participant DB as H2 Database
-    
-    Browser->>Nginx: GET / (Static Assets)
-    Nginx->>Frontend: Serve React App
-    Frontend-->>Browser: HTML + JS + CSS
-    
-    Browser->>Nginx: POST /api/auth/login
-    Nginx->>Gateway: Forward Request
-    Gateway->>Auth: POST /auth/login
-    Auth->>DB: Validate Credentials
-    DB-->>Auth: User Data
-    Auth-->>Gateway: JWT Token
-    Gateway-->>Nginx: JWT Token
-    Nginx-->>Browser: JWT Token
-    
-    Note over Browser: Store JWT in localStorage
-    
-    Browser->>Nginx: GET /api/masterdata/products<br/>Authorization: Bearer {JWT}
-    Nginx->>Gateway: Forward Request + JWT
-    Gateway->>Gateway: Validate JWT
-    Gateway->>Service: GET /masterdata/products
-    Service->>DB: Query Products
-    DB-->>Service: Product List
-    Service-->>Gateway: JSON Response
-    Gateway-->>Nginx: JSON Response
-    Nginx-->>Browser: Product Data
+```mermaidg
 ```
 
 ### Microservice Communication
@@ -1036,7 +1003,7 @@ We welcome contributions! Please follow these guidelines:
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+  This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ```
 MIT License

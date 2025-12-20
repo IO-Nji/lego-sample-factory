@@ -30,6 +30,14 @@ public class CustomerOrderService {
     public CustomerOrderService(CustomerOrderRepository customerOrderRepository, OrderAuditService orderAuditService) {
         this.customerOrderRepository = customerOrderRepository;
         this.orderAuditService = orderAuditService;
+        // Custom exception for mapping errors is now a static nested class below
+    }
+
+    // Custom exception for mapping errors
+    public static class OrderMappingException extends RuntimeException {
+        public OrderMappingException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 
     @Transactional
@@ -59,7 +67,7 @@ public class CustomerOrderService {
         CustomerOrder savedOrder = customerOrderRepository.save(order);
 
         CustomerOrderDTO dto = mapToDTO(savedOrder);
-        orderAuditService.record(ORDER_TYPE_CUSTOMER, dto.getId(), "CREATED", "Customer order created: " + dto.getOrderNumber());
+        orderAuditService.recordOrderEvent(ORDER_TYPE_CUSTOMER, dto.getId(), "CREATED", "Customer order created: " + dto.getOrderNumber());
         return dto;
     }
 
@@ -106,7 +114,7 @@ public class CustomerOrderService {
         CustomerOrder updatedOrder = customerOrderRepository.save(order);
 
         CustomerOrderDTO dto = mapToDTO(updatedOrder);
-        orderAuditService.record(ORDER_TYPE_CUSTOMER, dto.getId(), "STATUS_" + newStatus, "Order status changed to " + newStatus);
+        orderAuditService.recordOrderEvent(ORDER_TYPE_CUSTOMER, dto.getId(), "STATUS_" + newStatus, "Order status changed to " + newStatus);
         return dto;
     }
 
@@ -124,7 +132,7 @@ public class CustomerOrderService {
         }
         order.setStatus(STATUS_CONFIRMED);
         CustomerOrder saved = customerOrderRepository.save(order);
-        orderAuditService.record(ORDER_TYPE_CUSTOMER, saved.getId(), STATUS_CONFIRMED, "Order confirmed");
+        orderAuditService.recordOrderEvent(ORDER_TYPE_CUSTOMER, saved.getId(), STATUS_CONFIRMED, "Order confirmed");
         return mapToDTO(saved);
     }
 
@@ -136,7 +144,7 @@ public class CustomerOrderService {
         }
         order.setStatus("PROCESSING");
         CustomerOrder saved = customerOrderRepository.save(order);
-        orderAuditService.record(ORDER_TYPE_CUSTOMER, saved.getId(), "STATUS_PROCESSING", "Order moved to PROCESSING");
+        orderAuditService.recordOrderEvent(ORDER_TYPE_CUSTOMER, saved.getId(), "STATUS_PROCESSING", "Order moved to PROCESSING");
         return mapToDTO(saved);
     }
 
@@ -148,7 +156,7 @@ public class CustomerOrderService {
         }
         order.setStatus(STATUS_COMPLETED);
         CustomerOrder saved = customerOrderRepository.save(order);
-        orderAuditService.record(ORDER_TYPE_CUSTOMER, saved.getId(), STATUS_COMPLETED, "Order completed");
+        orderAuditService.recordOrderEvent(ORDER_TYPE_CUSTOMER, saved.getId(), STATUS_COMPLETED, "Order completed");
         return mapToDTO(saved);
     }
 
@@ -160,7 +168,7 @@ public class CustomerOrderService {
         }
         order.setStatus("CANCELLED");
         CustomerOrder saved = customerOrderRepository.save(order);
-        orderAuditService.record(ORDER_TYPE_CUSTOMER, saved.getId(), "CANCELLED", "Order cancelled");
+        orderAuditService.recordOrderEvent(ORDER_TYPE_CUSTOMER, saved.getId(), "CANCELLED", "Order cancelled");
         return mapToDTO(saved);
     }
 
@@ -190,7 +198,8 @@ public class CustomerOrderService {
             return dto;
         } catch (Exception e) {
             logger.error("Error mapping order to DTO: {}", order.getId(), e);
-            throw new RuntimeException("Error mapping order to DTO: " + e.getMessage(), e);
+            logger.error("OrderMappingException: Error mapping order to DTO: {}", e.getMessage(), e);
+            throw new OrderMappingException("Error mapping order to DTO: " + e.getMessage(), e);
         }
     }
 

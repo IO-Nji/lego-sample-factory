@@ -4,6 +4,8 @@ import io.life.simal_integration_service.dto.SimalProductionOrderRequest;
 import io.life.simal_integration_service.dto.SimalScheduledOrderResponse;
 import io.life.simal_integration_service.dto.SimalUpdateTimeRequest;
 import io.life.simal_integration_service.service.ControlOrderIntegrationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,7 @@ import java.util.*;
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"})
 public class SimalController {
 
+    private static final Logger log = LoggerFactory.getLogger(SimalController.class);
     private static final String SCHEDULE_ID = "scheduleId";
     private static final String STATUS = "status";
 
@@ -45,7 +48,7 @@ public class SimalController {
     public ResponseEntity<SimalScheduledOrderResponse> submitProductionOrder(
             @RequestBody SimalProductionOrderRequest request) {
 
-        System.out.println("Received production order: " + request.getOrderNumber());
+        log.info("Received production order: {}", request.getOrderNumber());
 
         // Generate schedule ID
         String scheduleId = "SCHED-" + System.currentTimeMillis();
@@ -91,7 +94,7 @@ public class SimalController {
      */
     @GetMapping("/scheduled-orders")
     public ResponseEntity<List<SimalScheduledOrderResponse>> getScheduledOrders() {
-        System.out.println("Fetching all scheduled orders. Total: " + scheduledOrders.size());
+        log.info("Fetching all scheduled orders. Total: {}", scheduledOrders.size());
         return ResponseEntity.ok(new ArrayList<>(scheduledOrders.values()));
     }
 
@@ -104,7 +107,7 @@ public class SimalController {
     @GetMapping("/scheduled-orders/{scheduleId}")
     public ResponseEntity<SimalScheduledOrderResponse> getScheduledOrder(
             @PathVariable String scheduleId) {
-        System.out.println("Fetching schedule: " + scheduleId);
+        log.info("Fetching schedule: {}", scheduleId);
 
         SimalScheduledOrderResponse order = scheduledOrders.get(scheduleId);
         if (order == null) {
@@ -124,8 +127,7 @@ public class SimalController {
     public ResponseEntity<SimalScheduledOrderResponse> updateProductionTime(
             @RequestBody SimalUpdateTimeRequest request) {
 
-        System.out.println("Updating time for schedule: " + request.getScheduleId() + 
-                         ", task: " + request.getTaskId());
+        log.info("Updating time for schedule: {}, task: {}", request.getScheduleId(), request.getTaskId());
 
         SimalScheduledOrderResponse order = scheduledOrders.get(request.getScheduleId());
         if (order == null) {
@@ -172,7 +174,7 @@ public class SimalController {
     @GetMapping("/scheduled-orders/order/{orderNumber}")
     public ResponseEntity<SimalScheduledOrderResponse> getScheduleByOrderNumber(
             @PathVariable String orderNumber) {
-        System.out.println("Fetching schedule for order: " + orderNumber);
+        log.info("Fetching schedule for order: {}", orderNumber);
 
         SimalScheduledOrderResponse order = scheduledOrders.values()
                 .stream()
@@ -222,7 +224,7 @@ public class SimalController {
                 tasks.add(task);
 
                 // Move to next time slot
-                currentTime = currentTime.plusMinutes(duration + 5); // 5 min buffer
+                currentTime = currentTime.plusMinutes((long) duration + 5L); // 5 min buffer
                 sequence++;
             }
         }
@@ -305,7 +307,7 @@ public class SimalController {
             @PathVariable String scheduleId,
             @RequestParam(required = false) Long productionOrderId) {
 
-        System.out.println("Creating control orders from schedule: " + scheduleId);
+        log.info("Creating control orders from schedule: {}", scheduleId);
 
         SimalScheduledOrderResponse schedule = scheduledOrders.get(scheduleId);
         if (schedule == null) {
@@ -330,8 +332,7 @@ public class SimalController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println("Error creating control orders: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error creating control orders: {}", e.getMessage(), e);
 
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put(STATUS, "ERROR");
@@ -351,7 +352,7 @@ public class SimalController {
     public ResponseEntity<Map<String, Object>> createControlOrdersBatch(
             @RequestBody BatchControlOrderRequest request) {
 
-        System.out.println("Creating control orders for batch: " + request.getScheduleIds().size() + " schedules");
+        log.info("Creating control orders for batch: {} schedules", request.getScheduleIds().size());
 
         List<Map<String, Object>> results = new ArrayList<>();
         int successCount = 0;

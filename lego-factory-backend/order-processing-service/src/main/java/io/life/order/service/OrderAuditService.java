@@ -5,9 +5,6 @@ import io.life.order.repository.OrderAuditRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// Import WebhookService if missing
-import io.life.order.service.WebhookService;
-
 import java.util.List;
 
 @Service
@@ -33,8 +30,8 @@ public class OrderAuditService {
 
     // Alias method for backward compatibility
     @Transactional
-    public void record(String orderType, Long orderId, String eventType, String description) {
-        createAuditEvent(orderType, orderId, eventType, description);
+    public void recordOrderEvent(String orderType, Long orderId, String eventType, String description) {
+        this.createAuditEvent(orderType, orderId, eventType, description);
     }
 
     @Transactional(readOnly = true)

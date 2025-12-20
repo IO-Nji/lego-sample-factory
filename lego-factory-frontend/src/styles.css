@@ -431,7 +431,6 @@ section {
 
 /* Primary Action Button (Blue) - for main actions, edit, update, confirm */
 .edit-btn,
-.primary-link,
 .action-btn,
 .start-btn,
 .complete-btn,
@@ -455,7 +454,6 @@ section {
 }
 
 .edit-btn:hover:not(:disabled),
-.primary-link:hover:not(:disabled),
 .action-btn:hover:not(:disabled),
 .start-btn:hover:not(:disabled),
 .complete-btn:hover:not(:disabled),
@@ -466,7 +464,6 @@ section {
 }
 
 .edit-btn:disabled,
-.primary-link:disabled,
 .action-btn:disabled,
 .start-btn:disabled,
 .complete-btn:disabled,
@@ -480,7 +477,6 @@ section {
 
 /* Delete/Danger Button (Red) - for delete, cancel, halt, defect */
 .delete-btn,
-.danger-link,
 .halt-btn,
 .defect-btn {
   display: inline-flex;
@@ -502,7 +498,6 @@ section {
 }
 
 .delete-btn:hover:not(:disabled),
-.danger-link:hover:not(:disabled),
 .halt-btn:hover:not(:disabled),
 .defect-btn:hover:not(:disabled) {
   background: #c62828;
@@ -511,7 +506,6 @@ section {
 }
 
 .delete-btn:disabled,
-.danger-link:disabled,
 .halt-btn:disabled,
 .defect-btn:disabled {
   background: #ef9a9a;
@@ -522,7 +516,6 @@ section {
 }
 
 /* Secondary Action Button (outlined) - for secondary actions, view, cancel */
-.secondary-link,
 .btn-back {
   display: inline-flex;
   align-items: center;
@@ -542,7 +535,6 @@ section {
   margin-top: 0;
 }
 
-.secondary-link:hover:not(:disabled),
 .btn-back:hover:not(:disabled) {
   background: #e6eef5;
   border-color: #073d73;
@@ -550,7 +542,6 @@ section {
   transform: translateY(-1px);
 }
 
-.secondary-link:disabled,
 .btn-back:disabled {
   border-color: #c7cfda;
   color: #999;
@@ -791,10 +782,6 @@ section {
     max-height: none;
   }
 }
-.secondary-link:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
 
 /* Warehouse Management Styles */
 .warehouses-grid {
@@ -873,6 +860,7 @@ section {
   font-size: 0.75rem;
 }
 
+/* Status Badge - Common styling for all status indicators */
 .status-badge {
   display: inline-block;
   padding: 0.375rem 0.75rem;
@@ -965,22 +953,24 @@ section {
   padding-bottom: 0.5rem;
 }
 
-.detail-group {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 0;
+/* Definition list styling for detail displays */
+.detail-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem 1rem;
+  margin: 0;
 }
 
-.detail-group label {
+.detail-list dt {
   font-weight: 600;
   color: #546174;
   font-size: 0.95rem;
 }
 
-.detail-group span {
+.detail-list dd {
   color: #212121;
   font-size: 0.95rem;
+  margin: 0;
 }
 
 .modal-footer {

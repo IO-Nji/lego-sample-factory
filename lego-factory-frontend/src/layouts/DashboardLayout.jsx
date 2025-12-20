@@ -1,7 +1,8 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
 function DashboardLayout() {
+  const navigate = useNavigate();
   const { isAuthenticated, isAdmin, isPlantWarehouse, logout, session } = useAuth();
 
   // Define all role checks
@@ -12,6 +13,12 @@ function DashboardLayout() {
   const isManufacturingWorkstation = session?.user?.role === "MANUFACTURING_WORKSTATION";
   const isAssemblyWorkstation = session?.user?.role === "ASSEMBLY_WORKSTATION";
   const isProductionPlanning = session?.user?.role === "PRODUCTION_PLANNING";
+
+  // Handle logout and redirect to login page
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   // Determine which manufacturing station to display based on workstation type
   const getManufacturingWorkstationType = () => {
@@ -64,7 +71,7 @@ function DashboardLayout() {
             {!isAuthenticated && <li><Link to="/login">Login</Link></li>}
             {isAuthenticated && (
               <li>
-                <button type="button" className="link-button" onClick={logout}>
+                <button type="button" className="link-button" onClick={handleLogout}>
                   Log out
                 </button>
               </li>
