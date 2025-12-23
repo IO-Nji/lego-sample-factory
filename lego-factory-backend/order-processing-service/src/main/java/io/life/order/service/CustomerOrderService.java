@@ -71,6 +71,7 @@ public class CustomerOrderService {
         return dto;
     }
 
+    @SuppressWarnings("null")
     @Transactional(readOnly = true)
     public Optional<CustomerOrderDTO> getOrderById(Long id) {
         return customerOrderRepository.findById(id)
@@ -107,6 +108,7 @@ public class CustomerOrderService {
 
     @Transactional
     public CustomerOrderDTO updateOrderStatus(Long id, String newStatus) {
+        @SuppressWarnings("null")
         CustomerOrder order = customerOrderRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
 
@@ -118,6 +120,7 @@ public class CustomerOrderService {
         return dto;
     }
 
+    @SuppressWarnings("null")
     @Transactional
     public void deleteOrder(Long id) {
         customerOrderRepository.deleteById(id);
@@ -172,6 +175,7 @@ public class CustomerOrderService {
         return mapToDTO(saved);
     }
 
+    @SuppressWarnings("null")
     private CustomerOrder getOrThrow(Long id) {
         return customerOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));

@@ -94,6 +94,7 @@ body {
 @import './styles/Button.css';
 @import './styles/LoginForm.css';
 @import './styles/StatsCard.css';
+@import './styles/CustomerOrderCard.css';
 
 .app-shell {
   display: flex;

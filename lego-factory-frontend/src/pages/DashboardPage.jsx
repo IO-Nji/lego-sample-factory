@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import PageHeader from "../components/PageHeader";
+import CustomerOrderCard from "../components/CustomerOrderCard";
 import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 import "../styles/ControlPages.css";
@@ -652,69 +653,18 @@ function PlantWarehouseDashboardContent() {
           {Array.isArray(orders) && orders.length > 0 ? (
             <div className="orders-grid">
               {orders.map((order) => (
-                <div key={order.id} className="order-box-card">
-                  <div className="order-box-header">
-                    <span className={`order-status-badge status-${order.status.toLowerCase()}`}>{order.status}</span>
-                  </div>
-                  <div className="order-box-body">
-                    <p className="order-number">#{order.orderNumber}</p>
-                    {order.orderItems && order.orderItems.length > 0 ? (
-                      <div className="order-items-list">
-                        {order.orderItems.map((item, idx) => {
-                          const inventoryItem = inventory.find(
-                            (inv) => inv.itemId === item.itemId || inv.itemId === item.id
-                          );
-                          const quantity = inventoryItem?.quantity || 0;
-                          const statusColor = getInventoryStatusColor(quantity);
-                          const productName = getProductDisplayName(item.itemId || item.id, item.itemType);
-
-                          return (
-                            <div
-                              key={idx}
-                              style={{
-                                fontSize: "0.9rem",
-                                marginBottom: "0.5rem",
-                                color: "#333",
-                                textTransform: "uppercase",
-                                fontWeight: "500",
-                              }}
-                            >
-                              <span>{productName}</span>
-                              <span style={{ color: "#ccc", margin: "0 0.5rem" }}>·</span>
-                              <span style={{ color: statusColor, fontWeight: "700" }}>
-                                {item.quantity}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="order-info" style={{ marginTop: "0.5rem", color: "#999" }}>
-                        No items
-                      </p>
-                    )}
-                    <p className="order-date">{new Date(order.orderDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
-                  </div>
-                  <div className="order-box-footer">
-                    <div className="button-group">
-                      <button className="secondary-link" onClick={() => handleConfirm(order.id)} disabled={order.status !== 'PENDING'}>
-                        Confirm
-                      </button>
-                      <button className="secondary-link" onClick={() => handleProcessing(order.id)} disabled={!(order.status === 'PENDING' || order.status === 'CONFIRMED')}>
-                        Processing
-                      </button>
-                      <button className="primary-link" onClick={() => handleFulfillOrder(order.id)} disabled={fulfillingOrderId === order.id}>
-                        {fulfillingOrderId === order.id ? 'Processing…' : 'Fulfill'}
-                      </button>
-                      <button className="secondary-link" onClick={() => handleComplete(order.id)} disabled={!(order.status === 'PROCESSING' || order.status === 'CONFIRMED')}>
-                        Complete
-                      </button>
-                      <button className="danger-link" onClick={() => handleCancel(order.id)} disabled={order.status === 'COMPLETED'}>
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <CustomerOrderCard
+                  key={order.id}
+                  order={order}
+                  inventory={inventory}
+                  onConfirm={handleConfirm}
+                  onFulfill={handleFulfillOrder}
+                  onComplete={handleComplete}
+                  onCancel={handleCancel}
+                  isProcessing={fulfillingOrderId === order.id}
+                  getProductDisplayName={getProductDisplayName}
+                  getInventoryStatusColor={getInventoryStatusColor}
+                />
               ))}
             </div>
           ) : (
@@ -768,94 +718,6 @@ function PlantWarehouseDashboardContent() {
           flex-grow: 1;
           overflow-y: auto;
           max-height: 400px;
-        }
-        .orders-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 1rem;
-        }
-        .order-box-card {
-          background: linear-gradient(135deg, #f5f7fa 0%, #fff 100%);
-          border: 1px solid #e0e0e0;
-          border-radius: 0.75rem;
-          overflow: hidden;
-          transition: all 0.3s ease;
-          display: flex;
-          flex-direction: column;
-        }
-        .order-box-card:hover {
-          border-color: #0b5394;
-          box-shadow: 0 4px 12px rgba(11, 83, 148, 0.1);
-          transform: translateY(-2px);
-        }
-        .order-box-header {
-          padding: 0.75rem;
-          background: #f0f4f8;
-          border-bottom: 1px solid #e0e0e0;
-        }
-        .order-box-body {
-          padding: 1rem;
-          flex-grow: 1;
-        }
-        .order-number {
-          font-size: 0.95rem;
-          font-weight: 700;
-          color: #0b5394;
-          margin: 0 0 0.5rem 0;
-        }
-        .order-info {
-          font-size: 0.85rem;
-          color: #666;
-          margin: 0.25rem 0;
-        }
-        .order-date {
-          font-size: 0.8rem;
-          color: #999;
-          margin: 0.5rem 0 0 0;
-        }
-        .order-box-footer {
-          padding: 0.75rem;
-          border-top: 1px solid #e0e0e0;
-          background: #fafbfc;
-        }
-        .order-status-badge {
-          display: inline-block;
-          padding: 0.25rem 0.75rem;
-          border-radius: 0.375rem;
-          font-size: 0.75rem;
-          font-weight: 700;
-          text-transform: uppercase;
-        }
-        .status-pending {
-          background: #fff3cd;
-          color: #856404;
-        }
-        .status-processing {
-          background: #cfe2ff;
-          color: #084298;
-        }
-        .status-completed {
-          background: #d1e7dd;
-          color: #0f5132;
-        }
-        .fulfill-button {
-          width: 100%;
-          padding: 0.5rem;
-          background: #27ae60;
-          color: white;
-          border: none;
-          border-radius: 0.375rem;
-          cursor: pointer;
-          font-weight: 600;
-          font-size: 0.85rem;
-          transition: background 0.3s ease;
-        }
-        .fulfill-button:hover:not(:disabled) {
-          background: #229954;
-        }
-        .fulfill-button:disabled {
-          background: #ccc;
-          cursor: not-allowed;
         }
         .form-error {
           background: #fee;
