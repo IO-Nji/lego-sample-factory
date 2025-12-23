@@ -1,4 +1,5 @@
 import DashboardPage from "./DashboardPage";
+import LoginForm from "../components/LoginForm";
 import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/StandardPage.css";
 import "../styles/HomePage.css";
@@ -11,19 +12,24 @@ function HomePage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (location.state?.reason === "expired") {
+    const reason = location.state?.reason || new URLSearchParams(location.search).get('reason');
+    
+    if (reason === "expired") {
       setMessage("Your session has expired. Please sign in again.");
-      setTimeout(() => setMessage(""), 5000); // Clear after 5 seconds
-    } else if (location.state?.reason === "unauthenticated") {
+      setTimeout(() => setMessage(""), 5000);
+    } else if (reason === "unauthenticated") {
       setMessage("Please sign in to access this page.");
       setTimeout(() => setMessage(""), 5000);
-    } else if (location.state?.reason === "unauthorized") {
+    } else if (reason === "unauthorized") {
       setMessage("You do not have permission to access that page.");
       setTimeout(() => setMessage(""), 5000);
+    } else if (reason === "backend_down") {
+      setMessage("Unable to connect to the backend. Please check if the services are running.");
+      setTimeout(() => setMessage(""), 8000);
     }
-  }, [location.state]);
+  }, [location.state, location.search]);
 
-  // If not authenticated, show login prompt
+  // If not authenticated, show login prompt with embedded login form
   if (!isAuthenticated) {
     return (
       <section className="home-page">
@@ -32,13 +38,7 @@ function HomePage() {
           <p className="subtitle">
             A comprehensive digital manufacturing platform designed to
             streamline and coordinate complex production workflows across
-            multiple interconnected factory stations. This application enables
-            real-time monitoring, inventory management, order processing, and
-            production planning for modern manufacturing environments. From
-            parts supply and injection molding to assembly control and warehouse
-            management, the LEGO Factory system provides an integrated solution
-            for optimizing manufacturing operations and ensuring efficient
-            coordination between all production stages.
+            multiple interconnected factory stations.
           </p>
         </div>
 
@@ -57,13 +57,15 @@ function HomePage() {
           </div>
         )}
         
-        <div className="home-actions">
-          <a href="/login" className="btn btn-primary">
-            Sign In
-          </a>
+        {/* Embedded Login Form */}
+        <div className="home-login-section">
+          <LoginForm embedded={true} />
         </div>
 
         <div className="home-content">
+          <h3 style={{ textAlign: 'center', color: 'var(--color-primary)', marginBottom: 'var(--spacing-xl)' }}>
+            Platform Features
+          </h3>
           <div className="feature-cards">
             <div className="card">
               <h1>🏭</h1>

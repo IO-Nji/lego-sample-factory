@@ -89,6 +89,11 @@ body {
   line-height: 1.5;
 }
 
+/* Import component-specific stylesheets */
+@import './styles/StandardPage.css';
+@import './styles/Button.css';
+@import './styles/LoginForm.css';
+
 .app-shell {
   display: flex;
   flex-direction: column;

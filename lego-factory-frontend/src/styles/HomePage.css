@@ -92,6 +92,13 @@
   border-radius: 12px;
 }
 
+/* Home Login Section */
+.home-login-section {
+  max-width: 450px;
+  margin: var(--spacing-xl) auto;
+  padding: 0 var(--spacing-md);
+}
+
 .lead-text {
   font-size: 1.1rem;
   color: #2c3e50;

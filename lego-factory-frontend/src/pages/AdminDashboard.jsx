@@ -19,6 +19,26 @@ const PRODUCT_NAMES = {
 
 function AdminDashboard() {
   const { session } = useAuth();
+  
+  // Early return for non-admin users - prevents flickering
+  if (!session || session?.user?.role !== "ADMIN") {
+    return (
+      <div className="standard-page-container">
+        <div className="error-message" style={{ 
+          padding: '2rem', 
+          textAlign: 'center',
+          backgroundColor: '#f8d7da',
+          color: '#721c24',
+          borderRadius: '8px',
+          margin: '2rem auto',
+          maxWidth: '600px'
+        }}>
+          ⚠️ Access Denied: Admin role required. Current role: {session?.user?.role || "Unknown"}
+        </div>
+      </div>
+    );
+  }
+
   const [workstations, setWorkstations] = useState([]);
   const [selectedWorkstationId, setSelectedWorkstationId] = useState(null);
   const [workstationInventory, setWorkstationInventory] = useState({});
@@ -813,16 +833,6 @@ function AdminDashboard() {
       </div>
     );
   };
-
-  if (session?.user?.role !== "ADMIN") {
-    return (
-      <section className="admin-dashboard">
-        <div className="error-message">
-          ⚠️ Access Denied: Admin role required. Current role: {session?.user?.role || "Unknown"}
-        </div>
-      </section>
-    );
-  }
 
   return (
     <div className="standard-page-container">
