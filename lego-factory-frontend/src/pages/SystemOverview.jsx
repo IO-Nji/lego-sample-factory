@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
 import PageHeader from "../components/PageHeader";
+import StatsCard from "../components/StatsCard";
 import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 import "../styles/AdminDashboard.css";
@@ -146,6 +147,8 @@ function SystemOverview() {
   const totalOrders = orders.production.length + orders.assembly.length;
   const pendingOrdersCount = orders.production.filter((o) => o.status === "PENDING" || o.status === "SCHEDULED").length +
                             orders.assembly.filter((o) => o.status === "PENDING" || o.status === "SCHEDULED").length;
+  const processingOrdersCount = orders.production.filter((o) => o.status === "IN_PROGRESS").length +
+                                orders.assembly.filter((o) => o.status === "IN_PROGRESS").length;
   const completedOrdersCount = orders.production.filter((o) => o.status === "COMPLETED").length +
                               orders.assembly.filter((o) => o.status === "COMPLETED").length;
   const activeWorkstations = Object.values(workstationStats).filter((ws) => ws.status === "active").length;
@@ -171,33 +174,33 @@ function SystemOverview() {
 
       {error && <div className="error-alert">{error}</div>}
 
-      {/* KPI Cards */}
-      <div className="kpi-grid">
-        <div className="kpi-card">
-          <div className="kpi-label">Total Orders</div>
-          <div className="kpi-value">{totalOrders}</div>
-          <div className="kpi-detail">Across all workstations</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Pending Orders</div>
-          <div className="kpi-value">{pendingOrdersCount}</div>
-          <div className="kpi-detail">Waiting to start</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Completed Orders</div>
-          <div className="kpi-value">{completedOrdersCount}</div>
-          <div className="kpi-detail">Successfully finished</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Active Workstations</div>
-          <div className="kpi-value">{activeWorkstations}</div>
-          <div className="kpi-detail">Out of {workstations.length}</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Low Stock Alerts</div>
-          <div className="kpi-value">{lowStockAlertsCount}</div>
-          <div className="kpi-detail">{lowStockAlertsCount > 0 ? "Require attention" : "All levels OK"}</div>
-        </div>
+      {/* Stats Cards */}
+      <div className="stats-grid">
+        <StatsCard 
+          value={workstations.length} 
+          label="Total Workstations" 
+          variant="default"
+        />
+        <StatsCard 
+          value={totalOrders} 
+          label="Total Orders" 
+          variant="default"
+        />
+        <StatsCard 
+          value={pendingOrdersCount} 
+          label="Pending Orders" 
+          variant="pending"
+        />
+        <StatsCard 
+          value={processingOrdersCount} 
+          label="Processing Orders" 
+          variant="processing"
+        />
+        <StatsCard 
+          value={completedOrdersCount} 
+          label="Completed Orders" 
+          variant="completed"
+        />
       </div>
 
       {/* Tabs */}

@@ -3,6 +3,7 @@ import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import ErrorNotification from "../components/ErrorNotification";
 import PageHeader from "../components/PageHeader";
+import StatsCard from "../components/StatsCard";
 import { getErrorMessage } from "../utils/errorHandler";
 import "../styles/StandardPage.css";
 
@@ -323,26 +324,31 @@ function AdminDashboard() {
     <div className="overview-tab">
       <h3>System Statistics</h3>
       <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-value">{systemStats.totalWorkstations}</div>
-          <div className="stat-label">Total Workstations</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{systemStats.totalOrders}</div>
-          <div className="stat-label">Total Orders</div>
-        </div>
-        <div className="stat-card pending">
-          <div className="stat-value">{systemStats.pendingOrders}</div>
-          <div className="stat-label">Pending Orders</div>
-        </div>
-        <div className="stat-card processing">
-          <div className="stat-value">{systemStats.processingOrders}</div>
-          <div className="stat-label">Processing Orders</div>
-        </div>
-        <div className="stat-card completed">
-          <div className="stat-value">{systemStats.completedOrders}</div>
-          <div className="stat-label">Completed Orders</div>
-        </div>
+        <StatsCard 
+          value={systemStats.totalWorkstations}
+          label="Total Workstations"
+          variant="default"
+        />
+        <StatsCard 
+          value={systemStats.totalOrders}
+          label="Total Orders"
+          variant="default"
+        />
+        <StatsCard 
+          value={systemStats.pendingOrders}
+          label="Pending Orders"
+          variant="pending"
+        />
+        <StatsCard 
+          value={systemStats.processingOrders}
+          label="Processing Orders"
+          variant="processing"
+        />
+        <StatsCard 
+          value={systemStats.completedOrders}
+          label="Completed Orders"
+          variant="completed"
+        />
       </div>
 
       <h3>Workstations Overview</h3>
@@ -725,7 +731,7 @@ function AdminDashboard() {
                 <p className="empty-message">No products available</p>
               ) : (
                 productVariants.map(product => (
-                  <div 
+                  <button 
                     key={product.id} 
                     className="product-card"
                     onClick={() => setSelectedProduct(product)}
@@ -738,7 +744,7 @@ function AdminDashboard() {
                         <span className="time-badge">{product.estimatedTimeMinutes}m</span>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>
@@ -941,51 +947,6 @@ function AdminDashboard() {
 
         .overview-tab {
           padding: 15px;
-        }
-
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          gap: 15px;
-          margin-bottom: 30px;
-        }
-
-        .stat-card {
-          background: white;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          padding: 12px;
-          text-align: center;
-          transition: all 0.3s;
-        }
-
-        .stat-card:hover {
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .stat-card.pending {
-          border-top: 3px solid #ffc107;
-        }
-
-        .stat-card.processing {
-          border-top: 3px solid #17a2b8;
-        }
-
-        .stat-card.completed {
-          border-top: 3px solid #28a745;
-        }
-
-        .stat-value {
-          font-size: 32px;
-          font-weight: bold;
-          color: #2c5aa0;
-          margin-bottom: 5px;
-        }
-
-        .stat-label {
-          font-size: 13px;
-          color: #666;
-          font-weight: bold;
         }
 
         .overview-table,
@@ -1493,6 +1454,10 @@ function AdminDashboard() {
           cursor: pointer;
           transition: all 0.3s ease;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          width: 100%;
+          text-align: left;
+          font-family: inherit;
+          font-size: inherit;
         }
 
         .product-card:hover {

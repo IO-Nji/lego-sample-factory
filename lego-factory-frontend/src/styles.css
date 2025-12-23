@@ -93,6 +93,7 @@ body {
 @import './styles/StandardPage.css';
 @import './styles/Button.css';
 @import './styles/LoginForm.css';
+@import './styles/StatsCard.css';
 
 .app-shell {
   display: flex;

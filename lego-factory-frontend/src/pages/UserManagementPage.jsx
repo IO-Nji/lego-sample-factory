@@ -356,11 +356,9 @@ function UserManagementPage() {
 
       <section className="form-section">
         <h2>Manage Existing Users</h2>
-        {loading ? (
-          <p>Loading users...</p>
-        ) : users.length === 0 ? (
-          <p className="form-helper">No users found.</p>
-        ) : (
+        {loading && <p>Loading users...</p>}
+        {!loading && users.length === 0 && <p className="form-helper">No users found.</p>}
+        {!loading && users.length > 0 && (
           <div className="users-table-container">
             <table className="products-table">
               <thead>
