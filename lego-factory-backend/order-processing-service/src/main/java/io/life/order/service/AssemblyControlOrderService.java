@@ -28,6 +28,10 @@ import java.util.stream.Collectors;
 public class AssemblyControlOrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(AssemblyControlOrderService.class);
+    private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
+    private static final String STATUS_ASSIGNED = "ASSIGNED";
+    private static final String STATUS_COMPLETED = "COMPLETED";
+    private static final String STATUS_HALTED = "HALTED";
 
     private final AssemblyControlOrderRepository repository;
     private final SupplyOrderService supplyOrderService;
@@ -76,7 +80,7 @@ public class AssemblyControlOrderService {
                 .sourceProductionOrderId(sourceProductionOrderId)
                 .assignedWorkstationId(assignedWorkstationId)
                 .simalScheduleId(simalScheduleId)
-                .status("ASSIGNED")
+                .status(STATUS_ASSIGNED)
                 .priority(priority)
                 .targetStartTime(targetStartTime)
                 .targetCompletionTime(targetCompletionTime)
@@ -87,6 +91,7 @@ public class AssemblyControlOrderService {
                 .estimatedDurationMinutes(estimatedDurationMinutes)
                 .build();
 
+        @SuppressWarnings("null")
         AssemblyControlOrder saved = repository.save(order);
         logger.info("Created assembly control order {} for workstation {}", controlOrderNumber, assignedWorkstationId);
 
@@ -115,7 +120,7 @@ public class AssemblyControlOrderService {
      * Get all active control orders for a workstation.
      */
     public List<AssemblyControlOrderDTO> getActiveOrdersByWorkstation(Long workstationId) {
-        return repository.findByAssignedWorkstationIdAndStatus(workstationId, "IN_PROGRESS").stream()
+        return repository.findByAssignedWorkstationIdAndStatus(workstationId, STATUS_IN_PROGRESS).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -124,7 +129,7 @@ public class AssemblyControlOrderService {
      * Get all unassigned control orders (status = ASSIGNED).
      */
     public List<AssemblyControlOrderDTO> getUnassignedOrders(Long workstationId) {
-        return repository.findByAssignedWorkstationIdAndStatus(workstationId, "ASSIGNED").stream()
+        return repository.findByAssignedWorkstationIdAndStatus(workstationId, STATUS_ASSIGNED).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -132,6 +137,7 @@ public class AssemblyControlOrderService {
     /**
      * Get control order by ID.
      */
+    @SuppressWarnings("null")
     public Optional<AssemblyControlOrderDTO> getOrderById(Long id) {
         return repository.findById(id).map(this::mapToDTO);
     }
@@ -147,14 +153,15 @@ public class AssemblyControlOrderService {
      * Start assembly on a control order.
      */
     public AssemblyControlOrderDTO startAssembly(Long id) {
+        @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
 
-        if (!"ASSIGNED".equals(order.getStatus())) {
+        if (!STATUS_ASSIGNED.equals(order.getStatus())) {
             throw new IllegalStateException("Cannot start assembly - order status is " + order.getStatus());
         }
 
-        order.setStatus("IN_PROGRESS");
+        order.setStatus(STATUS_IN_PROGRESS);
         order.setActualStartTime(LocalDateTime.now());
 
         AssemblyControlOrder updated = repository.save(order);
@@ -167,10 +174,11 @@ public class AssemblyControlOrderService {
      * Complete assembly on a control order.
      */
     public AssemblyControlOrderDTO completeAssembly(Long id) {
+        @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
 
-        order.setStatus("COMPLETED");
+        order.setStatus(STATUS_COMPLETED);
         order.setActualCompletionTime(LocalDateTime.now());
         
         if (order.getActualStartTime() != null) {
@@ -193,15 +201,16 @@ public class AssemblyControlOrderService {
      * Credits Modules Supermarket (WS-8) with one module unit.
      */
     public AssemblyControlOrderDTO completeAssemblyProduction(Long id) {
+        @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
 
-        if (!"IN_PROGRESS".equals(order.getStatus())) {
+        if (!STATUS_IN_PROGRESS.equals(order.getStatus())) {
             throw new IllegalStateException("Cannot complete - order status is " + order.getStatus());
         }
 
         // Step 1: Update control order status and timestamps
-        order.setStatus("COMPLETED");
+        order.setStatus(STATUS_COMPLETED);
         order.setActualCompletionTime(LocalDateTime.now());
         
         if (order.getActualStartTime() != null) {
@@ -241,15 +250,16 @@ public class AssemblyControlOrderService {
      * This represents the completion of the entire product ready for shipping.
      */
     public AssemblyControlOrderDTO completeFinalAssembly(Long id) {
+        @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
 
-        if (!"IN_PROGRESS".equals(order.getStatus())) {
+        if (!STATUS_IN_PROGRESS.equals(order.getStatus())) {
             throw new IllegalStateException("Cannot complete - order status is " + order.getStatus());
         }
 
         // Step 1: Update control order status and timestamps
-        order.setStatus("COMPLETED");
+        order.setStatus(STATUS_COMPLETED);
         order.setActualCompletionTime(LocalDateTime.now());
         
         if (order.getActualStartTime() != null) {
@@ -265,7 +275,7 @@ public class AssemblyControlOrderService {
 
         // Step 2: Call SimAL to update schedule status (fire-and-forget)
         try {
-            updateSimalScheduleStatus(order.getSimalScheduleId(), "COMPLETED");
+            updateSimalScheduleStatus(order.getSimalScheduleId(), STATUS_COMPLETED);
         } catch (Exception e) {
             logger.warn("Failed to update SimAL schedule status for {}: {}", order.getSimalScheduleId(), e.getMessage());
             // Don't throw - completion already succeeded, SimAL update is secondary
@@ -286,14 +296,15 @@ public class AssemblyControlOrderService {
      * Halt assembly on a control order.
      */
     public AssemblyControlOrderDTO haltAssembly(Long id) {
+        @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
 
-        if (!"IN_PROGRESS".equals(order.getStatus())) {
+        if (!STATUS_IN_PROGRESS.equals(order.getStatus())) {
             throw new IllegalStateException("Cannot halt - order status is " + order.getStatus());
         }
 
-        order.setStatus("HALTED");
+        order.setStatus(STATUS_HALTED);
         AssemblyControlOrder updated = repository.save(order);
         logger.warn("Halted assembly on control order {}", order.getControlOrderNumber());
 
@@ -304,6 +315,7 @@ public class AssemblyControlOrderService {
      * Update operator notes.
      */
     public AssemblyControlOrderDTO updateOperatorNotes(Long id, String notes) {
+        @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
 
@@ -317,6 +329,7 @@ public class AssemblyControlOrderService {
      * Update defect information.
      */
     public AssemblyControlOrderDTO updateDefects(Long id, Integer defectsFound, Integer defectsReworked, Boolean reworkRequired) {
+        @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
 
@@ -335,6 +348,7 @@ public class AssemblyControlOrderService {
      * Update shipping notes.
      */
     public AssemblyControlOrderDTO updateShippingNotes(Long id, String shippingNotes) {
+        @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
 
@@ -354,6 +368,7 @@ public class AssemblyControlOrderService {
             LocalDateTime neededBy,
             String notes) {
         
+        @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(controlOrderId)
                 .orElseThrow(() -> new RuntimeException("Control order not found: " + controlOrderId));
 

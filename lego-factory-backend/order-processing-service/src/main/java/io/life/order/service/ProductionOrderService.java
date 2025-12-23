@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 public class ProductionOrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductionOrderService.class);
+    private static final String PRODUCTION_ORDER_NOT_FOUND = "Production order not found: ";
 
     private final ProductionOrderRepository productionOrderRepository;
 
@@ -58,6 +59,7 @@ public class ProductionOrderService {
                 .notes(notes)
                 .build();
 
+        @SuppressWarnings("null")
         ProductionOrder saved = productionOrderRepository.save(productionOrder);
         logger.info("Created production order {} from warehouse order {} assigned to workstation {}", 
                 productionOrderNumber, sourceWarehouseOrderId, assignedWorkstationId);
@@ -89,6 +91,7 @@ public class ProductionOrderService {
                 .notes(notes)
                 .build();
 
+        @SuppressWarnings("null")
         ProductionOrder saved = productionOrderRepository.save(productionOrder);
         logger.info("Created standalone production order {}", productionOrderNumber);
 
@@ -107,6 +110,7 @@ public class ProductionOrderService {
     /**
      * Get production order by ID.
      */
+    @SuppressWarnings("null")
     public Optional<ProductionOrderDTO> getProductionOrderById(Long id) {
         return productionOrderRepository.findById(id)
                 .map(this::mapToDTO);
@@ -179,8 +183,9 @@ public class ProductionOrderService {
      * Update production order status.
      */
     public ProductionOrderDTO updateProductionOrderStatus(Long id, String newStatus) {
+        @SuppressWarnings("null")
         ProductionOrder productionOrder = productionOrderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Production order not found: " + id));
+                .orElseThrow(() -> new RuntimeException(PRODUCTION_ORDER_NOT_FOUND + id));
 
         productionOrder.setStatus(newStatus);
         ProductionOrder updated = productionOrderRepository.save(productionOrder);
@@ -195,8 +200,9 @@ public class ProductionOrderService {
     public ProductionOrderDTO linkToSimalSchedule(Long id, String simalScheduleId, 
                                                   Integer estimatedDuration, 
                                                   LocalDateTime expectedCompletionTime) {
+        @SuppressWarnings("null")
         ProductionOrder productionOrder = productionOrderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Production order not found: " + id));
+                .orElseThrow(() -> new RuntimeException(PRODUCTION_ORDER_NOT_FOUND + id));
 
         productionOrder.setSimalScheduleId(simalScheduleId);
         productionOrder.setEstimatedDuration(estimatedDuration);
@@ -213,8 +219,9 @@ public class ProductionOrderService {
      * Mark production order as completed.
      */
     public ProductionOrderDTO completeProductionOrder(Long id) {
+        @SuppressWarnings("null")
         ProductionOrder productionOrder = productionOrderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Production order not found: " + id));
+                .orElseThrow(() -> new RuntimeException(PRODUCTION_ORDER_NOT_FOUND + id));
 
         productionOrder.setStatus("COMPLETED");
         productionOrder.setActualCompletionTime(LocalDateTime.now());
@@ -229,8 +236,9 @@ public class ProductionOrderService {
      * Cancel production order.
      */
     public ProductionOrderDTO cancelProductionOrder(Long id) {
+        @SuppressWarnings("null")
         ProductionOrder productionOrder = productionOrderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Production order not found: " + id));
+                .orElseThrow(() -> new RuntimeException(PRODUCTION_ORDER_NOT_FOUND + id));
 
         productionOrder.setStatus("CANCELLED");
 

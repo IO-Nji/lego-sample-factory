@@ -3,6 +3,7 @@ import CustomerOrderCard from "../components/CustomerOrderCard";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
+import PageHeader from "../components/PageHeader";
 import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 
@@ -205,18 +206,13 @@ function PlantWarehousePage() {
 
   return (
     <div className="standard-page-container">
+      <PageHeader
+        title="Plant Warehouse Dashboard"
+        subtitle={`Manage inventory and customer orders${session?.user?.workstationId ? ` | Workstation ID: ${session.user.workstationId}` : ''}`}
+        icon="🏢"
+      />
       <section className="plant-warehouse-page">
-      {/* Header */}
-      <div className="standard-page-header">
-        <div className="standard-header-content">
-          <h1>🏢 Plant Warehouse Dashboard</h1>
-          <p className="standard-page-subtitle">Manage inventory and customer orders</p>
-        </div>
-      </div>
-
-      {session?.user?.workstationId ? (
-        <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: "1rem" }}>Workstation ID: <strong>{session.user.workstationId}</strong></p>
-      ) : (
+      {!session?.user?.workstationId && (
         <div className="form-error mb-6 p-4 bg-red-50 border-l-4 border-red-600 rounded">
           <p className="font-semibold text-red-900">⚠️ No workstation assigned</p>
           <p className="text-red-800 text-sm mt-1">Contact administrator to assign a workstation to your account.</p>

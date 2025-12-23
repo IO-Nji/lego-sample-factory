@@ -51,6 +51,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             .build();
     }
 
+    @SuppressWarnings("null")
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
@@ -67,8 +68,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         String token = authHeader.substring(BEARER_PREFIX.length());
         try {
-            // Use the non-deprecated parseClaimsJws method for jjwt 0.10.x and above
-            io.jsonwebtoken.Jws<io.jsonwebtoken.Claims> jws = jwtParser.parseClaimsJws(token);
+            // Use the non-deprecated parseSignedClaims method for jjwt 0.12.x and above
+            io.jsonwebtoken.Jws<io.jsonwebtoken.Claims> jws = jwtParser.parseSignedClaims(token);
             Claims claims = jws.getPayload();
             ServerHttpRequest mutated = request.mutate()
                 .header("X-Authenticated-User", claims.getSubject())
@@ -85,6 +86,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
     }
 
+    @SuppressWarnings("null")
     private Mono<Void> sendJsonError(ServerWebExchange exchange, HttpStatus status, String message) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(status);
@@ -93,6 +95,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return response.writeWith(Mono.just(response.bufferFactory().wrap(json.getBytes(StandardCharsets.UTF_8))));
     }
 
+    @SuppressWarnings("null")
     private boolean isPublicPath(String path) {
         return publicPaths.stream().anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
     }

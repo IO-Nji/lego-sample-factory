@@ -28,6 +28,10 @@ import java.util.stream.Collectors;
 public class ProductionControlOrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductionControlOrderService.class);
+    private static final String STATUS_ASSIGNED = "ASSIGNED";
+    private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
+    private static final String STATUS_COMPLETED = "COMPLETED";
+    private static final String ERROR_CONTROL_ORDER_NOT_FOUND = "Control order not found: ";
 
     private final ProductionControlOrderRepository repository;
     private final SupplyOrderService supplyOrderService;
@@ -72,7 +76,7 @@ public class ProductionControlOrderService {
                 .sourceProductionOrderId(sourceProductionOrderId)
                 .assignedWorkstationId(assignedWorkstationId)
                 .simalScheduleId(simalScheduleId)
-                .status("ASSIGNED")
+                .status(STATUS_ASSIGNED)
                 .priority(priority)
                 .targetStartTime(targetStartTime)
                 .targetCompletionTime(targetCompletionTime)
@@ -82,6 +86,7 @@ public class ProductionControlOrderService {
                 .estimatedDurationMinutes(estimatedDurationMinutes)
                 .build();
 
+        @SuppressWarnings("null")
         ProductionControlOrder saved = repository.save(order);
         logger.info("Created production control order {} for workstation {}", controlOrderNumber, assignedWorkstationId);
 
@@ -110,7 +115,7 @@ public class ProductionControlOrderService {
      * Get all active control orders for a workstation.
      */
     public List<ProductionControlOrderDTO> getActiveOrdersByWorkstation(Long workstationId) {
-        return repository.findByAssignedWorkstationIdAndStatus(workstationId, "IN_PROGRESS").stream()
+        return repository.findByAssignedWorkstationIdAndStatus(workstationId, STATUS_IN_PROGRESS).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -119,7 +124,7 @@ public class ProductionControlOrderService {
      * Get all unassigned control orders (status = ASSIGNED).
      */
     public List<ProductionControlOrderDTO> getUnassignedOrders(Long workstationId) {
-        return repository.findByAssignedWorkstationIdAndStatus(workstationId, "ASSIGNED").stream()
+        return repository.findByAssignedWorkstationIdAndStatus(workstationId, STATUS_ASSIGNED).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -127,6 +132,7 @@ public class ProductionControlOrderService {
     /**
      * Get control order by ID.
      */
+    @SuppressWarnings("null")
     public Optional<ProductionControlOrderDTO> getOrderById(Long id) {
         return repository.findById(id).map(this::mapToDTO);
     }
@@ -142,14 +148,15 @@ public class ProductionControlOrderService {
      * Start production on a control order.
      */
     public ProductionControlOrderDTO startProduction(Long id) {
+        @SuppressWarnings("null")
         ProductionControlOrder order = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
+                .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + id));
 
-        if (!"ASSIGNED".equals(order.getStatus())) {
+        if (!STATUS_ASSIGNED.equals(order.getStatus())) {
             throw new IllegalStateException("Cannot start production - order status is " + order.getStatus());
         }
 
-        order.setStatus("IN_PROGRESS");
+        order.setStatus(STATUS_IN_PROGRESS);
         order.setActualStartTime(LocalDateTime.now());
 
         ProductionControlOrder updated = repository.save(order);
@@ -162,10 +169,11 @@ public class ProductionControlOrderService {
      * Complete production on a control order.
      */
     public ProductionControlOrderDTO completeProduction(Long id) {
+        @SuppressWarnings("null")
         ProductionControlOrder order = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
+                .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + id));
 
-        order.setStatus("COMPLETED");
+        order.setStatus(STATUS_COMPLETED);
         order.setActualCompletionTime(LocalDateTime.now());
         
         if (order.getActualStartTime() != null) {
@@ -195,15 +203,16 @@ public class ProductionControlOrderService {
      * @return Updated control order DTO
      */
     public ProductionControlOrderDTO completeManufacturingProduction(Long id) {
+        @SuppressWarnings("null")
         ProductionControlOrder order = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
+                .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + id));
 
-        if (!"IN_PROGRESS".equals(order.getStatus())) {
+        if (!STATUS_IN_PROGRESS.equals(order.getStatus())) {
             throw new IllegalStateException("Cannot complete - order status is " + order.getStatus());
         }
 
         // Step 1: Update control order status and timestamps
-        order.setStatus("COMPLETED");
+        order.setStatus(STATUS_COMPLETED);
         order.setActualCompletionTime(LocalDateTime.now());
         
         if (order.getActualStartTime() != null) {
@@ -219,7 +228,7 @@ public class ProductionControlOrderService {
 
         // Step 2: Call SimAL to update schedule status (fire-and-forget)
         try {
-            updateSimalScheduleStatus(order.getSimalScheduleId(), "COMPLETED");
+            updateSimalScheduleStatus(order.getSimalScheduleId(), STATUS_COMPLETED);
         } catch (Exception e) {
             logger.warn("Failed to update SimAL schedule status for {}: {}", order.getSimalScheduleId(), e.getMessage());
             // Don't throw - completion already succeeded, SimAL update is secondary
@@ -285,8 +294,9 @@ public class ProductionControlOrderService {
      * Halt production on a control order.
      */
     public ProductionControlOrderDTO haltProduction(Long id, String reason) {
+        @SuppressWarnings("null")
         ProductionControlOrder order = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
+                .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + id));
 
         order.setStatus("HALTED");
         order.setOperatorNotes("Halted: " + reason);
@@ -301,8 +311,9 @@ public class ProductionControlOrderService {
      * Update operator notes.
      */
     public ProductionControlOrderDTO updateOperatorNotes(Long id, String notes) {
+        @SuppressWarnings("null")
         ProductionControlOrder order = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
+                .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + id));
 
         order.setOperatorNotes(notes);
         ProductionControlOrder updated = repository.save(order);
@@ -314,8 +325,9 @@ public class ProductionControlOrderService {
      * Update defect information.
      */
     public ProductionControlOrderDTO updateDefects(Long id, Integer defectsFound, Integer defectsReworked, Boolean reworkRequired) {
+        @SuppressWarnings("null")
         ProductionControlOrder order = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
+                .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + id));
 
         order.setDefectsFound(defectsFound);
         order.setDefectsReworked(defectsReworked);
@@ -338,8 +350,9 @@ public class ProductionControlOrderService {
             LocalDateTime neededBy,
             String notes) {
         
+        @SuppressWarnings("null")
         ProductionControlOrder order = repository.findById(controlOrderId)
-                .orElseThrow(() -> new RuntimeException("Control order not found: " + controlOrderId));
+                .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + controlOrderId));
 
         return supplyOrderService.createSupplyOrder(
                 controlOrderId,

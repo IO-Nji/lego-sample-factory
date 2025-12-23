@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+import PageHeader from "../components/PageHeader";
 import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 import "../styles/ControlPages.css";
@@ -226,31 +227,21 @@ function AdminDashboardContent() {
   }
 
   return (
-    <section className="admin-dashboard">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <div>
-          <h2>🏭 Admin</h2>
-          <p className="admin-subtitle">Real-time monitoring and control of factory operations</p>
-        </div>
-        <button
-          onClick={fetchDashboardData}
-          disabled={loading}
-          style={{
-            padding: "0.5rem 1rem",
-            backgroundColor: "#3b82f6",
-            color: "white",
-            border: "none",
-            borderRadius: "0.375rem",
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.6 : 1,
-            fontSize: "0.875rem",
-            fontWeight: "500",
-            height: "fit-content",
-          }}
-        >
-          {loading ? "⟳ Refreshing..." : "⟳ Refresh"}
-        </button>
-      </div>
+    <div className="standard-page-container">
+      <PageHeader
+        title="Admin Overview"
+        subtitle="Real-time monitoring and control of factory operations"
+        icon="🏭"
+        actions={[
+          {
+            label: loading ? "Refreshing..." : "Refresh",
+            onClick: fetchDashboardData,
+            disabled: loading,
+            icon: "⟳",
+          },
+        ]}
+      />
+      <section className="admin-dashboard">
 
       {error && <div className="error-alert">{error}</div>}
 
@@ -345,6 +336,7 @@ function AdminDashboardContent() {
         </div>
       </div>
     </section>
+    </div>
   );
 }
 
@@ -531,22 +523,13 @@ function PlantWarehouseDashboardContent() {
   };
 
   return (
-    <section className="plant-warehouse-page">
-      <div className="page-header">
-        <h1 className="page-title">🏢 Plant Warehouse</h1>
-        <p className="page-subtitle">Manage inventory and customer orders</p>
-      </div>
-
-      {session?.user?.workstationId ? (
-        <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: "1rem" }}>
-          Workstation ID: <strong>{session.user.workstationId}</strong>
-        </p>
-      ) : (
-        <div className="form-error mb-6 p-4 bg-red-50 border-l-4 border-red-600 rounded">
-          <p className="font-semibold text-red-900">⚠️ No workstation assigned</p>
-          <p className="text-red-800 text-sm mt-1">Contact administrator to assign a workstation to your account.</p>
-        </div>
-      )}
+    <div className="standard-page-container">
+      <PageHeader
+        title="Plant Warehouse"
+        subtitle={`Manage inventory and customer orders${session?.user?.workstationId ? ` | Workstation ID: ${session.user.workstationId}` : ''}`}
+        icon="🏢"
+      />
+      <section className="plant-warehouse-page">
 
       {error && (
         <div className="form-error mb-6 p-4 bg-red-50 border-l-4 border-red-600 rounded">
@@ -565,6 +548,13 @@ function PlantWarehouseDashboardContent() {
           <button onClick={() => setSuccessMessage(null)} className="text-green-700 hover:text-green-900 font-semibold text-sm mt-2">
             Dismiss
           </button>
+        </div>
+      )}
+
+      {!session?.user?.workstationId && (
+        <div className="form-error mb-6 p-4 bg-red-50 border-l-4 border-red-600 rounded">
+          <p className="font-semibold text-red-900">⚠️ No workstation assigned</p>
+          <p className="text-red-800 text-sm mt-1">Contact administrator to assign a workstation to your account.</p>
         </div>
       )}
 
@@ -884,7 +874,8 @@ function PlantWarehouseDashboardContent() {
           margin-bottom: 1.5rem;
         }
       `}</style>
-    </section>
+      </section>
+    </div>
   );
 }
 
@@ -964,11 +955,13 @@ function ModulesSupermarketDashboardContent() {
   };
 
   return (
-    <section className="modules-supermarket-page" style={{ padding: "2rem 1rem", maxWidth: "1400px", margin: "0 auto" }}>
-      <div style={{ marginBottom: "2rem" }}>
-        <h1 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", margin: "0 0 0.5rem 0" }}>🏢 Modules Supermarket Dashboard</h1>
-        <p style={{ fontSize: "1rem", color: "#666", margin: "0" }}>Manage modules and fulfill warehouse orders</p>
-      </div>
+    <div className="standard-page-container">
+      <PageHeader
+        title="Modules Supermarket Dashboard"
+        subtitle="Manage modules and fulfill warehouse orders"
+        icon="🏢"
+      />
+      <section className="modules-supermarket-page" style={{ padding: "2rem 1rem", maxWidth: "1400px", margin: "0 auto" }}>
 
       {error && <div className="error-alert">{error}</div>}
       {successMessage && <div className="form-success-details">{successMessage}</div>}
@@ -1080,6 +1073,7 @@ function ModulesSupermarketDashboardContent() {
         </div>
       </div>
     </section>
+    </div>
   );
 }
 
@@ -1111,31 +1105,27 @@ function ProductionPlanningDashboardContent() {
   }, []);
 
   return (
+    <div className="standard-page-container">
     <section className="dashboard-page">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-        <div>
-          <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", margin: "0 0 0.5rem 0" }}>📋 Production Planning</h2>
-          <p style={{ fontSize: "1rem", color: "#666", margin: "0" }}>Manage production orders and scheduling</p>
-        </div>
-        <button
-          onClick={fetchProductionOrders}
-          disabled={loading}
-          style={{
-            padding: "0.5rem 1rem",
-            backgroundColor: "#3b82f6",
-            color: "white",
-            border: "none",
-            borderRadius: "0.375rem",
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.6 : 1,
-            fontSize: "0.875rem",
-            fontWeight: "500",
-            height: "fit-content",
-          }}
-        >
-          {loading ? "⟳ Refreshing..." : "⟳ Refresh"}
-        </button>
-      </div>
+      <PageHeader
+        title="Production Planning Dashboard"
+        subtitle="Manage production orders and scheduling"
+        icon="📋"
+        actions={[
+          <button
+            key="refresh"
+            onClick={fetchProductionOrders}
+            disabled={loading}
+            className="standard-btn standard-btn-primary"
+            style={{
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
+            {loading ? "⟳ Refreshing..." : "⟳ Refresh"}
+          </button>
+        ]}
+      />
 
       {error && <div className="error-alert">{error}</div>}
 
@@ -1180,6 +1170,7 @@ function ProductionPlanningDashboardContent() {
         </div>
       )}
     </section>
+    </div>
   );
 }
 
@@ -1218,16 +1209,23 @@ function ProductionControlDashboardContent() {
   }, [session?.user?.workstationId]);
 
   return (
+    <div className="standard-page-container">
     <section className="dashboard-page">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-        <div>
-          <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", margin: "0 0 0.5rem 0" }}>🏭 Production Control</h2>
-          <p style={{ fontSize: "1rem", color: "#666", margin: "0" }}>Manage production control orders</p>
-        </div>
-        <button onClick={fetchControlOrders} disabled={loading} style={{ padding: "0.5rem 1rem", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "0.375rem", cursor: "pointer", fontWeight: "500" }}>
-          {loading ? "Refreshing..." : "Refresh"}
-        </button>
-      </div>
+      <PageHeader
+        title="Production Control Dashboard"
+        subtitle="Manage production control orders"
+        icon="🏭"
+        actions={[
+          <button
+            key="refresh"
+            onClick={fetchControlOrders}
+            disabled={loading}
+            className="standard-btn standard-btn-primary"
+          >
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+        ]}
+      />
 
       {error && <div className="error-alert">{error}</div>}
 
@@ -1270,6 +1268,7 @@ function ProductionControlDashboardContent() {
         </div>
       )}
     </section>
+    </div>
   );
 }
 
@@ -1308,8 +1307,13 @@ function AssemblyControlDashboardContent() {
   }, [session?.user?.workstationId]);
 
   return (
+    <div className="standard-page-container">
     <section className="dashboard-page">
-      <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", marginBottom: "1rem" }}>⚙️ Assembly Control</h2>
+      <PageHeader
+        title="Assembly Control Dashboard"
+        subtitle={`Workstation ${session?.user?.workstationId || 'N/A'} - Manage assembly orders`}
+        icon="⚙️"
+      />
 
       {error && <div className="error-alert">{error}</div>}
 
@@ -1352,6 +1356,7 @@ function AssemblyControlDashboardContent() {
         </div>
       )}
     </section>
+    </div>
   );
 }
 
@@ -1360,10 +1365,16 @@ function AssemblyControlDashboardContent() {
 // ============================================
 function ManufacturingDashboardContent() {
   return (
+    <div className="standard-page-container">
     <section className="dashboard-page">
-      <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394" }}>🔧 Manufacturing Workstation</h2>
-      <p>Manufacturing workstation interface - Configure your workstation-specific controls here</p>
+      <PageHeader
+        title="Manufacturing Workstation Dashboard"
+        subtitle="Configure your workstation-specific controls here"
+        icon="🔧"
+      />
+      <p>Manufacturing workstation interface</p>
     </section>
+    </div>
   );
 }
 
@@ -1372,10 +1383,16 @@ function ManufacturingDashboardContent() {
 // ============================================
 function AssemblyWorkstationDashboardContent() {
   return (
+    <div className="standard-page-container">
     <section className="dashboard-page">
-      <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394" }}>🔩 Assembly Workstation</h2>
-      <p>Assembly workstation interface - Configure your workstation-specific controls here</p>
+      <PageHeader
+        title="Assembly Workstation Dashboard"
+        subtitle="Configure your workstation-specific controls here"
+        icon="🔩"
+      />
+      <p>Assembly workstation interface</p>
     </section>
+    </div>
   );
 }
 
@@ -1419,8 +1436,13 @@ function PartsSupplyWarehouseDashboardContent() {
   };
 
   return (
+    <div className="standard-page-container">
     <section className="dashboard-page">
-      <h2 style={{ fontSize: "2rem", fontWeight: "700", color: "#0b5394", marginBottom: "1rem" }}>📦 Parts Supply Warehouse</h2>
+      <PageHeader
+        title="Parts Supply Warehouse Dashboard"
+        subtitle="Manage parts supply orders"
+        icon="📦"
+      />
 
       {error && <div className="error-alert">{error}</div>}
 
@@ -1487,6 +1509,7 @@ function PartsSupplyWarehouseDashboardContent() {
         </div>
       )}
     </section>
+    </div>
   );
 }
 

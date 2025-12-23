@@ -57,6 +57,7 @@ public class WarehouseOrderService {
     /**
      * Get warehouse order by ID
      */
+    @SuppressWarnings("null")
     public Optional<WarehouseOrderDTO> getWarehouseOrderById(Long id) {
         return warehouseOrderRepository.findById(id)
                 .map(this::mapToDTO);
@@ -101,6 +102,7 @@ public class WarehouseOrderService {
      * 4. Update source customer order status accordingly
      */
     public WarehouseOrderDTO fulfillWarehouseOrder(Long warehouseOrderId) {
+        @SuppressWarnings("null")
         Optional<WarehouseOrder> orderOpt = warehouseOrderRepository.findById(warehouseOrderId);
         if (orderOpt.isEmpty()) {
             throw new IllegalArgumentException("Warehouse order not found: " + warehouseOrderId);
@@ -299,6 +301,7 @@ public class WarehouseOrderService {
      */
     private void completeSourceCustomerOrder(WarehouseOrder order) {
         try {
+            @SuppressWarnings("null")
             Optional<CustomerOrder> sourceOrder = customerOrderRepository.findById(order.getSourceCustomerOrderId());
             if (sourceOrder.isPresent()) {
                 CustomerOrder customerOrder = sourceOrder.get();
@@ -333,6 +336,7 @@ public class WarehouseOrderService {
      * Update warehouse order status
      */
     public WarehouseOrderDTO updateWarehouseOrderStatus(Long warehouseOrderId, String status) {
+        @SuppressWarnings("null")
         Optional<WarehouseOrder> orderOpt = warehouseOrderRepository.findById(warehouseOrderId);
         if (orderOpt.isEmpty()) {
             throw new IllegalArgumentException("Warehouse order not found: " + warehouseOrderId);
