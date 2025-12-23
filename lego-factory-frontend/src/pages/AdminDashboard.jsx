@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import ErrorNotification from "../components/ErrorNotification";
+import PageHeader from "../components/PageHeader";
 import { getErrorMessage } from "../utils/errorHandler";
+import "../styles/StandardPage.css";
 
 /**
  * Product name mapping
@@ -823,19 +825,23 @@ function AdminDashboard() {
   }
 
   return (
-    <section className="admin-dashboard">
-      {notification && (
-        <ErrorNotification
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
-        />
-      )}
+    <div className="standard-page-container">
+      <PageHeader
+        title="Admin Dashboard"
+        subtitle={`System administration and monitoring. Total workstations: ${systemStats.totalWorkstations}`}
+        icon="👨‍💼"
+      />
       
-      <h2>Admin Dashboard</h2>
-      <p>User: <strong>{session?.user?.username || "Unknown"}</strong> (Admin)</p>
+      <section className="admin-dashboard">
+        {notification && (
+          <ErrorNotification
+            message={notification.message}
+            type={notification.type}
+            onClose={() => setNotification(null)}
+          />
+        )}
 
-      {error && <div className="error-message">{error}</div>}
+        {error && <div className="error-message">{error}</div>}
 
       <div className="tabs">
         <button
@@ -1672,7 +1678,8 @@ function AdminDashboard() {
           margin: 0;
         }
       `}</style>
-    </section>
+      </section>
+    </div>
   );
 }
 

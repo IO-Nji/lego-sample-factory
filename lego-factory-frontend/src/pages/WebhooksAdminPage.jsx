@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/api";
+import PageHeader from "../components/PageHeader";
+import "../styles/StandardPage.css";
 
 function WebhooksAdminPage() {
   const [subs, setSubs] = useState([]);
@@ -62,16 +64,20 @@ function WebhooksAdminPage() {
   };
 
   return (
-    <section style={{ padding: "2rem 1rem", maxWidth: 1000, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <div>
-          <h2 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#0b5394", margin: 0 }}>🔔 Webhooks Admin</h2>
-          <p style={{ margin: 0, color: "#555" }}>Subscribe to audit events and manage callbacks</p>
-        </div>
-        <button onClick={load} disabled={loading} style={{ padding: "0.5rem 1rem", background: "#3b82f6", color: "#fff", border: 0, borderRadius: 6, cursor: loading ? "not-allowed" : "pointer" }}>
-          {loading ? "Refreshing…" : "Refresh"}
-        </button>
-      </div>
+    <div className="standard-page-container">
+      <PageHeader
+        title="Webhooks Administration"
+        subtitle="Subscribe to audit events and manage callbacks"
+        icon="🔔"
+        actions={[
+          {
+            label: loading ? "Refreshing..." : "Refresh",
+            onClick: load,
+            disabled: loading,
+            icon: "🔄",
+          },
+        ]}
+      />
 
       {error && (
         <div className="error-alert" style={{ marginBottom: "1rem" }}>{error}</div>
@@ -147,7 +153,7 @@ function WebhooksAdminPage() {
           )}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 

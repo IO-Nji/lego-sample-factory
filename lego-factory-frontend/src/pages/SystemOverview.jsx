@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
+import PageHeader from "../components/PageHeader";
+import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 import "../styles/AdminDashboard.css";
 
@@ -151,31 +153,21 @@ function SystemOverview() {
   const supplyPendingCount = orders.supply.filter((o) => o.status === "PENDING").length;
 
   return (
-    <section className="admin-dashboard">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <div>
-          <h2>🏭 Dashboard</h2>
-          <p className="admin-subtitle">Real-time monitoring and control of factory operations</p>
-        </div>
-        <button
-          onClick={fetchDashboardData}
-          disabled={loading}
-          style={{
-            padding: "0.5rem 1rem",
-            backgroundColor: "#3b82f6",
-            color: "white",
-            border: "none",
-            borderRadius: "0.375rem",
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.6 : 1,
-            fontSize: "0.875rem",
-            fontWeight: "500",
-            height: "fit-content",
-          }}
-        >
-          {loading ? "⟳ Refreshing..." : "⟳ Refresh"}
-        </button>
-      </div>
+    <div className="standard-page-container">
+      <PageHeader
+        title="System Overview"
+        subtitle="Real-time monitoring and control of factory operations"
+        icon="🏭"
+        actions={[
+          {
+            label: loading ? "Refreshing..." : "Refresh",
+            onClick: fetchDashboardData,
+            disabled: loading,
+            icon: "⟳",
+          },
+        ]}
+      />
+      <section className="admin-dashboard">
 
       {error && <div className="error-alert">{error}</div>}
 
@@ -615,7 +607,8 @@ function SystemOverview() {
       <div className="dashboard-footer">
         Last updated: {new Date().toLocaleTimeString()} | Auto-refresh: 15s
       </div>
-    </section>
+      </section>
+    </div>
   );
 }
 

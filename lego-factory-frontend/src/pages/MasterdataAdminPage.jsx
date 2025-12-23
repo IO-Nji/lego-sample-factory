@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import api from '../api/api';
 import ErrorNotification from '../components/ErrorNotification';
+import PageHeader from '../components/PageHeader';
+import '../styles/StandardPage.css';
 
 export default function MasterdataAdminPage() {
   const [modules, setModules] = useState([]);
@@ -151,8 +153,12 @@ export default function MasterdataAdminPage() {
   };
 
   return (
-    <div className="app-content">
-      <h1 style={{ marginTop: 0 }}>Masterdata</h1>
+    <div className="standard-page-container">
+      <PageHeader
+        title="Masterdata Administration"
+        subtitle={`Manage modules (${modules.length}), parts (${parts.length}), and workstations (${workstations.length})`}
+        icon="🛠️"
+      />
       {error && <ErrorNotification message={error} onClose={() => setError(null)} />}
 
       {/* Tab Navigation */}

@@ -1,0 +1,591 @@
+/* Standard Page Design System - Based on ProductsPage */
+/* Use this CSS for consistent page layouts across the application */
+/* Uses CSS variables defined in styles.css for consistent theming */
+
+/* ==============================
+   Page Container & Layout
+   ============================== */
+
+.standard-page-container {
+  padding: var(--spacing-lg);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ==============================
+   Header Section
+   ============================== */
+
+.standard-page-header {
+  margin-bottom: var(--spacing-xl);
+  border-bottom: 3px solid var(--color-primary);
+  padding-bottom: var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+}
+
+.standard-header-content {
+  flex: 1;
+}
+
+.standard-page-header h1 {
+  color: var(--color-primary);
+  font-size: var(--font-size-2xl);
+  margin: 0 0 var(--spacing-xs) 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+.standard-page-subtitle {
+  color: var(--color-text-secondary);
+  margin: 0;
+  font-size: var(--font-size-base);
+  line-height: 1.4;
+}
+
+/* ==============================
+   Action Buttons in Header
+   ============================== */
+
+.standard-header-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.standard-action-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-base);
+  white-space: nowrap;
+}
+
+.standard-action-btn:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(44, 90, 160, 0.3);
+}
+
+.standard-action-btn.secondary {
+  background: var(--color-secondary);
+}
+
+.standard-action-btn.secondary:hover {
+  background: var(--color-secondary-dark);
+}
+
+/* ==============================
+   Grid Layout for Cards
+   ============================== */
+
+.standard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.standard-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* ==============================
+   Standard Card Component
+   ============================== */
+
+.standard-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  background: var(--color-white);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+}
+
+.standard-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-primary);
+}
+
+.standard-card.non-clickable {
+  cursor: default;
+}
+
+.standard-card.non-clickable:hover {
+  transform: none;
+}
+
+/* Card Header */
+.standard-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-sm);
+  gap: var(--spacing-sm);
+}
+
+.standard-card-header h3 {
+  font-size: var(--font-size-md);
+  margin: 0;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.3;
+  flex: 1;
+}
+
+.standard-card-id {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  background: #f0f0f0;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  font-weight: var(--font-weight-medium);
+}
+
+/* Card Content */
+.standard-card-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 8px;
+}
+
+.standard-card-description {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Card Detail Rows */
+.standard-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 5px 0;
+  gap: 10px;
+}
+
+.standard-detail-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.standard-detail-value {
+  color: #333;
+  font-weight: 400;
+  text-align: right;
+}
+
+/* ==============================
+   Status Badges
+   ============================== */
+
+.standard-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.standard-status-badge.active {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+.standard-status-badge.inactive {
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+.standard-status-badge.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.standard-status-badge.completed {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+.standard-status-badge.info {
+  background-color: #cfe2ff;
+  color: #084298;
+}
+
+/* ==============================
+   Info Badges
+   ============================== */
+
+.standard-info-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-weight: 500;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.standard-info-badge.price {
+  background-color: #e8f4f8;
+  color: #084298;
+}
+
+.standard-info-badge.time {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.standard-info-badge.count {
+  background-color: #f0f0f0;
+  color: #666;
+}
+
+/* ==============================
+   Empty State Messages
+   ============================== */
+
+.standard-empty-message {
+  text-align: center;
+  color: #999;
+  padding: 40px 20px;
+  font-style: italic;
+  font-size: 14px;
+}
+
+/* ==============================
+   Detail View Section
+   ============================== */
+
+.standard-detail-view {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.standard-back-btn {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 15px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.standard-back-btn:hover {
+  background-color: #5a6268;
+}
+
+.standard-info-box {
+  background-color: white;
+  border-left: 4px solid #2c5aa0;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.standard-info-box h2 {
+  color: #2c5aa0;
+  margin: 0 0 10px 0;
+  font-size: 22px;
+}
+
+.standard-info-box p {
+  color: #666;
+  margin: 0 0 12px 0;
+  font-size: 14px;
+}
+
+/* ==============================
+   Modal Overlay
+   ============================== */
+
+.standard-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.standard-modal-content {
+  background: white;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.standard-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 2px solid #2c5aa0;
+}
+
+.standard-modal-header h2 {
+  margin: 0;
+  color: #2c5aa0;
+  font-size: 22px;
+}
+
+.standard-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.standard-modal-close:hover {
+  color: #333;
+}
+
+.standard-modal-body {
+  padding: 20px;
+}
+
+.standard-modal-section {
+  margin-bottom: 20px;
+}
+
+.standard-modal-section h3 {
+  color: #2c5aa0;
+  font-size: 18px;
+  margin: 0 0 15px 0;
+  border-bottom: 2px solid #2c5aa0;
+  padding-bottom: 8px;
+}
+
+.standard-detail-list {
+  display: grid;
+  gap: 10px;
+}
+
+.standard-detail-list dt {
+  color: #666;
+  font-weight: 600;
+  font-size: 13px;
+  margin: 0;
+}
+
+.standard-detail-list dd {
+  color: #333;
+  font-size: 14px;
+  margin: 0 0 10px 0;
+  padding-left: 10px;
+}
+
+.standard-modal-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* ==============================
+   Loading & Error States
+   ============================== */
+
+.standard-loading {
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+.standard-error {
+  padding: 20px;
+  background: #f8d7da;
+  color: #842029;
+  border: 1px solid #f5c2c7;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.standard-error p {
+  margin: 0 0 10px 0;
+}
+
+/* ==============================
+   Expandable Sections
+   ============================== */
+
+.standard-expandable-card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  margin-bottom: 10px;
+}
+
+.standard-expandable-card:hover {
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  border-color: #2c5aa0;
+}
+
+.standard-expandable-header {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background-color: #f0f8ff;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.standard-expandable-header:hover {
+  background-color: #e8f4f8;
+}
+
+.standard-expand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  min-width: 20px;
+  color: #2c5aa0;
+  font-weight: bold;
+  margin-right: 10px;
+  font-size: 12px;
+}
+
+.standard-expandable-content {
+  padding: 15px;
+  background-color: #fafafa;
+  border-top: 1px solid #eee;
+}
+
+/* ==============================
+   Responsive Design
+   ============================== */
+
+@media (max-width: 768px) {
+  .standard-page-container {
+    padding: 15px;
+  }
+
+  .standard-page-header {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .standard-page-header h1 {
+    font-size: 22px;
+  }
+
+  .standard-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .standard-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+
+  .standard-grid-compact {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+
+  .standard-card {
+    min-height: 160px;
+    padding: 12px;
+  }
+
+  .standard-card-header h3 {
+    font-size: 14px;
+  }
+
+  .standard-modal-content {
+    max-width: 100%;
+    margin: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .standard-page-container {
+    padding: 10px;
+  }
+
+  .standard-page-header h1 {
+    font-size: 20px;
+  }
+
+  .standard-page-subtitle {
+    font-size: 12px;
+  }
+
+  .standard-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .standard-grid-compact {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+  }
+
+  .standard-card {
+    min-height: 140px;
+    padding: 10px;
+  }
+
+  .standard-action-btn {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+}

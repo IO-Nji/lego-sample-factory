@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/api';
+import '../styles/StandardPage.css';
 import '../styles/ProductsPage.css';
 
 export default function ProductsPage() {
@@ -77,22 +78,22 @@ export default function ProductsPage() {
 
   return (
     <div className="products-container">
-      <div className="products-header">
-        <div className="header-content">
+      <div className="standard-page-header">
+        <div className="standard-header-content">
           <h1>Products Catalog</h1>
-          <p className="products-subtitle">LEGO Product Variants: {products.length} | Modules: {modules.length} | Parts: {parts.length}</p>
+          <p className="standard-page-subtitle">LEGO Product Variants: {products.length} | Modules: {modules.length} | Parts: {parts.length}</p>
         </div>
         {session?.user?.role === 'ADMIN' && (
-          <div className="admin-nav-links">
+          <div className="standard-header-actions">
             <button 
-              className="admin-link-btn"
+              className="standard-action-btn"
               onClick={() => navigate('/admin-dashboard?tab=products')}
               title="Manage product variants"
             >
               🛠️ Manage Variants
             </button>
             <button 
-              className="admin-link-btn"
+              className="standard-action-btn"
               onClick={() => navigate('/admin-dashboard')}
               title="Go to admin dashboard"
             >

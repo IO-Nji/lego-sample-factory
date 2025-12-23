@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 import "../styles/ControlPages.css";
 
@@ -210,12 +211,14 @@ function AssemblyControlPage() {
 
   return (
     <div className="control-page-container">
-      <div className="control-page-header">
-        <h1>⚙️ Assembly Control Station</h1>
-        <p className="station-info">
-          Workstation ID: <strong>{workstationId || "Not assigned"}</strong> |
-          Operator: <strong>{session?.user?.username || "Unknown"}</strong>
-        </p>
+      <div className="standard-page-header">
+        <div className="standard-header-content">
+          <h1>⚙️ Assembly Control Station</h1>
+          <p className="standard-page-subtitle">
+            Workstation ID: <strong>{workstationId || "Not assigned"}</strong> |
+            Operator: <strong>{session?.user?.username || "Unknown"}</strong>
+          </p>
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}

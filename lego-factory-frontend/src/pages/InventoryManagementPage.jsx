@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import ErrorNotification from "../components/ErrorNotification";
+import PageHeader from "../components/PageHeader";
 import { getErrorMessage } from "../utils/errorHandler";
+import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 import "../styles/AdminDashboard.css";
 
@@ -568,6 +570,12 @@ function InventoryManagementPage() {
   if (error && activeTab === "overview") {
     return (
       <section className="admin-dashboard">
+        {notification && (
+          <div className={`notification ${notification.type}`}>
+            {notification.message}
+            <button onClick={() => setNotification(null)}>×</button>
+          </div>
+        )}
         <h2>📦 Inventory Management</h2>
         <ErrorNotification
           message={error}
@@ -578,20 +586,13 @@ function InventoryManagementPage() {
   }
 
   return (
-    <section className="admin-dashboard">
-      {notification && (
-        <div className={`notification ${notification.type}`}>
-          {notification.message}
-          <button onClick={() => setNotification(null)}>×</button>
-        </div>
-      )}
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <div>
-          <h2>📦 Inventory Management</h2>
-          <p className="admin-subtitle">Manage and monitor inventory across all workstations</p>
-        </div>
-      </div>
+    <div className="standard-page-container">
+      <PageHeader
+        title="Inventory Management"
+        subtitle={`Manage and monitor inventory across all workstations. Total items: ${totalInventoryItems}`}
+        icon="📦"
+      />
+      <section className="admin-dashboard">
 
       <div className="dashboard-tabs">
         <button
@@ -1076,7 +1077,8 @@ function InventoryManagementPage() {
           }
         }
       `}</style>
-    </section>
+      </section>
+    </div>
   );
 }
 

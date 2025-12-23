@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api/api";
 import { WORKSTATIONS_ENDPOINT } from "../api/apiConfig";
 import { useAuth } from "../context/AuthContext.jsx";
+import "../styles/StandardPage.css";
 
 function WarehouseManagementPage() {
   const { session, isAdmin, logout } = useAuth();
@@ -76,113 +77,108 @@ function WarehouseManagementPage() {
   }
 
   return (
-    <div className="user-management-landscape">
-      <section className="form-section">
-        <h2>🏭 Warehouse Management</h2>
-        <p className="form-helper">
-          View and manage all warehouses and distribution centers in the LEGO factory system.
-        </p>
-        
-        {feedback.message && (
-          feedback.type === "error" ? (
-            <p
-              className="form-error"
-              role="alert"
-            >
-              {feedback.message}
-            </p>
-          ) : (
-            <output
-              className="form-success"
-            >
-              {feedback.message}
-            </output>
-          )
-        )}
+    <div className="standard-page-container">
+      <div className="standard-page-header">
+        <div className="standard-header-content">
+          <h1>🏭 Warehouse Management</h1>
+          <p className="standard-page-subtitle">
+            View and manage all warehouses and distribution centers in the LEGO factory system. 
+            Total Warehouses: {warehouses.length}
+          </p>
+        </div>
+      </div>
+      
+      {feedback.message && (
+        <div className={feedback.type === "error" ? "standard-error" : "standard-success"}>
+          <p>{feedback.message}</p>
+        </div>
+      )}
 
-        {loading ? (
+      {loading ? (
+        <div className="standard-loading">
           <p>Loading warehouses...</p>
-        ) : warehouses.length === 0 ? (
-          <p className="form-helper">No warehouses found in the system.</p>
-        ) : (
-          <>
-            <div className="warehouses-grid">
-              {warehouses.map((warehouse) => (
-                <div 
-                  key={warehouse.id} 
-                  className="warehouse-card"
-                  onClick={() => handleWarehouseClick(warehouse)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <div className="warehouse-header">
-                    <h3>{warehouse.name}</h3>
-                    <span className="warehouse-id">ID: {warehouse.id}</span>
-                  </div>
-                  
-                  <div className="warehouse-details">
-                    <div className="detail-row">
-                      <span className="detail-label">Type:</span>
-                      <span className="detail-value">{warehouse.workstationType}</span>
-                    </div>
-                    
-                    <div className="detail-row">
-                      <span className="detail-label">Description:</span>
-                      <span className="detail-value">{warehouse.description || "N/A"}</span>
-                    </div>
-                    
-                    <div className="detail-row">
-                      <span className="detail-label">Status:</span>
-                      <span className={`status-badge ${warehouse.active ? "active" : "inactive"}`}>
-                        {warehouse.active ? "✓ Active" : "✗ Inactive"}
-                      </span>
-                    </div>
-                  </div>
+        </div>
+      ) : warehouses.length === 0 ? (
+        <p className="standard-empty-message">No warehouses found in the system.</p>
+      ) : (
+        <>
+          <div className="standard-grid">
+            {warehouses.map((warehouse) => (
+              <div 
+                key={warehouse.id} 
+                className="standard-card"
+                onClick={() => handleWarehouseClick(warehouse)}
+              >
+                <div className="standard-card-header">
+                  <h3>{warehouse.name}</h3>
+                  <span className="standard-card-id">ID: {warehouse.id}</span>
                 </div>
-              ))}
-            </div>
-
-            {selectedWarehouse && (
-              <div className="modal-overlay" onClick={closeModal}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                  <div className="modal-header">
-                    <h2>{selectedWarehouse.name}</h2>
-                    <button className="modal-close" onClick={closeModal}>✕</button>
+                
+                <div className="standard-card-content">
+                  <div className="standard-detail-row">
+                    <span className="standard-detail-label">Type:</span>
+                    <span className="standard-detail-value">{warehouse.workstationType}</span>
                   </div>
                   
-                  <div className="modal-body">
-                    <div className="detail-section">
-                      <h3>Warehouse Information</h3>
-                      
-                      <dl className="detail-list">
-                        <dt>ID:</dt>
-                        <dd>{selectedWarehouse.id}</dd>
-                        
-                        <dt>Type:</dt>
-                        <dd>{selectedWarehouse.workstationType}</dd>
-                        
-                        <dt>Name:</dt>
-                        <dd>{selectedWarehouse.name}</dd>
-                        
-                        <dt>Description:</dt>
-                        <dd>{selectedWarehouse.description || "N/A"}</dd>
-                        
-                        <dt>Status:</dt>
-                        <dd className={`status-badge ${selectedWarehouse.active ? "active" : "inactive"}`}>
-                          {selectedWarehouse.active ? "✓ Active" : "✗ Inactive"}
-                        </dd>
-                      </dl>
-                    </div>
+                  <div className="standard-detail-row">
+                    <span className="standard-detail-label">Description:</span>
+                    <span className="standard-detail-value">{warehouse.description || "N/A"}</span>
                   </div>
                   
-                  <div className="modal-footer">
-                    <button className="primary-link" onClick={closeModal}>Close</button>
+                  <div className="standard-detail-row">
+                    <span className="standard-detail-label">Status:</span>
+                    <span className={`standard-status-badge ${warehouse.active ? "active" : "inactive"}`}>
+                      {warehouse.active ? "✓ Active" : "✗ Inactive"}
+                    </span>
                   </div>
                 </div>
               </div>
-            )}
-          </>
-        )}
-      </section>
+            ))}
+          </div>
+
+          {selectedWarehouse && (
+            <div className="standard-modal-overlay" onClick={closeModal}>
+              <div className="standard-modal-content" onClick={(e) => e.stopPropagation()}>
+                <div className="standard-modal-header">
+                  <h2>{selectedWarehouse.name}</h2>
+                  <button className="standard-modal-close" onClick={closeModal}>✕</button>
+                </div>
+                
+                <div className="standard-modal-body">
+                  <div className="standard-modal-section">
+                    <h3>Warehouse Information</h3>
+                    
+                    <dl className="standard-detail-list">
+                      <dt>ID:</dt>
+                      <dd>{selectedWarehouse.id}</dd>
+                      
+                      <dt>Type:</dt>
+                      <dd>{selectedWarehouse.workstationType}</dd>
+                      
+                      <dt>Name:</dt>
+                      <dd>{selectedWarehouse.name}</dd>
+                      
+                      <dt>Description:</dt>
+                      <dd>{selectedWarehouse.description || "N/A"}</dd>
+                      
+                      <dt>Status:</dt>
+                      <dd>
+                        <span className={`standard-status-badge ${selectedWarehouse.active ? "active" : "inactive"}`}>
+                          {selectedWarehouse.active ? "✓ Active" : "✗ Inactive"}
+                        </span>
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+                
+                <div className="standard-modal-footer">
+                  <button className="standard-action-btn" onClick={closeModal}>Close</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

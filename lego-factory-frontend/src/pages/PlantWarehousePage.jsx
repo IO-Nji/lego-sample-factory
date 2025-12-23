@@ -3,6 +3,7 @@ import CustomerOrderCard from "../components/CustomerOrderCard";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
+import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 
 /**
@@ -203,11 +204,14 @@ function PlantWarehousePage() {
   };
 
   return (
-    <section className="plant-warehouse-page">
+    <div className="standard-page-container">
+      <section className="plant-warehouse-page">
       {/* Header */}
-      <div className="page-header">
-        <h1 className="page-title">🏢 Plant Warehouse Dashboard</h1>
-        <p className="page-subtitle">Manage inventory and customer orders</p>
+      <div className="standard-page-header">
+        <div className="standard-header-content">
+          <h1>🏢 Plant Warehouse Dashboard</h1>
+          <p className="standard-page-subtitle">Manage inventory and customer orders</p>
+        </div>
       </div>
 
       {session?.user?.workstationId ? (
@@ -579,7 +583,8 @@ function PlantWarehousePage() {
           margin-bottom: 1.5rem;
         }
       `}</style>
-    </section>
+      </section>
+    </div>
   );
 }
 

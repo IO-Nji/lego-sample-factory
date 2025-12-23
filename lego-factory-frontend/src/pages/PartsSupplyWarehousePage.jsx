@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 import api from "../api/api";
+import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 import "../styles/ControlPages.css";
 
@@ -125,11 +126,13 @@ function PartsSupplyWarehousePage() {
   return (
     <div className="control-page-container">
       {/* Header */}
-      <div className="control-page-header">
-        <div className="station-info">
+      <div className="standard-page-header">
+        <div className="standard-header-content">
           <h1>🏭 Parts Supply Warehouse</h1>
-          <p>Workstation 9 - Fulfilling parts requests for production/assembly</p>
-          <p>Operator: <strong>{session?.user?.username || "Unknown"}</strong></p>
+          <p className="standard-page-subtitle">
+            Workstation 9 - Fulfilling parts requests for production/assembly |
+            Operator: <strong>{session?.user?.username || "Unknown"}</strong>
+          </p>
         </div>
       </div>
 

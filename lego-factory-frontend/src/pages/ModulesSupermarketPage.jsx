@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 
 function ModulesSupermarketPage() {
@@ -153,11 +154,14 @@ function ModulesSupermarketPage() {
   };
 
   return (
-    <section className="modules-supermarket-page">
+    <div className="standard-page-container">
+      <section className="modules-supermarket-page">
       {/* Header */}
-      <div className="page-header">
-        <h1 className="page-title">🏢 Modules Supermarket</h1>
-        <p className="page-subtitle">Manage incoming warehouse orders for module fulfillment</p>
+      <div className="standard-page-header">
+        <div className="standard-header-content">
+          <h1>🏢 Modules Supermarket</h1>
+          <p className="standard-page-subtitle">Manage incoming warehouse orders for module fulfillment</p>
+        </div>
       </div>
 
         {/* Messages */}
@@ -451,7 +455,8 @@ function ModulesSupermarketPage() {
             </div>
           </div>
         )}
-    </section>
+      </section>
+    </div>
   );
 }
 

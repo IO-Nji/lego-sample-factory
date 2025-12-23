@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useCallback, useRef } from "react";
+import React, { createContext, useContext, useCallback, useRef, useMemo } from "react";
+import PropTypes from "prop-types";
 
 const DashboardRefreshContext = createContext({
   refresh: () => {},
@@ -19,12 +20,18 @@ export function DashboardRefreshProvider({ children }) {
     };
   }, []);
 
+  const value = useMemo(() => ({ refresh, subscribe }), [refresh, subscribe]);
+
   return (
-    <DashboardRefreshContext.Provider value={{ refresh, subscribe }}>
+    <DashboardRefreshContext.Provider value={value}>
       {children}
     </DashboardRefreshContext.Provider>
   );
 }
+
+DashboardRefreshProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 export function useDashboardRefresh() {
   return useContext(DashboardRefreshContext);

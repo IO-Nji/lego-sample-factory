@@ -3,6 +3,8 @@ import api from "../api/api";
 
 import { USERS_ENDPOINT, WORKSTATIONS_ENDPOINT } from "../api/apiConfig";
 import { useAuth } from "../context/AuthContext.jsx";
+import PageHeader from "../components/PageHeader";
+import "../styles/StandardPage.css";
 
 const ROLE_OPTIONS = [
   "ADMIN",
@@ -210,7 +212,14 @@ function UserManagementPage() {
   }
 
   return (
-    <div className="user-management-landscape">
+    <div className="standard-page-container">
+      <PageHeader
+        title="User Management"
+        subtitle={`Manage system users and assign workstation roles. Total users: ${users.length}`}
+        icon="👥"
+      />
+      
+      <div className="user-management-landscape">
       {/* Two Column Layout: Create User (70%) + Status (30%) */}
       <div className="user-management-top-section">
         {/* Create New User - Left Column (70%) */}
@@ -451,6 +460,7 @@ function UserManagementPage() {
           </div>
         )}
       </section>
+      </div>
     </div>
   );
 }

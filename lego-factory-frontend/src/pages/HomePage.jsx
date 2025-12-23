@@ -1,5 +1,6 @@
 import DashboardPage from "./DashboardPage";
 import { useAuth } from "../context/AuthContext.jsx";
+import "../styles/StandardPage.css";
 import "../styles/HomePage.css";
 import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";

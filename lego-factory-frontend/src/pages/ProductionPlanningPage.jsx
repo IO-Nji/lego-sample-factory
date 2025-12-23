@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
+import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 
 /**
@@ -231,10 +232,13 @@ function ProductionPlanningPage() {
   };
 
   return (
-    <section className="dashboard-page">
-      <div className="page-header">
-        <h2>📋 Production Planning</h2>
-        <p>Plan and schedule production workflows across manufacturing and assembly stations</p>
+    <div className="standard-page-container">
+      <section className="dashboard-page">
+      <div className="standard-page-header">
+        <div className="standard-header-content">
+          <h1>📋 Production Planning</h1>
+          <p className="standard-page-subtitle">Plan and schedule production workflows across manufacturing and assembly stations</p>
+        </div>
       </div>
 
       {error && (
@@ -555,7 +559,8 @@ function ProductionPlanningPage() {
           )}
         </div>
       </div>
-    </section>
+      </section>
+    </div>
   );
 }
 
