@@ -6,17 +6,21 @@ import '../styles/CustomerOrderCard.css';
  * CustomerOrderCard Component
  * 
  * Displays a customer order with context-aware action buttons based on order status.
- * Implements smart button visibility logic:
+ * Implements smart button visibility logic (Scenario 1 & 2):
  * - PENDING: Only shows "Confirm" button
- * - CONFIRMED: Shows "Fulfill" button (checks inventory and processes)
- * - PROCESSING: Shows "Complete" button
+ * - CONFIRMED: Shows "Fulfill" (if enough stock) OR "Process" (if insufficient stock) + "Cancel"
+ * - PROCESSING: Shows "Complete" button (after warehouse order fulfilled) + "Cancel"
  * - COMPLETED: No action buttons
+ * 
+ * Scenario 1 (Enough Stock): PENDING → CONFIRMED → (Fulfill) → COMPLETED
+ * Scenario 2 (Low Stock): PENDING → CONFIRMED → (Process) → PROCESSING → (Complete) → COMPLETED
  * 
  * @param {Object} order - Order object with id, orderNumber, status, orderDate, orderItems
  * @param {Array} inventory - Current warehouse inventory for stock checking
  * @param {Function} onConfirm - Handler for confirming order
- * @param {Function} onFulfill - Handler for fulfilling order (checks stock)
- * @param {Function} onComplete - Handler for completing order
+ * @param {Function} onFulfill - Handler for fulfilling order (Scenario 1: enough stock)
+ * @param {Function} onProcess - Handler for processing order (Scenario 2: creates warehouse order)
+ * @param {Function} onComplete - Handler for completing order (Scenario 2: after warehouse fulfilled)
  * @param {Function} onCancel - Handler for cancelling order
  * @param {boolean} isProcessing - Whether any action is in progress
  * @param {Function} getProductDisplayName - Function to format product names
@@ -27,6 +31,7 @@ function CustomerOrderCard({
   inventory = [],
   onConfirm,
   onFulfill,
+  onProcess,
   onComplete,
   onCancel,
   isProcessing = false,
@@ -34,7 +39,20 @@ function CustomerOrderCard({
   getInventoryStatusColor
 }) {
   
-  // Determine which buttons to show based on order status
+  // Check if all items have sufficient stock
+  const hasAllStock = () => {
+    if (!order.orderItems || order.orderItems.length === 0) return false;
+    
+    return order.orderItems.every(item => {
+      const inventoryItem = inventory.find(
+        (inv) => inv.itemId === item.itemId || inv.itemId === item.id
+      );
+      const stockQuantity = inventoryItem?.quantity || 0;
+      return stockQuantity >= item.quantity;
+    });
+  };
+  
+  // Determine which buttons to show based on order status and stock availability
   const getAvailableActions = () => {
     const status = order.status;
     
@@ -43,9 +61,16 @@ function CustomerOrderCard({
         return { confirm: true };
       
       case 'CONFIRMED':
-        return { fulfill: true, cancel: true };
+        // Scenario 1: Enough stock → Fulfill
+        // Scenario 2: Insufficient stock → Process (creates warehouse order)
+        if (hasAllStock()) {
+          return { fulfill: true, cancel: true };
+        } else {
+          return { process: true, cancel: true };
+        }
       
       case 'PROCESSING':
+        // After warehouse order is fulfilled, allow completion
         return { complete: true, cancel: true };
       
       case 'COMPLETED':
@@ -140,7 +165,6 @@ function CustomerOrderCard({
                 size="small" 
                 onClick={() => onConfirm(order.id)}
                 disabled={isProcessing}
-                fullWidth
               >
                 Confirm Order
               </Button>
@@ -153,9 +177,20 @@ function CustomerOrderCard({
                 onClick={() => onFulfill(order.id)}
                 disabled={isProcessing}
                 loading={isProcessing}
-                fullWidth
               >
                 {isProcessing ? 'Fulfilling...' : 'Fulfill Order'}
+              </Button>
+            )}
+            
+            {actions.process && onProcess && (
+              <Button 
+                variant="warning" 
+                size="small" 
+                onClick={() => onProcess(order.id)}
+                disabled={isProcessing}
+                loading={isProcessing}
+              >
+                {isProcessing ? 'Processing...' : 'Process Order'}
               </Button>
             )}
             
@@ -165,7 +200,6 @@ function CustomerOrderCard({
                 size="small" 
                 onClick={() => onComplete(order.id)}
                 disabled={isProcessing}
-                fullWidth
               >
                 Complete Order
               </Button>
@@ -177,7 +211,6 @@ function CustomerOrderCard({
                 size="small" 
                 onClick={() => onCancel(order.id)}
                 disabled={isProcessing}
-                fullWidth
               >
                 Cancel
               </Button>
@@ -193,7 +226,8 @@ CustomerOrderCard.propTypes = {
   order: PropTypes.shape({
     id: PropTypes.number.isRequired,
     orderNumber: PropTypes.string.isRequired,
-    status: PropTypes.string.isRequired,
+    Process: PropTypes.func, // Optional: for Scenario 2 (low stock)
+  onstatus: PropTypes.string.isRequired,
     orderDate: PropTypes.string.isRequired,
     orderItems: PropTypes.arrayOf(PropTypes.shape({
       itemId: PropTypes.number,

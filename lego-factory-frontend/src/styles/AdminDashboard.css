@@ -376,7 +376,8 @@
   gap: 1rem;
 }
 
-.order-item {
+/* Scoped to orders-list to avoid affecting CustomerOrderCard items */
+.orders-list .order-item {
   background: white;
   border-radius: 8px;
   padding: 1rem;

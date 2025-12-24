@@ -44,7 +44,7 @@
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
-  min-height: 160px;
+  min-height: 100px;
 }
 
 .product-card:hover {

@@ -3,7 +3,10 @@ import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import PageHeader from "../components/PageHeader";
 import CustomerOrderCard from "../components/CustomerOrderCard";
+import WarehouseOrderCard from "../components/WarehouseOrderCard";
 import AddNewUserForm from "../components/AddNewUserForm";
+import StatsCard from "../components/StatsCard";
+import Button from "../components/Button";
 import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 import "../styles/ControlPages.css";
@@ -231,7 +234,7 @@ function AdminDashboardContent() {
   return (
     <div className="standard-page-container">
       <PageHeader
-        title="Admin Overview"
+        title="Admin Dashboard"
         subtitle="Real-time monitoring and control of factory operations"
         icon="🏭"
         actions={[
@@ -475,7 +478,12 @@ function PlantWarehouseDashboardContent() {
 
     try {
       const response = await axios.put(`/api/customer-orders/${orderId}/fulfill`);
-      setSuccessMessage(`Order fulfilled successfully! Status: ${response.data.status}`);
+      // Backend auto-determines scenario: Scenario 1 (COMPLETED) or Scenario 2/3 (PROCESSING)
+      const isCompleted = response.data.status === 'COMPLETED';
+      const message = isCompleted 
+        ? `Order ${response.data.orderNumber} fulfilled successfully!`
+        : `Order ${response.data.orderNumber} processing - Warehouse order created`;
+      setSuccessMessage(message);
       fetchOrders();
       fetchInventory();
     } catch (err) {
@@ -490,23 +498,16 @@ function PlantWarehouseDashboardContent() {
     setSuccessMessage(null);
     try {
       await axios.put(`/api/customer-orders/${orderId}/confirm`);
-      setSuccessMessage("Order confirmed");
+      setSuccessMessage("Order confirmed - Check stock and click Fulfill/Process");
       fetchOrders();
     } catch (err) {
       setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
     }
   };
 
+  // Process button calls same fulfill endpoint - backend handles scenario routing
   const handleProcessing = async (orderId) => {
-    setError(null);
-    setSuccessMessage(null);
-    try {
-      await axios.put(`/api/customer-orders/${orderId}/processing`);
-      setSuccessMessage("Order moved to PROCESSING");
-      fetchOrders();
-    } catch (err) {
-      setError("Failed to mark processing: " + (err.response?.data?.message || err.message));
-    }
+    return handleFulfillOrder(orderId);
   };
 
   const handleComplete = async (orderId) => {
@@ -571,30 +572,40 @@ function PlantWarehouseDashboardContent() {
         </div>
       )}
 
-      <div className="two-column-section">
-        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 create-order-box">
-          <div className="bg-blue-50 px-6 py-3 border-b border-blue-200">
-            <h2 className="text-lg font-semibold text-blue-900">➕ Create Customer Order</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="products-table w-full">
-              <thead>
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Product Variant
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Est. Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">QTY</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {products.length > 0 ? (
-                  products.map((product) => (
+      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-6">
+        <div className="bg-blue-50 px-6 py-3 border-b border-blue-200">
+          <h2 className="text-lg font-semibold text-blue-900">➕ Create Customer Order</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="products-table w-full">
+            <thead>
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  Product Variant
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Price</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Est. Time</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">In Stock</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order QTY</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {products.length > 0 ? (
+                products.map((product) => {
+                  const inventoryItem = inventory.find(item => item.itemId === product.id);
+                  const stockQuantity = inventoryItem?.quantity || 0;
+                  const statusColor = getInventoryStatusColor(stockQuantity);
+                  
+                  return (
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{product.name || "Unknown"}</td>
                       <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">${(product.price || 0).toFixed(2)}</td>
                       <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">{product.estimatedTimeMinutes || 0} min</td>
+                      <td className="px-6 py-2 whitespace-nowrap text-sm font-semibold" style={{ color: statusColor }}>
+                        {stockQuantity > 0 ? stockQuantity : (
+                          <span className="text-red-600">Out of Stock</span>
+                        )}
+                      </td>
                       <td className="px-6 py-1 whitespace-nowrap text-sm">
                         <input
                           type="number"
@@ -606,54 +617,22 @@ function PlantWarehouseDashboardContent() {
                         />
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                      No products available
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-            <button onClick={handleCreateOrder} disabled={loading} className="primary-link">
-              {loading ? "Creating Order..." : "Create Order"}
-            </button>
-          </div>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                    No products available
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-
-        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 inventory-box">
-          <div className="bg-blue-50 px-6 py-3 border-b border-blue-200">
-            <h2 className="text-lg font-semibold text-blue-900">📦 Current Inventory</h2>
-          </div>
-          <div className="overflow-x-auto flex-grow">
-            {inventory.length > 0 ? (
-              <table className="products-table w-full">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Product</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Item ID</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Qty</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {inventory.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-gray-900">{PRODUCT_NAMES[item.itemId]?.name || `Product #${item.itemId}`}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-600">#{item.itemId}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-900 font-semibold">{item.quantity}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="p-4 text-center text-gray-500">
-                <p className="text-sm">No inventory items</p>
-              </div>
-            )}
-          </div>
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <button onClick={handleCreateOrder} disabled={loading} className="primary-link">
+            {loading ? "Creating Order..." : "Create Order"}
+          </button>
         </div>
       </div>
 
@@ -671,6 +650,7 @@ function PlantWarehouseDashboardContent() {
                   inventory={inventory}
                   onConfirm={handleConfirm}
                   onFulfill={handleFulfillOrder}
+                  onProcess={handleProcessing}
                   onComplete={handleComplete}
                   onCancel={handleCancel}
                   isProcessing={fulfillingOrderId === order.id}
@@ -780,12 +760,10 @@ function PlantWarehouseDashboardContent() {
 function ModulesSupermarketDashboardContent() {
   const { session } = useAuth();
   const [warehouseOrders, setWarehouseOrders] = useState([]);
-  const [filteredOrders, setFilteredOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("PENDING");
   const [fulfillmentInProgress, setFulfillmentInProgress] = useState({});
   const [selectedModule, setSelectedModule] = useState(null);
 
@@ -795,35 +773,39 @@ function ModulesSupermarketDashboardContent() {
       fetchInventory();
     }
     const interval = setInterval(() => {
-      fetchWarehouseOrders();
-      fetchInventory();
+      if (session?.user?.workstationId) {
+        fetchWarehouseOrders();
+        fetchInventory();
+      }
     }, 15000);
     return () => clearInterval(interval);
   }, [session?.user?.workstationId]);
-
-  useEffect(() => {
-    if (statusFilter === "ALL") {
-      setFilteredOrders(warehouseOrders);
-    } else {
-      setFilteredOrders(warehouseOrders.filter((order) => order.status === statusFilter));
-    }
-  }, [warehouseOrders, statusFilter]);
 
   const fetchWarehouseOrders = async () => {
     try {
       const workstationId = session?.user?.workstationId || 8;
       const response = await axios.get(`/api/warehouse-orders/workstation/${workstationId}`);
       const data = response.data;
-      setWarehouseOrders(Array.isArray(data) ? data : []);
+      if (Array.isArray(data)) {
+        setWarehouseOrders(data);
+        setError(null);
+      } else {
+        setWarehouseOrders([]);
+      }
     } catch (err) {
-      setError("Failed to fetch warehouse orders: " + err.message);
+      if (err.response?.status === 404) {
+        setWarehouseOrders([]);
+        setError(null);
+      } else {
+        setError("Failed to load warehouse orders: " + (err.response?.data?.message || err.message));
+      }
     }
   };
 
   const fetchInventory = async () => {
+    if (!session?.user?.workstationId) return;
     try {
-      const workstationId = session?.user?.workstationId || 8;
-      const response = await axios.get(`/api/stock/workstation/${workstationId}`);
+      const response = await axios.get(`/api/stock/workstation/${session.user.workstationId}`);
       setInventory(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Failed to fetch inventory:", err);
@@ -831,143 +813,204 @@ function ModulesSupermarketDashboardContent() {
     }
   };
 
-  const fulfillWarehouseOrder = async (orderId) => {
-    setFulfillmentInProgress({ ...fulfillmentInProgress, [orderId]: true });
+  const handleFulfillOrder = async (orderId, orderNumber) => {
+    setFulfillmentInProgress(prev => ({ ...prev, [orderId]: true }));
     setError(null);
     setSuccessMessage(null);
 
     try {
       const response = await axios.put(`/api/warehouse-orders/${orderId}/fulfill-modules`);
-      setSuccessMessage(`Order ${response.data.orderNumber} fulfilled successfully`);
-      setTimeout(() => setSuccessMessage(null), 3000);
-      fetchWarehouseOrders();
-      fetchInventory();
+      setSuccessMessage(`Warehouse order ${orderNumber} fulfilled successfully!`);
+      await fetchWarehouseOrders();
+      await fetchInventory();
     } catch (err) {
       setError("Failed to fulfill order: " + (err.response?.data?.message || err.message));
     } finally {
-      setFulfillmentInProgress({ ...fulfillmentInProgress, [orderId]: false });
+      setFulfillmentInProgress(prev => ({ ...prev, [orderId]: false }));
     }
+  };
+
+  const handleCancel = async (orderId) => {
+    if (!globalThis.confirm("Cancel this warehouse order?")) return;
+    setError(null);
+    setSuccessMessage(null);
+    
+    try {
+      await axios.patch(`/api/warehouse-orders/${orderId}/status?status=CANCELLED`);
+      setSuccessMessage("Warehouse order cancelled successfully!");
+      await fetchWarehouseOrders();
+    } catch (err) {
+      setError("Failed to cancel order: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const getInventoryStatusColor = (quantity) => {
+    if (quantity === 0) return '#991b1b';
+    if (quantity <= 5) return '#ef4444';
+    if (quantity <= 20) return '#f59e0b';
+    return '#10b981';
   };
 
   return (
     <div className="standard-page-container">
       <PageHeader
-        title="Modules Supermarket Dashboard"
-        subtitle="Manage modules and fulfill warehouse orders"
+        title="Modules Supermarket"
+        subtitle={`Manage warehouse orders and module inventory${session?.user?.workstationId ? ` | Workstation ID: ${session.user.workstationId}` : ''}`}
         icon="🏢"
       />
-      <section className="modules-supermarket-page" style={{ padding: "2rem 1rem", maxWidth: "1400px", margin: "0 auto" }}>
+      <section className="modules-supermarket-page">
 
-      {error && <div className="error-alert">{error}</div>}
-      {successMessage && <div className="form-success-details">{successMessage}</div>}
+        {/* Error and Success Messages */}
+        {error && (
+          <div className="form-error mb-6 p-4 bg-red-50 border-l-4 border-red-600 rounded">
+            <p className="font-semibold text-red-900">Error</p>
+            <p className="text-red-800 text-sm mt-1">{error}</p>
+            <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800 font-semibold text-sm mt-2">
+              Dismiss
+            </button>
+          </div>
+        )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", marginBottom: "2rem" }}>
-        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-          <div className="bg-blue-50 px-6 py-3 border-b border-blue-200">
-            <h2 className="text-lg font-semibold text-blue-900">📋 Warehouse Orders</h2>
-            <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
-              {["PENDING", "IN_PROGRESS", "COMPLETED", "ALL"].map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                  style={{
-                    padding: "0.5rem 1rem",
-                    background: statusFilter === status ? "#0b5394" : "#e0e0e0",
-                    color: statusFilter === status ? "white" : "#333",
-                    border: "none",
-                    borderRadius: "0.375rem",
-                    cursor: "pointer",
-                    fontSize: "0.875rem",
-                    fontWeight: "500",
-                  }}
-                >
-                  {status}
+        {successMessage && (
+          <div className="form-success-details mb-6">
+            <p className="font-semibold text-green-900">Success</p>
+            <p className="text-green-800 text-sm mt-1">{successMessage}</p>
+            <button onClick={() => setSuccessMessage(null)} className="text-green-700 hover:text-green-900 font-semibold text-sm mt-2">
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Order Statistics */}
+        <div className="stats-grid mb-6">
+          <StatsCard value={warehouseOrders.length} label="Total Orders" variant="default" />
+          <StatsCard value={warehouseOrders.filter(o => o.status === "PENDING").length} label="Pending" variant="pending" />
+          <StatsCard value={warehouseOrders.filter(o => o.status === "PROCESSING").length} label="Processing" variant="processing" />
+          <StatsCard value={warehouseOrders.filter(o => o.status === "FULFILLED").length} label="Fulfilled" variant="completed" />
+        </div>
+
+        {/* Current Inventory */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-6">
+          <div className="bg-orange-50 px-6 py-3 border-b border-orange-200">
+            <h2 className="text-lg font-semibold text-orange-900">📦 Current Inventory</h2>
+          </div>
+          <div className="overflow-x-auto">
+            {inventory.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                <p className="text-sm">No inventory items available</p>
+              </div>
+            ) : (
+              <table className="products-table w-full">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Item Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Item ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Quantity</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Last Updated</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {inventory.map((item, index) => {
+                    const statusColor = getInventoryStatusColor(item.quantity);
+                    return (
+                      <tr key={index} onClick={() => setSelectedModule(item)} className="hover:bg-gray-50 cursor-pointer">
+                        <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemType}</td>
+                        <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">{item.itemId}</td>
+                        <td className="px-6 py-2 whitespace-nowrap text-sm font-bold" style={{ color: statusColor }}>{item.quantity}</td>
+                        <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">{new Date(item.updatedAt).toLocaleString()}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        {/* Warehouse Orders */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-6">
+          <div className="bg-orange-50 px-6 py-3 border-b border-orange-200 flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-orange-900">📋 Warehouse Orders</h2>
+            <button onClick={fetchWarehouseOrders} disabled={loading} className="px-4 py-2 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition disabled:opacity-50">
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+          <div className="p-6">
+            {Array.isArray(warehouseOrders) && warehouseOrders.length > 0 ? (
+              <div className="orders-grid">
+                {warehouseOrders.map((order) => (
+                  <WarehouseOrderCard
+                    key={order.id}
+                    order={order}
+                    onFulfill={handleFulfillOrder}
+                    onCancel={handleCancel}
+                    isProcessing={fulfillmentInProgress[order.id]}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500">
+                <p className="text-sm">No warehouse orders found</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Information Box */}
+        <div className="bg-orange-50 border-l-4 border-orange-600 rounded p-6">
+          <h3 className="font-bold text-orange-900 text-base mb-4">About Warehouse Orders</h3>
+          <ul className="space-y-2 text-orange-800 text-sm">
+            <li><strong>SCENARIO 2:</strong> Plant Warehouse has no stock, requesting all items from Modules Supermarket</li>
+            <li><strong>SCENARIO 3:</strong> Plant Warehouse has partial stock, requesting remaining items from Modules Supermarket</li>
+            <li>Click <strong>Fulfill</strong> to complete the warehouse order and deduct stock from inventory</li>
+            <li>Orders are automatically fetched every 15 seconds for real-time updates</li>
+            <li>Click on any <strong>inventory item</strong> to view detailed module information</li>
+          </ul>
+        </div>
+
+        {/* Module Details Modal */}
+        {selectedModule && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setSelectedModule(null)}>
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-900">Module Details</h2>
+                <button className="text-gray-400 hover:text-gray-600 text-2xl font-bold" onClick={() => setSelectedModule(null)}>×</button>
+              </div>
+              <div className="px-6 py-4 space-y-4">
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Item Type</dt>
+                  <dd className="mt-1 text-lg font-semibold text-gray-900">{selectedModule.itemType}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Item ID</dt>
+                  <dd className="mt-1 text-lg font-semibold text-gray-900">{selectedModule.itemId}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Stock Level</dt>
+                  <dd className="mt-1 text-2xl font-bold" style={{ color: selectedModule.quantity > 0 ? '#059669' : '#dc2626' }}>
+                    {selectedModule.quantity} units
+                  </dd>
+                </div>
+                {selectedModule.description && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Description</dt>
+                    <dd className="mt-1 text-sm text-gray-700">{selectedModule.description}</dd>
+                  </div>
+                )}
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Last Updated</dt>
+                  <dd className="mt-1 text-sm text-gray-700">{new Date(selectedModule.updatedAt).toLocaleString()}</dd>
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+                <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition" onClick={() => setSelectedModule(null)}>
+                  Close
                 </button>
-              ))}
+              </div>
             </div>
           </div>
-          <div style={{ overflowX: "auto", maxHeight: "600px" }}>
-            {filteredOrders.length > 0 ? (
-              <table className="products-table" style={{ width: "100%" }}>
-                <thead>
-                  <tr>
-                    <th style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: "600" }}>Order #</th>
-                    <th style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: "600" }}>Items</th>
-                    <th style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: "600" }}>Status</th>
-                    <th style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: "600" }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredOrders.map((order) => (
-                    <tr key={order.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
-                      <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>#{order.orderNumber}</td>
-                      <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{order.quantity || 0}</td>
-                      <td style={{ padding: "0.75rem" }}>
-                        <span style={{ padding: "0.25rem 0.75rem", background: "#cfe2ff", color: "#084298", borderRadius: "0.375rem", fontSize: "0.75rem", fontWeight: "700" }}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: "0.75rem" }}>
-                        {order.status === "PENDING" && (
-                          <button
-                            onClick={() => fulfillWarehouseOrder(order.id)}
-                            disabled={fulfillmentInProgress[order.id]}
-                            style={{
-                              padding: "0.5rem 1rem",
-                              background: "#27ae60",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "0.375rem",
-                              cursor: fulfillmentInProgress[order.id] ? "not-allowed" : "pointer",
-                              fontSize: "0.875rem",
-                              fontWeight: "600",
-                            }}
-                          >
-                            {fulfillmentInProgress[order.id] ? "Processing..." : "Fulfill"}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div style={{ padding: "2rem", textAlign: "center", color: "#999" }}>No orders found</div>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-          <div className="bg-blue-50 px-6 py-3 border-b border-blue-200">
-            <h2 className="text-lg font-semibold text-blue-900">📦 Current Inventory</h2>
-          </div>
-          <div style={{ overflowX: "auto", maxHeight: "600px" }}>
-            {inventory.length > 0 ? (
-              <table className="products-table" style={{ width: "100%" }}>
-                <thead>
-                  <tr>
-                    <th style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: "600" }}>Item Type</th>
-                    <th style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: "600" }}>Item ID</th>
-                    <th style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: "600" }}>Quantity</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inventory.map((item, idx) => (
-                    <tr key={idx} style={{ borderBottom: "1px solid #e0e0e0" }}>
-                      <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>{item.itemType || "MODULE"}</td>
-                      <td style={{ padding: "0.75rem", fontSize: "0.875rem" }}>#{item.itemId}</td>
-                      <td style={{ padding: "0.75rem", fontSize: "0.875rem", fontWeight: "600" }}>{item.quantity}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div style={{ padding: "2rem", textAlign: "center", color: "#999" }}>No inventory items</div>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
+        )}
+      </section>
     </div>
   );
 }
@@ -1274,19 +1317,240 @@ function ManufacturingDashboardContent() {
 }
 
 // ============================================
-// ASSEMBLY WORKSTATION DASHBOARD
+// ASSEMBLY WORKSTATION DASHBOARD (Final Assembly)
 // ============================================
 function AssemblyWorkstationDashboardContent() {
+  const { session } = useAuth();
+  const [assemblyOrders, setAssemblyOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [processingOrderId, setProcessingOrderId] = useState(null);
+
+  // Determine assembly type from workstation name
+  const getAssemblyType = () => {
+    const workstationName = session?.user?.workstationName || "";
+    if (workstationName.includes("Gear")) return "gear-assembly";
+    if (workstationName.includes("Motor")) return "motor-assembly";
+    if (workstationName.includes("Final")) return "final-assembly";
+    return "final-assembly"; // default
+  };
+
+  const assemblyType = getAssemblyType();
+  const apiEndpoint = `/api/assembly/${assemblyType}`;
+
+  useEffect(() => {
+    if (session?.user?.workstationId) {
+      fetchAssemblyOrders();
+      const interval = setInterval(fetchAssemblyOrders, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [session?.user?.workstationId]);
+
+  const fetchAssemblyOrders = async () => {
+    if (!session?.user?.workstationId) return;
+    
+    try {
+      setLoading(true);
+      const response = await axios.get(`${apiEndpoint}/workstation/${session.user.workstationId}`);
+      setAssemblyOrders(Array.isArray(response.data) ? response.data : []);
+      setError(null);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setAssemblyOrders([]);
+      } else {
+        setError("Failed to load assembly orders: " + (err.response?.data?.message || err.message));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartAssembly = async (orderId) => {
+    setProcessingOrderId(orderId);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      await axios.put(`${apiEndpoint}/${orderId}/start`);
+      setSuccessMessage("Assembly task started successfully!");
+      fetchAssemblyOrders();
+    } catch (err) {
+      setError("Failed to start assembly: " + (err.response?.data?.message || err.message));
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
+
+  const handleCompleteAssembly = async (orderId) => {
+    setProcessingOrderId(orderId);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const isFinalAssembly = assemblyType === "final-assembly";
+      const response = await axios.put(`${apiEndpoint}/${orderId}/complete`);
+      
+      const creditMsg = isFinalAssembly
+        ? "Plant Warehouse has been credited with a finished product."
+        : "Modules Supermarket has been credited with a module unit.";
+      
+      setSuccessMessage(`Assembly task completed successfully! ${creditMsg}`);
+      fetchAssemblyOrders();
+    } catch (err) {
+      setError("Failed to complete assembly: " + (err.response?.data?.message || err.message));
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
+
+  const getStatusBadgeClass = (status) => {
+    const statusMap = {
+      'ASSIGNED': 'pending',
+      'IN_PROGRESS': 'processing',
+      'COMPLETED': 'completed',
+      'CANCELLED': 'cancelled'
+    };
+    return statusMap[status] || 'default';
+  };
+
+  const getStationTitle = () => {
+    const titles = {
+      'gear-assembly': '⚙️ Gear Assembly',
+      'motor-assembly': '🔌 Motor Assembly',
+      'final-assembly': '📦 Final Assembly'
+    };
+    return titles[assemblyType] || 'Assembly Workstation';
+  };
+
   return (
     <div className="standard-page-container">
-    <section className="dashboard-page">
       <PageHeader
-        title="Assembly Workstation Dashboard"
-        subtitle="Configure your workstation-specific controls here"
+        title={getStationTitle()}
+        subtitle={`Workstation ${session?.user?.workstationId || 'N/A'} - Process assembly tasks for production orders`}
         icon="🔩"
       />
-      <p>Assembly workstation interface</p>
-    </section>
+      <section className="dashboard-page">
+
+        {error && (
+          <div className="form-error mb-6 p-4 bg-red-50 border-l-4 border-red-600 rounded">
+            <p className="font-semibold text-red-900">Error</p>
+            <p className="text-red-800 text-sm mt-1">{error}</p>
+            <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800 font-semibold text-sm mt-2">
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="form-success-details mb-6">
+            <p className="font-semibold text-green-900">Success</p>
+            <p className="text-green-800 text-sm mt-1">{successMessage}</p>
+            <button onClick={() => setSuccessMessage(null)} className="text-green-700 hover:text-green-900 font-semibold text-sm mt-2">
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {!session?.user?.workstationId && (
+          <div className="form-error mb-6 p-4 bg-red-50 border-l-4 border-red-600 rounded">
+            <p className="font-semibold text-red-900">⚠️ No workstation assigned</p>
+            <p className="text-red-800 text-sm mt-1">Contact administrator to assign a workstation to your account.</p>
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-6">
+          <div className="bg-purple-50 px-6 py-3 border-b border-purple-200">
+            <h2 className="text-lg font-semibold text-purple-900">📋 Assembly Tasks</h2>
+          </div>
+          <div className="p-6">
+            {loading ? (
+              <div className="text-center text-gray-500 py-8">Loading assembly tasks...</div>
+            ) : assemblyOrders.length > 0 ? (
+              <div className="orders-grid">
+                {assemblyOrders.map((order) => (
+                  <div key={order.id} className={`customer-order-card status-${getStatusBadgeClass(order.status)}`}>
+                    <div className="order-card-header">
+                      <span className="order-number">#{order.controlOrderNumber}</span>
+                      <span className={`order-status-badge ${getStatusBadgeClass(order.status)}`}>
+                        {order.status}
+                      </span>
+                    </div>
+                    
+                    <div className="order-card-body">
+                      <div className="order-items-list">
+                        <div className="order-item">
+                          <div className="item-name">Quantity</div>
+                          <div className="item-quantity">{order.quantity || 1}</div>
+                        </div>
+                        {order.priority && (
+                          <div className="order-item">
+                            <div className="item-name">Priority</div>
+                            <div className="item-quantity">{order.priority}</div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="order-date">
+                        {new Date(order.createdAt).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </div>
+                    </div>
+
+                    {(order.status === 'ASSIGNED' || order.status === 'IN_PROGRESS') && (
+                      <div className="order-card-footer">
+                        <div className="action-buttons">
+                          {order.status === 'ASSIGNED' && (
+                            <Button 
+                              variant="primary" 
+                              size="small" 
+                              onClick={() => handleStartAssembly(order.id)}
+                              disabled={processingOrderId === order.id}
+                            >
+                              Start Assembly
+                            </Button>
+                          )}
+                          
+                          {order.status === 'IN_PROGRESS' && (
+                            <Button 
+                              variant="success" 
+                              size="small" 
+                              onClick={() => handleCompleteAssembly(order.id)}
+                              disabled={processingOrderId === order.id}
+                              loading={processingOrderId === order.id}
+                            >
+                              {processingOrderId === order.id ? 'Completing...' : 'Complete Assembly'}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                <p className="text-sm">No assembly tasks assigned to this workstation</p>
+                <p className="text-xs mt-2 text-gray-400">Tasks will appear here when production orders are created</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <style>{`
+          .form-success-details {
+            background: #efe;
+            color: #3c3;
+            border-left: 4px solid #3c3;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+          }
+        `}</style>
+      </section>
     </div>
   );
 }

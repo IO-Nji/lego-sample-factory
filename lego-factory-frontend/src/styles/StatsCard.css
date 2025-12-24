@@ -1,22 +1,24 @@
 /* ============================================================================
    StatsCard Component Styles
+   CANONICAL DEFINITION - All stats grids should use this
    ============================================================================ */
 
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--spacing-md, 15px);
-  margin-bottom: var(--spacing-xl, 30px);
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) !important; /* Minimal width for 5+ cards */
+  gap: 0.5rem !important;
+  margin-bottom: 1rem;
 }
 
 .stat-card {
   background: var(--color-white, white);
   border: 1px solid var(--color-border, #ddd);
   border-radius: var(--border-radius, 8px);
-  padding: var(--spacing-md, 15px);
+  padding: 0.5rem; /* Reduced for minimal width */
   text-align: center;
   transition: all var(--transition-speed, 0.3s) ease;
   cursor: default;
+  min-width: 100px; /* Ensure minimal width */
 }
 
 /* Interactive state for clickable cards */
@@ -48,12 +50,12 @@
   border-top: 3px solid var(--color-success, #28a745);
 }
 
-/* Value styling */
+/* Value styling - Compact for minimal width */
 .stat-value {
-  font-size: var(--font-size-xxl, 32px);
+  font-size: 1.5rem; /* Reduced from 32px for compactness */
   font-weight: var(--font-weight-bold, 700);
   color: var(--color-primary, #2c5aa0);
-  margin-bottom: var(--spacing-xs, 5px);
+  margin-bottom: 0.25rem;
   line-height: 1.2;
 }
 
@@ -66,29 +68,29 @@
   line-height: 1.4;
 }
 
-/* Responsive adjustments */
+/* Responsive adjustments - Maintain 5+ cards where possible */
 @media (max-width: 768px) {
   .stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: var(--spacing-sm, 5px);
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)) !important;
+    gap: 0.375rem !important;
   }
 
   .stat-card {
-    padding: var(--spacing-sm, 5px);
+    padding: 0.375rem;
   }
 
   .stat-value {
-    font-size: var(--font-size-xl, 24px);
+    font-size: 1.25rem;
   }
 
   .stat-label {
-    font-size: var(--font-size-xs, 12px);
+    font-size: 0.7rem;
   }
 }
 
 @media (max-width: 480px) {
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)) !important; /* Still try to fit multiple */
   }
 }
 

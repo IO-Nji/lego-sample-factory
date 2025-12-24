@@ -1,41 +1,15 @@
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import Navigation from "../components/Navigation.jsx";
 
 function DashboardLayout() {
   const navigate = useNavigate();
-  const { isAuthenticated, isAdmin, isPlantWarehouse, logout, session } = useAuth();
-
-  // Define all role checks
-  const isModulesSupermarket = session?.user?.role === "MODULES_SUPERMARKET";
-  const isProductionControl = session?.user?.role === "PRODUCTION_CONTROL";
-  const isAssemblyControl = session?.user?.role === "ASSEMBLY_CONTROL";
-  const isPartsSupplyWarehouse = session?.user?.role === "PARTS_SUPPLY_WAREHOUSE";
-  const isManufacturingWorkstation = session?.user?.role === "MANUFACTURING_WORKSTATION";
-  const isAssemblyWorkstation = session?.user?.role === "ASSEMBLY_WORKSTATION";
-  const isProductionPlanning = session?.user?.role === "PRODUCTION_PLANNING";
+  const { isAuthenticated, logout, session } = useAuth();
 
   // Handle logout and redirect to login page
   const handleLogout = () => {
     logout();
     navigate("/login");
-  };
-
-  // Determine which manufacturing station to display based on workstation type
-  const getManufacturingWorkstationType = () => {
-    const workstationName = session?.user?.workstationName || "";
-    if (workstationName.includes("Injection")) return "injection-molding";
-    if (workstationName.includes("Pre-Production")) return "parts-pre-production";
-    if (workstationName.includes("Finishing")) return "part-finishing";
-    return "injection-molding"; // default
-  };
-
-  // Determine which assembly station to display based on workstation type
-  const getAssemblyWorkstationType = () => {
-    const workstationName = session?.user?.workstationName || "";
-    if (workstationName.includes("Gear")) return "gear-assembly";
-    if (workstationName.includes("Motor")) return "motor-assembly";
-    if (workstationName.includes("Final")) return "final-assembly";
-    return "gear-assembly"; // default
   };
 
   return (
@@ -45,39 +19,24 @@ function DashboardLayout() {
           <h1>LEGO Factory Control</h1>
           {isAuthenticated && (
             <div className="user-info">
-              Signed in as <strong>{session?.user?.username}</strong>
-              {session?.user?.role && <span className="role-badge">{session.user.role.replaceAll("_", " ")}</span>}
+              <span className="username">{session?.user?.username}</span>
+              {session?.user?.role && (
+                <span className="role-badge">
+                  {session.user.role.replaceAll("_", " ")}
+                </span>
+              )}
+              <button 
+                type="button" 
+                className="logout-button" 
+                onClick={handleLogout}
+                title="Log out"
+              >
+                ⎋
+              </button>
             </div>
           )}
         </div>
-        <nav>
-          <ul className="nav-list">
-            {/* Public Navigation */}
-            <li><Link to="/">Overview</Link></li>
-            
-            {/* Authenticated User Navigation */}
-            {isAuthenticated && <li><Link to="/products">📦 Products</Link></li>}
-
-            {/* Admin Navigation */}
-            {isAdmin && <li><Link to="/admin-dashboard">📊 Dashboard</Link></li>}
-            {isAdmin && <li><Link to="/admin/masterdata">🛠️ Masterdata</Link></li>}
-            {isAdmin && <li><Link to="/inventory">📦 Inventory</Link></li>}
-            {isAdmin && <li><Link to="/users">👥 Users</Link></li>}
-            {isAdmin && <li><Link to="/warehouses">🏭 Warehouses</Link></li>}
-            {isAdmin && <li><Link to="/admin/webhooks">🔔 Webhooks</Link></li>}
-            {isProductionPlanning && <li><Link to="/production-planning">🗓️ Production Planning</Link></li>}
-
-            {/* Authentication */}
-            {!isAuthenticated && <li><Link to="/login">Login</Link></li>}
-            {isAuthenticated && (
-              <li>
-                <button type="button" className="link-button" onClick={handleLogout}>
-                  Log out
-                </button>
-              </li>
-            )}
-          </ul>
-        </nav>
+        {isAuthenticated && <Navigation />}
       </header>
       <main className="app-content">
         <Outlet />

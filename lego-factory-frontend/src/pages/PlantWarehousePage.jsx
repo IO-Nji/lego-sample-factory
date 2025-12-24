@@ -441,7 +441,7 @@ function PlantWarehousePage() {
           cursor: pointer;
           font-weight: 600;
           transition: background 0.3s ease;
-          width: 100%;
+          width: content-fit;
         }
 
         .primary-button:hover:not(:disabled) {
@@ -539,7 +539,7 @@ function PlantWarehousePage() {
         }
 
         .fulfill-button {
-          width: 100%;
+          width: fit-content;
           padding: 0.5rem;
           background: #27ae60;
           color: white;

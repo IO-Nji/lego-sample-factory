@@ -1,6 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage.jsx";
+import OverviewPage from "./pages/OverviewPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
+import UserAccountPage from "./pages/UserAccountPage.jsx";
+import WorkstationPage from "./pages/WorkstationPage.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
@@ -9,6 +12,7 @@ import WarehouseManagementPage from "./pages/WarehouseManagementPage.jsx";
 import InventoryManagementPage from "./pages/InventoryManagementPage.jsx";
 import MasterdataAdminPage from "./pages/MasterdataAdminPage.jsx";
 import ProductsPage from "./pages/ProductsPage.jsx";
+import VariantsPage from "./pages/VariantsPage.jsx";
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
 import ManufacturingWorkstationPage from "./pages/ManufacturingWorkstationPage.jsx";
 import WebhooksAdminPage from "./pages/WebhooksAdminPage.jsx";
@@ -32,7 +36,10 @@ function App() {
   return (
     <Routes>
       <Route element={<DashboardLayout />}>
-        <Route index element={<HomePage />} />
+        {/* Public/Overview Route */}
+        <Route index element={isAuthenticated ? <OverviewPage /> : <HomePage />} />
+        
+        {/* Dashboard - All authenticated users */}
         <Route
           path="dashboard"
           element={
@@ -41,6 +48,76 @@ function App() {
             </AuthGuard>
           }
         />
+
+        {/* Account Management - All authenticated users */}
+        <Route
+          path="account/user"
+          element={
+            <AuthGuard>
+              <UserAccountPage />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="account/workstation"
+          element={
+            <AuthGuard>
+              <WorkstationPage />
+            </AuthGuard>
+          }
+        />
+
+        {/* CONTROL Menu - Admin Only */}
+        <Route
+          path="control/products"
+          element={
+            <AdminGuard>
+              <ProductsPage />
+            </AdminGuard>
+          }
+        />
+        <Route
+          path="control/masterdata"
+          element={
+            <AdminGuard>
+              <MasterdataAdminPage />
+            </AdminGuard>
+          }
+        />
+        <Route
+          path="control/inventory"
+          element={
+            <AdminGuard>
+              <InventoryManagementPage />
+            </AdminGuard>
+          }
+        />
+        <Route
+          path="control/warehouses"
+          element={
+            <AdminGuard>
+              <WarehouseManagementPage />
+            </AdminGuard>
+          }
+        />
+        <Route
+          path="control/users"
+          element={
+            <AdminGuard>
+              <UserManagementPage />
+            </AdminGuard>
+          }
+        />
+        <Route
+          path="control/variants"
+          element={
+            <AdminGuard>
+              <VariantsPage />
+            </AdminGuard>
+          }
+        />
+
+        {/* Legacy Admin Routes - Keep for backward compatibility */}
         <Route
           path="admin-dashboard"
           element={

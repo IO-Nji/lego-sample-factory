@@ -6,8 +6,6 @@
   --color-primary: #2c5aa0;
   --color-primary-dark: #1e3d66;
   --color-primary-light: #4a7bc8;
-  --color-primary-bg: #e8f4f8;
-  --color-primary-border: #2c5aa0;
   
   /* Secondary Colors */
   --color-secondary: #6c757d;
@@ -16,64 +14,39 @@
   
   /* Status Colors */
   --color-success: #28a745;
-  --color-success-bg: #d1e7dd;
-  --color-success-text: #0f5132;
+  --color-success-light: #d1e7dd;
+  --color-success-dark: #0f5132;
   --color-warning: #ffc107;
-  --color-warning-bg: #fff3cd;
-  --color-warning-text: #856404;
+  --color-warning-light: #fff3cd;
+  --color-warning-dark: #856404;
   --color-danger: #dc3545;
-  --color-danger-bg: #f8d7da;
-  --color-danger-text: #842029;
+  --color-danger-light: #f8d7da;
+  --color-danger-dark: #842029;
   --color-info: #0dcaf0;
-  --color-info-bg: #cfe2ff;
-  --color-info-text: #084298;
+  --color-info-light: #cfe2ff;
+  --color-info-dark: #084298;
   
   /* Neutral Colors */
-  --color-text-primary: #212121;
+  --color-text: #212121;
   --color-text-secondary: #666;
   --color-text-muted: #999;
   --color-border: #ddd;
-  --color-border-light: #e5e7eb;
-  --color-background: #f4f6fb;
-  --color-background-alt: #f9f9f9;
-  --color-white: #ffffff;
+  --color-background: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-hover: #f8f9fa;
   
-  /* Typography */
-  --font-family-base: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-md: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 22px;
-  --font-size-2xl: 28px;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
+  /* Layout */
+  --border-radius: 6px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
   
   /* Spacing */
-  --spacing-xs: 5px;
-  --spacing-sm: 10px;
-  --spacing-md: 15px;
-  --spacing-lg: 20px;
-  --spacing-xl: 30px;
-  
-  /* Border Radius */
-  --radius-sm: 3px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
-  --radius-xl: 8px;
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.15);
-  --shadow-xl: 0 10px 25px rgba(0, 0, 0, 0.3);
-  
-  /* Transitions */
-  --transition-fast: 0.2s ease;
-  --transition-base: 0.3s ease;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
 }
 
 * {
@@ -82,11 +55,11 @@
 
 body {
   margin: 0;
-  font-family: var(--font-family-base);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: var(--color-background);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-base);
-  line-height: 1.5;
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 /* Import component-specific stylesheets */
@@ -96,6 +69,7 @@ body {
 @import './styles/AddNewUserForm.css';
 @import './styles/StatsCard.css';
 @import './styles/CustomerOrderCard.css';
+@import './styles/WarehouseOrderCard.css';
 
 .app-shell {
   display: flex;
@@ -106,27 +80,67 @@ body {
 .app-header {
   background: #0b5394;
   color: #fff;
-  padding: 0.6rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 1rem 1.5rem;
+}
+
+.header-top h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   color: #d0e2ff;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
-.user-info strong {
+.user-info .username {
   color: #ffffff;
+  font-weight: 600;
 }
 
+.user-info .role-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-info .logout-button {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.user-info .logout-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Legacy navigation styles (kept for backward compatibility) */
 .nav-list {
   display: flex;
   gap: 0.8rem;
@@ -789,7 +803,7 @@ section {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-height: 600px;
+  max-height: fit-content;
   overflow-y: auto;
 }
 
@@ -804,7 +818,7 @@ section {
 .order-card p {
   margin: 0.25rem 0;
   font-size: 0.9rem;
-  line-height: 1.2;
+  line-height: .65rem;
 }
 
 .status-badge {
@@ -867,14 +881,14 @@ section {
   }
 
   .orders-list {
-    max-height: none;
+    max-height: fit-content;
   }
 }
 
 /* Warehouse Management Styles */
 .warehouses-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
   margin-top: 1.5rem;
 }
@@ -884,7 +898,7 @@ section {
   border: 1px solid #e0e0e0;
   border-radius: 0.75rem;
   padding: 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
   aspect-ratio: 1;
   display: flex;
@@ -1253,21 +1267,17 @@ table td {
 /* ==========================================
    STANDARDIZED STATISTICS BOX STYLING
    Use these classes for any stats/metrics displays
+   Consolidated in StatsCard.css
    ========================================== */
 
-/* Stats grid container */
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-}
+/* .stats-grid definition moved to StatsCard.css to avoid conflicts */
 
-/* Individual stat box */
+/* Individual stat box - legacy support */
 .stat-box {
   background: linear-gradient(135deg, #f5f7fa 0%, #fff 100%);
   border: 1px solid #e0e0e0;
   border-radius: 0.5rem;
-  padding: 0.5rem;
+  padding: 0.25rem;
   text-align: center;
   transition: all 0.3s ease;
 }
@@ -1308,7 +1318,7 @@ table td {
   background: linear-gradient(135deg, #f5f7fa 0%, #fff 100%);
   border: 1px solid #e0e0e0;
   border-radius: 0.5rem;
-  padding: 0.5rem;
+  padding: 0.25rem;
   text-align: center;
   transition: all 0.3s ease;
 }

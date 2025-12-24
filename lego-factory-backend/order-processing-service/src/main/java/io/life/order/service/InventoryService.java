@@ -109,4 +109,30 @@ public class InventoryService {
             return -1;
         }
     }
+
+    /**
+     * Adjust stock using a custom request map (for crediting stock).
+     * Used for warehouse replenishment when Plant Warehouse needs to receive stock.
+     *
+     * @param request Map containing workstationId, itemType, itemId, delta, reason, notes
+     * @return true if adjustment was successful, false otherwise
+     */
+    public boolean adjustStock(Map<String, Object> request) {
+        try {
+            String url = inventoryServiceUrl + "/api/stock/adjust";
+            restTemplate.postForObject(url, request, Map.class);
+            logger.info("Stock adjusted: {}", request);
+            return true;
+        } catch (RestClientException e) {
+            logger.error("Failed to adjust stock with inventory-service", e);
+            return false;
+        }
+    }
+
+    /**
+     * Get the inventory service base URL (for use by other services).
+     */
+    public String getInventoryServiceUrl() {
+        return inventoryServiceUrl;
+    }
 }

@@ -167,11 +167,14 @@
   margin: 0;
 }
 
-/* Orders Grid */
+/* ============================================ */
+/* ORDERS GRID - Shared layout for order cards */
+/* Consolidated with CustomerOrderCard.css     */
+/* ============================================ */
 .orders-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Allows 5+ cards per row */
+  gap: 0.5rem;
   margin-bottom: 1rem;
 }
 

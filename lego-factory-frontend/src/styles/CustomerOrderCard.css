@@ -1,6 +1,9 @@
-/* CustomerOrderCard.css */
-/* Enhanced order card styling with dynamic states and animations */
+/* ============================================ */
+/* CUSTOMER ORDER CARD COMPONENT STYLES        */
+/* Compact, status-aware order display cards   */
+/* ============================================ */
 
+/* Base Card Container */
 .customer-order-card {
   background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
   border: 2px solid #e0e0e0;
@@ -19,29 +22,31 @@
   transform: translateY(-2px);
 }
 
-/* Status-specific border colors */
+/* Status Indicator - Left Border Colors */
 .customer-order-card.status-pending {
-  border-left: 2px solid #f59e0b;
+  border-left: 2px solid #f59e0b; /* Amber - awaiting action */
 }
 
 .customer-order-card.status-confirmed {
-  border-left: 2px solid #3b82f6;
+  border-left: 2px solid #3b82f6; /* Blue - confirmed */
 }
 
 .customer-order-card.status-processing {
-  border-left: 2px solid #8b5cf6;
+  border-left: 2px solid #8b5cf6; /* Purple - in progress */
 }
 
 .customer-order-card.status-completed {
-  border-left: 2px solid #10b981;
+  border-left: 2px solid #10b981; /* Green - success */
 }
 
 .customer-order-card.status-cancelled {
-  border-left: 2px solid #6b7280;
+  border-left: 2px solid #6b7280; /* Gray - inactive */
   opacity: 0.7;
 }
 
-/* Header Section */
+/* ============================================ */
+/* CARD HEADER - Order number and status badge */
+/* ============================================ */
 .order-card-header {
   padding: 0.125rem 0.25rem;
   background: linear-gradient(to right, #f0f4f8, #ffffff);
@@ -52,6 +57,14 @@
   gap: 0.25rem;
 }
 
+.order-number {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #131b2b;
+  font-family: 'Courier New', monospace;
+}
+
+/* Status Badge - Pill-shaped indicators */
 .order-status-badge {
   padding: 0.25rem 0.25rem;
   border-radius: 9999px;
@@ -62,49 +75,36 @@
   transition: all 0.2s ease;
 }
 
+/* Status Badge Variants */
 .order-status-badge.pending {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: #fef3c7; /* Light amber */
+  color: #92400e; /* Dark amber */
 }
 
 .order-status-badge.confirmed {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: #dbeafe; /* Light blue */
+  color: #1e40af; /* Dark blue */
 }
 
 .order-status-badge.processing {
-  background-color: #ede9fe;
-  color: #5b21b6;
+  background-color: #ede9fe; /* Light purple */
+  color: #5b21b6; /* Dark purple */
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .order-status-badge.completed {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: #d1fae5; /* Light green */
+  color: #065f46; /* Dark green */
 }
 
 .order-status-badge.cancelled {
-  background-color: #f3f4f6;
-  color: #374151;
+  background-color: #f3f4f6; /* Light gray */
+  color: #374151; /* Dark gray */
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-.order-number {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #131b2b;
-  font-family: 'Courier New', monospace;
-}
-
-/* Body Section */
+/* ============================================ */
+/* CARD BODY - Product items list              */
+/* ============================================ */
 .order-card-body {
   padding: 0.25rem;
   flex-grow: 1;
@@ -113,31 +113,26 @@
   gap: 0.25rem;
 }
 
+/* Product Items Grid - 2 columns per row */
 .order-items-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.125rem;
-  width: max-content%;
+  gap: 0.5rem; /* Horizontal spacing between items */
+  width: 100%;
 }
 
+/* Individual Item - Simple list format without boxes */
 .order-item {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  background-color: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.25rem;
-  transition: all 0.2s ease;
-  min-height: auto;
   padding: 0.125rem 0.25rem;
-  gap: 0.25rem;
+  gap: 0.25rem; /* Reduced spacing between name and quantity */
+  min-height: fit-content;
 }
 
-.order-item:hover {
-  background-color: #f3f4f6;
-}
-
+/* Product Name */
 .item-name {
   font-size: 0.6rem;
   font-weight: 500;
@@ -145,10 +140,11 @@
   text-transform: uppercase;
   letter-spacing: 0.025em;
   text-align: left;
-  line-height: 1.2;
+  line-height: 0.65rem;
   flex: 1;
 }
 
+/* Quantity Display Section */
 .item-quantity-section {
   display: flex;
   flex-direction: row;
@@ -157,18 +153,18 @@
   text-align: right;
 }
 
+/* Quantity Value - Larger for readability, color-coded by stock */
 .item-quantity {
-  font-size: 0.75rem;
+  font-size: 0.8rem; /* Larger than item name for emphasis */
   font-weight: 700;
   font-family: 'Courier New', monospace;
   text-align: right;
 }
 
+/* Stock Status Indicator (✓ or ⚠) */
 .stock-indicator {
   font-size: 0.625rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .no-items {
@@ -188,37 +184,52 @@
   border-top: 1px solid #f3f4f6;
 }
 
-/* Footer Section */
+/* ============================================ */
+/* CARD FOOTER - Action buttons                */
+/* ============================================ */
 .order-card-footer {
-  padding: 0.125rem 0.25rem;
+  padding: 0.25rem;
   background-color: #fafbfc;
   border-top: 1px solid #e5e7eb;
 }
 
+/* Action Buttons Container - Horizontal row for minimal footprint */
 .action-buttons {
   display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
+  flex-direction: row; /* Changed from column to row for inline buttons */
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: flex-start;
 }
 
-/* Override Button component padding for compact order card buttons */
+/* Button Size Overrides - Minimal footprint, content-width only */
 .customer-order-card .action-buttons button {
-  padding: 0.15rem 0.25rem;
-  font-size: 0.55rem;
+  padding: 0.25rem 0.5rem; /* Slightly increased for better touch targets */
+  font-size: 0.6rem;
   height: auto;
   min-height: auto;
-  min-width: auto;  
+  width: auto; /* Content-width instead of full-width */
+  white-space: nowrap;
 }
 
-/* Responsive Grid Layout */
+/* ============================================ */
+/* GRID LAYOUT - Container for multiple cards  */
+/* Used in dashboard pages to display orders   */
+/* IMPORTANT: This is the canonical definition */
+/* Also defined in ControlPages.css - keep synced */
+/* ============================================ */
 .orders-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important; /* Allows 5+ cards per row */
+  gap: 0.5rem !important;
   margin-top: 1rem;
 }
 
-/* Tablet and smaller */
+/* ============================================ */
+/* RESPONSIVE BREAKPOINTS                      */
+/* ============================================ */
+
+/* Tablet and smaller screens (≤1024px) */
 @media (max-width: 1024px) {
   .orders-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -236,7 +247,7 @@
   }
 }
 
-/* Mobile */
+/* Mobile devices (≤640px) */
 @media (max-width: 640px) {
   .orders-grid {
     grid-template-columns: 1fr;
@@ -255,7 +266,21 @@
   }
 }
 
-/* Animation for new orders */
+/* ============================================ */
+/* ANIMATIONS & STATE EFFECTS                  */
+/* ============================================ */
+
+/* Pulse animation for processing status */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Slide-in animation for new orders */
 @keyframes slideIn {
   from {
     opacity: 0;
@@ -271,7 +296,7 @@
   animation: slideIn 0.3s ease-out;
 }
 
-/* Loading state */
+/* Loading state with shimmer effect */
 .customer-order-card.loading {
   pointer-events: none;
   opacity: 0.6;

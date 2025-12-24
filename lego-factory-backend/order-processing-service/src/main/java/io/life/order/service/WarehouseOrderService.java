@@ -14,7 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -148,6 +150,7 @@ public class WarehouseOrderService {
 
     /**
      * Scenario A: All items available - Deduct from Modules Supermarket, complete order
+     * Simplified Scenario 2: Auto-credit Plant Warehouse and mark customer order ready for fulfillment
      */
     private WarehouseOrderDTO fulfillAllItems(WarehouseOrder order) {
         logger.info("Fulfilling all items for warehouse order {}", order.getWarehouseOrderNumber());
@@ -176,17 +179,23 @@ public class WarehouseOrderService {
         }
 
         if (allItemsFulfilled) {
+            // Mark as FULFILLED
             order.setStatus("FULFILLED");
-                logger.info("Warehouse order {} fully fulfilled", order.getWarehouseOrderNumber());
-                orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLED",
-                    "All items fulfilled: " + order.getWarehouseOrderNumber());
+            logger.info("Warehouse order {} fulfilled - crediting Plant Warehouse", order.getWarehouseOrderNumber());
             
-            // Complete source customer order
-            completeSourceCustomerOrder(order);
+            // AUTO-CREDIT PLANT WAREHOUSE (Simplified Scenario 2)
+            // Instead of requiring Final Assembly step, we auto-credit Plant Warehouse
+            creditPlantWarehouseFromWarehouseOrder(order);
+            
+            // Mark source customer order as ready for fulfillment
+            updateCustomerOrderAfterWarehouseFulfillment(order);
+            
+            orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLED",
+                    "Modules fulfilled, Plant Warehouse credited, customer order ready for fulfillment");
         } else {
             order.setStatus("PARTIALLY_FULFILLED");
-                logger.warn("Warehouse order {} partially fulfilled due to inventory errors", order.getWarehouseOrderNumber());
-                orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "PARTIALLY_FULFILLED",
+            logger.warn("Warehouse order {} partially fulfilled due to inventory errors", order.getWarehouseOrderNumber());
+            orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "PARTIALLY_FULFILLED",
                     "Partial fulfillment due to inventory errors");
         }
 
@@ -297,22 +306,60 @@ public class WarehouseOrderService {
     }
 
     /**
-     * Complete the source customer order when warehouse order is fulfilled
+     * Credit Plant Warehouse with products from fulfilled warehouse order
+     * Simplified Scenario 2 - Auto-credit without requiring Final Assembly step
      */
-    private void completeSourceCustomerOrder(WarehouseOrder order) {
+    private void creditPlantWarehouseFromWarehouseOrder(WarehouseOrder order) {
+        try {
+            logger.info("Crediting Plant Warehouse from warehouse order {}", order.getWarehouseOrderNumber());
+            
+            for (WarehouseOrderItem item : order.getWarehouseOrderItems()) {
+                if (item.getFulfilledQuantity() > 0) {
+                    try {
+                        // Credit Plant Warehouse by using positive delta
+                        // This calls /api/stock/adjust with a positive delta
+                        String url = inventoryService.getInventoryServiceUrl() + "/api/stock/adjust";
+                        Map<String, Object> request = new HashMap<>();
+                        request.put("workstationId", PLANT_WAREHOUSE_WORKSTATION_ID);
+                        request.put("itemType", "PRODUCT");
+                        request.put("itemId", item.getItemId());
+                        request.put("delta", item.getFulfilledQuantity()); // Positive to credit stock
+                        request.put("reason", "WAREHOUSE_REPLENISHMENT");
+                        request.put("notes", "Auto-replenishment from warehouse order " + order.getWarehouseOrderNumber());
+
+                        inventoryService.adjustStock(request);
+                        logger.info("✓ Plant Warehouse credited with Product #{} qty {}", 
+                                item.getItemId(), item.getFulfilledQuantity());
+                    } catch (Exception e) {
+                        logger.error("✗ Failed to credit Plant Warehouse for item {}: {}", item.getItemId(), e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("✗ Failed to credit Plant Warehouse: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Update source customer order after warehouse fulfillment
+     * Sets customer order back to CONFIRMED so Plant Warehouse can fulfill it
+     */
+    private void updateCustomerOrderAfterWarehouseFulfillment(WarehouseOrder order) {
         try {
             @SuppressWarnings("null")
             Optional<CustomerOrder> sourceOrder = customerOrderRepository.findById(order.getSourceCustomerOrderId());
             if (sourceOrder.isPresent()) {
                 CustomerOrder customerOrder = sourceOrder.get();
-                customerOrder.setStatus("COMPLETED");
+                // Set back to CONFIRMED so Plant Warehouse can now fulfill it
+                customerOrder.setStatus("CONFIRMED");
                 customerOrder.setNotes((customerOrder.getNotes() != null ? customerOrder.getNotes() + " | " : "") 
-                        + "Warehouse order " + order.getWarehouseOrderNumber() + " fully fulfilled - customer order completed");
+                        + "Warehouse order " + order.getWarehouseOrderNumber() + " fulfilled - Plant Warehouse restocked - ready to fulfill");
                 customerOrderRepository.save(customerOrder);
-                logger.info("✓ Source customer order {} completed after warehouse order fulfillment", customerOrder.getOrderNumber());
+                logger.info("✓ Customer order {} updated to CONFIRMED - ready for Plant Warehouse to fulfill", 
+                        customerOrder.getOrderNumber());
             }
         } catch (Exception e) {
-            logger.error("✗ Failed to complete source customer order after warehouse fulfillment: {}", e.getMessage());
+            logger.error("✗ Failed to update customer order after warehouse fulfillment: {}", e.getMessage());
         }
     }
 

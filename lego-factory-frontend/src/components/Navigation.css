@@ -1,0 +1,118 @@
+.main-navigation {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.main-navigation .nav-list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+}
+
+.main-navigation .nav-list > li {
+  position: relative;
+}
+
+.main-navigation .nav-list > li > a,
+.main-navigation .nav-list > li > .menu-toggle {
+  display: block;
+  padding: 1rem 1.5rem;
+  color: var(--color-text);
+  text-decoration: none;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: background-color 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.main-navigation .nav-list > li > a:hover,
+.main-navigation .nav-list > li > .menu-toggle:hover {
+  background: var(--color-hover);
+  color: var(--color-primary);
+}
+
+.main-navigation .nav-list > li.active > a,
+.main-navigation .nav-list > li.active > .menu-toggle {
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.main-navigation .menu-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.main-navigation .arrow {
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+
+.main-navigation .arrow.expanded {
+  transform: rotate(180deg);
+}
+
+.main-navigation .submenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  min-width: 200px;
+  z-index: 1000;
+  display: none;
+}
+
+.main-navigation .has-submenu:hover .submenu {
+  display: block;
+}
+
+.main-navigation .submenu li {
+  margin: 0;
+}
+
+.main-navigation .submenu a {
+  display: block;
+  padding: 0.4rem 1.5rem;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.main-navigation .submenu a:hover {
+  background: var(--color-hover);
+  color: var(--color-primary);
+}
+
+.main-navigation .submenu li.active a {
+  color: var(--color-primary);
+  background: var(--color-hover);
+  font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .main-navigation .nav-list {
+    flex-direction: column;
+  }
+
+  .main-navigation .submenu {
+    position: static;
+    box-shadow: none;
+    border-left: 3px solid var(--color-primary);
+    margin-left: 1rem;
+  }
+}
