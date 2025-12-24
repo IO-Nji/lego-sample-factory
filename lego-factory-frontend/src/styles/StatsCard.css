@@ -70,11 +70,11 @@
 @media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: var(--spacing-sm, 10px);
+    gap: var(--spacing-sm, 5px);
   }
 
   .stat-card {
-    padding: var(--spacing-sm, 10px);
+    padding: var(--spacing-sm, 5px);
   }
 
   .stat-value {

@@ -18,9 +18,9 @@ function LoginPage() {
       justifyContent: 'center', 
       alignItems: 'center', 
       minHeight: '80vh',
-      padding: 'var(--spacing-lg)'
+      padding: 'var(--spacing-md)'
     }}>
-      <LoginForm embedded={false} />
+      <LoginForm embedded={false} showHeader={true} showHelpText={true} />
     </div>
   );
 }

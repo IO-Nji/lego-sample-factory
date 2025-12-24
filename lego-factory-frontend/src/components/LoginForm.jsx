@@ -6,10 +6,10 @@ import Button from './Button';
 import '../styles/LoginForm.css';
 
 /**
- * Reusable Login Form Component
- * Can be used standalone or embedded in other pages
+ * Standardized Compact Login Form Component
+ * Minimal and consistent design for use across the application
  */
-function LoginForm({ embedded = false, onSuccess }) {
+function LoginForm({ embedded = false, onSuccess, showHeader = true, showHelpText = false }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -42,10 +42,9 @@ function LoginForm({ embedded = false, onSuccess }) {
 
   return (
     <div className={`login-form-container ${containerClass}`}>
-      {!embedded && (
+      {showHeader && (
         <div className="login-header">
-          <h2>🔐 Sign In to LEGO Factory</h2>
-          <p>Enter your credentials to access the system</p>
+          <h2>🔐 Sign In</h2>
         </div>
       )}
 
@@ -64,7 +63,7 @@ function LoginForm({ embedded = false, onSuccess }) {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="Enter your username"
+            placeholder="Username"
             required
             autoComplete="username"
             disabled={loading}
@@ -78,7 +77,7 @@ function LoginForm({ embedded = false, onSuccess }) {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
+            placeholder="Password"
             required
             autoComplete="current-password"
             disabled={loading}
@@ -88,7 +87,7 @@ function LoginForm({ embedded = false, onSuccess }) {
         <Button
           type="submit"
           variant="primary"
-          size="large"
+          size="medium"
           fullWidth
           loading={loading}
           disabled={loading}
@@ -97,10 +96,10 @@ function LoginForm({ embedded = false, onSuccess }) {
         </Button>
       </form>
 
-      {!embedded && (
+      {showHelpText && (
         <div className="login-footer">
           <p className="login-help-text">
-            Default admin credentials: <code>lego_admin</code> / <code>password</code>
+            Demo: <code>lego_admin</code> / <code>password</code>
           </p>
         </div>
       )}
@@ -110,7 +109,9 @@ function LoginForm({ embedded = false, onSuccess }) {
 
 LoginForm.propTypes = {
   embedded: PropTypes.bool,
-  onSuccess: PropTypes.func
+  onSuccess: PropTypes.func,
+  showHeader: PropTypes.bool,
+  showHelpText: PropTypes.bool
 };
 
 export default LoginForm;

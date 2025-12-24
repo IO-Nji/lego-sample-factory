@@ -93,6 +93,7 @@ body {
 @import './styles/StandardPage.css';
 @import './styles/Button.css';
 @import './styles/LoginForm.css';
+@import './styles/AddNewUserForm.css';
 @import './styles/StatsCard.css';
 @import './styles/CustomerOrderCard.css';
 

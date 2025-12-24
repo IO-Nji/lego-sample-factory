@@ -59,7 +59,7 @@ function HomePage() {
         
         {/* Embedded Login Form */}
         <div className="home-login-section">
-          <LoginForm embedded={true} />
+          <LoginForm embedded={true} showHeader={false} showHelpText={true} />
         </div>
 
         <div className="home-content">

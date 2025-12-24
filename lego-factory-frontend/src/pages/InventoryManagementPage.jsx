@@ -3,6 +3,7 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import ErrorNotification from "../components/ErrorNotification";
 import PageHeader from "../components/PageHeader";
+import StatsCard from "../components/StatsCard";
 import { getErrorMessage } from "../utils/errorHandler";
 import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
@@ -266,167 +267,64 @@ function InventoryManagementPage() {
   };
 
   const renderOverviewTab = () => (
-    <div className="inventory-overview">
-      <div className="kpi-grid">
-        <div className="kpi-card">
-          <div className="kpi-value">{totalInventoryItems}</div>
-          <div className="kpi-label">Total Items in Stock</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-value">{workstations.length}</div>
-          <div className="kpi-label">Active Workstations</div>
-        </div>
-        <div className={`kpi-card ${lowStockItems.length > 0 ? 'active' : ''}`}>
-          <div className="kpi-value" style={{ color: lowStockItems.length > 0 ? '#e53935' : '#2e7d32' }}>
-            {lowStockItems.length}
-          </div>
-          <div className="kpi-label">Low Stock Items</div>
-        </div>
+    <div className="overview-tab">
+      <h3>Inventory Statistics</h3>
+      <div className="stats-grid">
+        <StatsCard value={totalInventoryItems} label="Total Items" variant="default" />
+        <StatsCard value={workstations.length} label="Workstations" variant="default" />
+        <StatsCard 
+          value={lowStockItems.length} 
+          label="Low Stock Items" 
+          variant={lowStockItems.length > 0 ? "pending" : "completed"} 
+        />
+        <StatsCard 
+          value={Object.keys(allInventory).length} 
+          label="Active Locations" 
+          variant="default" 
+        />
       </div>
 
       {lowStockItems.length > 0 && (
-        <div className="tab-content" style={{ marginTop: '1rem' }}>
+        <div className="dashboard-section" style={{ marginTop: '1.5rem' }}>
           <h3>⚠️ Low Stock Alert</h3>
-          <div className="dashboard-section">
-            <div className="low-stock-table-container">
-              <table className="products-table">
-                <thead>
-                  <tr>
-                    <th>Workstation</th>
-                    <th>Item Type</th>
-                    <th>Item ID</th>
-                    <th>Current Qty</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lowStockItems.map((item, idx) => (
-                    <tr key={idx} className="low-stock-row">
-                      <td>{item.workstationName}</td>
-                      <td>{item.itemType}</td>
-                      <td>#{item.itemId}</td>
-                      <td>
-                        <span className="quantity-badge low">{item.quantity}</span>
-                      </td>
-                      <td>
-                        <div className="actions">
-                          <button
-                            className="edit-btn"
-                            onClick={() => {
-                              setSelectedWorkstationId(item.workstationId);
-                              setActiveTab("manage");
-                            }}
-                          >
-                            ✎ Update
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <table className="products-table">
+            <thead>
+              <tr>
+                <th>Workstation</th>
+                <th>Item Type</th>
+                <th>Item ID</th>
+                <th>Current Qty</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lowStockItems.map((item, idx) => (
+                <tr key={idx}>
+                  <td>{item.workstationName}</td>
+                  <td>{item.itemType}</td>
+                  <td>#{item.itemId}</td>
+                  <td>
+                    <span className="quantity-badge low">{item.quantity}</span>
+                  </td>
+                  <td>
+                    <button
+                      className="edit-btn"
+                      onClick={() => {
+                        setSelectedWorkstationId(item.workstationId);
+                        setActiveTab("manage");
+                      }}
+                    >
+                      ✎ Update
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
-      <div className="tab-content" style={{ marginTop: '1rem' }}>
-        <div className="dashboard-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <h3 style={{ margin: 0, fontSize: '1rem' }}>🧾 {ledgerMode === 'full' ? 'Stock Ledger (Full)' : 'Recent Stock Ledger'}</h3>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <label htmlFor="ledger-ws-filter" className="filter-label">Workstation:</label>
-            <select
-              id="ledger-ws-filter"
-              className="filter-select"
-              value={ledgerWsFilter}
-              onChange={(e) => setLedgerWsFilter(e.target.value)}
-            >
-              <option value="ALL">All</option>
-              {workstations.map(ws => (
-                <option key={ws.id} value={String(ws.id)}>{ws.name || `Workstation ${ws.id}`}</option>
-              ))}
-            </select>
-            <label htmlFor="ledger-type-filter" className="filter-label">Item Type:</label>
-            <select
-              id="ledger-type-filter"
-              className="filter-select"
-              value={ledgerTypeFilter}
-              onChange={(e) => setLedgerTypeFilter(e.target.value)}
-            >
-              <option value="ALL">All</option>
-              {[...new Set((recentLedger || []).map(e => e.itemType).filter(Boolean))].map(t => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-            <button className="secondary-link" onClick={refreshLedger} disabled={ledgerLoading}>
-              {ledgerLoading ? 'Refreshing…' : 'Refresh'}
-            </button>
-            {ledgerMode === 'full' ? (
-              <button className="primary-link" onClick={fetchRecentLedger} disabled={ledgerLoading}>View recent</button>
-            ) : (
-              <button className="primary-link" onClick={fetchFullLedger} disabled={ledgerLoading}>View full ledger</button>
-            )}
-          </div>
-        </div>
-        {ledgerError && (
-          <ErrorNotification message={ledgerError} onDismiss={() => setLedgerError(null)} />
-        )}
-        <div className="low-stock-table-container">
-          {ledgerLoading ? (
-            <div className="loading-state"><p>Loading recent stock movements…</p></div>
-          ) : recentLedger && recentLedger.length > 0 ? (
-            <table className="products-table">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Workstation</th>
-                  <th>Item Type</th>
-                  <th>Item ID</th>
-                  <th>Delta</th>
-                  <th>Balance</th>
-                  <th>Reason</th>
-                  <th>Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentLedger
-                  .filter(e => {
-                    const wsOk = ledgerWsFilter === 'ALL' || String(e.workstationId || '') === String(ledgerWsFilter);
-                    const typeOk = ledgerTypeFilter === 'ALL' || e.itemType === ledgerTypeFilter;
-                    return wsOk && typeOk;
-                  })
-                  .map((e, idx) => {
-                  const ts = e.createdAt || e.timestamp;
-                  const when = ts ? new Date(ts).toLocaleString() : '-';
-                  const wsName = e.workstationId ? getWorkstationName(e.workstationId) : '-';
-                  const delta = Number(e.delta ?? 0);
-                  const balance = e.balanceAfter ?? e.balance ?? '-';
-                  return (
-                    <tr key={idx}>
-                      <td>{when}</td>
-                      <td>{wsName}</td>
-                      <td>{e.itemType}</td>
-                      <td>#{e.itemId}</td>
-                      <td>
-                        <span className={`delta-badge ${delta > 0 ? 'positive' : delta < 0 ? 'negative' : ''}`}>
-                          {delta > 0 ? `+${delta}` : delta}
-                        </span>
-                      </td>
-                      <td>{balance}</td>
-                      <td>{e.reasonCode || '-'}</td>
-                      <td className="truncate">{e.notes || '-'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : (
-            <div className="empty-state"><p>No recent stock movements</p></div>
-          )}
-        </div>
-      </div>
-
-      <div className="all-workstations-section">
+      <div className="all-workstations-section" style={{ marginTop: '1.5rem' }}>
         <h3>📦 All Workstations Inventory Summary</h3>
         <div className="workstations-grid">
           {workstations.map(ws => {
@@ -455,6 +353,104 @@ function InventoryManagementPage() {
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+
+  const renderLedgerTab = () => (
+    <div className="ledger-tab">
+      <div className="dashboard-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <h3 style={{ margin: 0, fontSize: '1rem' }}>🧾 {ledgerMode === 'full' ? 'Stock Ledger (Full)' : 'Recent Stock Ledger'}</h3>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <label htmlFor="ledger-ws-filter" className="filter-label">Workstation:</label>
+          <select
+            id="ledger-ws-filter"
+            className="filter-select"
+            value={ledgerWsFilter}
+            onChange={(e) => setLedgerWsFilter(e.target.value)}
+          >
+            <option value="ALL">All</option>
+            {workstations.map(ws => (
+              <option key={ws.id} value={String(ws.id)}>{ws.name || `Workstation ${ws.id}`}</option>
+            ))}
+          </select>
+          <label htmlFor="ledger-type-filter" className="filter-label">Item Type:</label>
+          <select
+            id="ledger-type-filter"
+            className="filter-select"
+            value={ledgerTypeFilter}
+            onChange={(e) => setLedgerTypeFilter(e.target.value)}
+          >
+            <option value="ALL">All</option>
+            {[...new Set((recentLedger || []).map(e => e.itemType).filter(Boolean))].map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <button className="secondary-link" onClick={refreshLedger} disabled={ledgerLoading}>
+            {ledgerLoading ? 'Refreshing…' : 'Refresh'}
+          </button>
+          {ledgerMode === 'full' ? (
+            <button className="primary-link" onClick={fetchRecentLedger} disabled={ledgerLoading}>View recent</button>
+          ) : (
+            <button className="primary-link" onClick={fetchFullLedger} disabled={ledgerLoading}>View full ledger</button>
+          )}
+        </div>
+      </div>
+      {ledgerError && (
+        <ErrorNotification message={ledgerError} onDismiss={() => setLedgerError(null)} />
+      )}
+      <div className="low-stock-table-container">
+        {ledgerLoading ? (
+          <div className="loading-state"><p>Loading recent stock movements…</p></div>
+        ) : recentLedger && recentLedger.length > 0 ? (
+          <table className="products-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Workstation</th>
+                <th>Item Type</th>
+                <th>Item ID</th>
+                <th>Delta</th>
+                <th>Balance</th>
+                <th>Reason</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentLedger
+                .filter(e => {
+                  const wsOk = ledgerWsFilter === 'ALL' || String(e.workstationId || '') === String(ledgerWsFilter);
+                  const typeOk = ledgerTypeFilter === 'ALL' || e.itemType === ledgerTypeFilter;
+                  return wsOk && typeOk;
+                })
+                .map((e, idx) => {
+                const ts = e.createdAt || e.timestamp;
+                const when = ts ? new Date(ts).toLocaleString() : '-';
+                const wsName = e.workstationId ? getWorkstationName(e.workstationId) : '-';
+                const delta = Number(e.delta ?? 0);
+                const balance = e.balanceAfter ?? e.balance ?? '-';
+                return (
+                  <tr key={idx}>
+                    <td>{when}</td>
+                    <td>{wsName}</td>
+                    <td>{e.itemType}</td>
+                    <td>#{e.itemId}</td>
+                    <td>
+                      <span className={`delta-badge ${delta > 0 ? 'positive' : delta < 0 ? 'negative' : ''}`}>
+                        {delta > 0 ? `+${delta}` : delta}
+                      </span>
+                    </td>
+                    <td>{balance}</td>
+                    <td>{e.reasonCode || '-'}</td>
+                    <td className="truncate">{e.notes || '-'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty-state"><p>No recent stock movements</p></div>
+        )}
       </div>
     </div>
   );
@@ -567,24 +563,6 @@ function InventoryManagementPage() {
     </div>
   );
 
-  if (error && activeTab === "overview") {
-    return (
-      <section className="admin-dashboard">
-        {notification && (
-          <div className={`notification ${notification.type}`}>
-            {notification.message}
-            <button onClick={() => setNotification(null)}>×</button>
-          </div>
-        )}
-        <h2>📦 Inventory Management</h2>
-        <ErrorNotification
-          message={error}
-          onDismiss={() => setError(null)}
-        />
-      </section>
-    );
-  }
-
   return (
     <div className="standard-page-container">
       <PageHeader
@@ -592,491 +570,45 @@ function InventoryManagementPage() {
         subtitle={`Manage and monitor inventory across all workstations. Total items: ${totalInventoryItems}`}
         icon="📦"
       />
+      
       <section className="admin-dashboard">
+        {notification && (
+          <ErrorNotification
+            message={notification.message}
+            type={notification.type}
+            onClose={() => setNotification(null)}
+          />
+        )}
 
-      <div className="dashboard-tabs">
+        {error && <div className="error-message">{error}</div>}
+
+      <div className="tabs">
         <button
           className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
-          Overview
+          📊 Overview
         </button>
         <button
           className={`tab-button ${activeTab === 'manage' ? 'active' : ''}`}
           onClick={() => setActiveTab('manage')}
         >
-          Manage Stock
+          📝 Manage Stock
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'ledger' ? 'active' : ''}`}
+          onClick={() => setActiveTab('ledger')}
+        >
+          📜 Stock Ledger
         </button>
       </div>
 
       <div className="tab-content">
-        {loading ? (
-          <div className="loading-state">
-            <p>Loading inventory data...</p>
-          </div>
-        ) : activeTab === 'overview' ? (
-          renderOverviewTab()
-        ) : (
-          renderManageTab()
-        )}
+        {loading && <div className="loading">Loading inventory data...</div>}
+        {!loading && activeTab === 'overview' && renderOverviewTab()}
+        {!loading && activeTab === 'manage' && renderManageTab()}
+        {!loading && activeTab === 'ledger' && renderLedgerTab()}
       </div>
-
-      <style>{`
-        .inventory-management-page {
-          padding: 1rem;
-          background: #f5f5f5;
-        }
-
-        .page-header {
-          margin-bottom: 1rem;
-        }
-
-        .page-header h1 {
-          color: #0b5394;
-          margin: 0;
-          font-size: 1.5rem;
-        }
-
-        .page-subtitle {
-          color: #666;
-          margin: 0.25rem 0 0;
-          font-size: 0.85rem;
-        }
-
-        .tabs-container {
-          display: flex;
-          gap: 0.5rem;
-          margin-bottom: 1rem;
-          border-bottom: 2px solid #e0e0e0;
-        }
-
-        .tab-button {
-          padding: 0.5rem 1rem;
-          border: none;
-          background: transparent;
-          color: #666;
-          cursor: pointer;
-          font-size: 0.875rem;
-          font-weight: 500;
-          position: relative;
-          transition: color 0.3s ease;
-        }
-
-        .tab-button:hover {
-          color: #0b5394;
-        }
-
-        .tab-button.active {
-          color: #0b5394;
-        }
-
-        .tab-button.active::after {
-          content: '';
-          position: absolute;
-          bottom: -2px;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background: #0b5394;
-        }
-
-        .tab-content {
-          background: white;
-          border-radius: 8px;
-          padding: 1rem;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .loading-state {
-          text-align: center;
-          padding: 2rem;
-          color: #666;
-        }
-
-        /* Overview Tab Styles */
-        .inventory-overview {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .overview-stats {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 0.5rem;
-        }
-
-        .stat-card {
-          background: linear-gradient(135deg, #f5f7fa 0%, #fff 100%);
-          padding: 0.5rem;
-          border-radius: 0.25rem;
-          border: 1px solid #e0e0e0;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        .stat-value {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: #1976d2;
-          margin-bottom: 0.25rem;
-        }
-
-        .stat-label {
-          font-size: 0.7rem;
-          color: #546174;
-          font-weight: 500;
-        }
-
-        .low-stock-section {
-          margin-top: 1rem;
-        }
-
-        .low-stock-section h3 {
-          color: #e53935;
-          margin-bottom: 1rem;
-        }
-
-        .low-stock-table-container {
-          overflow-x: auto;
-        }
-
-        .low-stock-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 2rem;
-        }
-
-        .low-stock-table thead {
-          background: #f5f5f5;
-        }
-
-        .low-stock-table th {
-          padding: 0.5rem;
-          text-align: left;
-          font-weight: 600;
-          color: #333;
-          border-bottom: 2px solid #ddd;
-          font-size: 0.85rem;
-        }
-
-        .low-stock-table td {
-          padding: 0.5rem;
-          border-bottom: 1px solid #eee;
-          font-size: 0.85rem;
-        }
-
-        .low-stock-row:hover {
-          background: #f9f9f9;
-        }
-
-        .quantity-badge {
-          display: inline-block;
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
-          font-weight: 600;
-          font-size: 0.75rem;
-        }
-
-        .quantity-badge.low {
-          background: #ffebee;
-          color: #d32f2f;
-        }
-
-        .quantity-badge.medium {
-          background: #fff3e0;
-          color: #f57c00;
-        }
-
-        .quantity-badge.high {
-          background: #e8f5e9;
-          color: #388e3c;
-        }
-
-        .all-workstations-section {
-          margin-top: 2rem;
-        }
-
-        .all-workstations-section h3 {
-          color: #0b5394;
-          margin-bottom: 1.5rem;
-        }
-
-        .workstations-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-          gap: 0.75rem;
-        }
-
-        .workstation-card {
-          background: linear-gradient(135deg, #f5f7fa 0%, #e6eef5 100%);
-          padding: 0.75rem;
-          border-radius: 0.25rem;
-          border: 1px solid #d0d0d0;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .workstation-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(11, 83, 148, 0.15);
-          border-color: #0b5394;
-        }
-
-        .workstation-card h4 {
-          color: #0b5394;
-          margin: 0 0 0.5rem;
-          font-size: 0.95rem;
-        }
-
-        .ws-stat {
-          display: flex;
-          justify-content: space-between;
-          padding: 0.25rem 0;
-          border-bottom: 1px solid #ddd;
-          margin-bottom: 0.25rem;
-          font-size: 0.8rem;
-        }
-
-        .ws-stat:last-of-type {
-          border-bottom: none;
-          margin-bottom: 0.5rem;
-        }
-
-        .ws-label {
-          color: #666;
-          font-weight: 500;
-        }
-
-        .ws-value {
-          color: #0b5394;
-          font-weight: bold;
-        }
-
-        /* Manage Tab Styles */
-        .inventory-manage {
-          display: flex;
-          flex-direction: column;
-          gap: 2rem;
-        }
-
-        .manage-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding-bottom: 1.5rem;
-          border-bottom: 2px solid #eee;
-        }
-
-        .manage-subtitle {
-          color: #666;
-          margin: 0.5rem 0 0;
-        }
-
-        .workstation-selector {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .workstation-selector label {
-          font-weight: 600;
-          color: #333;
-        }
-
-        .workstation-selector select {
-          padding: 0.75rem 1rem;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 1rem;
-          background: white;
-          cursor: pointer;
-        }
-
-        .inventory-table-container {
-          overflow-x: auto;
-        }
-
-        .inventory-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 1rem;
-        }
-
-        .inventory-table thead {
-          background: #f5f5f5;
-        }
-
-        .inventory-table th {
-          padding: 1rem;
-          text-align: left;
-          font-weight: 600;
-          color: #333;
-          border-bottom: 2px solid #ddd;
-        }
-
-        .inventory-table td {
-          padding: 1rem;
-          border-bottom: 1px solid #eee;
-        }
-
-        .inventory-row:hover {
-          background: #f9f9f9;
-        }
-
-        .quantity-input {
-          padding: 0.5rem 0.75rem;
-          border: 2px solid #0b5394;
-          border-radius: 4px;
-          font-size: 1rem;
-          width: 80px;
-          text-align: center;
-        }
-
-        .quantity-input:focus {
-          outline: none;
-          border-color: #1565c0;
-          box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.1);
-        }
-
-        .status-badge {
-          display: inline-block;
-          padding: 0.5rem 1rem;
-          border-radius: 4px;
-          font-weight: 600;
-          font-size: 0.85rem;
-        }
-
-        .status-badge.in-stock {
-          background: #e8f5e9;
-          color: #2e7d32;
-        }
-
-        .status-badge.medium-stock {
-          background: #fff3e0;
-          color: #e65100;
-        }
-
-        .status-badge.low-stock {
-          background: #ffebee;
-          color: #c62828;
-        }
-
-        .status-badge.out-of-stock {
-          background: #fce4ec;
-          color: #ad1457;
-        }
-
-        .actions-cell {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .truncate {
-          max-width: 240px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .delta-badge {
-          display: inline-block;
-          padding: 0.3rem 0.6rem;
-          border-radius: 4px;
-          font-weight: 600;
-          font-size: 0.9rem;
-          background: #f5f5f5;
-          color: #333;
-        }
-
-        .delta-badge.positive {
-          background: #e8f5e9;
-          color: #2e7d32;
-        }
-
-        .delta-badge.negative {
-          background: #ffebee;
-          color: #c62828;
-        }
-
-        .filter-label {
-          font-weight: 600;
-          color: #333;
-        }
-
-        .filter-select {
-          padding: 0.4rem 0.6rem;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          background: white;
-        }
-
-        .edit-actions {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .empty-state {
-          text-align: center;
-          padding: 3rem;
-          color: #999;
-        }
-
-        .notification {
-          padding: 1rem 1.5rem;
-          margin-bottom: 1.5rem;
-          border-radius: 4px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .notification.success {
-          background: #e8f5e9;
-          color: #2e7d32;
-          border: 1px solid #c8e6c9;
-        }
-
-        .notification.error {
-          background: #ffebee;
-          color: #c62828;
-          border: 1px solid #ffcdd2;
-        }
-
-        .notification button {
-          background: transparent;
-          border: none;
-          color: inherit;
-          font-size: 1.5rem;
-          cursor: pointer;
-          padding: 0;
-          width: 24px;
-          height: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        @media (max-width: 768px) {
-          .manage-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-          }
-
-          .workstations-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .inventory-table {
-            font-size: 0.9rem;
-          }
-
-          .inventory-table th,
-          .inventory-table td {
-            padding: 0.75rem 0.5rem;
-          }
-        }
-      `}</style>
       </section>
     </div>
   );

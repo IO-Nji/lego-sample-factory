@@ -45,23 +45,43 @@ function SystemOverview() {
     setError(null);
 
     try {
-      // Fetch all data in parallel
-      const [wsResponse, prodResponse, asmResponse, supResponse, alertsResponse] = await Promise.all([
-        api.get("/masterdata/workstations"),
-        api.get("/production-control-orders"),
-        api.get("/assembly-control-orders"),
-        api.get("/supply-orders/warehouse"),
-        api.get("/stock/alerts"),
+      // First fetch workstations
+      const wsResponse = await api.get("/masterdata/workstations");
+      const wsData = Array.isArray(wsResponse.data) ? wsResponse.data : [];
+      setWorkstations(wsData);
+      console.log('Fetched workstations:', wsData.length);
+
+      // Fetch all other data in parallel
+      const [prodResponse, asmResponse, supResponse, alertsResponse] = await Promise.all([
+        api.get("/production-control-orders").catch(err => {
+          console.error('Production orders error:', err);
+          return { data: [] };
+        }),
+        api.get("/assembly-control-orders").catch(err => {
+          console.error('Assembly orders error:', err);
+          return { data: [] };
+        }),
+        api.get("/supply-orders/warehouse").catch(err => {
+          console.error('Supply orders error:', err);
+          return { data: [] };
+        }),
+        api.get("/stock/alerts").catch(err => {
+          console.error('Stock alerts error:', err);
+          return { data: [] };
+        }),
       ]);
 
       // Process and set all data together
-      const wsData = Array.isArray(wsResponse.data) ? wsResponse.data : [];
       const prodData = Array.isArray(prodResponse.data) ? prodResponse.data : [];
       const asmData = Array.isArray(asmResponse.data) ? asmResponse.data : [];
       const supData = Array.isArray(supResponse.data) ? supResponse.data : [];
       const alertsData = Array.isArray(alertsResponse.data) ? alertsResponse.data : [];
 
-      setWorkstations(wsData);
+      console.log('Production orders:', prodData.length);
+      console.log('Assembly orders:', asmData.length);
+      console.log('Supply orders:', supData.length);
+      console.log('Stock alerts:', alertsData.length);
+
       setStockAlerts(alertsData);
       setOrders({
         production: prodData,

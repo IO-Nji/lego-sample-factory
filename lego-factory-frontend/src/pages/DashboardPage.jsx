@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import PageHeader from "../components/PageHeader";
 import CustomerOrderCard from "../components/CustomerOrderCard";
+import AddNewUserForm from "../components/AddNewUserForm";
 import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 import "../styles/ControlPages.css";
@@ -350,6 +351,7 @@ function PlantWarehouseDashboardContent() {
   const [selectedProducts, setSelectedProducts] = useState({});
   const [orders, setOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [workstations, setWorkstations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fulfillingOrderId, setFulfillingOrderId] = useState(null);
   const [error, setError] = useState(null);
@@ -357,6 +359,7 @@ function PlantWarehouseDashboardContent() {
 
   useEffect(() => {
     fetchProducts();
+    fetchWorkstations();
     if (session?.user?.workstationId) {
       fetchOrders();
       fetchInventory();
@@ -377,6 +380,15 @@ function PlantWarehouseDashboardContent() {
       setProducts(response.data);
     } catch (err) {
       setError("Failed to load products: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const fetchWorkstations = async () => {
+    try {
+      const response = await axios.get("/api/masterdata/workstations");
+      setWorkstations(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error("Failed to load workstations:", err);
     }
   };
 
@@ -674,6 +686,27 @@ function PlantWarehouseDashboardContent() {
           )}
         </div>
       </div>
+
+      {session?.user?.role === 'ADMIN' && (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-6">
+          <div className="bg-blue-50 px-6 py-3 border-b border-blue-200">
+            <h2 className="text-lg font-semibold text-blue-900">👤 User Management</h2>
+          </div>
+          <div className="p-6 flex justify-center">
+            <AddNewUserForm 
+              workstations={workstations}
+              onSuccess={(user) => {
+                setSuccessMessage(`User "${user.username}" created successfully!`);
+                setTimeout(() => setSuccessMessage(null), 5000);
+              }}
+              onError={(error) => {
+                setError(error);
+                setTimeout(() => setError(null), 5000);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       <style>{`
         .plant-warehouse-page {

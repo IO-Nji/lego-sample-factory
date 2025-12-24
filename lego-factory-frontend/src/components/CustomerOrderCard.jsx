@@ -73,12 +73,12 @@ function CustomerOrderCard({
 
   return (
     <div className={`customer-order-card status-${getStatusClass(order.status)}`}>
-      {/* Header with Status Badge */}
+      {/* Header with Order Number and Status Badge */}
       <div className="order-card-header">
+        <span className="order-number">#{order.orderNumber}</span>
         <span className={`order-status-badge ${getStatusClass(order.status)}`}>
           {order.status}
         </span>
-        <span className="order-number">#{order.orderNumber}</span>
       </div>
 
       {/* Body with Order Items */}
@@ -109,7 +109,7 @@ function CustomerOrderCard({
                     </span>
                     {order.status === 'CONFIRMED' && (
                       <span className="stock-indicator" style={{ color: statusColor }}>
-                        {hasStock ? '✓ In Stock' : `⚠ ${stockQuantity} available`}
+                        {hasStock ? '✓' : '⚠'}
                       </span>
                     )}
                   </div>
