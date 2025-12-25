@@ -36,8 +36,8 @@ function App() {
   return (
     <Routes>
       <Route element={<DashboardLayout />}>
-        {/* Public/Overview Route */}
-        <Route index element={isAuthenticated ? <OverviewPage /> : <HomePage />} />
+        {/* Root and Overview Route - shows dashboard for authenticated users */}
+        <Route index element={isAuthenticated ? <DashboardPage /> : <HomePage />} />
         
         {/* Dashboard - All authenticated users */}
         <Route

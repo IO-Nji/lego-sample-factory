@@ -1,0 +1,451 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
+import PageHeader from "../components/PageHeader";
+import StatCard from "../components/StatCard";
+import PieChart from "../components/PieChart";
+import BarChart from "../components/BarChart";
+import StatusMonitor from "../components/StatusMonitor";
+import "../styles/StandardPage.css";
+import "../styles/DashboardStandard.css";
+import "../styles/ControlPages.css";
+import "../styles/AdminDashboard.css";
+import "../styles/Chart.css";
+
+// Import extracted dashboard components
+import PlantWarehouseDashboard from "./dashboards/PlantWarehouseDashboard";
+import ModulesSupermarketDashboard from "./dashboards/ModulesSupermarketDashboard";
+import ProductionPlanningDashboard from "./dashboards/ProductionPlanningDashboard";
+import ProductionControlDashboard from "./dashboards/ProductionControlDashboard";
+import AssemblyControlDashboard from "./dashboards/AssemblyControlDashboard";
+import ManufacturingDashboard from "./dashboards/ManufacturingDashboard";
+import AssemblyWorkstationDashboard from "./dashboards/AssemblyWorkstationDashboard";
+import PartsSupplyWarehouseDashboard from "./dashboards/PartsSupplyWarehouseDashboard";
+
+/**
+ * DashboardPage - Role-aware dashboard that displays different content based on user role
+ * Consolidates all workstation dashboards into a single page component
+ */
+function DashboardPage() {
+  const { session, isAdmin } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
+
+  const userRole = session?.user?.role;
+
+  if (isLoading) {
+    return (
+      <section>
+        <h2>Loading Dashboard...</h2>
+        <p>Initializing your personalized dashboard...</p>
+      </section>
+    );
+  }
+
+  // Render Admin Dashboard
+  if (isAdmin) {
+    return <AdminDashboardContent />;
+  }
+
+  // Render Plant Warehouse Dashboard
+  if (userRole === "PLANT_WAREHOUSE") {
+    return <PlantWarehouseDashboard />;
+  }
+
+  // Render Modules Supermarket Dashboard
+  if (userRole === "MODULES_SUPERMARKET") {
+    return <ModulesSupermarketDashboard />;
+  }
+
+  // Render Production Planning Dashboard
+  if (userRole === "PRODUCTION_PLANNING") {
+    return <ProductionPlanningDashboard />;
+  }
+
+  // Render Production Control Dashboard
+  if (userRole === "PRODUCTION_CONTROL") {
+    return <ProductionControlDashboard />;
+  }
+
+  // Render Assembly Control Dashboard
+  if (userRole === "ASSEMBLY_CONTROL") {
+    return <AssemblyControlDashboard />;
+  }
+
+  // Render Manufacturing Workstation Dashboard
+  if (userRole === "MANUFACTURING_WORKSTATION") {
+    return <ManufacturingDashboard />;
+  }
+
+  // Render Assembly Workstation Dashboard
+  if (userRole === "ASSEMBLY_WORKSTATION") {
+    return <AssemblyWorkstationDashboard />;
+  }
+
+  // Render Parts Supply Warehouse Dashboard
+  if (userRole === "PARTS_SUPPLY_WAREHOUSE") {
+    return <PartsSupplyWarehouseDashboard />;
+  }
+
+  // Default fallback
+  return (
+    <section>
+      <h2>Factory</h2>
+      <p>Welcome to the LEGO Factory Control System</p>
+      <p>Your role ({userRole || "Unknown"}) is currently being set up. Contact your administrator if you believe this is an error.</p>
+    </section>
+  );
+}
+
+// ============================================
+// ADMIN DASHBOARD
+// ============================================
+function AdminDashboardContent() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dashboardData, setDashboardData] = useState({
+    totalOrders: 0,
+    pendingOrders: 0,
+    completedOrders: 0,
+    processingOrders: 0,
+    cancelledOrders: 0,
+    activeWorkstations: 0,
+    totalUsers: 0,
+    totalProducts: 0,
+    lowStockItems: 0,
+    workstations: [],
+    users: [],
+    recentOrders: [],
+    productionByType: {},
+  });
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch all data from APIs
+      const [wsResponse, usersResponse, prodResponse, asmResponse, supResponse, customerResponse, lowAlertsRes, productsRes] = await Promise.all([
+        axios.get("/api/masterdata/workstations").catch(() => ({ data: [] })),
+        axios.get("/api/users").catch(() => ({ data: [] })),
+        axios.get("/api/production-control-orders").catch(() => ({ data: [] })),
+        axios.get("/api/assembly-control-orders").catch(() => ({ data: [] })),
+        axios.get("/api/supply-orders/warehouse").catch(() => ({ data: [] })),
+        axios.get("/api/customer-orders").catch(() => ({ data: [] })),
+        axios.get("/api/stock/alerts/low").catch(() => ({ data: [] })),
+        axios.get("/api/masterdata/product-variants").catch(() => ({ data: [] })),
+      ]);
+
+      const wsData = Array.isArray(wsResponse?.data) ? wsResponse.data : [];
+      const usersData = Array.isArray(usersResponse?.data) ? usersResponse.data : [];
+      const prodData = Array.isArray(prodResponse?.data) ? prodResponse.data : [];
+      const asmData = Array.isArray(asmResponse?.data) ? asmResponse.data : [];
+      const supData = Array.isArray(supResponse?.data) ? supResponse.data : [];
+      const customerData = Array.isArray(customerResponse?.data) ? customerResponse.data : [];
+      const productsData = Array.isArray(productsRes?.data) ? productsRes.data : [];
+
+      // Combine all orders
+      const allOrders = [...customerData, ...prodData, ...asmData, ...supData];
+      const pendingOrders = allOrders.filter((o) => o.status === "PENDING").length;
+      const completedOrders = allOrders.filter((o) => o.status === "COMPLETED").length;
+      const processingOrders = allOrders.filter((o) => o.status === "PROCESSING").length;
+      const cancelledOrders = allOrders.filter((o) => o.status === "CANCELLED").length;
+
+      // Production by type
+      const productionByType = {
+        customer: customerData.length,
+        production: prodData.length,
+        assembly: asmData.length,
+        supply: supData.length,
+      };
+
+      // Workstation status mapping
+      const workstationStatus = wsData.map(ws => ({
+        id: ws.id,
+        name: ws.name || `Workstation ${ws.id}`,
+        status: ws.status || 'ACTIVE',
+        details: ws.description || `Type: ${ws.type || 'N/A'}`,
+      }));
+
+      // Recent orders (last 6)
+      const recentOrders = [...allOrders]
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(0, 6);
+
+      setDashboardData({
+        totalOrders: allOrders.length,
+        pendingOrders,
+        completedOrders,
+        processingOrders,
+        cancelledOrders,
+        activeWorkstations: wsData.length,
+        totalUsers: usersData.length,
+        totalProducts: productsData.length,
+        lowStockItems: Array.isArray(lowAlertsRes?.data) ? lowAlertsRes.data.length : 0,
+        workstations: workstationStatus,
+        users: usersData,
+        recentOrders,
+        productionByType,
+      });
+    } catch (err) {
+      setError("Failed to load dashboard data: " + (err.message || "Unknown error"));
+      console.error("Dashboard fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+    const interval = setInterval(fetchDashboardData, 10000); // Refresh every 10s
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="standard-page-container">
+        <PageHeader title="Admin Dashboard" subtitle="Loading..." icon="🏭" />
+        <section style={{ padding: '2rem', textAlign: 'center' }}>
+          <div className="loading-state">Loading dashboard data...</div>
+        </section>
+      </div>
+    );
+  }
+
+  // Prepare chart data
+  const orderStatusData = [
+    { label: 'Pending', value: dashboardData.pendingOrders, color: '#f59e0b' },
+    { label: 'Processing', value: dashboardData.processingOrders, color: '#3b82f6' },
+    { label: 'Completed', value: dashboardData.completedOrders, color: '#10b981' },
+    { label: 'Cancelled', value: dashboardData.cancelledOrders, color: '#6b7280' },
+  ].filter(item => item.value > 0);
+
+  const productionTypeData = [
+    { label: 'Customer', value: dashboardData.productionByType.customer, color: '#2c5aa0' },
+    { label: 'Production', value: dashboardData.productionByType.production, color: '#f59e0b' },
+    { label: 'Assembly', value: dashboardData.productionByType.assembly, color: '#10b981' },
+    { label: 'Supply', value: dashboardData.productionByType.supply, color: '#6366f1' },
+  ].filter(item => item.value > 0);
+
+  const userRoleData = dashboardData.users.reduce((acc, user) => {
+    const role = user.role || 'Unknown';
+    const existing = acc.find(item => item.label === role);
+    if (existing) {
+      existing.value += 1;
+    } else {
+      acc.push({ 
+        label: role, 
+        value: 1, 
+        color: `hsl(${acc.length * 60}, 70%, 50%)` 
+      });
+    }
+    return acc;
+  }, []);
+
+  return (
+    <div className="standard-page-container">
+      <PageHeader
+        title="Admin Dashboard"
+        subtitle="Real-time monitoring and control of factory operations"
+        icon="🏭"
+        actions={[
+          {
+            label: loading ? "Refreshing..." : "Refresh",
+            onClick: fetchDashboardData,
+            disabled: loading,
+            icon: "⟳",
+          },
+        ]}
+      />
+      <section style={{ padding: '0 1rem 2rem' }}>
+        {error && (
+          <div style={{ 
+            padding: '1rem', 
+            background: '#fee', 
+            border: '1px solid #fcc', 
+            borderRadius: '4px',
+            marginBottom: '1rem',
+            color: '#c33'
+          }}>
+            {error}
+          </div>
+        )}
+
+        {/* Key Metrics Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+          gap: '1rem',
+          marginBottom: '1.5rem'
+        }}>
+          <StatCard 
+            title="Total Orders"
+            value={dashboardData.totalOrders}
+            icon="📦"
+            color="primary"
+            subtitle="All order types"
+          />
+          <StatCard 
+            title="Pending Orders"
+            value={dashboardData.pendingOrders}
+            icon="⏳"
+            color="warning"
+            subtitle="Awaiting action"
+          />
+          <StatCard 
+            title="Processing"
+            value={dashboardData.processingOrders}
+            icon="⚙️"
+            color="info"
+            subtitle="In progress"
+          />
+          <StatCard 
+            title="Completed"
+            value={dashboardData.completedOrders}
+            icon="✓"
+            color="success"
+            subtitle="Finished orders"
+          />
+          <StatCard 
+            title="Workstations"
+            value={dashboardData.activeWorkstations}
+            icon="🏭"
+            color="primary"
+            subtitle="Active stations"
+          />
+          <StatCard 
+            title="Users"
+            value={dashboardData.totalUsers}
+            icon="👥"
+            color="info"
+            subtitle="System users"
+          />
+          <StatCard 
+            title="Products"
+            value={dashboardData.totalProducts}
+            icon="🎨"
+            color="success"
+            subtitle="Product variants"
+          />
+          <StatCard 
+            title="Low Stock"
+            value={dashboardData.lowStockItems}
+            icon="⚠️"
+            color="danger"
+            subtitle="Items below threshold"
+          />
+        </div>
+
+        {/* Charts Row */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
+          gap: '1rem',
+          marginBottom: '1.5rem'
+        }}>
+          <PieChart 
+            title="Order Status Distribution"
+            data={orderStatusData}
+            size={180}
+          />
+          <PieChart 
+            title="Production by Type"
+            data={productionTypeData}
+            size={180}
+          />
+          {userRoleData.length > 0 && (
+            <BarChart 
+              title="Users by Role"
+              data={userRoleData}
+              orientation="horizontal"
+            />
+          )}
+        </div>
+
+        {/* Workstation Monitor */}
+        <div style={{ marginBottom: '1.5rem' }}>
+          <StatusMonitor 
+            title="Workstation Status Monitor"
+            items={dashboardData.workstations}
+            onItemClick={(item) => console.log('Workstation clicked:', item)}
+          />
+        </div>
+
+        {/* Recent Orders Table */}
+        <div className="chart-container">
+          <h3 className="chart-title">Recent Orders</h3>
+          {dashboardData.recentOrders.length > 0 ? (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ 
+                width: '100%', 
+                borderCollapse: 'collapse',
+                fontSize: '0.875rem'
+              }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>Order ID</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>Status</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>Type</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>Created</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 600 }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashboardData.recentOrders.map((order) => {
+                    const statusColors = {
+                      PENDING: '#f59e0b',
+                      PROCESSING: '#3b82f6',
+                      COMPLETED: '#10b981',
+                      CANCELLED: '#6b7280',
+                    };
+                    return (
+                      <tr key={order.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                        <td style={{ padding: '0.65rem' }}>#{order.id}</td>
+                        <td style={{ padding: '0.65rem' }}>
+                          <span style={{ 
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: 'white',
+                            backgroundColor: statusColors[order.status] || '#6b7280'
+                          }}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.65rem' }}>{order.orderNumber?.split('-')[0] || 'N/A'}</td>
+                        <td style={{ padding: '0.65rem' }}>
+                          {new Date(order.createdAt).toLocaleString()}
+                        </td>
+                        <td style={{ padding: '0.65rem', textAlign: 'right' }}>
+                          <button style={{ 
+                            fontSize: '0.75rem',
+                            padding: '0.25rem 0.5rem',
+                            background: 'var(--color-primary)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}>
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="chart-empty">No recent orders</div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export default DashboardPage;

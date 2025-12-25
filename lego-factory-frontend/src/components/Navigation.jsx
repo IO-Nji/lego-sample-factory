@@ -18,17 +18,51 @@ function Navigation() {
   const isActive = (path) => location.pathname === path;
   const isParentActive = (paths) => paths.some(path => location.pathname.startsWith(path));
 
+  // Get role-based menu title for dashboard
+  const getRoleTitle = () => {
+    const role = session?.user?.role;
+    const roleTitles = {
+      ADMIN: "ADMIN",
+      PLANT_WAREHOUSE: "WAREHOUSE",
+      MODULES_SUPERMARKET: "SUPERMARKET",
+      PRODUCTION_PLANNING: "PLANNING",
+      PRODUCTION_CONTROL: "PRODUCTION",
+      ASSEMBLY_CONTROL: "ASSEMBLY CTRL",
+      MANUFACTURING: "MANUFACTURING",
+      ASSEMBLY_WORKSTATION: "ASSEMBLY WS",
+      PARTS_SUPPLY_WAREHOUSE: "PARTS SUPPLY"
+    };
+    return roleTitles[role] || "DASHBOARD";
+  };
+
+  // Get role-based operational page route
+  const getRoleRoute = () => {
+    const role = session?.user?.role;
+    const roleRoutes = {
+      ADMIN: "/control/masterdata",
+      PLANT_WAREHOUSE: "/warehouse",
+      MODULES_SUPERMARKET: "/modules-supermarket",
+      PRODUCTION_PLANNING: "/production-planning",
+      PRODUCTION_CONTROL: "/production-control",
+      ASSEMBLY_CONTROL: "/assembly-control",
+      MANUFACTURING: "/manufacturing",
+      ASSEMBLY_WORKSTATION: "/assembly-workstation",
+      PARTS_SUPPLY_WAREHOUSE: "/parts-supply"
+    };
+    return roleRoutes[role] || "/dashboard";
+  };
+
   return (
     <nav className="main-navigation">
       <ul className="nav-list">
-        {/* 1. Overview */}
-        <li className={isActive("/") ? "active" : ""}>
-          <Link to="/">Overview</Link>
+        {/* 1. Overview - Routes to Dashboard (visual analytics) */}
+        <li className={isActive("/dashboard") ? "active" : ""}>
+          <Link to="/dashboard">Overview</Link>
         </li>
 
-        {/* 2. Dashboard */}
-        <li className={isActive("/dashboard") ? "active" : ""}>
-          <Link to="/dashboard">Dashboard</Link>
+        {/* 2. Role-specific operational page */}
+        <li className={isActive(getRoleRoute()) ? "active" : ""}>
+          <Link to={getRoleRoute()}>{getRoleTitle()}</Link>
         </li>
 
         {/* 3. Account - Submenu */}

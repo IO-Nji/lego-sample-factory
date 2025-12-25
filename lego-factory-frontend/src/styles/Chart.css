@@ -1,0 +1,344 @@
+/* ============================================
+   CHART COMPONENTS STYLING
+   Reusable styles for StatCard, PieChart, BarChart, StatusMonitor
+   ============================================ */
+
+/* Chart Container */
+.chart-container {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.chart-empty {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: 2rem;
+  font-size: 0.875rem;
+}
+
+/* ============================================
+   STAT CARD
+   ============================================ */
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.65rem;
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-card-primary { border-left-color: var(--color-primary); }
+.stat-card-success { border-left-color: var(--color-success); }
+.stat-card-warning { border-left-color: var(--color-warning); }
+.stat-card-danger { border-left-color: var(--color-danger); }
+.stat-card-info { border-left-color: var(--color-info); }
+
+.stat-icon {
+  font-size: 1.25rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1;
+  margin-bottom: 0.15rem;
+}
+
+.stat-title {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stat-subtitle {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
+}
+
+.stat-trend {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.trend-up { color: var(--color-success); }
+.trend-down { color: var(--color-danger); }
+
+/* ============================================
+   PIE CHART
+   ============================================ */
+.pie-chart-wrapper {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pie-chart {
+  position: relative;
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.pie-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  height: 60%;
+  background: white;
+  border-radius: 50%;
+}
+
+.chart-legend {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.legend-color {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend-label {
+  flex: 1;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.legend-value {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+/* ============================================
+   BAR CHART
+   ============================================ */
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.bar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bar-chart-horizontal .bar-item {
+  flex-direction: row;
+}
+
+.bar-chart-vertical .bar-item {
+  flex-direction: column;
+}
+
+.bar-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.bar-chart-vertical .bar-label {
+  min-width: auto;
+  text-align: center;
+}
+
+.bar-wrapper {
+  flex: 1;
+  background: var(--color-surface);
+  border-radius: 4px;
+  height: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.bar-chart-vertical .bar-wrapper {
+  width: 3rem;
+  height: 150px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 0.5rem;
+  transition: width 0.3s ease, height 0.3s ease;
+  position: relative;
+}
+
+.bar-chart-vertical .bar-fill {
+  width: 100%;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0.5rem 0;
+}
+
+.bar-value {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   STATUS MONITOR
+   ============================================ */
+.status-monitor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--color-surface);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.status-item-clickable {
+  cursor: pointer;
+}
+
+.status-item-clickable:hover {
+  background: white;
+  border-color: var(--color-primary);
+}
+
+.status-indicator {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.status-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.status-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.125rem;
+}
+
+.status-details {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: currentColor;
+  color: white;
+  opacity: 0.9;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .pie-chart-wrapper {
+    flex-direction: column;
+  }
+  
+  .bar-label {
+    min-width: 80px;
+    font-size: 0.75rem;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .stat-icon {
+    font-size: 1.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+  }
+}
