@@ -141,3 +141,5 @@ test_warehouse_order.ps1
 STYLING_STANDARDIZATION.md
 ProjectDescription.md
 FRONTEND_TESTING_ANALYSIS.md
+FRONTEND_REFACTORING_SUMMARY.md
+test_dashboard_endpoints.ps1
