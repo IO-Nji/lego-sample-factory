@@ -3,6 +3,7 @@
 build/
 out/
 dist/
+copilot-instructions.md
 
 # IDE files
 .vscode/
