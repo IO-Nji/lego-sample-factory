@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
-import "./Navigation.css";
+import "../styles/Navigation.css";
 
+/**
+ * Navigation Component
+ * Main navigation menu with role-based menu items and submenus
+ */
 function Navigation() {
   const location = useLocation();
   const { isAdmin, session } = useAuth();
@@ -18,7 +22,9 @@ function Navigation() {
   const isActive = (path) => location.pathname === path;
   const isParentActive = (paths) => paths.some(path => location.pathname.startsWith(path));
 
-  // Get role-based menu title for dashboard
+  /**
+   * Role-based title mapping for dashboard menu
+   */
   const getRoleTitle = () => {
     const role = session?.user?.role;
     const roleTitles = {
@@ -35,7 +41,9 @@ function Navigation() {
     return roleTitles[role] || "DASHBOARD";
   };
 
-  // Get role-based operational page route
+  /**
+   * Role-based route mapping for operational pages
+   */
   const getRoleRoute = () => {
     const role = session?.user?.role;
     const roleRoutes = {
@@ -55,48 +63,23 @@ function Navigation() {
   return (
     <nav className="main-navigation">
       <ul className="nav-list">
-        {/* 1. Overview - Routes to Dashboard (visual analytics) */}
+        {/* Overview - Routes to Dashboard (visual analytics) */}
         <li className={isActive("/dashboard") ? "active" : ""}>
           <Link to="/dashboard">Overview</Link>
         </li>
 
-        {/* 2. Role-specific operational page */}
-        <li className={isActive(getRoleRoute()) ? "active" : ""}>
-          <Link to={getRoleRoute()}>{getRoleTitle()}</Link>
-        </li>
-
-        {/* 3. Account - Submenu */}
-        <li className={isParentActive(["/account"]) ? "has-submenu active" : "has-submenu"}>
-          <button 
-            type="button" 
-            className="menu-toggle"
-            onClick={() => toggleMenu("account")}
-          >
-            Account
-            <span className={`arrow ${expandedMenus.account ? "expanded" : ""}`}>▼</span>
-          </button>
-          <ul className="submenu" style={{ display: expandedMenus.account ? "block" : undefined }}>
-            <li className={isActive("/account/user") ? "active" : ""}>
-              <Link to="/account/user">User Account</Link>
-            </li>
-            <li className={isActive("/account/workstation") ? "active" : ""}>
-              <Link to="/account/workstation">Workstation</Link>
-            </li>
-          </ul>
-        </li>
-
-        {/* 4. CONTROL - Admin Only Submenu */}
-        {isAdmin && (
+        {/* Role-specific operational page with Admin submenu */}
+        {isAdmin ? (
           <li className={isParentActive(["/control"]) ? "has-submenu active" : "has-submenu"}>
             <button 
               type="button" 
               className="menu-toggle"
-              onClick={() => toggleMenu("control")}
+              onClick={() => toggleMenu("admin")}
             >
-              CONTROL
-              <span className={`arrow ${expandedMenus.control ? "expanded" : ""}`}>▼</span>
+              {getRoleTitle()}
+              <span className={`arrow ${expandedMenus.admin ? "expanded" : ""}`}>▼</span>
             </button>
-            <ul className="submenu" style={{ display: expandedMenus.control ? "block" : undefined }}>
+            <ul className="submenu" style={{ display: expandedMenus.admin ? "block" : undefined }}>
               <li className={isActive("/control/products") ? "active" : ""}>
                 <Link to="/control/products">Products</Link>
               </li>
@@ -117,7 +100,31 @@ function Navigation() {
               </li>
             </ul>
           </li>
+        ) : (
+          <li className={isActive(getRoleRoute()) ? "active" : ""}>
+            <Link to={getRoleRoute()}>{getRoleTitle()}</Link>
+          </li>
         )}
+
+        {/* Account Submenu */}
+        <li className={isParentActive(["/account"]) ? "has-submenu active" : "has-submenu"}>
+          <button 
+            type="button" 
+            className="menu-toggle"
+            onClick={() => toggleMenu("account")}
+          >
+            Account
+            <span className={`arrow ${expandedMenus.account ? "expanded" : ""}`}>▼</span>
+          </button>
+          <ul className="submenu" style={{ display: expandedMenus.account ? "block" : undefined }}>
+            <li className={isActive("/account/user") ? "active" : ""}>
+              <Link to="/account/user">User Account</Link>
+            </li>
+            <li className={isActive("/account/workstation") ? "active" : ""}>
+              <Link to="/account/workstation">Workstation</Link>
+            </li>
+          </ul>
+        </li>
       </ul>
     </nav>
   );

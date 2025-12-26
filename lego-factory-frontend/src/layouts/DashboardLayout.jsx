@@ -6,10 +6,10 @@ function DashboardLayout() {
   const navigate = useNavigate();
   const { isAuthenticated, logout, session } = useAuth();
 
-  // Handle logout and redirect to login page
+  // Handle logout and redirect to home page
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    // Don't navigate - logout() already redirects to home
   };
 
   return (

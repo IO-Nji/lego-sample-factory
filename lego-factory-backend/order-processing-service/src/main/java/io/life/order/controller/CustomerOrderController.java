@@ -28,6 +28,12 @@ public class CustomerOrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
     }
 
+    @GetMapping
+    public ResponseEntity<List<CustomerOrderDTO>> getAllOrders() {
+        List<CustomerOrderDTO> orders = customerOrderService.getAllOrders();
+        return ResponseEntity.ok(orders);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<CustomerOrderDTO> getOrderById(@PathVariable Long id) {
         Optional<CustomerOrderDTO> order = customerOrderService.getOrderById(id);

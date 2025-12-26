@@ -52,7 +52,12 @@ export function AuthProvider({ children }) {
     console.log('Logging out - clearing session');
     clearStoredSession();
     setSession(null);
-    // Navigation will be handled by the component that calls logout
+    
+    // Redirect to home page after logout
+    // Use location.href for clean redirect without preserved state
+    if (window.location.pathname !== '/') {
+      window.location.href = '/';
+    }
   }, []);
 
   const value = useMemo(

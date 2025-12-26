@@ -85,6 +85,21 @@ public class CustomerOrderService {
     }
 
     @Transactional(readOnly = true)
+    public List<CustomerOrderDTO> getAllOrders() {
+        try {
+            logger.info("Fetching all customer orders");
+            List<CustomerOrder> orders = customerOrderRepository.findAll();
+            logger.info("Found {} total customer orders", orders.size());
+            return orders.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error fetching all customer orders", e);
+            throw e;
+        }
+    }
+
+    @Transactional(readOnly = true)
     public List<CustomerOrderDTO> getOrdersByWorkstationId(Long workstationId) {
         try {
             logger.info("Fetching orders for workstation: {}", workstationId);

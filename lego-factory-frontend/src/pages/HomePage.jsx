@@ -3,31 +3,32 @@ import LoginForm from "../components/LoginForm";
 import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/StandardPage.css";
 import "../styles/HomePage.css";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 function HomePage() {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     const reason = location.state?.reason || new URLSearchParams(location.search).get('reason');
     
-    if (reason === "expired") {
-      setMessage("Your session has expired. Please sign in again.");
-      setTimeout(() => setMessage(""), 5000);
-    } else if (reason === "unauthenticated") {
-      setMessage("Please sign in to access this page.");
-      setTimeout(() => setMessage(""), 5000);
-    } else if (reason === "unauthorized") {
+    // Redirect to login page if there's an authentication-related reason
+    if (reason === "expired" || reason === "unauthenticated" || reason === "session_expired" || reason === "backend_unavailable") {
+      navigate('/login?reason=' + reason, { replace: true });
+      return;
+    }
+    
+    if (reason === "unauthorized") {
       setMessage("You do not have permission to access that page.");
       setTimeout(() => setMessage(""), 5000);
     } else if (reason === "backend_down") {
       setMessage("Unable to connect to the backend. Please check if the services are running.");
       setTimeout(() => setMessage(""), 8000);
     }
-  }, [location.state, location.search]);
+  }, [location.state, location.search, navigate]);
 
   // If not authenticated, show login prompt with embedded login form
   if (!isAuthenticated) {

@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useEffect } from "react";
 
 /**
  * AuthGuard component to protect routes and handle authentication state
@@ -10,21 +11,33 @@ export function AuthGuard({ children, requiredRole = null }) {
   const location = useLocation();
 
   // Check if token has expired
+  useEffect(() => {
+    if (session?.expiresAt) {
+      const expiresAt = new Date(session.expiresAt).getTime();
+      const now = Date.now();
+      
+      if (now >= expiresAt) {
+        console.log('Token expired - clearing session');
+        logout();
+      }
+    }
+  }, [session, logout]);
+
+  // Check if user is authenticated
+  if (!isAuthenticated || !session) {
+    console.log('Not authenticated - redirecting to login');
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Additional token expiration check
   if (session?.expiresAt) {
     const expiresAt = new Date(session.expiresAt).getTime();
     const now = Date.now();
     
     if (now >= expiresAt) {
-      console.log('Token expired - clearing session and redirecting to login');
-      logout();
-      return <Navigate to="/login" state={{ from: location, reason: 'expired' }} replace />;
+      console.log('Token expired during render - redirecting to login');
+      return <Navigate to="/login" state={{ from: location, expired: true }} replace />;
     }
-  }
-
-  // Check if user is authenticated
-  if (!isAuthenticated) {
-    console.log('Not authenticated - redirecting to login');
-    return <Navigate to="/login" state={{ from: location, reason: 'unauthenticated' }} replace />;
   }
 
   // Check if specific role is required

@@ -4,23 +4,23 @@
   background: var(--color-white);
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-md);
-  width: 100%;
-  max-width: 320px;
+  width: 75%;
+  max-width: 280px;
   margin: 0 auto;
 }
 
 .login-form-standalone {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xs);
 }
 
 .login-form-embedded {
-  padding: var(--spacing-md);
+  padding: var(--spacing-xs);
   box-shadow: var(--shadow-sm);
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-xs);
 }
 
 .login-header h2 {
@@ -69,7 +69,7 @@
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-xs);
 }
 
 .login-form .form-group {
@@ -106,8 +106,8 @@
 }
 
 .login-footer {
-  margin-top: var(--spacing-md);
-  padding-top: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+  padding-top: var(--spacing-xs);
   border-top: 1px solid var(--color-border);
   text-align: center;
 }
@@ -116,12 +116,12 @@
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
-  line-height: 1.4;
+  line-height: 1;
 }
 
 .login-help-text code {
   background-color: var(--color-surface);
-  padding: 1px 4px;
+  padding: 1px 1px;
   border-radius: 2px;
   font-family: 'Courier New', monospace;
   font-size: var(--font-size-xs);
@@ -131,11 +131,11 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .login-form-container {
-    max-width: 100%;
+    max-width: 75%;
     border-radius: 0;
   }
 
   .login-form-standalone {
-    padding: var(--spacing-md);
+    padding: var(--spacing-xs);
   }
 }

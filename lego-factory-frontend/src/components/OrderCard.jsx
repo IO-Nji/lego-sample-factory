@@ -1,5 +1,5 @@
 import React from "react";
-import "./OrderCard.css";
+import "../styles/OrderCard.css";
 
 export default function OrderCard({ order, type = "customer", children }) {
   // Border color by type

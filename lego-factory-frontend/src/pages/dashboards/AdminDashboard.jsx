@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../../api/api";
 import PageHeader from "../../components/PageHeader";
 import StatCard from "../../components/StatCard";
@@ -11,6 +11,9 @@ import "../../styles/Chart.css";
 /**
  * AdminDashboard - Administrator dashboard with system-wide monitoring
  * Displays order statistics, workstation status, user analytics, and production metrics
+ * 
+ * OPTIMIZATION: Uses shallow comparison to prevent unnecessary re-renders
+ * Only updates state when data actually changes
  */
 function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -31,6 +34,9 @@ function AdminDashboard() {
     productionByType: {},
   });
 
+  // Track last data to prevent unnecessary updates
+  const lastDataRef = useRef(null);
+
   const fetchDashboardData = async () => {
     try {
       // Only set loading on initial load, not on refreshes
@@ -41,14 +47,14 @@ function AdminDashboard() {
 
       // Fetch all data from APIs
       const [wsResponse, usersResponse, prodResponse, asmResponse, supResponse, customerResponse, lowAlertsRes, productsRes] = await Promise.all([
-        api.get("/masterdata/workstations").catch((err) => { console.log("WS error:", err.message); return { data: [] }; }),
-        api.get("/users").catch((err) => { console.log("Users error:", err.message); return { data: [] }; }),
-        api.get("/production-control-orders").catch((err) => { console.log("Prod orders error:", err.message); return { data: [] }; }),
-        api.get("/assembly-control-orders").catch((err) => { console.log("Asm orders error:", err.message); return { data: [] }; }),
-        api.get("/supply-orders/warehouse").catch((err) => { console.log("Supply orders error:", err.message); return { data: [] }; }),
-        api.get("/customer-orders").catch((err) => { console.log("Customer orders error:", err.message); return { data: [] }; }),
-        api.get("/stock/alerts/low").catch((err) => { console.log("Stock alerts error:", err.message); return { data: [] }; }),
-        api.get("/masterdata/product-variants").catch((err) => { console.log("Products error:", err.message); return { data: [] }; }),
+        api.get("/masterdata/workstations").catch((err) => { console.error("WS error:", err.response?.data || err.message); return { data: [] }; }),
+        api.get("/users").catch((err) => { console.error("Users error:", err.response?.data || err.message); return { data: [] }; }),
+        api.get("/production-control-orders").catch((err) => { console.error("Prod orders error:", err.response?.status, err.response?.data || err.message); return { data: [] }; }),
+        api.get("/assembly-control-orders").catch((err) => { console.error("Asm orders error:", err.response?.status, err.response?.data || err.message); return { data: [] }; }),
+        api.get("/supply-orders/warehouse").catch((err) => { console.error("Supply orders error:", err.response?.status, err.response?.data || err.message); return { data: [] }; }),
+        api.get("/customer-orders").catch((err) => { console.error("Customer orders error:", err.response?.status, err.response?.data || err.message); return { data: [] }; }),
+        api.get("/stock/alerts/low").catch((err) => { console.error("Stock alerts error:", err.response?.status, err.response?.data || err.message); return { data: [] }; }),
+        api.get("/masterdata/product-variants").catch((err) => { console.error("Products error:", err.response?.data || err.message); return { data: [] }; }),
       ]);
 
       const wsData = Array.isArray(wsResponse?.data) ? wsResponse.data : [];
@@ -99,7 +105,7 @@ function AdminDashboard() {
         .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
         .slice(0, 6);
 
-      setDashboardData({
+      const newData = {
         totalOrders: allOrders.length,
         pendingOrders,
         completedOrders,
@@ -113,7 +119,20 @@ function AdminDashboard() {
         users: usersData,
         recentOrders,
         productionByType,
-      });
+      };
+
+      // OPTIMIZATION: Only update state if data has actually changed
+      // Use JSON comparison for deep equality check
+      const newDataString = JSON.stringify(newData);
+      const hasChanged = !lastDataRef.current || lastDataRef.current !== newDataString;
+
+      if (hasChanged) {
+        console.log('Dashboard data changed - updating UI');
+        setDashboardData(newData);
+        lastDataRef.current = newDataString;
+      } else {
+        console.log('Dashboard data unchanged - skipping render');
+      }
     } catch (err) {
       setError("Failed to load dashboard data: " + (err.message || "Unknown error"));
       console.error("Dashboard fetch error:", err);
@@ -206,65 +225,62 @@ function AdminDashboard() {
         {/* Key Metrics Grid */}
         <div style={{ 
           display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', 
-          gap: '1rem',
-          marginBottom: '1.5rem'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', 
+          gap: '0.75rem',
+          marginBottom: '1.5rem',
+          justifyItems: 'center'
         }}>
           <StatCard 
             title="Total Orders"
             value={dashboardData.totalOrders}
             icon="📦"
             color="primary"
-            subtitle="All order types"
           />
           <StatCard 
             title="Pending Orders"
             value={dashboardData.pendingOrders}
             icon="⏳"
             color="warning"
-            subtitle="Awaiting action"
+            threshold={10}
+            thresholdType="high"
           />
           <StatCard 
             title="Processing"
             value={dashboardData.processingOrders}
             icon="⚙️"
             color="info"
-            subtitle="In progress"
           />
           <StatCard 
             title="Completed"
             value={dashboardData.completedOrders}
             icon="✓"
             color="success"
-            subtitle="Finished orders"
           />
           <StatCard 
             title="Workstations"
             value={dashboardData.activeWorkstations}
             icon="🏭"
             color="primary"
-            subtitle="Active stations"
           />
           <StatCard 
             title="Users"
             value={dashboardData.totalUsers}
             icon="👥"
             color="info"
-            subtitle="System users"
           />
           <StatCard 
             title="Products"
             value={dashboardData.totalProducts}
             icon="🎨"
             color="success"
-            subtitle="Product variants"
           />
           <StatCard 
             title="Low Stock"
             value={dashboardData.lowStockItems}
             icon="⚠️"
             color="danger"
-            subtitle="Items below threshold"
+            threshold={1}
+            thresholdType="low"
           />
         </div>
 

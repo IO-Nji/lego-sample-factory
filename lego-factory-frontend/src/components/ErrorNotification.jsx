@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import './ErrorNotification.css';
+import '../styles/ErrorNotification.css';
 
 /**
  * Notification/Toast component for displaying error, warning, info, and success messages.
