@@ -1,0 +1,82 @@
+/* Feature Card Component Styles */
+
+.feature-card {
+  background: white;
+  border-radius: 12px;
+  padding: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border-top: 1px solid #667eea;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  min-width: fit-content;
+  width: fit-content;
+}
+
+.feature-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.feature-card-icon {
+  font-size: 2rem;
+  margin: 0;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.feature-card-title {
+  color: #2c3e50;
+  font-size: 0.9rem;
+  margin: 0;
+  text-align: center;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.feature-card-description {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: all 0.3s ease;
+  pointer-events: none;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.feature-card-description p {
+  color: #7f8c8d;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  margin: 0;
+  text-align: center;
+}
+
+.feature-card:hover {
+  transform: scale(1.5);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  border-top-color: #764ba2;
+  z-index: 10;
+}
+
+.feature-card:hover .feature-card-description {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.feature-card:hover .feature-card-icon {
+  transform: scale(0);
+}

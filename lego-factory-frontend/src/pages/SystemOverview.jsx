@@ -208,7 +208,7 @@ function SystemOverview() {
         />
         <StatsCard 
           value={pendingOrdersCount} 
-          label="Pending Orders" 
+          label="Pending" 
           variant="pending"
         />
         <StatsCard 

@@ -326,27 +326,27 @@ function AdminDashboard() {
       <div className="stats-grid">
         <StatsCard 
           value={systemStats.totalWorkstations}
-          label="Total Workstations"
+          label="Workstations"
           variant="default"
         />
         <StatsCard 
           value={systemStats.totalOrders}
-          label="Total Orders"
+          label="Total"
           variant="default"
         />
         <StatsCard 
           value={systemStats.pendingOrders}
-          label="Pending Orders"
+          label="Pending"
           variant="pending"
         />
         <StatsCard 
           value={systemStats.processingOrders}
-          label="Processing Orders"
+          label="Processing"
           variant="processing"
         />
         <StatsCard 
           value={systemStats.completedOrders}
-          label="Completed Orders"
+          label="Completed"
           variant="completed"
         />
       </div>
