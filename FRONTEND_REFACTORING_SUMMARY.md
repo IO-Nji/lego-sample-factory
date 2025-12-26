@@ -50,6 +50,8 @@ import Button from '../components/Button';
 </Button>
 ```
 
+
+
 ### 2. **LoginForm Component** (`components/LoginForm.jsx`)
 **Purpose**: Reusable login form that can be embedded or standalone
 
