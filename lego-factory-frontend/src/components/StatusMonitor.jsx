@@ -8,8 +8,9 @@ import '../styles/Chart.css';
  * @param {Function} onItemClick - Optional click handler
  * @param {Object} statusConfig - Status configuration {statusKey: {label, color, icon}}
  * @param {boolean} compact - Use compact horizontal layout with custom icons
+ * @param {boolean} gridLayout - Use grid layout (3 columns)
  */
-function StatusMonitor({ items, title, onItemClick, statusConfig, compact = false }) {
+function StatusMonitor({ items, title, onItemClick, statusConfig, compact = false, gridLayout = false }) {
   const defaultStatusConfig = {
     ACTIVE: { label: 'Active', color: '#10b981', icon: '✓' },
     IDLE: { label: 'Idle', color: '#f59e0b', icon: '○' },
@@ -48,7 +49,7 @@ function StatusMonitor({ items, title, onItemClick, statusConfig, compact = fals
   return (
     <div className="chart-container">
       {title && <h3 className="chart-title">{title}</h3>}
-      <div className={`status-monitor ${compact ? 'status-monitor-compact' : ''}`}>
+      <div className={`status-monitor ${compact ? 'status-monitor-compact' : ''} ${gridLayout ? 'status-monitor-grid' : ''}`}>
         {items.map((item, index) => {
           const statusInfo = config[item.status] || { label: item.status, color: '#6b7280', icon: '?' };
           const workstationIcon = compact ? getWorkstationIcon(item.name) : null;

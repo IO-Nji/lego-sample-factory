@@ -131,49 +131,70 @@ function ModulesSupermarketDashboard() {
           </div>
         )}
 
-        {/* Order Statistics */}
-        <div className="stats-grid mb-6">
-          <StatsCard value={warehouseOrders.length} label="Total Orders" variant="default" />
-          <StatsCard value={warehouseOrders.filter(o => o.status === "PENDING").length} label="Pending" variant="pending" />
-          <StatsCard value={warehouseOrders.filter(o => o.status === "PROCESSING").length} label="Processing" variant="processing" />
-          <StatsCard value={warehouseOrders.filter(o => o.status === "FULFILLED").length} label="Fulfilled" variant="completed" />
-        </div>
-
-        {/* Current Inventory */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-6">
-          <div className="bg-orange-50 px-6 py-3 border-b border-orange-200">
-            <h2 className="text-lg font-semibold text-orange-900">📦 Current Inventory</h2>
+        {/* First Row: Stats Cards (50%) + Current Inventory (50%) */}
+        <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', alignItems: 'stretch' }}>
+          {/* Left: Order Statistics - 50% */}
+          <div style={{ 
+            flex: '0 0 calc(50% - 0.75rem)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            minWidth: 0
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              gap: '0.75rem',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+              maxWidth: '600px'
+            }}>
+              <StatsCard value={warehouseOrders.length} label="Total Orders" variant="default" />
+              <StatsCard value={warehouseOrders.filter(o => o.status === "PENDING").length} label="Pending" variant="pending" />
+              <StatsCard value={warehouseOrders.filter(o => o.status === "PROCESSING").length} label="Processing" variant="processing" />
+              <StatsCard value={warehouseOrders.filter(o => o.status === "FULFILLED").length} label="Fulfilled" variant="completed" />
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            {inventory.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
-                <p className="text-sm">No inventory items available</p>
+
+          {/* Right: Current Inventory - 50% */}
+          <div style={{ flex: '0 0 calc(50% - 0.75rem)', minWidth: 0 }}>
+            <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200" style={{ height: '100%' }}>
+              <div className="bg-orange-50 px-6 py-3 border-b border-orange-200">
+                <h2 className="text-lg font-semibold text-orange-900">📦 Current Inventory</h2>
               </div>
-            ) : (
-              <table className="products-table w-full">
-                <thead>
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Item Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Item ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Quantity</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Last Updated</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {inventory.map((item, index) => {
-                    const statusColor = getInventoryStatusColor(item.quantity);
-                    return (
-                      <tr key={index} onClick={() => setSelectedModule(item)} className="hover:bg-gray-50 cursor-pointer">
-                        <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemType}</td>
-                        <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">{item.itemId}</td>
-                        <td className="px-6 py-2 whitespace-nowrap text-sm font-bold" style={{ color: statusColor }}>{item.quantity}</td>
-                        <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">{new Date(item.updatedAt).toLocaleString()}</td>
+              <div className="overflow-x-auto" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                {inventory.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500">
+                    <p className="text-sm">No inventory items available</p>
+                  </div>
+                ) : (
+                  <table className="products-table w-full">
+                    <thead style={{ position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Item Type</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Item ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Quantity</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Last Updated</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {inventory.map((item, index) => {
+                        const statusColor = getInventoryStatusColor(item.quantity);
+                        return (
+                          <tr key={index} onClick={() => setSelectedModule(item)} className="hover:bg-gray-50 cursor-pointer">
+                            <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{item.itemType}</td>
+                            <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">{item.itemId}</td>
+                            <td className="px-6 py-2 whitespace-nowrap text-sm font-bold" style={{ color: statusColor }}>{item.quantity}</td>
+                            <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">{new Date(item.updatedAt).toLocaleString()}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

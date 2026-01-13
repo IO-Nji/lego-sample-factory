@@ -326,48 +326,39 @@ function AdminDashboard() {
           </div>
         </div>
 
-        {/* Row 2: Three cards - Users by Role (20%), Workstation Monitor (40%), Recent Orders (40%) */}
+        {/* Row 2: Workstation Monitor (50%), Recent Orders (50%) */}
         <div style={{ 
           display: 'flex', 
           gap: '1rem',
           alignItems: 'stretch'
         }}>
-          {/* Users by Role - 20% */}
-          {userRoleData.length > 0 && (
-            <div style={{ flex: '0 0 20%', minWidth: 0 }}>
-              <BarChart 
-                title="Users by Role"
-                data={userRoleData}
-                orientation="horizontal"
-              />
-            </div>
-          )}
-          
-          {/* Workstation Status Monitor - 40% */}
-          <div style={{ flex: '0 0 40%', minWidth: 0 }}>
+          {/* Workstation Status Monitor - 50% */}
+          <div style={{ flex: '0 0 calc(50% - 0.5rem)', minWidth: 0 }}>
             <StatusMonitor 
               title="Workstation Status Monitor"
               items={dashboardData.workstations}
               onItemClick={(item) => console.log('Workstation clicked:', item)}
               compact={true}
+              gridLayout={true}
             />
           </div>
           
-          {/* Recent Orders - 40% */}
-          <div className="chart-container" style={{ flex: '0 0 40%', minWidth: 0, minHeight: '400px' }}>
+          {/* Recent Orders - 50% */}
+          <div className="chart-container" style={{ flex: '0 0 calc(50% - 0.5rem)', minWidth: 0, minHeight: '400px' }}>
             <h3 className="chart-title">RECENT ORDERS</h3>
             {dashboardData.recentOrders.length > 0 ? (
               <div style={{ overflowY: 'auto', maxHeight: '350px' }}>
                 <table style={{ 
                   width: '100%', 
                   borderCollapse: 'collapse',
-                  fontSize: '0.8rem'
+                  fontSize: '0.75rem'
                 }}>
-                  <thead style={{ position: 'sticky', top: 0, background: 'white' }}>
+                  <thead style={{ position: 'sticky', top: 0, background: 'white', zIndex: 1 }}>
                     <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                      <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem' }}>ID</th>
-                      <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem' }}>Status</th>
-                      <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem' }}>Type</th>
+                      <th style={{ padding: '0.4rem 0.3rem', textAlign: 'left', fontWeight: 600, fontSize: '0.7rem', width: '15%' }}>ID</th>
+                      <th style={{ padding: '0.4rem 0.3rem', textAlign: 'left', fontWeight: 600, fontSize: '0.7rem', width: '30%' }}>Order No.</th>
+                      <th style={{ padding: '0.4rem 0.3rem', textAlign: 'left', fontWeight: 600, fontSize: '0.7rem', width: '25%' }}>Type</th>
+                      <th style={{ padding: '0.4rem 0.3rem', textAlign: 'left', fontWeight: 600, fontSize: '0.7rem', width: '30%' }}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -378,22 +369,35 @@ function AdminDashboard() {
                         COMPLETED: '#10b981',
                         CANCELLED: '#6b7280',
                       };
+                      
+                      // Determine order type based on orderNumber prefix
+                      let orderType = 'Unknown';
+                      if (order.orderNumber) {
+                        const prefix = order.orderNumber.split('-')[0];
+                        if (prefix === 'CUST') orderType = 'Customer';
+                        else if (prefix === 'PROD') orderType = 'Production';
+                        else if (prefix === 'ASM') orderType = 'Assembly';
+                        else if (prefix === 'WH' || prefix === 'SUP') orderType = 'Warehouse';
+                      }
+                      
                       return (
                         <tr key={order.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                          <td style={{ padding: '0.5rem', fontSize: '0.75rem' }}>#{order.id}</td>
-                          <td style={{ padding: '0.5rem' }}>
+                          <td style={{ padding: '0.4rem 0.3rem', fontSize: '0.7rem' }}>#{order.id}</td>
+                          <td style={{ padding: '0.4rem 0.3rem', fontSize: '0.7rem', fontFamily: 'monospace' }}>{order.orderNumber || 'N/A'}</td>
+                          <td style={{ padding: '0.4rem 0.3rem', fontSize: '0.7rem' }}>{orderType}</td>
+                          <td style={{ padding: '0.4rem 0.3rem' }}>
                             <span style={{ 
-                              padding: '0.2rem 0.4rem',
+                              padding: '0.15rem 0.35rem',
                               borderRadius: '3px',
-                              fontSize: '0.7rem',
+                              fontSize: '0.65rem',
                               fontWeight: 600,
                               color: 'white',
-                              backgroundColor: statusColors[order.status] || '#6b7280'
+                              backgroundColor: statusColors[order.status] || '#6b7280',
+                              display: 'inline-block'
                             }}>
                               {order.status}
                             </span>
                           </td>
-                          <td style={{ padding: '0.5rem', fontSize: '0.75rem' }}>{order.orderNumber?.split('-')[0] || 'N/A'}</td>
                         </tr>
                       );
                     })}
