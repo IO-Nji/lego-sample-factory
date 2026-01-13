@@ -9,9 +9,9 @@
  */
 
 // Core UI Components
-export { default as Button } from './ButtonNew';
+export { default as Button } from './Button';
 export { default as Card } from './Card';
-export { default as StatCard } from './StatCardNew';
+export { default as StatCard } from './StatCard';
 export { default as Badge } from './Badge';
 
 // Data Display
@@ -28,7 +28,5 @@ export { default as Tabs } from './Tabs';
 export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as Alert } from './Alert';
 
-// Legacy Components (to be migrated)
-// export { default as ButtonOld } from './Button';
-// export { default as StatCardOld } from './StatCard';
-// export { default as StatsCard } from './StatsCard';
+// Legacy/Alternative Components
+export { default as StatsCard } from './StatsCard';
