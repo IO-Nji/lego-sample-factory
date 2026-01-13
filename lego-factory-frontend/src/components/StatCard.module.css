@@ -6,11 +6,28 @@
   background: var(--card-bg);
   border: var(--card-border);
   border-radius: var(--card-border-radius);
-  padding: var(--spacing-5);
+  padding: var(--spacing-2);
   box-shadow: var(--shadow-md);
   transition: var(--transition-normal);
   position: relative;
   overflow: hidden;
+  min-height: 140px;
+  width: auto;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+/* Header Row: Icon + Value */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 4px;
 }
 
 /* Clickable Cards */
@@ -35,11 +52,10 @@
 
 /* Value */
 .value {
-  font-size: var(--font-size-3xl);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-gray-900);
   line-height: 1.2;
-  margin-bottom: var(--spacing-2);
 }
 
 /* Label */
@@ -49,15 +65,15 @@
   color: var(--color-gray-600);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  text-align: center;
 }
 
 /* Icon */
 .icon {
-  position: absolute;
-  top: var(--spacing-4);
-  right: var(--spacing-4);
-  font-size: var(--font-size-2xl);
-  opacity: 0.3;
+  font-size: var(--font-size-lg);
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
 }
 
 /* Trend Indicator */
@@ -89,7 +105,7 @@
 
 /* Color Variants */
 .primary {
-  border-left: 4px solid var(--color-primary-500);
+  border-left: 2px solid var(--color-primary-500);
 }
 
 .primary .value {
@@ -97,7 +113,7 @@
 }
 
 .secondary {
-  border-left: 4px solid var(--color-secondary-500);
+  border-left: 2px solid var(--color-secondary-500);
 }
 
 .secondary .value {
@@ -105,7 +121,7 @@
 }
 
 .success {
-  border-left: 4px solid var(--color-success-500);
+  border-left: 2px solid var(--color-success-500);
 }
 
 .success .value {
@@ -113,7 +129,7 @@
 }
 
 .warning {
-  border-left: 4px solid var(--color-warning-500);
+  border-left: 2px solid var(--color-warning-500);
 }
 
 .warning .value {
@@ -121,7 +137,7 @@
 }
 
 .danger {
-  border-left: 4px solid var(--color-danger-500);
+  border-left: 2px solid var(--color-danger-500);
 }
 
 .danger .value {
@@ -129,7 +145,7 @@
 }
 
 .info {
-  border-left: 4px solid var(--color-info-500);
+  border-left: 2px solid var(--color-info-500);
 }
 
 .info .value {

@@ -145,13 +145,13 @@ function WarehouseOverviewPage() {
           <div className="stats-row">
             <StatCard
               value={stats.totalWarehouseOrders}
-              label="Warehouse Orders"
+              label="WAREHOUSE"
               icon="📦"
               variant="primary"
             />
             <StatCard
               value={stats.pendingWarehouseOrders}
-              label="Pending Orders"
+              label="PENDING"
               icon="⏳"
               variant="warning"
               threshold={10}
@@ -159,13 +159,13 @@ function WarehouseOverviewPage() {
             />
             <StatCard
               value={stats.completedWarehouseOrders}
-              label="Completed Orders"
+              label="COMPLETED"
               icon="✓"
               variant="success"
             />
             <StatCard
               value={stats.totalSupplyOrders}
-              label="Supply Orders"
+              label="SUPPLY"
               icon="🚚"
               variant="info"
             />

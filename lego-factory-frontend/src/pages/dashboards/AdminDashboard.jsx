@@ -222,94 +222,104 @@ function AdminDashboard() {
           </div>
         )}
 
-        {/* Key Metrics Grid */}
+        {/* Row 1: StatCards (2x4 grid) + Two Pie Charts */}
         <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', 
-          gap: '0.75rem',
+          display: 'flex',
+          gap: '1.5rem',
           marginBottom: '1.5rem',
-          justifyItems: 'center'
+          alignItems: 'stretch'
         }}>
-          <StatCard 
-            title="Total Orders"
-            value={dashboardData.totalOrders}
-            icon="📦"
-            color="primary"
-          />
-          <StatCard 
-            title="Pending Orders"
-            value={dashboardData.pendingOrders}
-            icon="⏳"
-            color="warning"
-            threshold={10}
-            thresholdType="high"
-          />
-          <StatCard 
-            title="Processing"
-            value={dashboardData.processingOrders}
-            icon="⚙️"
-            color="info"
-          />
-          <StatCard 
-            title="Completed"
-            value={dashboardData.completedOrders}
-            icon="✓"
-            color="success"
-          />
-          <StatCard 
-            title="Workstations"
-            value={dashboardData.activeWorkstations}
-            icon="🏭"
-            color="primary"
-          />
-          <StatCard 
-            title="Users"
-            value={dashboardData.totalUsers}
-            icon="👥"
-            color="info"
-          />
-          <StatCard 
-            title="Products"
-            value={dashboardData.totalProducts}
-            icon="🎨"
-            color="success"
-          />
-          <StatCard 
-            title="Low Stock"
-            value={dashboardData.lowStockItems}
-            icon="⚠️"
-            color="danger"
-            threshold={1}
-            thresholdType="low"
-          />
+          {/* Left: StatCards Grid (2 rows x 4 columns) - 70% width */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(4, 1fr)', 
+            gap: '0.75rem',
+            flex: '0 0 70%',
+            justifyItems: 'center',
+            alignItems: 'center'
+          }}>
+            <StatCard 
+              title="TOTAL"
+              value={dashboardData.totalOrders}
+              icon="📦"
+              color="primary"
+            />
+            <StatCard 
+              title="PENDING"
+              value={dashboardData.pendingOrders}
+              icon="⏳"
+              color="warning"
+              threshold={10}
+              thresholdType="high"
+            />
+            <StatCard 
+              title="Processing"
+              value={dashboardData.processingOrders}
+              icon="⚙️"
+              color="info"
+            />
+            <StatCard 
+              title="Completed"
+              value={dashboardData.completedOrders}
+              icon="✓"
+              color="success"
+            />
+            <StatCard 
+              title="Workstations"
+              value={dashboardData.activeWorkstations}
+              icon="🏭"
+              color="primary"
+            />
+            <StatCard 
+              title="Users"
+              value={dashboardData.totalUsers}
+              icon="👥"
+              color="info"
+            />
+            <StatCard 
+              title="Products"
+              value={dashboardData.totalProducts}
+              icon="🎨"
+              color="success"
+            />
+            <StatCard 
+              title="Low Stock"
+              value={dashboardData.lowStockItems}
+              icon="⚠️"
+              color="danger"
+              threshold={1}
+              thresholdType="low"
+            />
+          </div>
+
+          {/* Right: Two Pie Charts stacked - 30% width */}
+          <div style={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+            flex: '0 0 calc(30% - 1.5rem)',
+            minWidth: 0
+          }}>
+            <PieChart 
+              title="Order Status Distribution"
+              data={orderStatusData}
+              size={120}
+            />
+            <PieChart 
+              title="Production by Type"
+              data={productionTypeData}
+              size={120}
+            />
+          </div>
         </div>
 
-        {/* Charts Row - Pie Charts */}
+        {/* Row 2: Three cards side by side - Users by Role, Workstation Monitor, Recent Orders */}
         <div style={{ 
           display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
-          gap: '1rem',
-          marginBottom: '1.5rem'
+          gridTemplateColumns: 'repeat(3, 1fr)', 
+          gap: '1rem'
         }}>
-          <PieChart 
-            title="Order Status Distribution"
-            data={orderStatusData}
-            size={180}
-          />
-          <PieChart 
-            title="Production by Type"
-            data={productionTypeData}
-            size={180}
-          />
-        </div>
-
-        {/* Users by Role + Workstation Monitor Row */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(2, 1fr)', 
-          gap: '1rem',
-          marginBottom: '1.5rem'
-        }}>
+          {/* Users by Role */}
           {userRoleData.length > 0 && (
             <BarChart 
               title="Users by Role"
@@ -317,81 +327,65 @@ function AdminDashboard() {
               orientation="horizontal"
             />
           )}
+          
+          {/* Workstation Status Monitor */}
           <StatusMonitor 
             title="Workstation Status Monitor"
             items={dashboardData.workstations}
             onItemClick={(item) => console.log('Workstation clicked:', item)}
           />
-        </div>
-
-        {/* Recent Orders Table */}
-        <div className="chart-container">
-          <h3 className="chart-title">Recent Orders</h3>
-          {dashboardData.recentOrders.length > 0 ? (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ 
-                width: '100%', 
-                borderCollapse: 'collapse',
-                fontSize: '0.875rem'
-              }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>Order ID</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>Status</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>Type</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>Created</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 600 }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dashboardData.recentOrders.map((order) => {
-                    const statusColors = {
-                      PENDING: '#f59e0b',
-                      PROCESSING: '#3b82f6',
-                      COMPLETED: '#10b981',
-                      CANCELLED: '#6b7280',
-                    };
-                    return (
-                      <tr key={order.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                        <td style={{ padding: '0.65rem' }}>#{order.id}</td>
-                        <td style={{ padding: '0.65rem' }}>
-                          <span style={{ 
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '4px',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            color: 'white',
-                            backgroundColor: statusColors[order.status] || '#6b7280'
-                          }}>
-                            {order.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '0.65rem' }}>{order.orderNumber?.split('-')[0] || 'N/A'}</td>
-                        <td style={{ padding: '0.65rem' }}>
-                          {new Date(order.createdAt).toLocaleString()}
-                        </td>
-                        <td style={{ padding: '0.65rem', textAlign: 'right' }}>
-                          <button style={{ 
-                            fontSize: '0.75rem',
-                            padding: '0.25rem 0.5rem',
-                            background: 'var(--color-primary)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}>
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="chart-empty">No recent orders</div>
-          )}
+          
+          {/* Recent Orders */}
+          <div className="chart-container" style={{ minHeight: '400px' }}>
+            <h3 className="chart-title">RECENT ORDERS</h3>
+            {dashboardData.recentOrders.length > 0 ? (
+              <div style={{ overflowY: 'auto', maxHeight: '350px' }}>
+                <table style={{ 
+                  width: '100%', 
+                  borderCollapse: 'collapse',
+                  fontSize: '0.8rem'
+                }}>
+                  <thead style={{ position: 'sticky', top: 0, background: 'white' }}>
+                    <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
+                      <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem' }}>ID</th>
+                      <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem' }}>Status</th>
+                      <th style={{ padding: '0.5rem', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem' }}>Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dashboardData.recentOrders.map((order) => {
+                      const statusColors = {
+                        PENDING: '#f59e0b',
+                        PROCESSING: '#3b82f6',
+                        COMPLETED: '#10b981',
+                        CANCELLED: '#6b7280',
+                      };
+                      return (
+                        <tr key={order.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                          <td style={{ padding: '0.5rem', fontSize: '0.75rem' }}>#{order.id}</td>
+                          <td style={{ padding: '0.5rem' }}>
+                            <span style={{ 
+                              padding: '0.2rem 0.4rem',
+                              borderRadius: '3px',
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              color: 'white',
+                              backgroundColor: statusColors[order.status] || '#6b7280'
+                            }}>
+                              {order.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '0.5rem', fontSize: '0.75rem' }}>{order.orderNumber?.split('-')[0] || 'N/A'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="chart-empty">No recent orders</div>
+            )}
+          </div>
         </div>
       </section>
     </div>

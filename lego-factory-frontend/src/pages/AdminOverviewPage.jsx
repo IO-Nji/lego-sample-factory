@@ -228,21 +228,21 @@ function AdminOverviewPage() {
           <div className="stats-row">
             <StatCard
               value={stats.totalCustomerOrders}
-              label="Customer Orders"
+              label="CUSTOMER"
               icon="🛒"
               variant="primary"
               onClick={() => navigate('/control/orders')}
             />
             <StatCard
               value={stats.totalProductionOrders}
-              label="Production Orders"
+              label="PRODUCTION"
               icon="🏭"
               variant="secondary"
               onClick={() => navigate('/control/production-orders')}
             />
             <StatCard
               value={stats.totalWarehouseOrders}
-              label="Warehouse Orders"
+              label="WAREHOUSE"
               icon="📦"
               variant="info"
               onClick={() => navigate('/control/warehouse-orders')}

@@ -44,7 +44,9 @@ import styles from './StatCard.module.css';
 function StatCard({
   value,
   label,
+  title, // Backward compatibility - old prop name
   variant = 'primary',
+  color, // Backward compatibility - old prop name
   icon = null,
   trend = null,
   threshold = null,
@@ -53,10 +55,14 @@ function StatCard({
   className = '',
   compact = false,
 }) {
+  // Backward compatibility: support old prop names
+  const displayLabel = label || title;
+  const displayVariant = variant || color || 'primary';
+  
   // Build class names
   const cardClasses = [
     styles.statCard,
-    styles[variant],
+    styles[displayVariant],
     compact && styles.compact,
     onClick && styles.clickable,
     className
@@ -105,10 +111,11 @@ function StatCard({
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
-      {icon && <div className={styles.icon}>{icon}</div>}
-      
-      <div className={valueClass}>{value}</div>
-      <div className={styles.label}>{label}</div>
+      <div className={styles.header}>
+        {icon && <div className={styles.icon}>{icon}</div>}
+        <div className={valueClass}>{value}</div>
+      </div>
+      <div className={styles.label}>{displayLabel}</div>
       
       {trend && (
         <div className={trendClass}>
@@ -128,10 +135,23 @@ StatCard.propTypes = {
   ]).isRequired,
   
   /** Label describing the statistic */
-  label: PropTypes.string.isRequired,
+  label: PropTypes.string,
+  
+  /** @deprecated Use 'label' instead - for backward compatibility */
+  title: PropTypes.string,
   
   /** Color variant */
   variant: PropTypes.oneOf([
+    'primary',
+    'secondary',
+    'success',
+    'warning',
+    'danger',
+    'info'
+  ]),
+  
+  /** @deprecated Use 'variant' instead - for backward compatibility */
+  color: PropTypes.oneOf([
     'primary',
     'secondary',
     'success',

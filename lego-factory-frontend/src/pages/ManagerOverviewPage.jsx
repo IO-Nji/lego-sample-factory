@@ -198,13 +198,13 @@ function ManagerOverviewPage() {
           <div className="stats-row">
             <StatCard
               value={stats.totalOrders}
-              label="Total Orders"
+              label="TOTAL"
               icon="📋"
               variant="primary"
             />
             <StatCard
               value={stats.pendingOrders}
-              label="Pending Orders"
+              label="PENDING"
               icon="⏳"
               variant="warning"
               threshold={20}
@@ -212,13 +212,13 @@ function ManagerOverviewPage() {
             />
             <StatCard
               value={stats.processingOrders}
-              label="Processing Orders"
+              label="PROCESSING"
               icon="⚙️"
               variant="primary"
             />
             <StatCard
               value={stats.completedOrders}
-              label="Completed Orders"
+              label="COMPLETED"
               icon="✓"
               variant="success"
             />
@@ -227,25 +227,25 @@ function ManagerOverviewPage() {
           <div className="stats-row">
             <StatCard
               value={stats.customerOrders}
-              label="Customer Orders"
+              label="CUSTOMER"
               icon="🛒"
               variant="info"
             />
             <StatCard
               value={stats.productionOrders}
-              label="Production Orders"
+              label="PRODUCTION"
               icon="🏭"
               variant="secondary"
             />
             <StatCard
               value={stats.warehouseOrders}
-              label="Warehouse Orders"
+              label="WAREHOUSE"
               icon="📦"
               variant="primary"
             />
             <StatCard
               value={stats.assemblyOrders}
-              label="Assembly Orders"
+              label="ASSEMBLY"
               icon="🔧"
               variant="info"
             />
