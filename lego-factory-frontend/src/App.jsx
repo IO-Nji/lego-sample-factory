@@ -18,6 +18,11 @@ import ManufacturingWorkstationPage from "./pages/ManufacturingWorkstationPage.j
 import WebhooksAdminPage from "./pages/WebhooksAdminPage.jsx";
 import ProductionPlanningPage from "./pages/ProductionPlanningPage.jsx";
 import ModulesSupermarketPage from "./pages/ModulesSupermarketPage.jsx";
+// New Overview Pages using Design System Components
+import AdminOverviewPage from "./pages/AdminOverviewPage.jsx";
+import ManagerOverviewPage from "./pages/ManagerOverviewPage.jsx";
+import WarehouseOverviewPage from "./pages/WarehouseOverviewPage.jsx";
+import ManufacturingOverviewPage from "./pages/ManufacturingOverviewPage.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 import { AuthGuard, AdminGuard } from "./components/AuthGuard.jsx";
 
@@ -63,6 +68,40 @@ function App() {
           element={
             <AuthGuard>
               <WorkstationPage />
+            </AuthGuard>
+          }
+        />
+
+        {/* OVERVIEW Pages - New Design System Components */}
+        <Route
+          path="overview/admin"
+          element={
+            <AdminGuard>
+              <AdminOverviewPage />
+            </AdminGuard>
+          }
+        />
+        <Route
+          path="overview/manager"
+          element={
+            <AuthGuard>
+              <ManagerOverviewPage />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="overview/warehouse"
+          element={
+            <AuthGuard requiredRole="PLANT_WAREHOUSE">
+              <WarehouseOverviewPage />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="overview/manufacturing"
+          element={
+            <AuthGuard requiredRole="MANUFACTURING_WORKSTATION">
+              <ManufacturingOverviewPage />
             </AuthGuard>
           }
         />

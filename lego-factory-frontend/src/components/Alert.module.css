@@ -1,0 +1,124 @@
+/* Alert Component - Design System Compliant */
+@import '../styles/variables.css';
+
+/* Alert */
+.alert {
+  display: flex;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  animation: slideIn 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Icon */
+.icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Content */
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-1);
+}
+
+.message {
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+/* Close Button */
+.closeButton {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-lg);
+  transition: var(--transition-fast);
+  opacity: 0.7;
+}
+
+.closeButton:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.closeButton:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Success Variant */
+.success {
+  background: var(--color-success-50);
+  border-color: var(--color-success-200);
+  color: var(--color-success-900);
+}
+
+.success .icon {
+  color: var(--color-success-600);
+}
+
+/* Danger Variant */
+.danger {
+  background: var(--color-danger-50);
+  border-color: var(--color-danger-200);
+  color: var(--color-danger-900);
+}
+
+.danger .icon {
+  color: var(--color-danger-600);
+}
+
+/* Warning Variant */
+.warning {
+  background: var(--color-warning-50);
+  border-color: var(--color-warning-200);
+  color: var(--color-warning-900);
+}
+
+.warning .icon {
+  color: var(--color-warning-600);
+}
+
+/* Info Variant */
+.info {
+  background: var(--color-info-50);
+  border-color: var(--color-info-200);
+  color: var(--color-info-900);
+}
+
+.info .icon {
+  color: var(--color-info-600);
+}

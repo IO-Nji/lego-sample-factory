@@ -63,9 +63,41 @@ function Navigation() {
   return (
     <nav className="main-navigation">
       <ul className="nav-list">
-        {/* Overview - Routes to Dashboard (visual analytics) */}
+        {/* Dashboard - Routes to Dashboard (visual analytics) */}
         <li className={isActive("/dashboard") ? "active" : ""}>
-          <Link to="/dashboard">Overview</Link>
+          <Link to="/dashboard">Dashboard</Link>
+        </li>
+
+        {/* NEW: Overview Pages - Design System Components */}
+        <li className={isParentActive(["/overview"]) ? "has-submenu active" : "has-submenu"}>
+          <button 
+            type="button" 
+            className="menu-toggle"
+            onClick={() => toggleMenu("overview")}
+          >
+            Overview
+            <span className={`arrow ${expandedMenus.overview ? "expanded" : ""}`}>▼</span>
+          </button>
+          <ul className="submenu" style={{ display: expandedMenus.overview ? "block" : undefined }}>
+            {isAdmin && (
+              <li className={isActive("/overview/admin") ? "active" : ""}>
+                <Link to="/overview/admin">Admin Overview</Link>
+              </li>
+            )}
+            <li className={isActive("/overview/manager") ? "active" : ""}>
+              <Link to="/overview/manager">Manager Overview</Link>
+            </li>
+            {(session?.user?.role === "PLANT_WAREHOUSE" || isAdmin) && (
+              <li className={isActive("/overview/warehouse") ? "active" : ""}>
+                <Link to="/overview/warehouse">Warehouse Overview</Link>
+              </li>
+            )}
+            {(session?.user?.role === "MANUFACTURING_WORKSTATION" || isAdmin) && (
+              <li className={isActive("/overview/manufacturing") ? "active" : ""}>
+                <Link to="/overview/manufacturing">Manufacturing Overview</Link>
+              </li>
+            )}
+          </ul>
         </li>
 
         {/* Role-specific operational page with Admin submenu */}

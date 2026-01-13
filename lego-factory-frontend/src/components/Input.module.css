@@ -1,0 +1,140 @@
+/* Input Component - Design System Compliant */
+@import '../styles/variables.css';
+
+/* Container */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+/* Label */
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--form-label-color);
+  display: block;
+}
+
+.required {
+  color: var(--color-danger-500);
+  margin-left: var(--spacing-1);
+}
+
+/* Input Wrapper */
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Input */
+.input {
+  width: 100%;
+  height: var(--form-input-height);
+  padding: var(--form-input-padding);
+  font-size: var(--font-size-base);
+  font-family: var(--font-family-base);
+  color: var(--form-input-color);
+  background: var(--form-input-bg);
+  border: var(--form-input-border);
+  border-radius: var(--form-input-radius);
+  transition: var(--transition-fast);
+}
+
+.input::placeholder {
+  color: var(--form-placeholder-color);
+}
+
+.input:hover:not(:disabled):not(:read-only) {
+  border-color: var(--color-gray-400);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+}
+
+.input:disabled {
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
+  cursor: not-allowed;
+}
+
+.input:read-only {
+  background: var(--color-gray-50);
+  cursor: default;
+}
+
+/* Input with Prefix/Suffix */
+.hasPrefix {
+  padding-left: calc(var(--spacing-4) + 2.5em);
+}
+
+.hasSuffix {
+  padding-right: calc(var(--spacing-4) + 2.5em);
+}
+
+/* Prefix/Suffix */
+.prefix,
+.suffix {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+  pointer-events: none;
+}
+
+.prefix {
+  left: var(--spacing-4);
+}
+
+.suffix {
+  right: var(--spacing-4);
+}
+
+/* Error State */
+.error {
+  border-color: var(--color-danger-500);
+}
+
+.error:focus {
+  border-color: var(--color-danger-500);
+  box-shadow: 0 0 0 3px rgba(var(--color-danger-rgb), 0.1);
+}
+
+/* Error Text */
+.errorText {
+  font-size: var(--font-size-sm);
+  color: var(--color-danger-600);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.errorText::before {
+  content: '⚠';
+}
+
+/* Helper Text */
+.helperText {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+}
+
+/* Number Input - Remove Spinners */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}

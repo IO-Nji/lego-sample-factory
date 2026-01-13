@@ -1,0 +1,112 @@
+/* Select Component - Design System Compliant */
+@import '../styles/variables.css';
+
+/* Container */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+/* Label */
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--form-label-color);
+  display: block;
+}
+
+.required {
+  color: var(--color-danger-500);
+  margin-left: var(--spacing-1);
+}
+
+/* Select Wrapper */
+.selectWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Select */
+.select {
+  width: 100%;
+  height: var(--form-input-height);
+  padding: var(--form-input-padding);
+  padding-right: calc(var(--spacing-4) + 1.5em);
+  font-size: var(--font-size-base);
+  font-family: var(--font-family-base);
+  color: var(--form-input-color);
+  background: var(--form-input-bg);
+  border: var(--form-input-border);
+  border-radius: var(--form-input-radius);
+  transition: var(--transition-fast);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.select:hover:not(:disabled) {
+  border-color: var(--color-gray-400);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+}
+
+.select:disabled {
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
+  cursor: not-allowed;
+}
+
+/* Custom Arrow */
+.arrow {
+  position: absolute;
+  right: var(--spacing-4);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-gray-500);
+  font-size: var(--font-size-xs);
+  pointer-events: none;
+}
+
+.select:disabled ~ .arrow {
+  color: var(--color-gray-400);
+}
+
+/* Error State */
+.error {
+  border-color: var(--color-danger-500);
+}
+
+.error:focus {
+  border-color: var(--color-danger-500);
+  box-shadow: 0 0 0 3px rgba(var(--color-danger-rgb), 0.1);
+}
+
+/* Error Text */
+.errorText {
+  font-size: var(--font-size-sm);
+  color: var(--color-danger-600);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.errorText::before {
+  content: '⚠';
+}
+
+/* Helper Text */
+.helperText {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+}

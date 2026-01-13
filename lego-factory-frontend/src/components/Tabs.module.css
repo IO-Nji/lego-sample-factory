@@ -1,0 +1,154 @@
+/* Tabs Component - Design System Compliant */
+@import '../styles/variables.css';
+
+/* Container */
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tab List */
+.tabList {
+  display: flex;
+  gap: var(--spacing-2);
+  border-bottom: 2px solid var(--color-gray-200);
+  margin-bottom: var(--spacing-4);
+}
+
+.fullWidth .tab {
+  flex: 1;
+}
+
+/* Tab Button */
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-600);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+  margin-bottom: -2px;
+  position: relative;
+}
+
+.tab:hover:not(:disabled) {
+  color: var(--color-primary-600);
+  background: var(--color-gray-50);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+.tab.active {
+  color: var(--color-primary-600);
+  border-bottom-color: var(--color-primary-500);
+}
+
+.tab.disabled {
+  color: var(--color-gray-400);
+  cursor: not-allowed;
+}
+
+/* Icon */
+.icon {
+  font-size: var(--font-size-lg);
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-white);
+  background: var(--color-primary-500);
+  border-radius: var(--radius-full);
+}
+
+.tab.active .badge {
+  background: var(--color-primary-600);
+}
+
+/* Pills Variant */
+.pills {
+  border-bottom: none;
+  gap: var(--spacing-3);
+}
+
+.pills .tab {
+  border-radius: var(--radius-md);
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.pills .tab.active {
+  color: var(--color-white);
+  background: var(--color-primary-500);
+}
+
+.pills .tab.active .badge {
+  background: var(--color-white);
+  color: var(--color-primary-600);
+}
+
+/* Underline Variant */
+.underline {
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.underline .tab {
+  border-bottom: 3px solid transparent;
+  padding-bottom: var(--spacing-2);
+}
+
+.underline .tab.active {
+  border-bottom-color: var(--color-primary-500);
+}
+
+/* Panel */
+.panel {
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tabList {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  
+  .tabList::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .tab {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-sm);
+  }
+}
