@@ -1,0 +1,100 @@
+/* Card Component - Design System Compliant */
+@import '../styles/variables.css';
+
+/* Base Card */
+.card {
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-border-radius);
+  transition: var(--transition-normal);
+}
+
+/* Variants */
+.default {
+  box-shadow: var(--shadow-sm);
+}
+
+.elevated {
+  box-shadow: var(--shadow-lg);
+}
+
+.outlined {
+  box-shadow: none;
+  border: 2px solid var(--color-gray-300);
+}
+
+/* Interactive States */
+.interactive:hover {
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-2px);
+}
+
+.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.clickable:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+.clickable:active {
+  transform: translateY(0);
+}
+
+/* Header */
+.header {
+  padding: var(--card-padding);
+  border-bottom: 1px solid var(--color-gray-200);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-900);
+}
+
+/* Body */
+.body {
+  padding: var(--card-padding);
+}
+
+/* Footer */
+.footer {
+  padding: var(--card-padding);
+  border-top: 1px solid var(--color-gray-200);
+  background: var(--color-gray-50);
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Padding Variants */
+.padding-none .body {
+  padding: 0;
+}
+
+.padding-none .header,
+.padding-none .footer {
+  padding: var(--spacing-4);
+}
+
+.padding-small .body {
+  padding: var(--spacing-3);
+}
+
+.padding-small .header,
+.padding-small .footer {
+  padding: var(--spacing-3);
+}
+
+.padding-normal .body {
+  padding: var(--card-padding);
+}
+
+.padding-large .body {
+  padding: var(--spacing-6);
+}
+
+.padding-large .header,
+.padding-large .footer {
+  padding: var(--spacing-6);
+}

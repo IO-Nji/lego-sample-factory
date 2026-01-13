@@ -1,0 +1,115 @@
+/* LoadingSpinner Component - Design System Compliant */
+@import '../styles/variables.css';
+
+/* Container */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+/* Overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-overlay);
+  backdrop-filter: blur(2px);
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  position: relative;
+}
+
+/* Spinner Rings */
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border-style: solid;
+  border-color: currentColor transparent transparent transparent;
+  animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.ring:nth-child(1) {
+  animation-delay: -0.45s;
+}
+
+.ring:nth-child(2) {
+  animation-delay: -0.3s;
+}
+
+.ring:nth-child(3) {
+  animation-delay: -0.15s;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Size Variants */
+.small {
+  width: 24px;
+  height: 24px;
+}
+
+.small .ring {
+  width: 24px;
+  height: 24px;
+  border-width: 2px;
+}
+
+.medium {
+  width: 40px;
+  height: 40px;
+}
+
+.medium .ring {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
+}
+
+.large {
+  width: 64px;
+  height: 64px;
+}
+
+.large .ring {
+  width: 64px;
+  height: 64px;
+  border-width: 4px;
+}
+
+/* Color Variants */
+.primary {
+  color: var(--color-primary-500);
+}
+
+.secondary {
+  color: var(--color-secondary-500);
+}
+
+.white {
+  color: var(--color-white);
+}
+
+/* Text */
+.text {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+}
