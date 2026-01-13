@@ -73,12 +73,14 @@ function HomePage() {
   };
 
   const getModulePartsForProduct = (product) => {
+    //TODO: Implement real logic to get modules and parts for the product
     // In a real scenario, these would come from a junction table
     // For now, we'll show all modules as available for this product
     return modules;
   };
 
   const getPartsForModule = (module) => {
+    //TODO: Implement real logic to get parts for the module
     // In a real scenario, these would come from a junction table
     // For now, we'll show all parts as available for this module
     return parts;
@@ -111,18 +113,94 @@ function HomePage() {
         {/* Row 1: Intro Paragraph + Login Form side by side */}
         <div className="home-intro-section">
           <div className="home-intro-text">
+
+            <div style={{ marginTop: '1.5rem', textAlign: 'left', lineHeight: '1.8' }}>
+            <h3 style={{ color: 'var(--color-primary)', marginBottom: '1rem', fontSize: '1.5rem' }}>Getting Started</h3>
             <p className="subtitle">
-              A comprehensive digital manufacturing platform designed to
-              streamline and coordinate complex production workflows across
-              multiple interconnected factory stations.
+              Welcome to the LEGO Factory Management System - a comprehensive digital manufacturing platform designed to
+              streamline and coordinate complex production workflows across multiple interconnected factory stations.
             </p>
+
+              <h4 style={{ color: 'var(--color-primary)', marginBottom: '0.75rem', fontSize: '1.1rem' }}>📋 Quick Navigation Guide</h4>
+              <p style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
+                <strong>Logging In:</strong> Use the login form on the right to access the system. Demo credentials are provided below the login button.
+              </p>
+              <p style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
+                <strong>User Roles:</strong> The system supports multiple roles including Admin (full access), Manager (supervisory functions), 
+                and Operator (station-specific operations). Each role has tailored dashboards and permissions.
+              </p>
+              <p style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
+                <strong>Basic Operations:</strong> After logging in, you'll access your role-specific dashboard. Navigate using the top menu bar 
+                to access different modules. Explore the Platform Features below to understand available workstations and capabilities.
+              </p>
+              <p style={{ fontSize: '0.95rem', fontStyle: 'italic', color: '#666' }}>
+                💡 <strong>Tip:</strong> Hover over the Platform Feature cards below to see detailed information about each station.
+              </p>
+            </div>
           </div>
           <div className="home-login-container">
             <LoginForm embedded={true} showHeader={false} showHelpText={true} />
           </div>
         </div>
 
-        {/* Row 2: Product Variants */}
+        {/* Row 2: Platform Features with Enhanced FeatureCard Component */}
+        <div className="home-content">
+          <h3 style={{ textAlign: 'center', color: 'var(--color-primary)', marginBottom: 'var(--spacing-lg)' }}>
+            Platform Features
+          </h3>
+          <div className="feature-cards-container">
+            <FeatureCard
+              icon="🏭"
+              title="Plant Warehouse"
+              description="Central distribution center managing customer orders and finished goods inventory. Coordinates outbound shipments and tracks order fulfillment status."
+              detailedInfo="Handles customer order intake, inventory management of finished products, shipping coordination, and order status tracking. Integrates with ERP systems for real-time visibility."
+            />
+            <FeatureCard
+              icon="🏢"
+              title="Modules Supermarket"
+              description="Pre-assembly staging area organizing module components for efficient assembly line feeding."
+              detailedInfo="Organizes and stores pre-assembled modules, manages just-in-time delivery to assembly stations, tracks module inventory levels, and optimizes material flow to production lines."
+            />
+            <FeatureCard
+              icon="📋"
+              title="Production Planning"
+              description="Strategic planning workstation scheduling production workflows and resource allocation."
+              detailedInfo="Creates production schedules, allocates resources across workstations, optimizes workflow sequences, manages capacity planning, and coordinates with supply chain for material availability."
+            />
+            <FeatureCard
+              icon="🏭"
+              title="Production Control"
+              description="Real-time monitoring hub tracking manufacturing progress and performance metrics."
+              detailedInfo="Monitors all manufacturing workstations in real-time, tracks production KPIs, identifies bottlenecks, manages work orders, and provides live status updates to stakeholders."
+            />
+            <FeatureCard
+              icon="⚙️"
+              title="Assembly Control"
+              description="Assembly operations oversight coordinating gear, motor, and final assembly stations."
+              detailedInfo="Supervises all assembly workstations, coordinates component flow between stations, tracks assembly quality metrics, manages assembly line balancing, and ensures production targets are met."
+            />
+            <FeatureCard
+              icon="📦"
+              title="Parts Supply Warehouse"
+              description="Raw materials warehouse supplying components on-demand to manufacturing and assembly."
+              detailedInfo="Manages raw parts inventory, fulfills material requisitions from production stations, tracks parts consumption rates, handles supplier relationships, and maintains optimal stock levels."
+            />
+            <FeatureCard
+              icon="🔧"
+              title="Manufacturing Stations"
+              description="Production workstations executing injection molding, pre-production, and finishing operations."
+              detailedInfo="Operates injection molding machines for part production, handles pre-production quality checks, performs finishing operations, maintains equipment, and reports production metrics."
+            />
+            <FeatureCard
+              icon="🔩"
+              title="Assembly Stations"
+              description="Assembly workstations completing gear assembly, motor integration, and final product assembly."
+              detailedInfo="Executes gear sub-assembly tasks, integrates motors into assemblies, performs final product assembly, conducts quality inspections, and packages completed products for warehouse delivery."
+            />
+          </div>
+        </div>
+
+        {/* Row 3: Product Variants */}
         <div className="home-content">
           <h3 style={{ textAlign: 'center', color: 'var(--color-primary)', marginBottom: 'var(--spacing-lg)' }}>
             Our Products
@@ -287,54 +365,18 @@ function HomePage() {
           )}
         </div>
 
-        {/* Row 3: Platform Features with New FeatureCard Component */}
-        <div className="home-content">
-          <h3 style={{ textAlign: 'center', color: 'var(--color-primary)', marginBottom: 'var(--spacing-lg)' }}>
-            Platform Features
-          </h3>
-          <div className="feature-cards-container">
-            <FeatureCard
-              icon="🏭"
-              title="Plant Warehouse"
-              description="Manage customer orders and inventory at the plant warehouse distribution center."
-            />
-            <FeatureCard
-              icon="🏢"
-              title="Modules Supermarket"
-              description="Organize module assembly and fulfill warehouse orders with pre-assembled modules."
-            />
-            <FeatureCard
-              icon="📋"
-              title="Production Planning"
-              description="Plan and schedule production workflows across manufacturing and assembly stations."
-            />
-            <FeatureCard
-              icon="🏭"
-              title="Production Control"
-              description="Monitor manufacturing workstations and track production progress in real-time."
-            />
-            <FeatureCard
-              icon="⚙️"
-              title="Assembly Control"
-              description="Supervise assembly workstations including gear, motor, and final assembly stations."
-            />
-            <FeatureCard
-              icon="📦"
-              title="Parts Supply Warehouse"
-              description="Supply parts to manufacturing and assembly stations on demand."
-            />
-            <FeatureCard
-              icon="🔧"
-              title="Manufacturing Stations"
-              description="Execute manufacturing tasks at injection molding, pre-production, and finishing stations."
-            />
-            <FeatureCard
-              icon="🔩"
-              title="Assembly Stations"
-              description="Execute assembly tasks for gear, motor, and final product assembly."
-            />
-          </div>
-        </div>
+        {/* Footer */}
+        <footer style={{
+          backgroundColor: 'rgba(44, 90, 160, 0.95)',
+          color: 'white',
+          textAlign: 'center',
+          padding: '1.5rem',
+          marginTop: '3rem',
+          fontSize: '0.9rem',
+          borderTop: '3px solid #2c5aa0'
+        }}>
+          <p style={{ margin: 0 }}>© {new Date().getFullYear()} <strong>nji.io</strong> - All Rights Reserved</p>
+        </footer>
       </section>
     );
   }

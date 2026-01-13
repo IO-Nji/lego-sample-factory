@@ -50,19 +50,17 @@ function UserManagementPage() {
   }, [isAdmin, authToken]);
 
   const loadUsersAndWorkstations = async () => {
+    console.log('Loading users and workstations...', { isAdmin, authToken: authToken?.substring(0, 20) + '...' });
     try {
       const [usersRes, workstationsRes] = await Promise.all([
-        api.get(USERS_ENDPOINT, {
-          headers: { Authorization: `Bearer ${authToken}` },
-        }),
-        api.get(WORKSTATIONS_ENDPOINT, {
-          headers: { Authorization: `Bearer ${authToken}` },
-        }),
+        api.get(USERS_ENDPOINT),
+        api.get(WORKSTATIONS_ENDPOINT),
       ]);
+      console.log('Users loaded:', usersRes.data?.length, 'Workstations loaded:', workstationsRes.data?.length);
       setUsers(usersRes.data || []);
       setWorkstations(workstationsRes.data || []);
     } catch (error) {
-      console.error("Failed to load users/workstations:", error);
+      console.error("Failed to load users/workstations:", error.response?.status, error.response?.data, error.message);
       if (error.response?.status === 401) {
         logout();
       }
@@ -105,12 +103,9 @@ function UserManagementPage() {
         role: form.role,
         workstationId: form.workstationId ? Number(form.workstationId) : null,
       };
-
-      const response = await api.post(USERS_ENDPOINT, payload, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
-      });
+      
+      console.log('Creating user with payload:', { ...payload, password: '***' });
+      const response = await api.post(USERS_ENDPOINT, payload);
 
       const userData = response.data;
       setCreatedUser(userData);
@@ -121,6 +116,7 @@ function UserManagementPage() {
       });
       setForm({ username: "", password: "", role: form.role, workstationId: "" });
     } catch (error) {
+      console.error('User creation error:', error.response?.status, error.response?.data, error.message);
       if (error.response?.status === 401) {
         logout();
       }
@@ -161,11 +157,7 @@ function UserManagementPage() {
         workstationId: editForm.workstationId ? Number(editForm.workstationId) : null,
       };
 
-      const response = await axios.put(`${USERS_ENDPOINT}/${userId}`, payload, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
-      });
+      const response = await axios.put(`${USERS_ENDPOINT}/${userId}`, payload);
 
       setUsers(users.map((u) => (u.id === userId ? response.data : u)));
       setEditingUserId(null);

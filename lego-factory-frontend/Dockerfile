@@ -43,6 +43,9 @@ FROM nginx:alpine
 # Install wget for health checks
 RUN apk add --no-cache wget
 
+# Remove default nginx config to avoid conflicts
+RUN rm -f /etc/nginx/conf.d/default.conf
+
 # Copy nginx config
 # --- MODIFICATION START ---
 # Use the internal frontend nginx.conf, not a generic default.conf.

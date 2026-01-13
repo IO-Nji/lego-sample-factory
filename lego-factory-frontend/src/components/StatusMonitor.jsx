@@ -7,8 +7,9 @@ import '../styles/Chart.css';
  * @param {string} title - Monitor title
  * @param {Function} onItemClick - Optional click handler
  * @param {Object} statusConfig - Status configuration {statusKey: {label, color, icon}}
+ * @param {boolean} compact - Use compact horizontal layout with custom icons
  */
-function StatusMonitor({ items, title, onItemClick, statusConfig }) {
+function StatusMonitor({ items, title, onItemClick, statusConfig, compact = false }) {
   const defaultStatusConfig = {
     ACTIVE: { label: 'Active', color: '#10b981', icon: '✓' },
     IDLE: { label: 'Idle', color: '#f59e0b', icon: '○' },
@@ -22,6 +23,19 @@ function StatusMonitor({ items, title, onItemClick, statusConfig }) {
 
   const config = statusConfig || defaultStatusConfig;
 
+  // Custom workstation icons based on name/type
+  const getWorkstationIcon = (name) => {
+    const nameLower = (name || '').toLowerCase();
+    if (nameLower.includes('assembly')) return '🔧';
+    if (nameLower.includes('warehouse') || nameLower.includes('storage')) return '📦';
+    if (nameLower.includes('production') || nameLower.includes('manufacturing')) return '⚙️';
+    if (nameLower.includes('quality') || nameLower.includes('inspection')) return '🔍';
+    if (nameLower.includes('packaging')) return '📦';
+    if (nameLower.includes('shipping')) return '🚚';
+    if (nameLower.includes('supply') || nameLower.includes('materials')) return '📋';
+    return '⚡'; // default
+  };
+
   if (items.length === 0) {
     return (
       <div className="chart-container">
@@ -34,25 +48,45 @@ function StatusMonitor({ items, title, onItemClick, statusConfig }) {
   return (
     <div className="chart-container">
       {title && <h3 className="chart-title">{title}</h3>}
-      <div className="status-monitor">
+      <div className={`status-monitor ${compact ? 'status-monitor-compact' : ''}`}>
         {items.map((item, index) => {
           const statusInfo = config[item.status] || { label: item.status, color: '#6b7280', icon: '?' };
+          const workstationIcon = compact ? getWorkstationIcon(item.name) : null;
+          
           return (
             <div 
               key={item.id || index} 
-              className={`status-item ${onItemClick ? 'status-item-clickable' : ''}`}
+              className={`status-item ${compact ? 'status-item-compact' : ''} ${onItemClick ? 'status-item-clickable' : ''}`}
               onClick={() => onItemClick && onItemClick(item)}
             >
-              <div className="status-indicator" style={{ backgroundColor: statusInfo.color }}>
-                {statusInfo.icon}
-              </div>
-              <div className="status-content">
-                <div className="status-name">{item.name}</div>
-                {item.details && <div className="status-details">{item.details}</div>}
-              </div>
-              <div className="status-badge" style={{ color: statusInfo.color }}>
-                {statusInfo.label}
-              </div>
+              {compact ? (
+                <>
+                  <span className="workstation-icon">{workstationIcon}</span>
+                  <div className="status-name">{item.name}</div>
+                  <div className="status-badge" style={{ 
+                    backgroundColor: statusInfo.color,
+                    color: 'white'
+                  }}>
+                    {statusInfo.label}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="status-indicator" style={{ backgroundColor: statusInfo.color }}>
+                    {statusInfo.icon}
+                  </div>
+                  <div className="status-content">
+                    <div className="status-name">{item.name}</div>
+                    {item.details && <div className="status-details">{item.details}</div>}
+                  </div>
+                  <div className="status-badge" style={{ 
+                    backgroundColor: statusInfo.color,
+                    color: 'white'
+                  }}>
+                    {statusInfo.label}
+                  </div>
+                </>
+              )}
             </div>
           );
         })}

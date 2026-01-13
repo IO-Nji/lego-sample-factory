@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Force the correct API base URL for Docker deployment
 // Use nginx proxy path instead of direct API Gateway port
-const API_BASE_URL = "http://localhost";
+const API_BASE_URL = "http://localhost:1011";
 
 // Determine the correct API base path
 // Since we're using nginx proxy, always append /api

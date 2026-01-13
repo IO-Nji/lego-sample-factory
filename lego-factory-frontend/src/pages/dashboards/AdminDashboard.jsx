@@ -92,13 +92,26 @@ function AdminDashboard() {
         supply: supData.length,
       };
 
-      // Workstation status mapping
-      const workstationStatus = wsData.map(ws => ({
-        id: ws.id,
-        name: ws.name || `Workstation ${ws.id}`,
-        status: ws.status || 'ACTIVE',
-        details: ws.description || `Type: ${ws.type || 'N/A'}`,
-      }));
+      // Workstation status mapping with shortened names
+      const workstationStatus = wsData.map(ws => {
+        // Shorten names for compact display
+        let shortName = ws.name || `WS-${ws.id}`;
+        shortName = shortName
+          .replace('Workstation', 'WS')
+          .replace('Station', 'Stn')
+          .replace('Assembly', 'Assy')
+          .replace('Production', 'Prod')
+          .replace('Manufacturing', 'Mfg')
+          .replace('Warehouse', 'WH')
+          .replace('Control', 'Ctrl');
+        
+        return {
+          id: ws.id,
+          name: shortName,
+          status: ws.status || 'ACTIVE',
+          details: ws.description || `Type: ${ws.type || 'N/A'}`,
+        };
+      });
 
       // Recent orders (last 6)
       const recentOrders = [...allOrders]
@@ -313,30 +326,35 @@ function AdminDashboard() {
           </div>
         </div>
 
-        {/* Row 2: Three cards side by side - Users by Role, Workstation Monitor, Recent Orders */}
+        {/* Row 2: Three cards - Users by Role (20%), Workstation Monitor (40%), Recent Orders (40%) */}
         <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(3, 1fr)', 
-          gap: '1rem'
+          display: 'flex', 
+          gap: '1rem',
+          alignItems: 'stretch'
         }}>
-          {/* Users by Role */}
+          {/* Users by Role - 20% */}
           {userRoleData.length > 0 && (
-            <BarChart 
-              title="Users by Role"
-              data={userRoleData}
-              orientation="horizontal"
-            />
+            <div style={{ flex: '0 0 20%', minWidth: 0 }}>
+              <BarChart 
+                title="Users by Role"
+                data={userRoleData}
+                orientation="horizontal"
+              />
+            </div>
           )}
           
-          {/* Workstation Status Monitor */}
-          <StatusMonitor 
-            title="Workstation Status Monitor"
-            items={dashboardData.workstations}
-            onItemClick={(item) => console.log('Workstation clicked:', item)}
-          />
+          {/* Workstation Status Monitor - 40% */}
+          <div style={{ flex: '0 0 40%', minWidth: 0 }}>
+            <StatusMonitor 
+              title="Workstation Status Monitor"
+              items={dashboardData.workstations}
+              onItemClick={(item) => console.log('Workstation clicked:', item)}
+              compact={true}
+            />
+          </div>
           
-          {/* Recent Orders */}
-          <div className="chart-container" style={{ minHeight: '400px' }}>
+          {/* Recent Orders - 40% */}
+          <div className="chart-container" style={{ flex: '0 0 40%', minWidth: 0, minHeight: '400px' }}>
             <h3 className="chart-title">RECENT ORDERS</h3>
             {dashboardData.recentOrders.length > 0 ? (
               <div style={{ overflowY: 'auto', maxHeight: '350px' }}>
