@@ -61,6 +61,17 @@ public class WarehouseOrderController {
     }
 
     /**
+     * PUT /api/warehouse-orders/{id}/confirm
+     * Confirm a warehouse order (Modules Supermarket confirms receipt and readiness to fulfill)
+     * Changes status from PENDING to PROCESSING
+     */
+    @PutMapping("/{id}/confirm")
+    public ResponseEntity<WarehouseOrderDTO> confirmWarehouseOrder(@PathVariable Long id) {
+        WarehouseOrderDTO confirmedOrder = warehouseOrderService.confirmWarehouseOrder(id);
+        return ResponseEntity.ok(confirmedOrder);
+    }
+
+    /**
      * PUT /api/warehouse-orders/{id}/fulfill-modules
      * Fulfill a warehouse order at Modules Supermarket
      * Updates warehouse order and related inventory

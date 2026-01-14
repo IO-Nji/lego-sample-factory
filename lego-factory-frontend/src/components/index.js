@@ -28,5 +28,9 @@ export { default as Tabs } from './Tabs';
 export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as Alert } from './Alert';
 
+// Layout Components
+export { default as DashboardLayout } from './DashboardLayout';
+export { default as InventoryTable } from './InventoryTable';
+
 // Legacy/Alternative Components
 export { default as StatsCard } from './StatsCard';

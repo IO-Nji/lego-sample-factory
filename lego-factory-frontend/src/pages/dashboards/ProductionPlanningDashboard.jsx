@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import PageHeader from "../../components/PageHeader";
-import "../../styles/StandardPage.css";
-import "../../styles/DashboardStandard.css";
+import { DashboardLayout } from "../../components";
+import "../../styles/DashboardLayout.css";
 
 function ProductionPlanningDashboard() {
   const [productionOrders, setProductionOrders] = useState([]);
@@ -28,38 +27,27 @@ function ProductionPlanningDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  return (
-    <div className="standard-page-container">
-    <section className="dashboard-page">
-      <PageHeader
-        title="Production Planning Dashboard"
-        subtitle="Manage production orders and scheduling"
-        icon="📋"
-        actions={[
-          <button
-            key="refresh"
-            onClick={fetchProductionOrders}
-            disabled={loading}
-            className="standard-btn standard-btn-primary"
-            style={{
-              cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
-            {loading ? "⟳ Refreshing..." : "⟳ Refresh"}
-          </button>
-        ]}
-      />
-
-      {error && <div className="error-alert">{error}</div>}
-
-      {loading ? (
-        <div>Loading production orders...</div>
-      ) : (
-        <div className="dashboard-box">
-          <div className="dashboard-table">
+  const renderOrdersTable = () => (
+    <>
+      <div className="dashboard-box-header dashboard-box-header-blue">
+        <h2 className="dashboard-box-header-title">📋 Production Orders</h2>
+        <button 
+          onClick={fetchProductionOrders} 
+          disabled={loading} 
+          className="dashboard-box-header-action"
+        >
+          {loading ? "Refreshing..." : "Refresh"}
+        </button>
+      </div>
+      <div className="dashboard-box-content">
+        {loading ? (
+          <div className="dashboard-empty-state">
+            <p className="dashboard-empty-state-text">Loading production orders...</p>
+          </div>
+        ) : (
+          <div>
             {productionOrders.length > 0 ? (
-              <table>
+              <table className="dashboard-table">
                 <thead>
                   <tr>
                     <th>Order ID</th>
@@ -88,13 +76,27 @@ function ProductionPlanningDashboard() {
                 </tbody>
               </table>
             ) : (
-              <p>No production orders at this time</p>
+              <div className="dashboard-empty-state">
+                <p className="dashboard-empty-state-title">No production orders found</p>
+                <p className="dashboard-empty-state-text">Orders will appear here when created</p>
+              </div>
             )}
           </div>
-        </div>
-      )}
-    </section>
-    </div>
+        )}
+      </div>
+    </>
+  );
+
+  return (
+    <DashboardLayout
+      title="Production Planning Dashboard"
+      subtitle="Manage production orders and scheduling"
+      icon="📋"
+      layout="default"
+      ordersSection={renderOrdersTable()}
+      messages={{ error, success: null }}
+      onDismissError={() => setError(null)}
+    />
   );
 }
 

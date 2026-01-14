@@ -4,7 +4,9 @@ import io.life.order.dto.AssemblyControlOrderDTO;
 import io.life.order.dto.SupplyOrderDTO;
 import io.life.order.dto.SupplyOrderItemDTO;
 import io.life.order.entity.AssemblyControlOrder;
+import io.life.order.entity.CustomerOrder;
 import io.life.order.repository.AssemblyControlOrderRepository;
+import io.life.order.repository.CustomerOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +39,7 @@ public class AssemblyControlOrderService {
     private final SupplyOrderService supplyOrderService;
     private final RestTemplate restTemplate;
     private final InventoryService inventoryService;
+    private final CustomerOrderRepository customerOrderRepository;
 
     @Value("${simal.service.url:http://localhost:8018}")
     private String simalServiceUrl;
@@ -50,11 +53,13 @@ public class AssemblyControlOrderService {
     public AssemblyControlOrderService(AssemblyControlOrderRepository repository, 
                                       SupplyOrderService supplyOrderService,
                                       RestTemplate restTemplate,
-                                      InventoryService inventoryService) {
+                                      InventoryService inventoryService,
+                                      CustomerOrderRepository customerOrderRepository) {
         this.repository = repository;
         this.supplyOrderService = supplyOrderService;
         this.restTemplate = restTemplate;
         this.inventoryService = inventoryService;
+        this.customerOrderRepository = customerOrderRepository;
     }
 
     /**
@@ -248,6 +253,7 @@ public class AssemblyControlOrderService {
      * Used only for Final Assembly workstations.
      * Credits Plant Warehouse (WS-7) with one finished product unit instead of Modules Supermarket.
      * This represents the completion of the entire product ready for shipping.
+     * Also updates the source customer order status to CONFIRMED so Plant Warehouse can fulfill it.
      */
     public AssemblyControlOrderDTO completeFinalAssembly(Long id) {
         @SuppressWarnings("null")
@@ -287,6 +293,14 @@ public class AssemblyControlOrderService {
         } catch (Exception e) {
             logger.warn("Failed to credit Plant Warehouse for order {}: {}", order.getSourceProductionOrderId(), e.getMessage());
             // Don't throw - completion already succeeded, inventory update is secondary
+        }
+
+        // Step 4: Update customer order status to CONFIRMED so Plant Warehouse can fulfill it
+        try {
+            updateCustomerOrderAfterAssembly(order.getSourceProductionOrderId());
+        } catch (Exception e) {
+            logger.warn("Failed to update customer order for production order {}: {}", order.getSourceProductionOrderId(), e.getMessage());
+            // Don't throw - completion already succeeded, customer order update is secondary
         }
 
         return mapToDTO(updated);
@@ -469,6 +483,43 @@ public class AssemblyControlOrderService {
         } catch (Exception e) {
             logger.error("Failed to credit Plant Warehouse for production order {}", productionOrderId, e);
             throw new RuntimeException("Inventory credit failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Update customer order status to CONFIRMED after Final Assembly completion.
+     * This allows Plant Warehouse to fulfill the customer order now that stock is available.
+     * The sourceProductionOrderId in AssemblyControlOrder actually references the customer order ID
+     * (due to how warehouse orders are created - they use customer order ID as source).
+     */
+    private void updateCustomerOrderAfterAssembly(Long customerOrderId) {
+        try {
+            @SuppressWarnings("null")
+            Optional<CustomerOrder> customerOrderOpt = customerOrderRepository.findById(customerOrderId);
+            
+            if (customerOrderOpt.isPresent()) {
+                CustomerOrder customerOrder = customerOrderOpt.get();
+                
+                // Only update if order is in PROCESSING status (waiting for assembly)
+                if ("PROCESSING".equals(customerOrder.getStatus())) {
+                    customerOrder.setStatus("CONFIRMED");
+                    customerOrder.setNotes((customerOrder.getNotes() != null ? customerOrder.getNotes() + " | " : "") 
+                            + "Final Assembly completed - products ready in Plant Warehouse - ready to fulfill");
+                    customerOrder.setUpdatedAt(LocalDateTime.now());
+                    customerOrderRepository.save(customerOrder);
+                    
+                    logger.info("✓ Customer order {} updated to CONFIRMED - ready for Plant Warehouse fulfillment", 
+                            customerOrder.getOrderNumber());
+                } else {
+                    logger.warn("Customer order {} is in status {} (expected PROCESSING) - skipping status update",
+                            customerOrder.getOrderNumber(), customerOrder.getStatus());
+                }
+            } else {
+                logger.warn("Customer order {} not found - cannot update status after assembly", customerOrderId);
+            }
+        } catch (Exception e) {
+            logger.error("✗ Failed to update customer order {} after assembly: {}", customerOrderId, e.getMessage());
+            throw new RuntimeException("Customer order update failed: " + e.getMessage(), e);
         }
     }
 }

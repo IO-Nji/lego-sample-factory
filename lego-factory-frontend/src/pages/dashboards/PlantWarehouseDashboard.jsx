@@ -2,12 +2,9 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useDashboardRefresh } from "../../context/DashboardRefreshContext";
 import axios from "axios";
-import PageHeader from "../../components/PageHeader";
+import { DashboardLayout, StatsCard } from "../../components";
 import CustomerOrderCard from "../../components/CustomerOrderCard";
-import AddNewUserForm from "../../components/AddNewUserForm";
 import { getProductDisplayName, getInventoryStatusColor } from "../../utils/dashboardHelpers";
-import "../../styles/StandardPage.css";
-import "../../styles/DashboardStandard.css";
 
 function PlantWarehouseDashboard() {
   const { session } = useAuth();
@@ -197,222 +194,200 @@ function PlantWarehouseDashboard() {
     }
   };
 
-  return (
-    <div className="standard-page-container">
-      <PageHeader
-        title="Plant Warehouse"
-        subtitle={`Manage inventory and customer orders${session?.user?.workstationId ? ` | Workstation ID: ${session.user.workstationId}` : ''}`}
-        icon="🏢"
+  // Render Stats Cards
+  const renderStatsCards = () => (
+    <>
+      <StatsCard 
+        value={orders.length} 
+        label="Total Orders" 
+        variant="default"
       />
-      <section className="plant-warehouse-page">
+      <StatsCard 
+        value={orders.filter(o => o.status === "PENDING").length} 
+        label="Pending" 
+        variant="pending"
+      />
+      <StatsCard 
+        value={orders.filter(o => o.status === "CONFIRMED" || o.status === "PROCESSING").length} 
+        label="In Progress" 
+        variant="processing"
+      />
+      <StatsCard 
+        value={orders.filter(o => o.status === "COMPLETED" || o.status === "DELIVERED").length} 
+        label="Completed" 
+        variant="completed"
+      />
+    </>
+  );
 
-      {error && (
-        <div className="form-error mb-6 p-4 bg-red-50 border-l-4 border-red-600 rounded">
-          <p className="font-semibold text-red-900">Error</p>
-          <p className="text-red-800 text-sm mt-1">{error}</p>
-          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800 font-semibold text-sm mt-2">
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="form-success-details mb-6">
-          <p className="font-semibold text-green-900">Success</p>
-          <p className="text-green-800 text-sm mt-1">{successMessage}</p>
-          <button onClick={() => setSuccessMessage(null)} className="text-green-700 hover:text-green-900 font-semibold text-sm mt-2">
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {!session?.user?.workstationId && (
-        <div className="form-error mb-6 p-4 bg-red-50 border-l-4 border-red-600 rounded">
-          <p className="font-semibold text-red-900">⚠️ No workstation assigned</p>
-          <p className="text-red-800 text-sm mt-1">Contact administrator to assign a workstation to your account.</p>
-        </div>
-      )}
-
-      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-6">
-        <div className="bg-blue-50 px-6 py-3 border-b border-blue-200">
-          <h2 className="text-lg font-semibold text-blue-900">➕ Create Customer Order</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="products-table w-full">
-            <thead>
+  // Render Create Order Form (Primary Content)
+  const renderCreateOrderForm = () => (
+    <>
+      <div className="dashboard-box-header dashboard-box-header-blue">
+        <h2 className="dashboard-box-header-title">➕ Create Customer Order</h2>
+      </div>
+      <div style={{ overflowX: 'auto', maxHeight: '400px' }}>
+        <table className="dashboard-table">
+          <thead>
+            <tr>
+              <th>Product Variant</th>
+              <th>Price</th>
+              <th>Est. Time</th>
+              <th>In Stock</th>
+              <th>Order QTY</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.length > 0 ? (
+              products.map((product) => {
+                const inventoryItem = inventory.find(item => item.itemId === product.id);
+                const stockQuantity = inventoryItem?.quantity || 0;
+                const statusColor = getInventoryStatusColor(stockQuantity);
+                
+                return (
+                  <tr key={product.id}>
+                    <td>{product.name || "Unknown"}</td>
+                    <td>${(product.price || 0).toFixed(2)}</td>
+                    <td>{product.estimatedTimeMinutes || 0} min</td>
+                    <td style={{ color: statusColor, fontWeight: 'bold' }}>
+                      {stockQuantity > 0 ? stockQuantity : (
+                        <span style={{ color: '#dc2626' }}>Out of Stock</span>
+                      )}
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        value={selectedProducts[product.id] || 0}
+                        onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem',
+                          textAlign: 'center',
+                          width: '5rem',
+                          fontSize: '0.875rem'
+                        }}
+                      />
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Product Variant
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Est. Time</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">In Stock</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order QTY</th>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+                  No products available
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {products.length > 0 ? (
-                products.map((product) => {
-                  const inventoryItem = inventory.find(item => item.itemId === product.id);
-                  const stockQuantity = inventoryItem?.quantity || 0;
-                  const statusColor = getInventoryStatusColor(stockQuantity);
-                  
-                  return (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{product.name || "Unknown"}</td>
-                      <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">${(product.price || 0).toFixed(2)}</td>
-                      <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-600">{product.estimatedTimeMinutes || 0} min</td>
-                      <td className="px-6 py-2 whitespace-nowrap text-sm font-semibold" style={{ color: statusColor }}>
-                        {stockQuantity > 0 ? stockQuantity : (
-                          <span className="text-red-600">Out of Stock</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-1 whitespace-nowrap text-sm">
-                        <input
-                          type="number"
-                          min="0"
-                          value={selectedProducts[product.id] || 0}
-                          onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                          className="px-1 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                          style={{ width: "3rem" }}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                    No products available
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-          <button onClick={handleCreateOrder} disabled={loading} className="primary-link">
-            {loading ? "Creating Order..." : "Create Order"}
-          </button>
-        </div>
+            )}
+          </tbody>
+        </table>
       </div>
-
-      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-6">
-        <div className="bg-blue-50 px-6 py-3 border-b border-blue-200">
-          <h2 className="text-lg font-semibold text-blue-900">📋 Recent Orders</h2>
-        </div>
-        <div className="p-6">
-          {Array.isArray(orders) && orders.length > 0 ? (
-            <div className="orders-grid">
-              {orders.map((order) => (
-                <CustomerOrderCard
-                  key={order.id}
-                  order={order}
-                  inventory={inventory}
-                  onConfirm={handleConfirm}
-                  onFulfill={handleFulfillOrder}
-                  onProcess={handleProcessing}
-                  onComplete={handleComplete}
-                  onCancel={handleCancel}
-                  isProcessing={fulfillingOrderId === order.id}
-                  getProductDisplayName={getProductDisplayName}
-                  getInventoryStatusColor={getInventoryStatusColor}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center text-gray-500">
-              <p className="text-sm">No orders found for this workstation</p>
-            </div>
-          )}
-        </div>
+      <div className="dashboard-box-footer">
+        <button onClick={handleCreateOrder} disabled={loading} className="primary-link">
+          {loading ? "Creating Order..." : "Create Order"}
+        </button>
       </div>
+    </>
+  );
 
-      {session?.user?.role === 'ADMIN' && (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-6">
-          <div className="bg-blue-50 px-6 py-3 border-b border-blue-200">
-            <h2 className="text-lg font-semibold text-blue-900">👤 User Management</h2>
-          </div>
-          <div className="p-6 flex justify-center">
-            <AddNewUserForm 
-              workstations={workstations}
-              onSuccess={(user) => {
-                setSuccessMessage(`User "${user.username}" created successfully!`);
-                setTimeout(() => setSuccessMessage(null), 5000);
-              }}
-              onError={(error) => {
-                setError(error);
-                setTimeout(() => setError(null), 5000);
-              }}
-            />
-          </div>
-        </div>
-      )}
+  // Render Inventory Display (Secondary Content)
+  const renderInventoryDisplay = () => (
+    <>
+      <div className="dashboard-box-header dashboard-box-header-green">
+        <h2 className="dashboard-box-header-title">📦 Current Inventory</h2>
+      </div>
+      <div style={{ overflowX: 'auto', maxHeight: '400px' }}>
+        <table className="dashboard-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Quantity</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {inventory.length > 0 ? (
+              inventory.filter(item => item.itemType === "PRODUCT_VARIANT").map((item) => {
+                const product = products.find(p => p.id === item.itemId);
+                const statusColor = getInventoryStatusColor(item.quantity || 0);
+                
+                return (
+                  <tr key={item.id}>
+                    <td>{product?.name || `Product #${item.itemId}`}</td>
+                    <td style={{ fontWeight: 'bold' }}>{item.quantity || 0}</td>
+                    <td style={{ color: statusColor, fontWeight: 'bold' }}>
+                      {item.quantity > 10 ? 'In Stock' : item.quantity > 0 ? 'Low Stock' : 'Out of Stock'}
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan="3" style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+                  No inventory data
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
 
-      <style>{`
-        .plant-warehouse-page {
-          padding: 2rem 1rem;
-          max-width: 1400px;
-          margin: 0 auto;
-        }
-        .page-header {
-          margin-bottom: 2rem;
-        }
-        .page-title {
-          font-size: 2rem;
-          font-weight: 700;
-          color: #0b5394;
-          margin: 0 0 0.5rem 0;
-        }
-        .page-subtitle {
-          font-size: 1rem;
-          color: #666;
-          margin: 0;
-        }
-        .two-column-section {
-          display: grid;
-          grid-template-columns: 60% 40%;
-          gap: 2rem;
-          margin-bottom: 2rem;
-        }
-        .create-order-box {
-          display: flex;
-          flex-direction: column;
-        }
-        .create-order-box .overflow-x-auto {
-          flex-grow: 1;
-          overflow-y: auto;
-          max-height: 400px;
-        }
-        .inventory-box {
-          display: flex;
-          flex-direction: column;
-        }
-        .inventory-box .overflow-x-auto {
-          flex-grow: 1;
-          overflow-y: auto;
-          max-height: 400px;
-        }
-        .form-error {
-          background: #fee;
-          color: #c33;
-          border-left: 4px solid #c33;
-        }
-        .form-success-details {
-          background: #efe;
-          color: #3c3;
-          border-left: 4px solid #3c3;
-          padding: 1rem;
-          border-radius: 0.5rem;
-          margin-bottom: 1.5rem;
-        }
-        .mb-6 {
-          margin-bottom: 1.5rem;
-        }
-      `}</style>
-      </section>
-    </div>
+  // Render Orders Section
+  const renderOrdersSection = () => (
+    <>
+      <div className="dashboard-box-header dashboard-box-header-blue">
+        <h2 className="dashboard-box-header-title">📋 Recent Orders</h2>
+      </div>
+      <div className="dashboard-box-content">
+        {Array.isArray(orders) && orders.length > 0 ? (
+          <div className="dashboard-orders-grid">
+            {orders.map((order) => (
+              <CustomerOrderCard
+                key={order.id}
+                order={order}
+                inventory={inventory}
+                onConfirm={handleConfirm}
+                onFulfill={handleFulfillOrder}
+                onProcess={handleProcessing}
+                onComplete={handleComplete}
+                onCancel={handleCancel}
+                isProcessing={fulfillingOrderId === order.id}
+                getProductDisplayName={getProductDisplayName}
+                getInventoryStatusColor={getInventoryStatusColor}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="dashboard-empty-state">
+            <p className="dashboard-empty-state-title">No orders found</p>
+            <p className="dashboard-empty-state-text">Orders will appear here when created</p>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
+  return (
+    <DashboardLayout
+      title="Plant Warehouse Dashboard"
+      subtitle={`Manage inventory and customer orders${session?.user?.workstationId ? ` | Workstation ID: ${session.user.workstationId}` : ''}`}
+      icon="🏢"
+      layout="compact"
+      statsCards={renderStatsCards()}
+      primaryContent={renderCreateOrderForm()}
+      ordersSection={renderOrdersSection()}
+      messages={{
+        error: error,
+        success: successMessage
+      }}
+      onDismissError={() => setError(null)}
+      onDismissSuccess={() => setSuccessMessage(null)}
+    />
   );
 }
 
 export default PlantWarehouseDashboard;
+

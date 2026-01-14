@@ -38,8 +38,13 @@ public class InventoryService {
      */
     public boolean checkStock(Long workstationId, Long itemId, Integer quantity) {
         try {
+            // Determine item type based on workstation
+            // Modules Supermarket (ID 8) deals with MODULES
+            // Plant Warehouse (ID 7) deals with PRODUCTS
+            String itemType = (workstationId == 8L) ? "MODULE" : "PRODUCT";
+            
             String url = inventoryServiceUrl + "/api/stock/workstation/" + workstationId
-                    + "/item?itemType=PRODUCT&itemId=" + itemId;
+                    + "/item?itemType=" + itemType + "&itemId=" + itemId;
             Map<?,?> dto = restTemplate.getForObject(url, Map.class);
             Integer available = null;
             if (dto != null) {
@@ -48,10 +53,12 @@ public class InventoryService {
                 else if (q != null) available = Integer.parseInt(q.toString());
             }
             boolean ok = available != null && available >= quantity;
-            logger.info("Stock check for workstation {} item {} qty {}: {} (available={})", workstationId, itemId, quantity, ok, available);
+            logger.info("Stock check for workstation {} item {} ({}) qty {}: {} (available={})", 
+                    workstationId, itemId, itemType, quantity, ok, available);
             return ok;
         } catch (RestClientException e) {
-            logger.error("Failed to check stock with inventory-service", e);
+            logger.error("Failed to check stock with inventory-service for workstation {} item {}: {}", 
+                    workstationId, itemId, e.getMessage());
             return false;
         }
     }
@@ -67,19 +74,28 @@ public class InventoryService {
     public boolean updateStock(Long workstationId, Long itemId, Integer quantity) {
         try {
             String url = inventoryServiceUrl + "/api/stock/adjust";
+            
+            // Determine item type based on workstation
+            // Modules Supermarket (ID 8) deals with MODULES
+            // Plant Warehouse (ID 7) deals with PRODUCTS
+            String itemType = (workstationId == 8L) ? "MODULE" : "PRODUCT";
+            
             Map<String, Object> request = new HashMap<>();
             request.put("workstationId", workstationId);
-            request.put("itemType", "PRODUCT");
+            request.put("itemType", itemType);
             request.put("itemId", itemId);
             request.put("delta", -Math.abs(quantity)); // Negative to deduct from stock
-            request.put("reason", "CUSTOMER_FULFILLMENT");
-            request.put("notes", "Direct fulfillment deduction");
+            request.put("reason", "ORDER_FULFILLMENT");
+            request.put("notes", String.format("Stock deduction for %s fulfillment (workstation %d)", 
+                    itemType.toLowerCase(), workstationId));
 
             restTemplate.postForObject(url, request, Map.class);
-            logger.info("Stock adjusted for workstation {} item {} delta {}", workstationId, itemId, -Math.abs(quantity));
+            logger.info("Stock adjusted for workstation {} item {} ({}) delta {}", 
+                    workstationId, itemId, itemType, -Math.abs(quantity));
             return true;
         } catch (RestClientException e) {
-            logger.error("Failed to update stock with inventory-service", e);
+            logger.error("Failed to update stock with inventory-service for workstation {} item {}: {}", 
+                    workstationId, itemId, e.getMessage());
             return false;
         }
     }

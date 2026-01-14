@@ -16,8 +16,6 @@ import VariantsPage from "./pages/VariantsPage.jsx";
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
 import ManufacturingWorkstationPage from "./pages/ManufacturingWorkstationPage.jsx";
 import WebhooksAdminPage from "./pages/WebhooksAdminPage.jsx";
-import ProductionPlanningPage from "./pages/ProductionPlanningPage.jsx";
-import ModulesSupermarketPage from "./pages/ModulesSupermarketPage.jsx";
 // New Overview Pages using Design System Components
 import AdminOverviewPage from "./pages/AdminOverviewPage.jsx";
 import ManagerOverviewPage from "./pages/ManagerOverviewPage.jsx";
@@ -222,18 +220,10 @@ function App() {
           }
         />
         <Route
-          path="modules-supermarket"
-          element={
-            <AuthGuard requiredRole="MODULES_SUPERMARKET">
-              <ModulesSupermarketPage />
-            </AuthGuard>
-          }
-        />
-        <Route
           path="production-planning"
           element={
             <AuthGuard requiredRole="PRODUCTION_PLANNING">
-              <ProductionPlanningPage />
+              <DashboardPage />
             </AuthGuard>
           }
         />

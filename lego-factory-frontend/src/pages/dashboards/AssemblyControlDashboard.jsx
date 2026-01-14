@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
-import PageHeader from "../../components/PageHeader";
-import "../../styles/StandardPage.css";
-import "../../styles/DashboardStandard.css";
+import { DashboardLayout } from "../../components";
+import "../../styles/DashboardLayout.css";
 
 function AssemblyControlDashboard() {
   const { session } = useAuth();
@@ -36,24 +35,27 @@ function AssemblyControlDashboard() {
     }
   }, [session?.user?.workstationId]);
 
-  return (
-    <div className="standard-page-container">
-    <section className="dashboard-page">
-      <PageHeader
-        title="Assembly Control Dashboard"
-        subtitle={`Workstation ${session?.user?.workstationId || 'N/A'} - Manage assembly orders`}
-        icon="⚙️"
-      />
-
-      {error && <div className="error-alert">{error}</div>}
-
-      {loading ? (
-        <div>Loading assembly orders...</div>
-      ) : (
-        <div className="dashboard-box">
-          <div className="dashboard-table">
+  const renderOrdersTable = () => (
+    <>
+      <div className="dashboard-box-header dashboard-box-header-green">
+        <h2 className="dashboard-box-header-title">⚙️ Assembly Control Orders</h2>
+        <button 
+          onClick={fetchControlOrders} 
+          disabled={loading} 
+          className="dashboard-box-header-action"
+        >
+          {loading ? "Refreshing..." : "Refresh"}
+        </button>
+      </div>
+      <div className="dashboard-box-content">
+        {loading ? (
+          <div className="dashboard-empty-state">
+            <p className="dashboard-empty-state-text">Loading assembly orders...</p>
+          </div>
+        ) : (
+          <div>
             {controlOrders.length > 0 ? (
-              <table>
+              <table className="dashboard-table">
                 <thead>
                   <tr>
                     <th>Order ID</th>
@@ -80,13 +82,27 @@ function AssemblyControlDashboard() {
                 </tbody>
               </table>
             ) : (
-              <p>No assembly control orders assigned yet</p>
+              <div className="dashboard-empty-state">
+                <p className="dashboard-empty-state-title">No assembly orders assigned</p>
+                <p className="dashboard-empty-state-text">Orders will appear here when assigned to your workstation</p>
+              </div>
             )}
           </div>
-        </div>
-      )}
-    </section>
-    </div>
+        )}
+      </div>
+    </>
+  );
+
+  return (
+    <DashboardLayout
+      title="Assembly Control Dashboard"
+      subtitle={`Workstation ${session?.user?.workstationId || 'N/A'} - Manage assembly orders`}
+      icon="⚙️"
+      layout="default"
+      ordersSection={renderOrdersTable()}
+      messages={{ error, success: null }}
+      onDismissError={() => setError(null)}
+    />
   );
 }
 

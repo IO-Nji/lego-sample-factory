@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../../api/api";
-import PageHeader from "../../components/PageHeader";
-import StatCard from "../../components/StatCard";
+import { DashboardLayout, StatsCard, Button } from "../../components";
 import PieChart from "../../components/PieChart";
 import BarChart from "../../components/BarChart";
 import StatusMonitor from "../../components/StatusMonitor";
-import Button from "../../components/Button";
 import "../../styles/Chart.css";
+import "../../styles/DashboardLayout.css";
 
 /**
  * AdminDashboard - Administrator dashboard with system-wide monitoring
@@ -65,7 +64,6 @@ function AdminDashboard() {
       const customerData = Array.isArray(customerResponse?.data) ? customerResponse.data : [];
       const productsData = Array.isArray(productsRes?.data) ? productsRes.data : [];
 
-      // Debug logging
       console.log("Dashboard Data Fetched:", {
         workstations: wsData.length,
         users: usersData.length,
@@ -204,36 +202,25 @@ function AdminDashboard() {
   }, []);
 
   return (
-    <div className="standard-page-container">
-      <PageHeader
-        title="Admin Dashboard"
-        subtitle="Real-time monitoring and control of factory operations"
-        icon="🏭"
-      />
-      <section style={{ padding: '0 1rem 2rem' }}>
-        <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-          <Button 
-            variant="primary" 
-            onClick={fetchDashboardData} 
-            disabled={loading}
-            size="small"
-          >
-            {loading ? "⟳ Refreshing..." : "⟳ Refresh"}
-          </Button>
-        </div>
-
-        {error && (
-          <div style={{ 
-            padding: '1rem', 
-            background: '#fee', 
-            border: '1px solid #fcc', 
-            borderRadius: '4px',
-            marginBottom: '1rem',
-            color: '#c33'
-          }}>
-            {error}
+    <DashboardLayout
+      title="Admin Dashboard"
+      subtitle="Real-time monitoring and control of factory operations"
+      icon="🏭"
+      layout="default"
+      messages={{ error, success: null }}
+      onDismissError={() => setError(null)}
+      ordersSection={
+        <div style={{ padding: '0' }}>
+          <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <Button 
+              variant="primary" 
+              onClick={fetchDashboardData} 
+              disabled={loading}
+              size="small"
+            >
+              {loading ? "⟳ Refreshing..." : "⟳ Refresh"}
+            </Button>
           </div>
-        )}
 
         {/* Row 1: StatCards (2x4 grid) + Two Pie Charts */}
         <div style={{ 
@@ -409,8 +396,9 @@ function AdminDashboard() {
             )}
           </div>
         </div>
-      </section>
-    </div>
+        </div>
+      }
+    />
   );
 }
 

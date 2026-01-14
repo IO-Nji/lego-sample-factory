@@ -1,19 +1,22 @@
-import PageHeader from "../../components/PageHeader";
-import "../../styles/StandardPage.css";
-import "../../styles/DashboardStandard.css";
+import { DashboardLayout } from "../../components";
+import "../../styles/DashboardLayout.css";
 
 function ManufacturingDashboard() {
   return (
-    <div className="standard-page-container">
-    <section className="dashboard-page">
-      <PageHeader
-        title="Manufacturing Workstation Dashboard"
-        subtitle="Configure your workstation-specific controls here"
-        icon="🔧"
-      />
-      <p>Manufacturing workstation interface</p>
-    </section>
-    </div>
+    <DashboardLayout
+      title="Manufacturing Workstation Dashboard"
+      subtitle="Configure your workstation-specific controls here"
+      icon="🔧"
+      layout="default"
+      ordersSection={
+        <div className="dashboard-box-content">
+          <div className="dashboard-empty-state">
+            <p className="dashboard-empty-state-title">Manufacturing Interface</p>
+            <p className="dashboard-empty-state-text">Workstation-specific controls will appear here</p>
+          </div>
+        </div>
+      }
+    />
   );
 }
 

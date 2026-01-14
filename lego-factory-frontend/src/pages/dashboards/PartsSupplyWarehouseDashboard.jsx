@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import PageHeader from "../../components/PageHeader";
-import "../../styles/StandardPage.css";
-import "../../styles/DashboardStandard.css";
+import { DashboardLayout, Button } from "../../components";
+import "../../styles/DashboardLayout.css";
 
 function PartsSupplyWarehouseDashboard() {
   const [supplyOrders, setSupplyOrders] = useState([]);
@@ -40,44 +39,43 @@ function PartsSupplyWarehouseDashboard() {
     }
   };
 
-  return (
-    <div className="standard-page-container">
-    <section className="dashboard-page">
-      <PageHeader
-        title="Parts Supply Warehouse Dashboard"
-        subtitle="Manage parts supply orders"
-        icon="📦"
-      />
+  const renderFilterButtons = () => (
+    <div style={{ marginBottom: "1rem", display: "flex", gap: "0.5rem" }}>
+      {["PENDING", "IN_PROGRESS", "COMPLETED"].map((status) => (
+        <Button
+          key={status}
+          variant={filter === status ? "primary" : "secondary"}
+          size="small"
+          onClick={() => setFilter(status)}
+        >
+          {status}
+        </Button>
+      ))}
+    </div>
+  );
 
-      {error && <div className="error-alert">{error}</div>}
-
-      <div style={{ marginBottom: "1rem", display: "flex", gap: "0.5rem" }}>
-        {["PENDING", "IN_PROGRESS", "COMPLETED"].map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilter(status)}
-            style={{
-              padding: "0.5rem 1rem",
-              background: filter === status ? "#0b5394" : "#e0e0e0",
-              color: filter === status ? "white" : "#333",
-              border: "none",
-              borderRadius: "0.375rem",
-              cursor: "pointer",
-              fontWeight: "600",
-            }}
-          >
-            {status}
-          </button>
-        ))}
+  const renderOrdersTable = () => (
+    <>
+      <div className="dashboard-box-header dashboard-box-header-orange">
+        <h2 className="dashboard-box-header-title">📦 Parts Supply Orders</h2>
+        <button 
+          onClick={fetchSupplyOrders} 
+          disabled={loading} 
+          className="dashboard-box-header-action"
+        >
+          {loading ? "Refreshing..." : "Refresh"}
+        </button>
       </div>
-
-      {loading ? (
-        <div>Loading supply orders...</div>
-      ) : (
-        <div className="dashboard-box">
-          <div className="dashboard-table">
+      <div className="dashboard-box-content">
+        {renderFilterButtons()}
+        {loading ? (
+          <div className="dashboard-empty-state">
+            <p className="dashboard-empty-state-text">Loading supply orders...</p>
+          </div>
+        ) : (
+          <div>
             {supplyOrders.length > 0 ? (
-              <table>
+              <table className="dashboard-table">
                 <thead>
                   <tr>
                     <th>Order ID</th>
@@ -98,9 +96,13 @@ function PartsSupplyWarehouseDashboard() {
                       <td>{order.quantity || 0}</td>
                       <td>
                         {order.status === "PENDING" && (
-                          <button onClick={() => fulfillSupplyOrder(order.id)} style={{ padding: "0.5rem 1rem", background: "#27ae60", color: "white", border: "none", borderRadius: "0.375rem", cursor: "pointer", fontWeight: "600", fontSize: "0.875rem" }}>
+                          <Button 
+                            variant="success" 
+                            size="small"
+                            onClick={() => fulfillSupplyOrder(order.id)}
+                          >
                             Fulfill
-                          </button>
+                          </Button>
                         )}
                       </td>
                     </tr>
@@ -108,13 +110,27 @@ function PartsSupplyWarehouseDashboard() {
                 </tbody>
               </table>
             ) : (
-              <p>No supply orders found</p>
+              <div className="dashboard-empty-state">
+                <p className="dashboard-empty-state-title">No supply orders found</p>
+                <p className="dashboard-empty-state-text">Orders will appear here when created</p>
+              </div>
             )}
           </div>
-        </div>
-      )}
-    </section>
-    </div>
+        )}
+      </div>
+    </>
+  );
+
+  return (
+    <DashboardLayout
+      title="Parts Supply Warehouse Dashboard"
+      subtitle="Manage parts supply orders"
+      icon="📦"
+      layout="default"
+      ordersSection={renderOrdersTable()}
+      messages={{ error, success: null }}
+      onDismissError={() => setError("")}
+    />
   );
 }
 

@@ -34,17 +34,20 @@ public class WarehouseOrderService {
     private final ProductionOrderService productionOrderService;
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderAuditService orderAuditService;
+    private final AssemblyControlOrderService assemblyControlOrderService;
 
     public WarehouseOrderService(WarehouseOrderRepository warehouseOrderRepository,
                                  InventoryService inventoryService,
                                  ProductionOrderService productionOrderService,
                                  CustomerOrderRepository customerOrderRepository,
-                                 OrderAuditService orderAuditService) {
+                                 OrderAuditService orderAuditService,
+                                 AssemblyControlOrderService assemblyControlOrderService) {
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.inventoryService = inventoryService;
         this.productionOrderService = productionOrderService;
         this.customerOrderRepository = customerOrderRepository;
         this.orderAuditService = orderAuditService;
+        this.assemblyControlOrderService = assemblyControlOrderService;
     }
 
     /**
@@ -95,6 +98,37 @@ public class WarehouseOrderService {
     }
 
     /**
+     * Confirm a warehouse order
+     * Changes status from PENDING to PROCESSING (acknowledges receipt and readiness to fulfill)
+     * Similar to customer order confirmation at Plant Warehouse
+     */
+    public WarehouseOrderDTO confirmWarehouseOrder(Long warehouseOrderId) {
+        @SuppressWarnings("null")
+        Optional<WarehouseOrder> orderOpt = warehouseOrderRepository.findById(warehouseOrderId);
+        if (orderOpt.isEmpty()) {
+            throw new IllegalArgumentException("Warehouse order not found: " + warehouseOrderId);
+        }
+
+        WarehouseOrder order = orderOpt.get();
+        
+        // Validate current status
+        if (!"PENDING".equals(order.getStatus())) {
+            throw new IllegalStateException("Only PENDING warehouse orders can be confirmed. Current status: " + order.getStatus());
+        }
+
+        // Update status to PROCESSING
+        order.setStatus("PROCESSING");
+        order.setUpdatedAt(LocalDateTime.now());
+        warehouseOrderRepository.save(order);
+
+        logger.info("Warehouse order {} confirmed and moved to PROCESSING", order.getWarehouseOrderNumber());
+        orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "CONFIRMED",
+                "Warehouse order confirmed by Modules Supermarket - Status: PROCESSING");
+
+        return mapToDTO(order);
+    }
+
+    /**
      * Fulfill a warehouse order (Modules Supermarket workflow)
      * 
      * ENHANCED LOGIC:
@@ -111,6 +145,12 @@ public class WarehouseOrderService {
         }
 
         WarehouseOrder order = orderOpt.get();
+        
+        // Validate order can be fulfilled (must be PROCESSING)
+        if (!"PROCESSING".equals(order.getStatus())) {
+            throw new IllegalStateException("Only PROCESSING warehouse orders can be fulfilled. Current status: " + order.getStatus() + ". Please confirm the order first.");
+        }
+
         logger.info("Processing warehouse order {} from Modules Supermarket (WS-8)", order.getWarehouseOrderNumber());
         orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLMENT_STARTED",
             "Warehouse order fulfillment started: " + order.getWarehouseOrderNumber());
@@ -150,7 +190,8 @@ public class WarehouseOrderService {
 
     /**
      * Scenario A: All items available - Deduct from Modules Supermarket, complete order
-     * Simplified Scenario 2: Auto-credit Plant Warehouse and mark customer order ready for fulfillment
+     * PROPER Scenario 2: Create AssemblyControlOrders for Final Assembly station
+     * Final Assembly will credit Plant Warehouse when they complete their work
      */
     private WarehouseOrderDTO fulfillAllItems(WarehouseOrder order) {
         logger.info("Fulfilling all items for warehouse order {}", order.getWarehouseOrderNumber());
@@ -181,17 +222,15 @@ public class WarehouseOrderService {
         if (allItemsFulfilled) {
             // Mark as FULFILLED
             order.setStatus("FULFILLED");
-            logger.info("Warehouse order {} fulfilled - crediting Plant Warehouse", order.getWarehouseOrderNumber());
+            logger.info("Warehouse order {} fulfilled - creating Final Assembly orders", order.getWarehouseOrderNumber());
             
-            // AUTO-CREDIT PLANT WAREHOUSE (Simplified Scenario 2)
-            // Instead of requiring Final Assembly step, we auto-credit Plant Warehouse
-            creditPlantWarehouseFromWarehouseOrder(order);
-            
-            // Mark source customer order as ready for fulfillment
-            updateCustomerOrderAfterWarehouseFulfillment(order);
+            // CREATE FINAL ASSEMBLY ORDERS (Proper Scenario 2 workflow)
+            // Modules Supermarket debited, now Final Assembly needs to assemble products
+            // Final Assembly completion will credit Plant Warehouse
+            createFinalAssemblyOrdersFromWarehouseOrder(order);
             
             orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLED",
-                    "Modules fulfilled, Plant Warehouse credited, customer order ready for fulfillment");
+                    "Modules fulfilled, Final Assembly orders created - awaiting assembly completion");
         } else {
             order.setStatus("PARTIALLY_FULFILLED");
             logger.warn("Warehouse order {} partially fulfilled due to inventory errors", order.getWarehouseOrderNumber());
@@ -306,62 +345,71 @@ public class WarehouseOrderService {
     }
 
     /**
-     * Credit Plant Warehouse with products from fulfilled warehouse order
-     * Simplified Scenario 2 - Auto-credit without requiring Final Assembly step
+     * Create AssemblyControlOrders for Final Assembly station.
+     * PROPER Scenario 2 workflow - Assembly station will credit Plant Warehouse when complete.
+     * 
+     * Each fulfilled item in the warehouse order becomes a separate assembly order.
+     * The Final Assembly workstation will complete these orders, which will:
+     * 1. Update SimAL schedule status
+     * 2. Credit Plant Warehouse with finished products  
+     * 3. Allow customer order to be fulfilled at Plant Warehouse
      */
-    private void creditPlantWarehouseFromWarehouseOrder(WarehouseOrder order) {
+    private void createFinalAssemblyOrdersFromWarehouseOrder(WarehouseOrder order) {
         try {
-            logger.info("Crediting Plant Warehouse from warehouse order {}", order.getWarehouseOrderNumber());
+            logger.info("Creating Final Assembly orders for warehouse order {}", order.getWarehouseOrderNumber());
             
             for (WarehouseOrderItem item : order.getWarehouseOrderItems()) {
                 if (item.getFulfilledQuantity() > 0) {
                     try {
-                        // Credit Plant Warehouse by using positive delta
-                        // This calls /api/stock/adjust with a positive delta
-                        String url = inventoryService.getInventoryServiceUrl() + "/api/stock/adjust";
-                        Map<String, Object> request = new HashMap<>();
-                        request.put("workstationId", PLANT_WAREHOUSE_WORKSTATION_ID);
-                        request.put("itemType", "PRODUCT");
-                        request.put("itemId", item.getItemId());
-                        request.put("delta", item.getFulfilledQuantity()); // Positive to credit stock
-                        request.put("reason", "WAREHOUSE_REPLENISHMENT");
-                        request.put("notes", "Auto-replenishment from warehouse order " + order.getWarehouseOrderNumber());
-
-                        inventoryService.adjustStock(request);
-                        logger.info("✓ Plant Warehouse credited with Product #{} qty {}", 
-                                item.getItemId(), item.getFulfilledQuantity());
+                        Long productId = item.getItemId();
+                        Integer quantity = item.getFulfilledQuantity();
+                        
+                        // Calculate target times (30 minutes prep time, 1 hour assembly time)
+                        LocalDateTime targetStart = LocalDateTime.now().plusMinutes(30);
+                        LocalDateTime targetCompletion = targetStart.plusHours(1);
+                        
+                        // Calculate estimated duration in minutes
+                        Integer estimatedDuration = 60; // 1 hour for final assembly
+                        
+                        // Create assembly control order using the existing service method
+                        assemblyControlOrderService.createControlOrder(
+                                order.getSourceCustomerOrderId(), // Use customer order ID as source
+                                FINAL_ASSEMBLY_WORKSTATION_ID,    // Assign to Final Assembly (WS-6)
+                                "WO-" + order.getWarehouseOrderNumber(), // Use warehouse order as schedule ID
+                                "MEDIUM",                          // Priority
+                                targetStart,
+                                targetCompletion,
+                                String.format("Assemble %s (Product #%d) - Qty: %d from warehouse order %s", 
+                                        item.getItemName(), productId, quantity, order.getWarehouseOrderNumber()),
+                                "Check product quality and specifications",
+                                "Perform final product testing",
+                                "Package for Plant Warehouse delivery",
+                                estimatedDuration
+                        );
+                        
+                        logger.info("✓ Final Assembly order created for Product #{} ({}) qty {}", 
+                                productId, item.getItemName(), quantity);
+                        
+                        orderAuditService.recordOrderEvent("FINAL_ASSEMBLY", order.getId(), "ASSEMBLY_ORDER_CREATED",
+                                String.format("Final Assembly order created for Product #%d (%s) qty %d from warehouse order %s",
+                                        productId, item.getItemName(), quantity, order.getWarehouseOrderNumber()));
                     } catch (Exception e) {
-                        logger.error("✗ Failed to credit Plant Warehouse for item {}: {}", item.getItemId(), e.getMessage());
+                        logger.error("✗ Failed to create assembly order for item {}: {}", item.getItemId(), e.getMessage());
+                        // Continue with other items even if one fails
                     }
                 }
             }
+            
+            logger.info("✓ All Final Assembly orders created for warehouse order {}", order.getWarehouseOrderNumber());
+            
         } catch (Exception e) {
-            logger.error("✗ Failed to credit Plant Warehouse: {}", e.getMessage());
+            logger.error("✗ Failed to create Final Assembly orders: {}", e.getMessage());
         }
     }
 
-    /**
-     * Update source customer order after warehouse fulfillment
-     * Sets customer order back to CONFIRMED so Plant Warehouse can fulfill it
-     */
-    private void updateCustomerOrderAfterWarehouseFulfillment(WarehouseOrder order) {
-        try {
-            @SuppressWarnings("null")
-            Optional<CustomerOrder> sourceOrder = customerOrderRepository.findById(order.getSourceCustomerOrderId());
-            if (sourceOrder.isPresent()) {
-                CustomerOrder customerOrder = sourceOrder.get();
-                // Set back to CONFIRMED so Plant Warehouse can now fulfill it
-                customerOrder.setStatus("CONFIRMED");
-                customerOrder.setNotes((customerOrder.getNotes() != null ? customerOrder.getNotes() + " | " : "") 
-                        + "Warehouse order " + order.getWarehouseOrderNumber() + " fulfilled - Plant Warehouse restocked - ready to fulfill");
-                customerOrderRepository.save(customerOrder);
-                logger.info("✓ Customer order {} updated to CONFIRMED - ready for Plant Warehouse to fulfill", 
-                        customerOrder.getOrderNumber());
-            }
-        } catch (Exception e) {
-            logger.error("✗ Failed to update customer order after warehouse fulfillment: {}", e.getMessage());
-        }
-    }
+    // NOTE: Plant Warehouse credit is now handled by Final Assembly completion
+    // See AssemblyControlOrderService.completeFinalAssembly() for implementation
+    // Customer order status will be updated when Final Assembly credits Plant Warehouse stock
 
     /**
      * Determine priority based on warehouse order urgency

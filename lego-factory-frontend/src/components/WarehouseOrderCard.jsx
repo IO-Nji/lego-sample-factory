@@ -9,15 +9,19 @@ import '../styles/WarehouseOrderCard.css';
  * Similar to CustomerOrderCard but with distinct styling for warehouse operations.
  * 
  * @param {Object} order - Warehouse order object
+ * @param {Function} onConfirm - Handler for confirming order (PENDING → PROCESSING)
  * @param {Function} onFulfill - Handler for fulfilling order
  * @param {Function} onCancel - Handler for cancelling order
  * @param {boolean} isProcessing - Whether fulfillment is in progress
+ * @param {boolean} isConfirming - Whether confirmation is in progress
  */
 function WarehouseOrderCard({ 
   order, 
+  onConfirm,
   onFulfill,
   onCancel,
-  isProcessing = false
+  isProcessing = false,
+  isConfirming = false
 }) {
   
   // Determine which buttons to show based on order status
@@ -26,6 +30,8 @@ function WarehouseOrderCard({
     
     switch(status) {
       case 'PENDING':
+        return { confirm: true, cancel: true };
+      
       case 'PROCESSING':
         return { fulfill: true, cancel: true };
       
@@ -119,12 +125,24 @@ function WarehouseOrderCard({
       {Object.keys(actions).length > 0 && (
         <div className="order-card-footer">
           <div className="action-buttons">
+            {actions.confirm && (
+              <Button 
+                variant="primary" 
+                size="small" 
+                onClick={() => onConfirm(order.id, order.warehouseOrderNumber)}
+                disabled={isConfirming || isProcessing}
+                loading={isConfirming}
+              >
+                {isConfirming ? 'Confirming...' : 'Confirm'}
+              </Button>
+            )}
+
             {actions.fulfill && (
               <Button 
                 variant="success" 
                 size="small" 
                 onClick={() => onFulfill(order.id, order.warehouseOrderNumber)}
-                disabled={isProcessing}
+                disabled={isProcessing || isConfirming}
                 loading={isProcessing}
               >
                 {isProcessing ? 'Fulfilling...' : 'Fulfill'}
@@ -136,7 +154,7 @@ function WarehouseOrderCard({
                 variant="danger" 
                 size="small" 
                 onClick={() => onCancel(order.id)}
-                disabled={isProcessing}
+                disabled={isProcessing || isConfirming}
               >
                 Cancel
               </Button>
@@ -153,20 +171,24 @@ WarehouseOrderCard.propTypes = {
     id: PropTypes.number.isRequired,
     warehouseOrderNumber: PropTypes.string.isRequired,
     status: PropTypes.string.isRequired,
-    createdAt: PropTypes.string.isRequired,
     sourceCustomerOrderId: PropTypes.number,
     triggerScenario: PropTypes.string,
-    warehouseOrderItems: PropTypes.arrayOf(PropTypes.shape({
-      id: PropTypes.number,
-      itemId: PropTypes.number,
-      itemName: PropTypes.string,
-      requestedQuantity: PropTypes.number.isRequired,
-      fulfilledQuantity: PropTypes.number
-    }))
+    warehouseOrderItems: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.number,
+        itemId: PropTypes.number,
+        itemName: PropTypes.string,
+        requestedQuantity: PropTypes.number,
+        fulfilledQuantity: PropTypes.number
+      })
+    ),
+    createdAt: PropTypes.string
   }).isRequired,
-  onFulfill: PropTypes.func.isRequired,
-  onCancel: PropTypes.func.isRequired,
-  isProcessing: PropTypes.bool
+  onConfirm: PropTypes.func,
+  onFulfill: PropTypes.func,
+  onCancel: PropTypes.func,
+  isProcessing: PropTypes.bool,
+  isConfirming: PropTypes.bool
 };
 
 export default WarehouseOrderCard;
