@@ -154,7 +154,7 @@
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   font-size: 0.8125rem;
 }
 
@@ -166,14 +166,15 @@
 }
 
 .legend-label {
-  flex: 1;
   color: var(--color-text);
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .legend-value {
   color: var(--color-text-secondary);
   font-weight: 600;
+  margin-left: 0.35rem;
 }
 
 /* ============================================

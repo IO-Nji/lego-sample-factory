@@ -4,7 +4,7 @@ import OverviewPage from "./pages/OverviewPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import UserAccountPage from "./pages/UserAccountPage.jsx";
 import WorkstationPage from "./pages/WorkstationPage.jsx";
-import AdminDashboard from "./pages/AdminDashboard.jsx";
+import AdminDashboard from "./pages/dashboards/AdminDashboard.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
 import UserManagementPage from "./pages/UserManagementPage.jsx";

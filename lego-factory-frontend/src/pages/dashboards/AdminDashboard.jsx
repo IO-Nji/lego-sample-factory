@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../../api/api";
-import { DashboardLayout, StatsCard, Button } from "../../components";
+import { StatCard, Button, Notification, PageHeader } from "../../components";
 import PieChart from "../../components/PieChart";
 import BarChart from "../../components/BarChart";
 import StatusMonitor from "../../components/StatusMonitor";
@@ -17,6 +17,7 @@ import "../../styles/DashboardLayout.css";
 function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const [dashboardData, setDashboardData] = useState({
     totalOrders: 0,
     pendingOrders: 0,
@@ -35,6 +36,74 @@ function AdminDashboard() {
 
   // Track last data to prevent unnecessary updates
   const lastDataRef = useRef(null);
+  const previousOrdersRef = useRef(new Map());
+
+  const addNotification = (message, type = 'info') => {
+    const newNotification = {
+      id: Date.now() + Math.random(),
+      message,
+      type,
+      timestamp: new Date().toISOString(),
+      station: 'Admin Dashboard'
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
+
+  // Function to detect and log order status changes
+  const detectOrderChanges = (allOrders) => {
+    const currentOrdersMap = new Map();
+    
+    // Build current orders map
+    allOrders.forEach(order => {
+      const key = `${order.orderNumber || order.id}`;
+      currentOrdersMap.set(key, order);
+    });
+
+    // Compare with previous orders to detect changes
+    if (previousOrdersRef.current.size > 0) {
+      currentOrdersMap.forEach((currentOrder, key) => {
+        const previousOrder = previousOrdersRef.current.get(key);
+        
+        if (!previousOrder) {
+          // New order created
+          const orderType = getOrderType(currentOrder.orderNumber);
+          addNotification(
+            `New ${orderType} order created: ${currentOrder.orderNumber || `#${currentOrder.id}`}`,
+            'info'
+          );
+        } else if (previousOrder.status !== currentOrder.status) {
+          // Status changed
+          const orderType = getOrderType(currentOrder.orderNumber);
+          const statusType = currentOrder.status === 'COMPLETED' ? 'success' : 
+                           currentOrder.status === 'CANCELLED' ? 'error' :
+                           currentOrder.status === 'PROCESSING' ? 'info' : 'warning';
+          
+          addNotification(
+            `${orderType} order ${currentOrder.orderNumber || `#${currentOrder.id}`}: ${previousOrder.status} → ${currentOrder.status}`,
+            statusType
+          );
+        }
+      });
+    }
+
+    // Update previous orders reference
+    previousOrdersRef.current = currentOrdersMap;
+  };
+
+  // Determine order type from order number prefix
+  const getOrderType = (orderNumber) => {
+    if (!orderNumber) return 'Order';
+    const prefix = orderNumber.split('-')[0];
+    if (prefix === 'CUST') return 'Customer Order';
+    if (prefix === 'PROD') return 'Production Order';
+    if (prefix === 'ASM') return 'Assembly Order';
+    if (prefix === 'WH' || prefix === 'SUP') return 'Supply Order';
+    return 'Order';
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -132,6 +201,9 @@ function AdminDashboard() {
         productionByType,
       };
 
+      // Detect order status changes for notifications
+      detectOrderChanges(allOrders);
+
       // OPTIMIZATION: Only update state if data has actually changed
       // Use JSON comparison for deep equality check
       const newDataString = JSON.stringify(newData);
@@ -202,118 +274,152 @@ function AdminDashboard() {
   }, []);
 
   return (
-    <DashboardLayout
-      title="Admin Dashboard"
-      subtitle="Real-time monitoring and control of factory operations"
-      icon="🏭"
-      layout="default"
-      messages={{ error, success: null }}
-      onDismissError={() => setError(null)}
-      ordersSection={
-        <div style={{ padding: '0' }}>
-          <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-            <Button 
-              variant="primary" 
-              onClick={fetchDashboardData} 
-              disabled={loading}
-              size="small"
-            >
-              {loading ? "⟳ Refreshing..." : "⟳ Refresh"}
-            </Button>
-          </div>
+    <div className="dashboard-layout">
+      {/* Page Header */}
+      <PageHeader
+        title="Admin Dashboard"
+        subtitle="Real-time monitoring and control of factory operations"
+        icon="🏭"
+      />
 
-        {/* Row 1: StatCards (2x4 grid) + Two Pie Charts */}
-        <div style={{ 
-          display: 'flex',
-          gap: '1.5rem',
-          marginBottom: '1.5rem',
-          alignItems: 'stretch'
-        }}>
-          {/* Left: StatCards Grid (2 rows x 4 columns) - 70% width */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(4, 1fr)', 
-            gap: '0.75rem',
-            flex: '0 0 70%',
-            justifyItems: 'center',
-            alignItems: 'center'
-          }}>
-            <StatCard 
-              title="TOTAL"
-              value={dashboardData.totalOrders}
-              icon="📦"
-              color="primary"
-            />
-            <StatCard 
-              title="PENDING"
-              value={dashboardData.pendingOrders}
-              icon="⏳"
-              color="warning"
-              threshold={10}
-              thresholdType="high"
-            />
-            <StatCard 
-              title="Processing"
-              value={dashboardData.processingOrders}
-              icon="⚙️"
-              color="info"
-            />
-            <StatCard 
-              title="Completed"
-              value={dashboardData.completedOrders}
-              icon="✓"
-              color="success"
-            />
-            <StatCard 
-              title="Workstations"
-              value={dashboardData.activeWorkstations}
-              icon="🏭"
-              color="primary"
-            />
-            <StatCard 
-              title="Users"
-              value={dashboardData.totalUsers}
-              icon="👥"
-              color="info"
-            />
-            <StatCard 
-              title="Products"
-              value={dashboardData.totalProducts}
-              icon="🎨"
-              color="success"
-            />
-            <StatCard 
-              title="Low Stock"
-              value={dashboardData.lowStockItems}
-              icon="⚠️"
-              color="danger"
-              threshold={1}
-              thresholdType="low"
-            />
-          </div>
+      {/* Error Message */}
+      {error && (
+        <div className="dashboard-message dashboard-message-error">
+          <p className="dashboard-message-title">Error</p>
+          <p className="dashboard-message-text">{error}</p>
+          <button onClick={() => setError(null)} className="dashboard-message-dismiss">
+            Dismiss
+          </button>
+        </div>
+      )}
 
-          {/* Right: Two Pie Charts stacked - 30% width */}
-          <div style={{ 
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem',
-            flex: '0 0 calc(30% - 1.5rem)',
-            minWidth: 0
-          }}>
-            <PieChart 
-              title="Order Status Distribution"
-              data={orderStatusData}
-              size={120}
-            />
-            <PieChart 
-              title="Production by Type"
-              data={productionTypeData}
-              size={120}
-            />
-          </div>
+      {/* Refresh Button */}
+      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+        <Button 
+          variant="primary" 
+          onClick={fetchDashboardData} 
+          disabled={loading}
+          size="small"
+        >
+          {loading ? "⟳ Refreshing..." : "⟳ Refresh"}
+        </Button>
+      </div>
+
+      {/* Row 1: 8 StatCards in a single row */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(8, 1fr)', 
+        gap: '1rem',
+        marginBottom: '1.5rem',
+        justifyItems: 'center'
+      }}>
+        <StatCard 
+          title="TOTAL"
+          value={dashboardData.totalOrders}
+          icon="📦"
+          color="primary"
+        />
+        <StatCard 
+          title="PENDING"
+          value={dashboardData.pendingOrders}
+          icon="⏳"
+          color="warning"
+          threshold={10}
+          thresholdType="high"
+        />
+        <StatCard 
+          title="Processing"
+          value={dashboardData.processingOrders}
+          icon="⚙️"
+          color="info"
+        />
+        <StatCard 
+          title="Completed"
+          value={dashboardData.completedOrders}
+          icon="✓"
+          color="success"
+        />
+        <StatCard 
+          title="Workstations"
+          value={dashboardData.activeWorkstations}
+          icon="🏭"
+          color="primary"
+        />
+        <StatCard 
+          title="Users"
+          value={dashboardData.totalUsers}
+          icon="👥"
+          color="info"
+        />
+        <StatCard 
+          title="Products"
+          value={dashboardData.totalProducts}
+          icon="🎨"
+          color="success"
+        />
+        <StatCard 
+          title="Low Stock"
+          value={dashboardData.lowStockItems}
+          icon="⚠️"
+          color="danger"
+          threshold={1}
+          thresholdType="low"
+        />
+      </div>
+
+      {/* Row 2: 3 Columns - Notifications, 2 Charts, User Roles Chart */}
+      <div style={{ 
+        display: 'grid',
+        gridTemplateColumns: '1fr 0.8fr 1.2fr',
+        gap: '1.5rem',
+        marginBottom: '1.5rem',
+        alignItems: 'start'
+      }}>
+        {/* Column 1: Notifications */}
+        <div style={{ minHeight: '400px' }}>
+          <Notification 
+            notifications={notifications}
+            title="System Activity"
+            maxVisible={10}
+            onClear={clearNotifications}
+          />
         </div>
 
-        {/* Row 2: Workstation Monitor (50%), Recent Orders (50%) */}
+        {/* Column 2: Existing Charts */}
+        <div style={{ 
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <PieChart 
+            title="Order Status Distribution"
+            data={orderStatusData}
+            size={110}
+          />
+          <PieChart 
+            title="Production by Type"
+            data={productionTypeData}
+            size={110}
+          />
+        </div>
+
+        {/* Column 3: User Roles Chart */}
+        <div style={{ 
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'center',
+          minHeight: '400px'
+        }}>
+          <PieChart 
+            title="User Roles Distribution"
+            data={userRoleData}
+            size={180}
+          />
+        </div>
+      </div>
+
+      {/* Row 3: Workstation Monitor + Recent Orders (unchanged) */}
+      <div style={{ padding: '0' }}>
         <div style={{ 
           display: 'flex', 
           gap: '1rem',
@@ -396,9 +502,8 @@ function AdminDashboard() {
             )}
           </div>
         </div>
-        </div>
-      }
-    />
+      </div>
+    </div>
   );
 }
 

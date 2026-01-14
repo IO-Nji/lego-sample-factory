@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useDashboardRefresh } from "../../context/DashboardRefreshContext";
 import axios from "axios";
-import { DashboardLayout, StatsCard } from "../../components";
+import { DashboardLayout, StatsCard, Notification } from "../../components";
 import CustomerOrderCard from "../../components/CustomerOrderCard";
 import { getProductDisplayName, getInventoryStatusColor } from "../../utils/dashboardHelpers";
 
@@ -16,7 +16,23 @@ function PlantWarehouseDashboard() {
   const [loading, setLoading] = useState(false);
   const [fulfillingOrderId, setFulfillingOrderId] = useState(null);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+
+  // Add notification to state
+  const addNotification = (message, type = 'info') => {
+    const newNotification = {
+      id: Date.now() + Math.random(),
+      message,
+      type,
+      timestamp: new Date().toISOString(),
+      station: session?.user?.workstation?.name || 'Plant Warehouse'
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
 
   useEffect(() => {
     fetchProducts();
@@ -109,7 +125,6 @@ function PlantWarehouseDashboard() {
 
     setLoading(true);
     setError(null);
-    setSuccessMessage(null);
 
     try {
       const response = await axios.post("/api/customer-orders", {
@@ -118,7 +133,8 @@ function PlantWarehouseDashboard() {
         notes: "Plant warehouse order",
       });
 
-      setSuccessMessage(`Order created: ${response.data.orderNumber} - Click "Fulfill" to process`);
+      const orderNum = response.data.orderNumber;
+      addNotification(`Order created: ${orderNum}`, 'success');
       setSelectedProducts({});
       fetchOrders();
       refresh(); // Trigger global dashboard refresh
@@ -132,20 +148,22 @@ function PlantWarehouseDashboard() {
   const handleFulfillOrder = async (orderId) => {
     setFulfillingOrderId(orderId);
     setError(null);
-    setSuccessMessage(null);
 
     try {
       const response = await axios.put(`/api/customer-orders/${orderId}/fulfill`);
       // Backend auto-determines scenario: Scenario 1 (COMPLETED) or Scenario 2/3 (PROCESSING)
       const isCompleted = response.data.status === 'COMPLETED';
-      const message = isCompleted 
-        ? `Order ${response.data.orderNumber} fulfilled successfully!`
-        : `Order ${response.data.orderNumber} processing - Warehouse order created`;
-      setSuccessMessage(message);
+      addNotification(
+        isCompleted 
+          ? `Order ${response.data.orderNumber} fulfilled` 
+          : `Order ${response.data.orderNumber} processing`, 
+        'success'
+      );
       fetchOrders();
       fetchInventory();
     } catch (err) {
       setError("Failed to fulfill order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to fulfill order", 'error');
     } finally {
       setFulfillingOrderId(null);
     }
@@ -153,10 +171,8 @@ function PlantWarehouseDashboard() {
 
   const handleConfirm = async (orderId) => {
     setError(null);
-    setSuccessMessage(null);
     try {
       await axios.put(`/api/customer-orders/${orderId}/confirm`);
-      setSuccessMessage("Order confirmed - Check stock and click Fulfill/Process");
       fetchOrders();
     } catch (err) {
       setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
@@ -170,10 +186,8 @@ function PlantWarehouseDashboard() {
 
   const handleComplete = async (orderId) => {
     setError(null);
-    setSuccessMessage(null);
     try {
       await axios.put(`/api/customer-orders/${orderId}/complete`);
-      setSuccessMessage("Order completed");
       fetchOrders();
       fetchInventory();
     } catch (err) {
@@ -184,10 +198,8 @@ function PlantWarehouseDashboard() {
   const handleCancel = async (orderId) => {
     if (!globalThis.confirm("Cancel this order?")) return;
     setError(null);
-    setSuccessMessage(null);
     try {
       await axios.put(`/api/customer-orders/${orderId}/cancel`);
-      setSuccessMessage("Order cancelled");
       fetchOrders();
     } catch (err) {
       setError("Failed to cancel order: " + (err.response?.data?.message || err.message));
@@ -378,13 +390,15 @@ function PlantWarehouseDashboard() {
       layout="compact"
       statsCards={renderStatsCards()}
       primaryContent={renderCreateOrderForm()}
+      notifications={
+        <Notification 
+          notifications={notifications}
+          title="Warehouse Activity"
+          maxVisible={5}
+          onClear={clearNotifications}
+        />
+      }
       ordersSection={renderOrdersSection()}
-      messages={{
-        error: error,
-        success: successMessage
-      }}
-      onDismissError={() => setError(null)}
-      onDismissSuccess={() => setSuccessMessage(null)}
     />
   );
 }

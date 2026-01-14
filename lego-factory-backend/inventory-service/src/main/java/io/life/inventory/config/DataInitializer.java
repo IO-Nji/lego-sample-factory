@@ -11,11 +11,7 @@ import java.time.LocalDateTime;
 /**
  * DataInitializer for Inventory Service.
  * Seeds initial stock records for workstations with all product variants.
- * 
- * This ensures that when the Plant Warehouse (or other workstations) fetches inventory,
- * there is test data available to display.
- * 
- * NOTE: Data is persisted in the H2 file-based database and will NOT be re-seeded on restart.
+ * Data is persisted in the H2 file-based database.
  * To reset inventory data, delete the ./data/inventory_db.mv.db file.
  */
 @Component

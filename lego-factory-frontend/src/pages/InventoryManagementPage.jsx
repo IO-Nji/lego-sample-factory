@@ -98,7 +98,6 @@ function InventoryManagementPage() {
   };
 
   const getDemoInventoryData = (workstationId) => {
-    // Demo/test data for testing purposes when real data is unavailable
     const demoData = {
       1: [
         { itemId: 101, itemType: 'CONNECTOR', quantity: 45 },
@@ -132,9 +131,8 @@ function InventoryManagementPage() {
         const response = await axios.get(`/api/stock/workstation/${station.id}`);
         let items = Array.isArray(response.data) ? response.data : [];
         
-        // If API returns empty but we have test data available, use demo data
         if (items.length === 0) {
-          console.warn(`No inventory data from API for WS-${station.id}, using demo data for testing`);
+          console.warn(`No inventory data from API for WS-${station.id}, using demo data`);
           items = getDemoInventoryData(station.id);
         }
         
@@ -143,7 +141,6 @@ function InventoryManagementPage() {
         // Calculate totals
         items.forEach(item => {
           totalItems += item.quantity || 0;
-          // Items with quantity <= 5 are considered low stock
           if (item.quantity <= 5) {
             lowStockList.push({
               ...item,
@@ -154,7 +151,6 @@ function InventoryManagementPage() {
         });
       } catch (err) {
         console.error(`Failed to fetch inventory for WS-${station.id}:`, err);
-        // Fallback to demo data if API call fails
         const demoItems = getDemoInventoryData(station.id);
         inventoryMap[station.id] = demoItems;
         
@@ -207,11 +203,9 @@ function InventoryManagementPage() {
       });
       apiSuccess = true;
     } catch (err) {
-      // API failed, but we'll still update local state for demo purposes
       console.warn(`API update failed, updating local state only:`, err);
     }
 
-    // Update local state (whether API succeeded or not)
     setAllInventory(prev => ({
       ...prev,
       [workstationId]: prev[workstationId].map(item =>

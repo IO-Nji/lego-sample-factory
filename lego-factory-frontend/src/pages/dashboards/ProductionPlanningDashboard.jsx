@@ -1,12 +1,28 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { DashboardLayout } from "../../components";
+import { DashboardLayout, Notification } from "../../components";
 import "../../styles/DashboardLayout.css";
 
 function ProductionPlanningDashboard() {
   const [productionOrders, setProductionOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+
+  const addNotification = (message, type = 'info') => {
+    const newNotification = {
+      id: Date.now() + Math.random(),
+      message,
+      type,
+      timestamp: new Date().toISOString(),
+      station: 'Production Planning'
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
 
   const fetchProductionOrders = async () => {
     setLoading(true);
@@ -93,6 +109,14 @@ function ProductionPlanningDashboard() {
       subtitle="Manage production orders and scheduling"
       icon="📋"
       layout="default"
+      secondaryContent={
+        <Notification 
+          notifications={notifications}
+          title="Planning Activity"
+          maxVisible={5}
+          onClear={clearNotifications}
+        />
+      }
       ordersSection={renderOrdersTable()}
       messages={{ error, success: null }}
       onDismissError={() => setError(null)}

@@ -407,10 +407,6 @@ public class WarehouseOrderService {
         }
     }
 
-    // NOTE: Plant Warehouse credit is now handled by Final Assembly completion
-    // See AssemblyControlOrderService.completeFinalAssembly() for implementation
-    // Customer order status will be updated when Final Assembly credits Plant Warehouse stock
-
     /**
      * Determine priority based on warehouse order urgency
      */

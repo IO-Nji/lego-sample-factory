@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { DashboardLayout, Button } from "../../components";
+import { DashboardLayout, Button, Notification } from "../../components";
 import "../../styles/DashboardLayout.css";
 
 function PartsSupplyWarehouseDashboard() {
@@ -8,6 +8,22 @@ function PartsSupplyWarehouseDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("PENDING");
+  const [notifications, setNotifications] = useState([]);
+
+  const addNotification = (message, type = 'info') => {
+    const newNotification = {
+      id: Date.now() + Math.random(),
+      message,
+      type,
+      timestamp: new Date().toISOString(),
+      station: 'Parts Supply Warehouse'
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
 
   const fetchSupplyOrders = async () => {
     setLoading(true);
@@ -33,9 +49,11 @@ function PartsSupplyWarehouseDashboard() {
   const fulfillSupplyOrder = async (orderId) => {
     try {
       const response = await axios.put(`/api/supply-orders/${orderId}/fulfill`);
+      addNotification(`Supply order ${orderId} fulfilled`, 'success');
       fetchSupplyOrders();
     } catch (err) {
       setError("Failed to fulfill supply order: " + err.message);
+      addNotification("Failed to fulfill supply order", 'error');
     }
   };
 
@@ -127,6 +145,14 @@ function PartsSupplyWarehouseDashboard() {
       subtitle="Manage parts supply orders"
       icon="📦"
       layout="default"
+      secondaryContent={
+        <Notification 
+          notifications={notifications}
+          title="Supply Activity"
+          maxVisible={5}
+          onClear={clearNotifications}
+        />
+      }
       ordersSection={renderOrdersTable()}
       messages={{ error, success: null }}
       onDismissError={() => setError("")}

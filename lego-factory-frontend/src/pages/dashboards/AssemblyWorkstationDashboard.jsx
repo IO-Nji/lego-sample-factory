@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
-import { DashboardLayout, Button } from "../../components";
+import { DashboardLayout, Button, Notification } from "../../components";
 import "../../styles/DashboardLayout.css";
 
 function AssemblyWorkstationDashboard() {
@@ -9,8 +9,23 @@ function AssemblyWorkstationDashboard() {
   const [assemblyOrders, setAssemblyOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
   const [processingOrderId, setProcessingOrderId] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+
+  const addNotification = (message, type = 'info') => {
+    const newNotification = {
+      id: Date.now() + Math.random(),
+      message,
+      type,
+      timestamp: new Date().toISOString(),
+      station: session?.user?.workstation?.name || 'Assembly Workstation'
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
 
   // Determine assembly type from workstation name
   const getAssemblyType = () => {
@@ -54,14 +69,14 @@ function AssemblyWorkstationDashboard() {
   const handleStartAssembly = async (orderId) => {
     setProcessingOrderId(orderId);
     setError(null);
-    setSuccessMessage(null);
 
     try {
       await axios.put(`${apiEndpoint}/${orderId}/start`);
-      setSuccessMessage("Assembly task started successfully!");
+      addNotification(`Assembly task ${orderId} started`, 'success');
       fetchAssemblyOrders();
     } catch (err) {
       setError("Failed to start assembly: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to start assembly", 'error');
     } finally {
       setProcessingOrderId(null);
     }
@@ -70,17 +85,17 @@ function AssemblyWorkstationDashboard() {
   const handleCompleteAssembly = async (orderId) => {
     setProcessingOrderId(orderId);
     setError(null);
-    setSuccessMessage(null);
 
     try {
       const isFinalAssembly = assemblyType === "final-assembly";
       const response = await axios.put(`${apiEndpoint}/${orderId}/complete`);
       
-      const creditMsg = isFinalAssembly
-        ? "Plant Warehouse has been credited with a finished product."
-        : "Modules Supermarket has been credited with a module unit.";
-      
-      setSuccessMessage(`Assembly task completed successfully! ${creditMsg}`);
+      addNotification(
+        isFinalAssembly 
+          ? `Assembly ${orderId} completed - Product credited` 
+          : `Assembly ${orderId} completed - Module credited`, 
+        'success'
+      );
       fetchAssemblyOrders();
     } catch (err) {
       setError("Failed to complete assembly: " + (err.response?.data?.message || err.message));
@@ -114,10 +129,15 @@ function AssemblyWorkstationDashboard() {
       subtitle={`Workstation ${session?.user?.workstationId || 'N/A'} - Process assembly tasks`}
       icon="🔩"
       layout="default"
+      secondaryContent={
+        <Notification 
+          notifications={notifications}
+          title="Assembly Activity"
+          maxVisible={5}
+          onClear={clearNotifications}
+        />
+      }
       ordersSection={renderAssemblyOrders()}
-      messages={{ error, success: successMessage }}
-      onDismissError={() => setError(null)}
-      onDismissSuccess={() => setSuccessMessage(null)}
     />
   );
 }

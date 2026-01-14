@@ -33,10 +33,8 @@ function ProductionPlanningPage() {
   const [planResult, setPlanResult] = useState(null);
   const [createdControlOrders, setCreatedControlOrders] = useState(null);
 
-  // Helper: Plan from Customer Order
   const [coIdInput, setCoIdInput] = useState("");
 
-  // Schedules filtering + pagination
   const [schedFrom, setSchedFrom] = useState("");
   const [schedTo, setSchedTo] = useState("");
   const [schedWsFilter, setSchedWsFilter] = useState("ALL");

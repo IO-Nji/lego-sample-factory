@@ -21,7 +21,6 @@ function DashboardSelector() {
   const userRole = session?.user?.role;
   const workstationName = session?.user?.workstationName || "";
 
-  // Helper functions for workstation type detection
   const getManufacturingWorkstationType = () => {
     if (workstationName.includes("Injection")) return "injection-molding";
     if (workstationName.includes("Pre-Production")) return "parts-pre-production";

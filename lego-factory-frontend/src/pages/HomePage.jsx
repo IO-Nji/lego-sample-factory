@@ -73,16 +73,10 @@ function HomePage() {
   };
 
   const getModulePartsForProduct = (product) => {
-    //TODO: Implement real logic to get modules and parts for the product
-    // In a real scenario, these would come from a junction table
-    // For now, we'll show all modules as available for this product
     return modules;
   };
 
   const getPartsForModule = (module) => {
-    //TODO: Implement real logic to get parts for the module
-    // In a real scenario, these would come from a junction table
-    // For now, we'll show all parts as available for this module
     return parts;
   };
 

@@ -20,7 +20,6 @@ function VariantsPage() {
 
   const fetchVariants = async () => {
     setLoading(true);
-    // TODO: Implement API call to fetch variants
     setTimeout(() => {
       setVariants([
         { id: 1, name: "Color Variant", code: "CV001", description: "Different color options", baseProductId: "P001" },
@@ -32,7 +31,6 @@ function VariantsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Implement API call to create variant
     console.log("Creating variant:", formData);
     setShowAddForm(false);
     setFormData({ name: "", code: "", description: "", baseProductId: "" });
@@ -41,7 +39,6 @@ function VariantsPage() {
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this variant?")) {
-      // TODO: Implement API call to delete variant
       console.log("Deleting variant:", id);
       fetchVariants();
     }

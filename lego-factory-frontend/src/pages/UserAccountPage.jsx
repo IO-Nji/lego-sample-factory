@@ -24,7 +24,6 @@ function UserAccountPage() {
     e.preventDefault();
     setMessage({ type: "info", text: "Updating account details..." });
     
-    // TODO: Implement API call to update user account
     setTimeout(() => {
       setMessage({ type: "success", text: "Account details updated successfully!" });
       setIsEditing(false);

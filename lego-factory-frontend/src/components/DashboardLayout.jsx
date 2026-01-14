@@ -13,7 +13,8 @@ import '../styles/DashboardLayout.css';
  * 
  * 2. Compact Layout (layout="compact"):
  *    - Row 1: Stats cards (4 columns) + Primary Content (side-by-side)
- *    - Row 2: Orders section (full width)
+ *    - Row 2: Notifications (left) (if provided)
+ *    - Row 3: Orders section (full width)
  *    - No secondary content displayed
  * 
  * @param {Object} props
@@ -24,6 +25,7 @@ import '../styles/DashboardLayout.css';
  * @param {React.ReactNode} props.statsCards - Array of StatsCard components
  * @param {React.ReactNode} props.primaryContent - Main content (form or table)
  * @param {React.ReactNode} props.secondaryContent - Secondary content (inventory/stock display)
+ * @param {React.ReactNode} props.notifications - Notification component (for compact layout)
  * @param {React.ReactNode} props.ordersSection - Orders display section
  * @param {React.ReactNode} props.infoBox - Optional information box
  * @param {Object} props.messages - Error and success messages {error, success}
@@ -38,6 +40,7 @@ function DashboardLayout({
   statsCards,
   primaryContent,
   secondaryContent,
+  notifications,
   ordersSection,
   infoBox,
   messages = {},
@@ -86,14 +89,24 @@ function DashboardLayout({
         </div>
       )}
 
-      {/* Layout: Compact - Stats + Primary Content in one row */}
+      {/* Layout: Compact - Stats + Notifications in left column, Primary Content in right column */}
       {layout === 'compact' && (
         <div className="dashboard-compact-row">
-          {statsCards && (
-            <div className="dashboard-stats-compact">
-              {statsCards}
-            </div>
-          )}
+          {/* Left Column: Stats Cards + Notifications */}
+          <div className="dashboard-left-column">
+            {statsCards && (
+              <div className="dashboard-stats-compact">
+                {statsCards}
+              </div>
+            )}
+            {notifications && (
+              <div className="dashboard-notifications-compact">
+                {notifications}
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Primary Content */}
           {primaryContent && (
             <div className="dashboard-primary-content">
               {primaryContent}
@@ -128,7 +141,6 @@ function DashboardLayout({
         </>
       )}
 
-  layout: PropTypes.oneOf(['default', 'compact']),
       {/* Orders Section */}
       {ordersSection && (
         <div className="dashboard-orders-section">
@@ -150,9 +162,11 @@ DashboardLayout.propTypes = {
   title: PropTypes.string,
   subtitle: PropTypes.string,
   icon: PropTypes.string,
+  layout: PropTypes.oneOf(['default', 'compact']),
   statsCards: PropTypes.node,
   primaryContent: PropTypes.node,
   secondaryContent: PropTypes.node,
+  notifications: PropTypes.node,
   ordersSection: PropTypes.node,
   infoBox: PropTypes.node,
   messages: PropTypes.shape({

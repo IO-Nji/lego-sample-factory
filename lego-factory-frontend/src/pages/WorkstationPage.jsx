@@ -26,7 +26,6 @@ function WorkstationPage() {
     e.preventDefault();
     setMessage({ type: "info", text: "Updating workstation details..." });
     
-    // TODO: Implement API call to update workstation
     setTimeout(() => {
       setMessage({ type: "success", text: "Workstation details updated successfully!" });
       setIsEditing(false);

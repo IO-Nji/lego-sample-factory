@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
-import { DashboardLayout, StatsCard, InventoryTable } from "../../components";
+import { DashboardLayout, StatsCard, InventoryTable, Notification } from "../../components";
 import WarehouseOrderCard from "../../components/WarehouseOrderCard";
 import { getInventoryStatusColor } from "../../utils/dashboardHelpers";
 
@@ -11,10 +11,25 @@ function ModulesSupermarketDashboard() {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
   const [fulfillmentInProgress, setFulfillmentInProgress] = useState({});
   const [confirmationInProgress, setConfirmationInProgress] = useState({});
   const [selectedModule, setSelectedModule] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+
+  const addNotification = (message, type = 'info') => {
+    const newNotification = {
+      id: Date.now() + Math.random(),
+      message,
+      type,
+      timestamp: new Date().toISOString(),
+      station: session?.user?.workstation?.name || 'Modules Supermarket'
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
 
   useEffect(() => {
     if (session?.user?.workstationId) {
@@ -65,15 +80,15 @@ function ModulesSupermarketDashboard() {
   const handleConfirmOrder = async (orderId, orderNumber) => {
     setConfirmationInProgress(prev => ({ ...prev, [orderId]: true }));
     setError(null);
-    setSuccessMessage(null);
 
     try {
       await axios.put(`/api/warehouse-orders/${orderId}/confirm`);
-      setSuccessMessage(`Warehouse order ${orderNumber} confirmed! Status changed to PROCESSING. You can now fulfill it.`);
+      addNotification(`Order ${orderNumber} confirmed`, 'success');
       await fetchWarehouseOrders();
       await fetchInventory();
     } catch (err) {
       setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to confirm order", 'error');
     } finally {
       setConfirmationInProgress(prev => ({ ...prev, [orderId]: false }));
     }
@@ -82,15 +97,15 @@ function ModulesSupermarketDashboard() {
   const handleFulfillOrder = async (orderId, orderNumber) => {
     setFulfillmentInProgress(prev => ({ ...prev, [orderId]: true }));
     setError(null);
-    setSuccessMessage(null);
 
     try {
       const response = await axios.put(`/api/warehouse-orders/${orderId}/fulfill-modules`);
-      setSuccessMessage(`Warehouse order ${orderNumber} fulfilled successfully!`);
+      addNotification(`Order ${orderNumber} fulfilled`, 'success');
       await fetchWarehouseOrders();
       await fetchInventory();
     } catch (err) {
       setError("Failed to fulfill order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to fulfill order", 'error');
     } finally {
       setFulfillmentInProgress(prev => ({ ...prev, [orderId]: false }));
     }
@@ -99,14 +114,14 @@ function ModulesSupermarketDashboard() {
   const handleCancel = async (orderId) => {
     if (!globalThis.confirm("Cancel this warehouse order?")) return;
     setError(null);
-    setSuccessMessage(null);
     
     try {
       await axios.patch(`/api/warehouse-orders/${orderId}/status?status=CANCELLED`);
-      setSuccessMessage("Warehouse order cancelled successfully!");
+      addNotification("Warehouse order cancelled", 'warning');
       await fetchWarehouseOrders();
     } catch (err) {
       setError("Failed to cancel order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to cancel order", 'error');
     }
   };
 
@@ -221,14 +236,16 @@ function ModulesSupermarketDashboard() {
         layout="compact"
         statsCards={renderStatsCards()}
         primaryContent={renderModuleInventory()}
+        notifications={
+          <Notification 
+            notifications={notifications}
+            title="Supermarket Activity"
+            maxVisible={5}
+            onClear={clearNotifications}
+          />
+        }
         ordersSection={renderWarehouseOrdersSection()}
         infoBox={renderInfoBox()}
-        messages={{
-          error: error,
-          success: successMessage
-        }}
-        onDismissError={() => setError(null)}
-        onDismissSuccess={() => setSuccessMessage(null)}
       />
 
       {/* Module Details Modal */}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
-import { DashboardLayout } from "../../components";
+import { DashboardLayout, Notification } from "../../components";
 import "../../styles/DashboardLayout.css";
 
 function AssemblyControlDashboard() {
@@ -9,6 +9,22 @@ function AssemblyControlDashboard() {
   const [controlOrders, setControlOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+
+  const addNotification = (message, type = 'info') => {
+    const newNotification = {
+      id: Date.now() + Math.random(),
+      message,
+      type,
+      timestamp: new Date().toISOString(),
+      station: session?.user?.workstation?.name || 'Assembly Control'
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
 
   const fetchControlOrders = async () => {
     const workstationId = session?.user?.workstationId;
@@ -99,6 +115,14 @@ function AssemblyControlDashboard() {
       subtitle={`Workstation ${session?.user?.workstationId || 'N/A'} - Manage assembly orders`}
       icon="⚙️"
       layout="default"
+      secondaryContent={
+        <Notification 
+          notifications={notifications}
+          title="Assembly Activity"
+          maxVisible={5}
+          onClear={clearNotifications}
+        />
+      }
       ordersSection={renderOrdersTable()}
       messages={{ error, success: null }}
       onDismissError={() => setError(null)}

@@ -1,0 +1,185 @@
+/* Notification Component - Console-style notification display */
+
+.notificationContainer {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.clearButton {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.clearButton:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-medium);
+}
+
+.notificationList {
+  overflow-y: auto;
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: var(--font-size-sm);
+  background: var(--color-bg-primary);
+  padding: var(--spacing-xs);
+}
+
+.notificationList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notificationList::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+.notificationList::-webkit-scrollbar-thumb {
+  background: var(--color-border-medium);
+  border-radius: var(--radius-sm);
+}
+
+.notificationList::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-dark);
+}
+
+.notificationItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  min-height: 2.5rem;
+  border-left: 3px solid transparent;
+  transition: background-color var(--transition-fast);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notificationItem:hover {
+  background: var(--color-bg-hover);
+}
+
+/* Notification type styling */
+.notificationItem.success {
+  border-left-color: var(--color-success);
+}
+
+.notificationItem.success .icon {
+  color: var(--color-success);
+}
+
+.notificationItem.error {
+  border-left-color: var(--color-danger);
+}
+
+.notificationItem.error .icon {
+  color: var(--color-danger);
+}
+
+.notificationItem.warning {
+  border-left-color: var(--color-warning);
+}
+
+.notificationItem.warning .icon {
+  color: var(--color-warning);
+}
+
+.notificationItem.info {
+  border-left-color: var(--color-info);
+}
+
+.notificationItem.info .icon {
+  color: var(--color-info);
+}
+
+.icon {
+  font-weight: bold;
+  flex-shrink: 0;
+  width: 1.2rem;
+  text-align: center;
+}
+
+.timestamp {
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+  font-size: 0.85em;
+}
+
+.message {
+  color: var(--color-text-primary);
+  flex: 1;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.station {
+  color: var(--color-primary);
+  flex-shrink: 0;
+  font-size: 0.85em;
+  font-weight: var(--font-weight-semibold);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl) var(--spacing-md);
+  color: var(--color-text-tertiary);
+  min-height: 12.5rem; /* 5 lines * 2.5rem */
+}
+
+.emptyIcon {
+  font-size: 2rem;
+  margin-bottom: var(--spacing-sm);
+  opacity: 0.5;
+}
+
+.emptyText {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-style: italic;
+}
+
+.scrollHint {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-secondary);
+  border-top: 1px solid var(--color-border-light);
+  font-family: 'Courier New', 'Consolas', monospace;
+}
