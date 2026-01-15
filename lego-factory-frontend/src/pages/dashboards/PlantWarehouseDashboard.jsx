@@ -326,7 +326,7 @@ function PlantWarehouseDashboard() {
                 
                 return (
                   <tr key={item.id}>
-                    <td>{product?.name || `Product #${item.itemId}`}</td>
+                    <td>{product?.name || item.itemName || `Product #${item.itemId}`}</td>
                     <td style={{ fontWeight: 'bold' }}>{item.quantity || 0}</td>
                     <td style={{ color: statusColor, fontWeight: 'bold' }}>
                       {item.quantity > 10 ? 'In Stock' : item.quantity > 0 ? 'Low Stock' : 'Out of Stock'}

@@ -15,29 +15,30 @@ import java.util.stream.Collectors;
 public class StockRecordService {
 
 	private final StockRecordRepository repository;
+	private final MasterdataClient masterdataClient;
 
 	public List<StockRecordDto> findAll() {
 		return repository.findAll().stream()
-				.map(this::toDto)
+				.map(this::toDtoEnriched)
 				.collect(Collectors.toList());
 	}
 
 	@SuppressWarnings("null")
 	public StockRecordDto findById(Long id) {
 		return repository.findById(id)
-				.map(this::toDto)
+				.map(this::toDtoEnriched)
 				.orElse(null);
 	}
 
 	public List<StockRecordDto> getStockByWorkstationId(Long workstationId) {
 		return repository.findByWorkstationId(workstationId).stream()
-				.map(this::toDto)
+				.map(this::toDtoEnriched)
 				.collect(Collectors.toList());
 	}
 
 	public StockRecordDto getStockByWorkstationAndItem(Long workstationId, String itemType, Long itemId) {
 		return repository.findByWorkstationIdAndItemTypeAndItemId(workstationId, itemType, itemId)
-				.map(this::toDto)
+				.map(this::toDtoEnriched)
 				.orElse(null);
 	}
 
@@ -86,6 +87,23 @@ public class StockRecordService {
 				entity.getWorkstationId(),
 				entity.getItemType(),
 				entity.getItemId(),
+				null, // itemName - to be enriched by caller if needed
+				entity.getQuantity(),
+				entity.getLastUpdated()
+		);
+	}
+
+	/**
+	 * Convert StockRecord to DTO with enriched item name from masterdata-service.
+	 */
+	private StockRecordDto toDtoEnriched(StockRecord entity) {
+		String itemName = masterdataClient.getItemName(entity.getItemType(), entity.getItemId());
+		return new StockRecordDto(
+				entity.getId(),
+				entity.getWorkstationId(),
+				entity.getItemType(),
+				entity.getItemId(),
+				itemName,
 				entity.getQuantity(),
 				entity.getLastUpdated()
 		);

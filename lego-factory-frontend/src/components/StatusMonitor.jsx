@@ -24,17 +24,30 @@ function StatusMonitor({ items, title, onItemClick, statusConfig, compact = fals
 
   const config = statusConfig || defaultStatusConfig;
 
-  // Custom workstation icons based on name/type
+  // Custom workstation icons based on name/type - matching HomePage feature cards
   const getWorkstationIcon = (name) => {
     const nameLower = (name || '').toLowerCase();
-    if (nameLower.includes('assembly')) return '🔧';
-    if (nameLower.includes('warehouse') || nameLower.includes('storage')) return '📦';
-    if (nameLower.includes('production') || nameLower.includes('manufacturing')) return '⚙️';
+    // Exact matches for specific station types
+    if (nameLower.includes('plant') && nameLower.includes('warehouse')) return '🏭';
+    if (nameLower.includes('modules') && nameLower.includes('supermarket')) return '🏢';
+    if (nameLower.includes('production') && nameLower.includes('planning')) return '📋';
+    if (nameLower.includes('production') && nameLower.includes('control')) return '🏭';
+    if (nameLower.includes('assembly') && nameLower.includes('control')) return '⚙️';
+    if (nameLower.includes('parts') && nameLower.includes('supply')) return '📦';
+    
+    // Generic matches for manufacturing and assembly stations
+    if (nameLower.includes('manufacturing') || nameLower.includes('mfg')) return '🔧';
+    if (nameLower.includes('assembly') || nameLower.includes('assy')) return '🔩';
+    
+    // Fallback matches
+    if (nameLower.includes('warehouse') || nameLower.includes('wh') || nameLower.includes('storage')) return '📦';
+    if (nameLower.includes('production') || nameLower.includes('prod')) return '⚙️';
     if (nameLower.includes('quality') || nameLower.includes('inspection')) return '🔍';
     if (nameLower.includes('packaging')) return '📦';
     if (nameLower.includes('shipping')) return '🚚';
     if (nameLower.includes('supply') || nameLower.includes('materials')) return '📋';
-    return '⚡'; // default
+    
+    return '⚙️'; // default changed from lightning to gear
   };
 
   if (items.length === 0) {

@@ -14,6 +14,7 @@ import '../styles/WarehouseOrderCard.css';
  * @param {Function} onCancel - Handler for cancelling order
  * @param {boolean} isProcessing - Whether fulfillment is in progress
  * @param {boolean} isConfirming - Whether confirmation is in progress
+ * @param {Function} getProductDisplayName - Function to format product names with acronyms
  */
 function WarehouseOrderCard({ 
   order, 
@@ -21,7 +22,8 @@ function WarehouseOrderCard({
   onFulfill,
   onCancel,
   isProcessing = false,
-  isConfirming = false
+  isConfirming = false,
+  getProductDisplayName
 }) {
   
   // Determine which buttons to show based on order status
@@ -97,16 +99,22 @@ function WarehouseOrderCard({
         {/* Order Items */}
         {order.warehouseOrderItems && order.warehouseOrderItems.length > 0 ? (
           <div className="order-items-list">
-            {order.warehouseOrderItems.map((item) => (
-              <div key={item.id} className="order-item">
-                <div className="item-name">{item.itemName || `Item ${item.itemId}`}</div>
-                <div className="item-quantity-section">
-                  <span className="item-quantity requested">{item.requestedQuantity}</span>
-                  <span className="quantity-separator">/</span>
-                  <span className="item-quantity fulfilled">{item.fulfilledQuantity || 0}</span>
+            {order.warehouseOrderItems.map((item) => {
+              const itemName = getProductDisplayName ? 
+                getProductDisplayName(item.itemId, item.itemType) : 
+                (item.itemName || `Item ${item.itemId}`);
+              
+              return (
+                <div key={item.id} className="order-item">
+                  <div className="item-name">{itemName}</div>
+                  <div className="item-quantity-section">
+                    <span className="item-quantity requested">{item.requestedQuantity}</span>
+                    <span className="quantity-separator">/</span>
+                    <span className="item-quantity fulfilled">{item.fulfilledQuantity || 0}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="no-items">No items in order</p>
@@ -188,7 +196,8 @@ WarehouseOrderCard.propTypes = {
   onFulfill: PropTypes.func,
   onCancel: PropTypes.func,
   isProcessing: PropTypes.bool,
-  isConfirming: PropTypes.bool
+  isConfirming: PropTypes.bool,
+  getProductDisplayName: PropTypes.func
 };
 
 export default WarehouseOrderCard;

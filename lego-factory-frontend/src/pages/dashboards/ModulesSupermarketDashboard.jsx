@@ -3,7 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
 import { DashboardLayout, StatsCard, InventoryTable, Notification } from "../../components";
 import WarehouseOrderCard from "../../components/WarehouseOrderCard";
-import { getInventoryStatusColor } from "../../utils/dashboardHelpers";
+import { getInventoryStatusColor, getProductDisplayName } from "../../utils/dashboardHelpers";
 
 function ModulesSupermarketDashboard() {
   const { session } = useAuth();
@@ -168,7 +168,7 @@ function ModulesSupermarketDashboard() {
         inventory={moduleInventory}
         items={[]}
         getStatusColor={getInventoryStatusColor}
-        getItemName={(item) => `${item.itemType} #${item.itemId}`}
+        getItemName={(item) => item.itemName || `${item.itemType} #${item.itemId}`}
         headerColor="purple"
       />
     );
@@ -198,6 +198,7 @@ function ModulesSupermarketDashboard() {
                 onFulfill={handleFulfillOrder}
                 onCancel={handleCancel}
                 isProcessing={fulfillmentInProgress[order.id]}
+                getProductDisplayName={getProductDisplayName}
                 isConfirming={confirmationInProgress[order.id]}
               />
             ))}

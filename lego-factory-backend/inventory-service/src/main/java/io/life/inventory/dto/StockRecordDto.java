@@ -14,6 +14,7 @@ public class StockRecordDto {
 	private Long workstationId;
 	private String itemType;
 	private Long itemId;
+	private String itemName; // Name fetched from masterdata-service
 	private Integer quantity;
 	private LocalDateTime lastUpdated;
 

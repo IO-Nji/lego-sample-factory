@@ -54,19 +54,21 @@ public class FulfillmentService {
     private final WarehouseOrderRepository warehouseOrderRepository;
     private final InventoryService inventoryService;
     private final ProductionOrderService productionOrderService;
-
     private final OrderAuditService orderAuditService;
+    private final MasterdataService masterdataService;
 
     public FulfillmentService(CustomerOrderRepository customerOrderRepository,
                             WarehouseOrderRepository warehouseOrderRepository,
                             InventoryService inventoryService,
                             ProductionOrderService productionOrderService,
-                            @Lazy OrderAuditService orderAuditService) {
+                            @Lazy OrderAuditService orderAuditService,
+                            MasterdataService masterdataService) {
         this.customerOrderRepository = customerOrderRepository;
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.inventoryService = inventoryService;
         this.productionOrderService = productionOrderService;
         this.orderAuditService = orderAuditService;
+        this.masterdataService = masterdataService;
     }
 
     /**
@@ -164,13 +166,15 @@ public class FulfillmentService {
             WarehouseOrderItem woItem = new WarehouseOrderItem();
             woItem.setWarehouseOrder(warehouseOrder);
             woItem.setItemId(item.getItemId());
-            woItem.setItemName("Item-" + item.getItemId()); // Item name from item ID
+            // Fetch actual item name from masterdata-service
+            String itemName = masterdataService.getItemName(item.getItemType(), item.getItemId());
+            woItem.setItemName(itemName);
             woItem.setRequestedQuantity(item.getQuantity());
             woItem.setFulfilledQuantity(0);
             woItem.setItemType(item.getItemType()); // Use the same type from OrderItem
             warehouseOrderItems.add(woItem);
             
-            logger.info("  - Warehouse order item: {} qty {}", item.getItemId(), item.getQuantity());
+            logger.info("  - Warehouse order item: {} (ID: {}) qty {}", itemName, item.getItemId(), item.getQuantity());
         }
         warehouseOrder.setWarehouseOrderItems(warehouseOrderItems);
 
@@ -240,13 +244,15 @@ public class FulfillmentService {
                 WarehouseOrderItem woItem = new WarehouseOrderItem();
                 woItem.setWarehouseOrder(warehouseOrder);
                 woItem.setItemId(item.getItemId());
-                woItem.setItemName("Item-" + item.getItemId());
+                // Fetch actual item name from masterdata-service
+                String itemName = masterdataService.getItemName(item.getItemType(), item.getItemId());
+                woItem.setItemName(itemName);
                 woItem.setRequestedQuantity(item.getQuantity());
                 woItem.setFulfilledQuantity(0);
                 woItem.setItemType(item.getItemType());
                 warehouseOrderItems.add(woItem);
                 
-                logger.info("  - Item {} requested from Modules Supermarket", item.getItemId());
+                logger.info("  - Item {} ({}) requested from Modules Supermarket", itemName, item.getItemId());
             }
         }
 
