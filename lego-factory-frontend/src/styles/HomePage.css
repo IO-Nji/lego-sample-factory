@@ -140,7 +140,42 @@
   color: #664d03;
 }
 
-/* Feature Cards Container - Row 3 */
+/* Row 2: Features and Products Side by Side */
+.home-features-products-row {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.home-features-column {
+  flex: 2;
+  min-width: 0;
+}
+
+.home-products-column {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Feature Cards Grid - 4 per row */
+.feature-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 0 auto;
+}
+
+/* Products Grid - 2x2 */
+.home-products-grid-2x2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 0 auto;
+}
+
+/* Feature Cards Container - Original (kept for compatibility) */
 .feature-cards-container {
   display: flex;
   flex-wrap: wrap;

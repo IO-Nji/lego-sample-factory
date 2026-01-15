@@ -17,7 +17,7 @@ function ProductionControlDashboard() {
       message,
       type,
       timestamp: new Date().toISOString(),
-      station: session?.user?.workstation?.name || 'Production Control'
+      station: session?.user?.workstation?.name || 'PROD-CN'
     };
     setNotifications(prev => [newNotification, ...prev]);
   };

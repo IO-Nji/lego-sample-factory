@@ -17,7 +17,7 @@ function AssemblyControlDashboard() {
       message,
       type,
       timestamp: new Date().toISOString(),
-      station: session?.user?.workstation?.name || 'Assembly Control'
+      station: session?.user?.workstation?.name || 'ASSM-CN'
     };
     setNotifications(prev => [newNotification, ...prev]);
   };

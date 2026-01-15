@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../../api/api";
 import { StatCard, Button, Notification, PageHeader } from "../../components";
 import PieChart from "../../components/PieChart";
@@ -38,16 +38,16 @@ function AdminDashboard() {
   const lastDataRef = useRef(null);
   const previousOrdersRef = useRef(new Map());
 
-  const addNotification = (message, type = 'info') => {
+  const addNotification = useCallback((message, type = 'info') => {
     const newNotification = {
       id: Date.now() + Math.random(),
       message,
       type,
       timestamp: new Date().toISOString(),
-      station: 'Admin Dashboard'
+      station: 'ADMIN'
     };
     setNotifications(prev => [newNotification, ...prev]);
-  };
+  }, []);
 
   const clearNotifications = () => {
     setNotifications([]);
@@ -94,6 +94,23 @@ function AdminDashboard() {
     previousOrdersRef.current = currentOrdersMap;
   };
 
+  // Map role names to acronyms for compact display
+  const getRoleAcronym = (role) => {
+    const roleMap = {
+      'ADMIN_Dashboard': 'ADMIN',
+      'ADMIN': 'ADMIN',
+      'PLANT_WAREHOUSE': 'PLANT-WH',
+      'MODULES_SUPERMARKET': 'MODS-SP',
+      'PRODUCTION_PLANNING': 'PROD-PL',
+      'PRODUCTION_CONTROL': 'PROD-CN',
+      'ASSEMBLY_CONTROL': 'ASSM-CN',
+      'MANUFACTURING': 'MANFCT',
+      'PARTS_SUPPLY': 'PARTS-SP',
+      'VIEWER': 'VIEWER'
+    };
+    return roleMap[role] || role;
+  };
+
   // Determine order type from order number prefix
   const getOrderType = (orderNumber) => {
     if (!orderNumber) return 'Order';
@@ -105,7 +122,7 @@ function AdminDashboard() {
     return 'Order';
   };
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       // Only set loading on initial load, not on refreshes
       if (dashboardData.totalOrders === 0) {
@@ -222,13 +239,13 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dashboardData.totalOrders, addNotification]);
 
   useEffect(() => {
     fetchDashboardData();
     const interval = setInterval(fetchDashboardData, 10000); // Refresh every 10s
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchDashboardData]);
 
   const isInitialLoad = loading && dashboardData.totalOrders === 0;
 
@@ -260,12 +277,13 @@ function AdminDashboard() {
 
   const userRoleData = dashboardData.users.reduce((acc, user) => {
     const role = user.role || 'Unknown';
-    const existing = acc.find(item => item.label === role);
+    const roleLabel = getRoleAcronym(role);
+    const existing = acc.find(item => item.label === roleLabel);
     if (existing) {
       existing.value += 1;
     } else {
       acc.push({ 
-        label: role, 
+        label: roleLabel, 
         value: 1, 
         color: `hsl(${acc.length * 60}, 70%, 50%)` 
       });
@@ -369,14 +387,16 @@ function AdminDashboard() {
 
       {/* Row 2: 3 Columns - Notifications, 2 Charts, User Roles Chart */}
       <div style={{ 
-        display: 'grid',
-        gridTemplateColumns: '1fr 0.8fr 1.2fr',
-        gap: '1.5rem',
+        display: 'flex',
+        gap: '1rem',
         marginBottom: '1.5rem',
-        alignItems: 'start'
+        alignItems: 'flex-start'
       }}>
-        {/* Column 1: Notifications */}
-        <div style={{ minHeight: '400px' }}>
+        {/* Column 1: Notifications - Takes remaining space */}
+        <div style={{ 
+          flex: '1',
+          minHeight: '400px'
+        }}>
           <Notification 
             notifications={notifications}
             title="System Activity"
@@ -385,11 +405,12 @@ function AdminDashboard() {
           />
         </div>
 
-        {/* Column 2: Existing Charts */}
+        {/* Column 2: Existing Charts - Fixed width */}
         <div style={{ 
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem'
+          gap: '1rem',
+          flexShrink: 0
         }}>
           <PieChart 
             title="Order Status Distribution"
@@ -403,12 +424,13 @@ function AdminDashboard() {
           />
         </div>
 
-        {/* Column 3: User Roles Chart */}
+        {/* Column 3: User Roles Chart - Fixed width, vertically centered */}
         <div style={{ 
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: 'center',
           justifyContent: 'center',
-          minHeight: '400px'
+          minHeight: '400px',
+          flexShrink: 0
         }}>
           <PieChart 
             title="User Roles Distribution"

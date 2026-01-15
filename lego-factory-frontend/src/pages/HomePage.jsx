@@ -137,226 +137,231 @@ function HomePage() {
           </div>
         </div>
 
-        {/* Row 2: Platform Features with Enhanced FeatureCard Component */}
+        {/* Row 2: Platform Features and Products side by side */}
         <div className="home-content">
-          <h3 style={{ textAlign: 'center', color: 'var(--color-primary)', marginBottom: 'var(--spacing-lg)' }}>
-            Platform Features
-          </h3>
-          <div className="feature-cards-container">
-            <FeatureCard
-              icon="🏭"
-              title="Plant Warehouse"
-              description="Central distribution center managing customer orders and finished goods inventory. Coordinates outbound shipments and tracks order fulfillment status."
-              detailedInfo="Handles customer order intake, inventory management of finished products, shipping coordination, and order status tracking. Integrates with ERP systems for real-time visibility."
-            />
-            <FeatureCard
-              icon="🏢"
-              title="Modules Supermarket"
-              description="Pre-assembly staging area organizing module components for efficient assembly line feeding."
-              detailedInfo="Organizes and stores pre-assembled modules, manages just-in-time delivery to assembly stations, tracks module inventory levels, and optimizes material flow to production lines."
-            />
-            <FeatureCard
-              icon="📋"
-              title="Production Planning"
-              description="Strategic planning workstation scheduling production workflows and resource allocation."
-              detailedInfo="Creates production schedules, allocates resources across workstations, optimizes workflow sequences, manages capacity planning, and coordinates with supply chain for material availability."
-            />
-            <FeatureCard
-              icon="🏭"
-              title="Production Control"
-              description="Real-time monitoring hub tracking manufacturing progress and performance metrics."
-              detailedInfo="Monitors all manufacturing workstations in real-time, tracks production KPIs, identifies bottlenecks, manages work orders, and provides live status updates to stakeholders."
-            />
-            <FeatureCard
-              icon="⚙️"
-              title="Assembly Control"
-              description="Assembly operations oversight coordinating gear, motor, and final assembly stations."
-              detailedInfo="Supervises all assembly workstations, coordinates component flow between stations, tracks assembly quality metrics, manages assembly line balancing, and ensures production targets are met."
-            />
-            <FeatureCard
-              icon="📦"
-              title="Parts Supply Warehouse"
-              description="Raw materials warehouse supplying components on-demand to manufacturing and assembly."
-              detailedInfo="Manages raw parts inventory, fulfills material requisitions from production stations, tracks parts consumption rates, handles supplier relationships, and maintains optimal stock levels."
-            />
-            <FeatureCard
-              icon="🔧"
-              title="Manufacturing Stations"
-              description="Production workstations executing injection molding, pre-production, and finishing operations."
-              detailedInfo="Operates injection molding machines for part production, handles pre-production quality checks, performs finishing operations, maintains equipment, and reports production metrics."
-            />
-            <FeatureCard
-              icon="🔩"
-              title="Assembly Stations"
-              description="Assembly workstations completing gear assembly, motor integration, and final product assembly."
-              detailedInfo="Executes gear sub-assembly tasks, integrates motors into assemblies, performs final product assembly, conducts quality inspections, and packages completed products for warehouse delivery."
-            />
-          </div>
-        </div>
-
-        {/* Row 3: Product Variants */}
-        <div className="home-content">
-          <h3 style={{ textAlign: 'center', color: 'var(--color-primary)', marginBottom: 'var(--spacing-lg)' }}>
-            Our Products
-          </h3>
-          {loadingProducts ? (
-            <p style={{ textAlign: 'center' }}>Loading products...</p>
-          ) : selectedProduct ? (
-            <div className="product-details" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-              <button 
-                className="btn-back" 
-                onClick={() => setSelectedProduct(null)}
-                style={{
-                  backgroundColor: '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  marginBottom: '15px',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}
-              >
-                ← Back to Products
-              </button>
-              
-              <div style={{
-                backgroundColor: 'white',
-                borderLeft: '4px solid #2c5aa0',
-                padding: '15px',
-                borderRadius: '4px',
-                marginBottom: '20px'
-              }}>
-                <h2 style={{ color: '#2c5aa0', margin: '0 0 10px 0', fontSize: '22px' }}>
-                  {selectedProduct.name}
-                </h2>
-                <p style={{ color: '#666', margin: '0 0 12px 0', fontSize: '14px' }}>
-                  {selectedProduct.description}
-                </p>
-                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                  <div style={{ fontSize: '13px', color: '#333' }}>
-                    <strong style={{ color: '#2c5aa0', marginRight: '5px' }}>Price:</strong>
-                    <span style={{ color: '#28a745', fontSize: '16px', fontWeight: 'bold' }}>
-                      ${selectedProduct.price.toFixed(2)}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#333' }}>
-                    <strong style={{ color: '#2c5aa0', marginRight: '5px' }}>Est. Time:</strong>
-                    <span>{selectedProduct.estimatedTimeMinutes} minutes</span>
-                  </div>
-                </div>
+          <div className="home-features-products-row">
+            {/* Column 1: Platform Features */}
+            <div className="home-features-column">
+              <h3 style={{ textAlign: 'center', color: 'var(--color-primary)', marginBottom: 'var(--spacing-lg)' }}>
+                Platform Features
+              </h3>
+              <div className="feature-cards-grid">
+                <FeatureCard
+                  icon="🏭"
+                  title="Plant Warehouse"
+                  description="Central distribution center managing customer orders and finished goods inventory. Coordinates outbound shipments and tracks order fulfillment status."
+                  detailedInfo="Handles customer order intake, inventory management of finished products, shipping coordination, and order status tracking. Integrates with ERP systems for real-time visibility."
+                />
+                <FeatureCard
+                  icon="🏢"
+                  title="Modules Supermarket"
+                  description="Pre-assembly staging area organizing module components for efficient assembly line feeding."
+                  detailedInfo="Organizes and stores pre-assembled modules, manages just-in-time delivery to assembly stations, tracks module inventory levels, and optimizes material flow to production lines."
+                />
+                <FeatureCard
+                  icon="📋"
+                  title="Production Planning"
+                  description="Strategic planning workstation scheduling production workflows and resource allocation."
+                  detailedInfo="Creates production schedules, allocates resources across workstations, optimizes workflow sequences, manages capacity planning, and coordinates with supply chain for material availability."
+                />
+                <FeatureCard
+                  icon="🏭"
+                  title="Production Control"
+                  description="Real-time monitoring hub tracking manufacturing progress and performance metrics."
+                  detailedInfo="Monitors all manufacturing workstations in real-time, tracks production KPIs, identifies bottlenecks, manages work orders, and provides live status updates to stakeholders."
+                />
+                <FeatureCard
+                  icon="⚙️"
+                  title="Assembly Control"
+                  description="Assembly operations oversight coordinating gear, motor, and final assembly stations."
+                  detailedInfo="Supervises all assembly workstations, coordinates component flow between stations, tracks assembly quality metrics, manages assembly line balancing, and ensures production targets are met."
+                />
+                <FeatureCard
+                  icon="📦"
+                  title="Parts Supply Warehouse"
+                  description="Raw materials warehouse supplying components on-demand to manufacturing and assembly."
+                  detailedInfo="Manages raw parts inventory, fulfills material requisitions from production stations, tracks parts consumption rates, handles supplier relationships, and maintains optimal stock levels."
+                />
+                <FeatureCard
+                  icon="🔧"
+                  title="Manufacturing Stations"
+                  description="Production workstations executing injection molding, pre-production, and finishing operations."
+                  detailedInfo="Operates injection molding machines for part production, handles pre-production quality checks, performs finishing operations, maintains equipment, and reports production metrics."
+                />
+                <FeatureCard
+                  icon="🔩"
+                  title="Assembly Stations"
+                  description="Assembly workstations completing gear assembly, motor integration, and final product assembly."
+                  detailedInfo="Executes gear sub-assembly tasks, integrates motors into assemblies, performs final product assembly, conducts quality inspections, and packages completed products for warehouse delivery."
+                />
               </div>
+            </div>
 
-              <div>
-                <h3 style={{ color: '#2c5aa0', fontSize: '18px', margin: '0 0 15px 0', borderBottom: '2px solid #2c5aa0', paddingBottom: '8px' }}>
-                  Product Components
-                </h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {getModulePartsForProduct(selectedProduct).length === 0 ? (
-                    <p style={{ textAlign: 'center', color: '#999', padding: '20px', fontStyle: 'italic' }}>
-                      No components available for this product
+            {/* Column 2: Products */}
+            <div className="home-products-column">
+              <h3 style={{ textAlign: 'center', color: 'var(--color-primary)', marginBottom: 'var(--spacing-lg)' }}>
+                Our Products
+              </h3>
+              {loadingProducts ? (
+                <p style={{ textAlign: 'center' }}>Loading products...</p>
+              ) : selectedProduct ? (
+                <div className="product-details" style={{ maxWidth: '100%', margin: '0 auto' }}>
+                  <button 
+                    className="btn-back" 
+                    onClick={() => setSelectedProduct(null)}
+                    style={{
+                      backgroundColor: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      marginBottom: '15px',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    ← Back to Products
+                  </button>
+                  
+                  <div style={{
+                    backgroundColor: 'white',
+                    borderLeft: '4px solid #2c5aa0',
+                    padding: '15px',
+                    borderRadius: '4px',
+                    marginBottom: '20px'
+                  }}>
+                    <h2 style={{ color: '#2c5aa0', margin: '0 0 10px 0', fontSize: '22px' }}>
+                      {selectedProduct.name}
+                    </h2>
+                    <p style={{ color: '#666', margin: '0 0 12px 0', fontSize: '14px' }}>
+                      {selectedProduct.description}
                     </p>
-                  ) : (
-                    getModulePartsForProduct(selectedProduct).map(module => (
-                      <div 
-                        key={module.id} 
-                        style={{
-                          backgroundColor: 'white',
-                          border: '1px solid #ddd',
-                          borderRadius: '6px',
-                          overflow: 'hidden'
-                        }}
-                      >
-                        <div 
-                          onClick={() => toggleModuleExpand(module.id)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '12px',
-                            cursor: 'pointer',
-                            backgroundColor: expandedModules[module.id] ? '#f8f9fa' : 'white'
-                          }}
-                        >
-                          <span style={{ marginRight: '10px', fontSize: '14px' }}>
-                            {expandedModules[module.id] ? '▼' : '▶'}
-                          </span>
-                          <div>
-                            <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#2c5aa0' }}>
-                              {module.name}
-                            </h4>
-                            <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
-                              {module.type || 'COMPONENT'}
-                            </p>
-                          </div>
-                        </div>
-
-                        {expandedModules[module.id] && (
-                          <div style={{ padding: '12px', backgroundColor: '#fafafa', borderTop: '1px solid #ddd' }}>
-                            <p style={{ color: '#666', fontSize: '14px', marginBottom: '12px' }}>
-                              {module.description}
-                            </p>
-                            
-                            <div>
-                              <h5 style={{ fontSize: '14px', color: '#2c5aa0', marginBottom: '8px' }}>
-                                Parts Required:
-                              </h5>
-                              {getPartsForModule(module).length === 0 ? (
-                                <p style={{ color: '#999', fontSize: '13px', fontStyle: 'italic' }}>
-                                  No parts specified
-                                </p>
-                              ) : (
-                                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                                  {getPartsForModule(module).map(part => (
-                                    <li 
-                                      key={part.id} 
-                                      style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        padding: '6px 0',
-                                        fontSize: '13px',
-                                        borderBottom: '1px solid #eee'
-                                      }}
-                                    >
-                                      <span style={{ fontWeight: '500', color: '#333' }}>{part.name}</span>
-                                      <span style={{ color: '#666', marginLeft: '10px' }}>{part.category}</span>
-                                      <span style={{ color: '#28a745', fontWeight: '600', marginLeft: '10px' }}>
-                                        ${part.unitCost?.toFixed(2) || '0.00'}
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                    <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                      <div style={{ fontSize: '13px', color: '#333' }}>
+                        <strong style={{ color: '#2c5aa0', marginRight: '5px' }}>Price:</strong>
+                        <span style={{ color: '#28a745', fontSize: '16px', fontWeight: 'bold' }}>
+                          ${selectedProduct.price.toFixed(2)}
+                        </span>
                       </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : products.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#999' }}>No products available</p>
-          ) : (
-            <div className="home-products-grid">
-              {products.map(product => (
-                <div 
-                  key={product.id} 
-                  className="home-product-card"
-                  onClick={() => setSelectedProduct(product)}
-                >
-                  <h3>{product.name}</h3>
-                  <p className="home-product-description">{product.description}</p>
-                  <div className="home-product-specs">
-                    <span className="price-badge">${product.price.toFixed(2)}</span>
-                    <span className="time-badge">{product.estimatedTimeMinutes}m</span>
+                      <div style={{ fontSize: '13px', color: '#333' }}>
+                        <strong style={{ color: '#2c5aa0', marginRight: '5px' }}>Est. Time:</strong>
+                        <span>{selectedProduct.estimatedTimeMinutes} minutes</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 style={{ color: '#2c5aa0', fontSize: '18px', margin: '0 0 15px 0', borderBottom: '2px solid #2c5aa0', paddingBottom: '8px' }}>
+                      Product Components
+                    </h3>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {getModulePartsForProduct(selectedProduct).length === 0 ? (
+                        <p style={{ textAlign: 'center', color: '#999', padding: '20px', fontStyle: 'italic' }}>
+                          No components available for this product
+                        </p>
+                      ) : (
+                        getModulePartsForProduct(selectedProduct).map(module => (
+                          <div 
+                            key={module.id} 
+                            style={{
+                              backgroundColor: 'white',
+                              border: '1px solid #ddd',
+                              borderRadius: '6px',
+                              overflow: 'hidden'
+                            }}
+                          >
+                            <div 
+                              onClick={() => toggleModuleExpand(module.id)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '12px',
+                                cursor: 'pointer',
+                                backgroundColor: expandedModules[module.id] ? '#f8f9fa' : 'white'
+                              }}
+                            >
+                              <span style={{ marginRight: '10px', fontSize: '14px' }}>
+                                {expandedModules[module.id] ? '▼' : '▶'}
+                              </span>
+                              <div>
+                                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#2c5aa0' }}>
+                                  {module.name}
+                                </h4>
+                                <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
+                                  {module.type || 'COMPONENT'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {expandedModules[module.id] && (
+                              <div style={{ padding: '12px', backgroundColor: '#fafafa', borderTop: '1px solid #ddd' }}>
+                                <p style={{ color: '#666', fontSize: '14px', marginBottom: '12px' }}>
+                                  {module.description}
+                                </p>
+                                
+                                <div>
+                                  <h5 style={{ fontSize: '14px', color: '#2c5aa0', marginBottom: '8px' }}>
+                                    Parts Required:
+                                  </h5>
+                                  {getPartsForModule(module).length === 0 ? (
+                                    <p style={{ color: '#999', fontSize: '13px', fontStyle: 'italic' }}>
+                                      No parts specified
+                                    </p>
+                                  ) : (
+                                    <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                                      {getPartsForModule(module).map(part => (
+                                        <li 
+                                          key={part.id} 
+                                          style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            padding: '6px 0',
+                                            fontSize: '13px',
+                                            borderBottom: '1px solid #eee'
+                                          }}
+                                        >
+                                          <span style={{ fontWeight: '500', color: '#333' }}>{part.name}</span>
+                                          <span style={{ color: '#666', marginLeft: '10px' }}>{part.category}</span>
+                                          <span style={{ color: '#28a745', fontWeight: '600', marginLeft: '10px' }}>
+                                            ${part.unitCost?.toFixed(2) || '0.00'}
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
-              ))}
+              ) : products.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#999' }}>No products available</p>
+              ) : (
+                <div className="home-products-grid-2x2">
+                  {products.map(product => (
+                    <div 
+                      key={product.id} 
+                      className="home-product-card"
+                      onClick={() => setSelectedProduct(product)}
+                    >
+                      <h3>{product.name}</h3>
+                      <p className="home-product-description">{product.description}</p>
+                      <div className="home-product-specs">
+                        <span className="price-badge">${product.price.toFixed(2)}</span>
+                        <span className="time-badge">{product.estimatedTimeMinutes}m</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Footer */}

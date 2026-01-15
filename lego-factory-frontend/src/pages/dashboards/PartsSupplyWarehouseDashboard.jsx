@@ -16,7 +16,7 @@ function PartsSupplyWarehouseDashboard() {
       message,
       type,
       timestamp: new Date().toISOString(),
-      station: 'Parts Supply Warehouse'
+      station: 'PARTS-SP'
     };
     setNotifications(prev => [newNotification, ...prev]);
   };

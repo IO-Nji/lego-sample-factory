@@ -22,7 +22,7 @@ function ModulesSupermarketDashboard() {
       message,
       type,
       timestamp: new Date().toISOString(),
-      station: session?.user?.workstation?.name || 'Modules Supermarket'
+      station: session?.user?.workstation?.name || 'MODS-SP'
     };
     setNotifications(prev => [newNotification, ...prev]);
   };

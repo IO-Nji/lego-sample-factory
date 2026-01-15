@@ -11,7 +11,7 @@ function ManufacturingDashboard() {
       message,
       type,
       timestamp: new Date().toISOString(),
-      station: 'Manufacturing'
+      station: 'MANFCT'
     };
     setNotifications(prev => [newNotification, ...prev]);
   };

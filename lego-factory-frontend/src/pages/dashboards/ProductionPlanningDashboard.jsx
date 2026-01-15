@@ -15,7 +15,7 @@ function ProductionPlanningDashboard() {
       message,
       type,
       timestamp: new Date().toISOString(),
-      station: 'Production Planning'
+      station: 'PROD-PL'
     };
     setNotifications(prev => [newNotification, ...prev]);
   };

@@ -172,7 +172,7 @@
 /* Info Box */
 .dashboard-info-box {
   background: #fffbeb;
-  border-left: 4px solid #f59e0b;
+  border: 1px solid #f59e0b;
   border-radius: 0.5rem;
   padding: 1.5rem;
   margin-bottom: 1.5rem;

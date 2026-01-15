@@ -25,7 +25,7 @@ function PlantWarehouseDashboard() {
       message,
       type,
       timestamp: new Date().toISOString(),
-      station: session?.user?.workstation?.name || 'Plant Warehouse'
+      station: session?.user?.workstation?.name || 'PLANT-WH'
     };
     setNotifications(prev => [newNotification, ...prev]);
   };
