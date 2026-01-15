@@ -1,20 +1,17 @@
 import axios from "axios";
 
-// API Configuration - uses relative path for production deployment
-// In production, nginx-root-proxy routes /api/* to api-gateway
-const rawUrl = import.meta.env.VITE_API_GATEWAY_URL || "/api";
+// API endpoint paths (relative to baseURL in api.js)
+// The axios instance in api.js already has baseURL='/api'
+// So these paths should NOT include '/api' prefix to avoid /api/api/... duplication
 
-// Ensure we don't double-append /api
-const apiBasePath = rawUrl.includes('/api') ? rawUrl : `${rawUrl}/api`;
+console.log("API Configuration loaded - endpoints will use axios baseURL from api.js");
 
-console.log("API Configuration:", { VITE_API_GATEWAY_URL: rawUrl, apiBasePath });
-
-export const LOGIN_ENDPOINT = `${apiBasePath}/auth/login`;
-export const USERS_ENDPOINT = `${apiBasePath}/users`;
-export const WORKSTATIONS_ENDPOINT = `${apiBasePath}/masterdata/workstations`;
-export const PRODUCT_VARIANTS_ENDPOINT = `${apiBasePath}/masterdata/product-variants`;
-export const MODULES_ENDPOINT = `${apiBasePath}/masterdata/modules`;
-export const PARTS_ENDPOINT = `${apiBasePath}/masterdata/parts`;
+export const LOGIN_ENDPOINT = `/auth/login`;
+export const USERS_ENDPOINT = `/users`;
+export const WORKSTATIONS_ENDPOINT = `/masterdata/workstations`;
+export const PRODUCT_VARIANTS_ENDPOINT = `/masterdata/product-variants`;
+export const MODULES_ENDPOINT = `/masterdata/modules`;
+export const PARTS_ENDPOINT = `/masterdata/parts`;
 
 // Configure axios to automatically include JWT token in all requests
 axios.interceptors.request.use(
