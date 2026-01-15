@@ -137,3 +137,6 @@ gradle-app.setting
 # Yarn Integrity file
 .yarn-integrity
 LIFE.code-workspace
+REMOTE_LOGIN_FIX.md
+.env.production
+remote_env

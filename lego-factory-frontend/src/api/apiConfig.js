@@ -1,14 +1,13 @@
 import axios from "axios";
 
-// Force the correct API base URL for Docker deployment
-// Use nginx proxy path instead of direct API Gateway port
-const API_BASE_URL = "http://localhost:1011";
+// API Configuration - uses relative path for production deployment
+// In production, nginx-root-proxy routes /api/* to api-gateway
+const rawUrl = import.meta.env.VITE_API_GATEWAY_URL || "/api";
 
-// Determine the correct API base path
-// Since we're using nginx proxy, always append /api
-const apiBasePath = `${API_BASE_URL}/api`;
+// Ensure we don't double-append /api
+const apiBasePath = rawUrl.includes('/api') ? rawUrl : `${rawUrl}/api`;
 
-console.log("API Configuration:", { API_BASE_URL, apiBasePath });
+console.log("API Configuration:", { VITE_API_GATEWAY_URL: rawUrl, apiBasePath });
 
 export const LOGIN_ENDPOINT = `${apiBasePath}/auth/login`;
 export const USERS_ENDPOINT = `${apiBasePath}/users`;
