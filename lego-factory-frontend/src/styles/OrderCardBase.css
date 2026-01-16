@@ -7,8 +7,8 @@
 /* Base dimensions - can be customized per card type */
 .order-card-base {
   width: 100%;
-  min-width: 320px;
-  max-width: 400px;
+  min-width: 352px; /* 320px * 1.1 */
+  max-width: 440px; /* 400px * 1.1 */
   height: 280px; /* Fixed height - no variable height */
   
   /* Common layout properties */
@@ -102,6 +102,156 @@
   background: #fee2e2;
   color: #991b1b;
   border-left: 2px solid #ef4444;
+}
+
+/* ============================================ */
+/* CARD FOOTER - Action buttons                */
+/* Common styling for all order card footers   */
+/* ============================================ */
+.order-card-footer {
+  padding: 0.25rem;
+  border-top: 1px solid;
+}
+
+/* Action Buttons Container - Horizontal row for minimal footprint */
+.action-buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: center; /* Center-aligned buttons */
+}
+
+/* Button Size Standards - Applied to ALL order cards */
+/* This ensures consistent button sizing across Customer, Warehouse, and Production cards */
+.order-card-base .action-buttons button {
+  padding: 0.125rem 0.25rem; /* Reduced to half for more margin */
+  font-size: 0.6rem;
+  height: auto;
+  min-height: auto;
+  width: auto;
+  white-space: nowrap;
+}
+
+/* ============================================ */
+/* SCENARIO/PRIORITY BADGE SECTION             */
+/* Common styling for badges shown after meta  */
+/* Used for scenario (warehouse) or priority   */
+/* ============================================ */
+.order-scenario,
+.order-priority {
+  display: flex;
+  justify-content: center;
+  padding: 0.125rem 0;
+}
+
+.scenario-badge,
+.priority-badge {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ============================================ */
+/* CARD BODY - Common layout and alignment     */
+/* ============================================ */
+.order-card-body {
+  padding: 0.25rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Order Metadata - Source order info */
+.order-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.meta-label {
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.meta-value {
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+}
+
+/* ============================================ */
+/* ORDER ITEMS LIST - Common grid layout       */
+/* 2 columns per row, max 2 rows (4 items)    */
+/* ============================================ */
+.order-items-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, minmax(1.5rem, auto));
+  gap: 0.5rem;
+  width: 100%;
+  max-height: 4rem;
+  overflow: hidden;
+}
+
+/* Individual Item - Simple list format */
+.order-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.125rem 0.25rem;
+  gap: 0.25rem;
+  min-height: fit-content;
+}
+
+/* Product Name */
+.item-name {
+  font-size: 0.6rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  text-align: left;
+  line-height: 0.65rem;
+  flex: 1;
+}
+
+/* Quantity Display Section */
+.item-quantity-section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.125rem;
+  text-align: right;
+}
+
+/* Quantity Value - Larger for readability */
+.item-quantity {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  text-align: right;
+}
+
+.quantity-separator {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.no-items {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.875rem;
+  font-style: italic;
+  padding: 1rem 0;
 }
 
 /* Size variants - override base dimensions if needed */

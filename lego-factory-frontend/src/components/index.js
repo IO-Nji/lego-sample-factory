@@ -16,6 +16,7 @@ export { default as Badge } from './Badge';
 
 // Data Display
 export { default as Table } from './Table';
+export { default as GanttChart } from './GanttChart';
 
 // Form Components
 export { default as Input } from './Input';

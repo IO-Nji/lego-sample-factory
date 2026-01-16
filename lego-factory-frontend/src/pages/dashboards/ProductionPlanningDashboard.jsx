@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../api/api";
 import { DashboardLayout, Notification, StatsCard, Button } from "../../components";
 import ProductionOrderCard from "../../components/ProductionOrderCard";
 import "../../styles/DashboardLayout.css";
@@ -37,7 +37,7 @@ function ProductionPlanningDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get("/api/production-orders");
+      const response = await api.get("/production-orders");
       const orders = Array.isArray(response.data) ? response.data : [];
       setProductionOrders(orders);
       applyFilter(orders, filterStatus);
@@ -51,7 +51,7 @@ function ProductionPlanningDashboard() {
 
   const fetchScheduledOrders = async () => {
     try {
-      const response = await axios.get("/api/simal/scheduled-orders");
+      const response = await api.get("/simal/scheduled-orders");
       setScheduledOrders(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Failed to load scheduled orders:", err);
@@ -61,10 +61,12 @@ function ProductionPlanningDashboard() {
   useEffect(() => {
     fetchProductionOrders();
     fetchScheduledOrders();
+    // Background refresh without full page re-render
     const interval = setInterval(() => {
+      // Silent refresh - only updates data state
       fetchProductionOrders();
       fetchScheduledOrders();
-    }, 10000);
+    }, 30000); // Increased to 30s to reduce jerky behavior
     return () => clearInterval(interval);
   }, []);
 
@@ -96,10 +98,10 @@ function ProductionPlanningDashboard() {
       };
 
       // Send to SimAL for scheduling
-      const response = await axios.post("/api/simal/schedule", simalRequest);
+      const response = await api.post("/simal/schedule", simalRequest);
       
       // Update production order with SimAL schedule ID
-      await axios.patch(`/api/production-orders/${order.id}/schedule`, {
+      await api.patch(`/production-orders/${order.id}/schedule`, {
         simalScheduleId: response.data.scheduleId,
         status: "SCHEDULED"
       });
@@ -123,7 +125,7 @@ function ProductionPlanningDashboard() {
   const handleGenerateControlOrders = async (scheduleData) => {
     try {
       // Call backend to generate control orders from SimAL response
-      const response = await axios.post("/api/simal/generate-control-orders", {
+      const response = await api.post("/simal/generate-control-orders", {
         scheduleId: scheduleData.scheduleId,
         productionOrderId: selectedOrder?.id,
         scheduledTasks: scheduleData.scheduledTasks
@@ -143,7 +145,7 @@ function ProductionPlanningDashboard() {
 
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
-      await axios.patch(`/api/production-orders/${orderId}/status`, { status: newStatus });
+      await api.patch(`/production-orders/${orderId}/status`, { status: newStatus });
       setSuccess(`Production order status updated to ${newStatus}`);
       addNotification(`Status updated to ${newStatus}`, "info");
       await fetchProductionOrders();
@@ -160,7 +162,7 @@ function ProductionPlanningDashboard() {
     }
 
     try {
-      await axios.patch(`/api/production-orders/${orderId}/cancel`);
+      await api.patch(`/production-orders/${orderId}/cancel`);
       setSuccess("Production order cancelled successfully");
       addNotification("Production order cancelled", "warning");
       await fetchProductionOrders();
@@ -266,154 +268,18 @@ function ProductionPlanningDashboard() {
         ) : filteredOrders.length > 0 ? (
           <div className="dashboard-orders-grid">
             {filteredOrders.map((order) => (
-              <div key={order.id} style={{ position: 'relative' }}>
-                <ProductionOrderCard order={order}>
-                  <div style={{ 
-                    padding: "1rem", 
-                    backgroundColor: "#f9fafb",
-                    borderTop: "1px solid #e5e7eb",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.75rem"
-                  }}>
-                    {/* Order Details */}
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem" }}>
-                      <div>
-                        <strong>Order:</strong> {order.productionOrderNumber}
-                      </div>
-                      <div>
-                        <strong>Priority:</strong>{" "}
-                        <span style={{
-                          padding: "0.125rem 0.5rem",
-                          borderRadius: "0.25rem",
-                          backgroundColor: getPriorityBadgeColor(order.priority),
-                          color: "white",
-                          fontSize: "0.75rem",
-                          fontWeight: "700"
-                        }}>
-                          {order.priority || "MEDIUM"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem" }}>
-                      <div>
-                        <strong>Status:</strong>{" "}
-                        <span style={{
-                          padding: "0.125rem 0.5rem",
-                          borderRadius: "0.25rem",
-                          backgroundColor: getStatusBadgeColor(order.status),
-                          color: "white",
-                          fontSize: "0.75rem",
-                          fontWeight: "700"
-                        }}>
-                          {order.status}
-                        </span>
-                      </div>
-                      {order.dueDate && (
-                        <div>
-                          <strong>Due:</strong> {new Date(order.dueDate).toLocaleDateString()}
-                        </div>
-                      )}
-                    </div>
-
-                    {order.simalScheduleId && (
-                      <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-                        <strong>Schedule ID:</strong> {order.simalScheduleId}
-                      </div>
-                    )}
-
-                    {order.estimatedDuration && (
-                      <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-                        <strong>Est. Duration:</strong> {order.estimatedDuration} minutes
-                      </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.5rem" }}>
-                      {order.status === "CREATED" && (
-                        <button
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            handleScheduleWithSimAL(order);
-                          }}
-                          disabled={schedulingInProgress[order.id]}
-                          style={{
-                            flex: 1,
-                            padding: "0.5rem",
-                            backgroundColor: "#8b5cf6",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "0.375rem",
-                            fontSize: "0.875rem",
-                            fontWeight: "600",
-                            cursor: schedulingInProgress[order.id] ? "not-allowed" : "pointer",
-                            opacity: schedulingInProgress[order.id] ? 0.6 : 1
-                          }}
-                        >
-                          {schedulingInProgress[order.id] ? "Scheduling..." : "📅 Schedule with SimAL"}
-                        </button>
-                      )}
-
-                      {order.status === "SCHEDULED" && (
-                        <button
-                          onClick={() => handleUpdateStatus(order.id, "IN_PRODUCTION")}
-                          style={{
-                            flex: 1,
-                            padding: "0.5rem",
-                            backgroundColor: "#f59e0b",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "0.375rem",
-                            fontSize: "0.875rem",
-                            fontWeight: "600",
-                            cursor: "pointer"
-                          }}
-                        >
-                          ▶️ Start Production
-                        </button>
-                      )}
-
-                      {order.status === "IN_PRODUCTION" && (
-                        <button
-                          onClick={() => handleUpdateStatus(order.id, "COMPLETED")}
-                          style={{
-                            flex: 1,
-                            padding: "0.5rem",
-                            backgroundColor: "#10b981",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "0.375rem",
-                            fontSize: "0.875rem",
-                            fontWeight: "600",
-                            cursor: "pointer"
-                          }}
-                        >
-                          ✅ Mark Complete
-                        </button>
-                      )}
-
-                      {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
-                        <button
-                          onClick={() => handleCancelOrder(order.id)}
-                          style={{
-                            padding: "0.5rem 1rem",
-                            backgroundColor: "#ef4444",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "0.375rem",
-                            fontSize: "0.875rem",
-                            fontWeight: "600",
-                            cursor: "pointer"
-                          }}
-                        >
-                          ❌ Cancel
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </ProductionOrderCard>
-              </div>
+              <ProductionOrderCard
+                key={order.id}
+                order={order}
+                onSchedule={(order) => {
+                  setSelectedOrder(order);
+                  handleScheduleWithSimAL(order);
+                }}
+                onStart={(orderId) => handleUpdateStatus(orderId, "IN_PRODUCTION")}
+                onComplete={(orderId) => handleUpdateStatus(orderId, "COMPLETED")}
+                onCancel={handleCancelOrder}
+                isScheduling={schedulingInProgress[order.id]}
+              />
             ))}
           </div>
         ) : (

@@ -58,8 +58,8 @@ function DashboardLayout({
         />
       )}
 
-      {/* Messages Section */}
-      {messages.error && (
+      {/* Messages Section - DISABLED per user request */}
+      {/* messages.error && (
         <div className="dashboard-message dashboard-message-error">
           <p className="dashboard-message-title">Error</p>
           <p className="dashboard-message-text">{messages.error}</p>
@@ -72,9 +72,9 @@ function DashboardLayout({
             </button>
           )}
         </div>
-      )}
+      ) */}
 
-      {messages.success && (
+      {/* messages.success && (
         <div className="dashboard-message dashboard-message-success">
           <p className="dashboard-message-title">Success</p>
           <p className="dashboard-message-text">{messages.success}</p>
@@ -87,7 +87,7 @@ function DashboardLayout({
             </button>
           )}
         </div>
-      )}
+      ) */}
 
       {/* Layout: Compact - Stats + Notifications in left column, Primary Content in right column */}
       {layout === 'compact' && (

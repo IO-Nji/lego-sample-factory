@@ -16,6 +16,7 @@ import VariantsPage from "./pages/VariantsPage.jsx";
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
 import ManufacturingWorkstationPage from "./pages/ManufacturingWorkstationPage.jsx";
 import WebhooksAdminPage from "./pages/WebhooksAdminPage.jsx";
+import ManualSchedulerPage from "./pages/ManualSchedulerPage.jsx";
 // New Overview Pages using Design System Components
 import AdminOverviewPage from "./pages/AdminOverviewPage.jsx";
 import ManagerOverviewPage from "./pages/ManagerOverviewPage.jsx";
@@ -224,6 +225,14 @@ function App() {
           element={
             <AuthGuard requiredRole="PRODUCTION_PLANNING">
               <DashboardPage />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="production-planning/manual-scheduler"
+          element={
+            <AuthGuard requiredRole="PRODUCTION_PLANNING">
+              <ManualSchedulerPage />
             </AuthGuard>
           }
         />

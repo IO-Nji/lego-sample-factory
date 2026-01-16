@@ -8,6 +8,8 @@ import { getInventoryStatusColor, generateAcronym, getProductDisplayName } from 
 function ModulesSupermarketDashboard() {
   const { session } = useAuth();
   const [warehouseOrders, setWarehouseOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [filterStatus, setFilterStatus] = useState("ALL");
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -52,9 +54,21 @@ function ModulesSupermarketDashboard() {
         fetchWarehouseOrders();
         fetchInventory();
       }
-    }, 15000);
+    }, 30000); // Increased to 30s to reduce page jump
     return () => clearInterval(interval);
   }, [session?.user?.workstationId]);
+
+  useEffect(() => {
+    applyFilter(warehouseOrders, filterStatus);
+  }, [filterStatus, warehouseOrders]);
+
+  const applyFilter = (ordersList, status) => {
+    if (status === "ALL") {
+      setFilteredOrders(ordersList);
+    } else {
+      setFilteredOrders(ordersList.filter(order => order.status === status));
+    }
+  };
 
   const fetchWarehouseOrders = async () => {
     try {
@@ -64,13 +78,16 @@ function ModulesSupermarketDashboard() {
       console.log('[WarehouseOrders] Fetched data:', JSON.stringify(data, null, 2));
       if (Array.isArray(data)) {
         setWarehouseOrders(data);
+        applyFilter(data, filterStatus);
         setError(null);
       } else {
         setWarehouseOrders([]);
+        setFilteredOrders([]);
       }
     } catch (err) {
       if (err.response?.status === 404) {
         setWarehouseOrders([]);
+        setFilteredOrders([]);
         setError(null);
       } else {
         setError("Failed to load warehouse orders: " + (err.response?.data?.message || err.message));
@@ -379,18 +396,37 @@ function ModulesSupermarketDashboard() {
     <>
       <div className="dashboard-box-header dashboard-box-header-orange">
         <h2 className="dashboard-box-header-title">📋 Warehouse Orders</h2>
-        <button 
-          onClick={fetchWarehouseOrders} 
-          disabled={loading} 
-          className="dashboard-box-header-action"
-        >
-          {loading ? "Refreshing..." : "Refresh"}
-        </button>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <select 
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            style={{ 
+              padding: "0.5rem", 
+              borderRadius: "0.375rem", 
+              border: "1px solid #d1d5db",
+              fontSize: "0.875rem"
+            }}
+          >
+            <option value="ALL">All Orders</option>
+            <option value="PENDING">Pending</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="PROCESSING">Processing</option>
+            <option value="FULFILLED">Fulfilled</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+          <button 
+            onClick={fetchWarehouseOrders} 
+            disabled={loading} 
+            className="dashboard-box-header-action"
+          >
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
       </div>
       <div className="dashboard-box-content">
-        {Array.isArray(warehouseOrders) && warehouseOrders.length > 0 ? (
+        {Array.isArray(filteredOrders) && filteredOrders.length > 0 ? (
           <div className="dashboard-orders-grid">
-            {warehouseOrders.map((order) => (
+            {filteredOrders.map((order) => (
               <WarehouseOrderCard
                 key={order.id}
                 order={order}
@@ -412,7 +448,11 @@ function ModulesSupermarketDashboard() {
         ) : (
           <div className="dashboard-empty-state">
             <p className="dashboard-empty-state-title">No warehouse orders found</p>
-            <p className="dashboard-empty-state-text">Orders will appear here when created</p>
+            <p className="dashboard-empty-state-text">
+              {filterStatus !== "ALL" 
+                ? `No orders with status: ${filterStatus}` 
+                : "Orders will appear here when created"}
+            </p>
           </div>
         )}
       </div>

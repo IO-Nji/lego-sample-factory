@@ -22,7 +22,7 @@ function ManufacturingWorkstationPage() {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [operatorNotes, setOperatorNotes] = useState("");
-  const [filter, setFilter] = useState("all"); // all, active, scheduled
+  const [filterStatus, setFilterStatus] = useState("ALL"); // Filter by status
 
   const workstationId = session?.user?.workstationId;
 
@@ -231,14 +231,10 @@ function ManufacturingWorkstationPage() {
   };
 
   const getFilteredOrders = () => {
-    switch (filter) {
-      case "active":
-        return activeOrders;
-      case "scheduled":
-        return controlOrders.filter((o) => o.status === "ASSIGNED");
-      default:
-        return controlOrders;
+    if (filterStatus === "ALL") {
+      return controlOrders;
     }
+    return controlOrders.filter((o) => o.status === filterStatus);
   };
 
   const filteredOrders = getFilteredOrders();
@@ -263,33 +259,24 @@ function ManufacturingWorkstationPage() {
 
       <div className="controls-section">
         <div className="filters">
-          <label>
-            <input
-              type="radio"
-              value="all"
-              checked={filter === "all"}
-              onChange={(e) => setFilter(e.target.value)}
-            />
-            All Tasks ({controlOrders.length})
-          </label>
-          <label>
-            <input
-              type="radio"
-              value="active"
-              checked={filter === "active"}
-              onChange={(e) => setFilter(e.target.value)}
-            />
-            Active ({activeOrders.length})
-          </label>
-          <label>
-            <input
-              type="radio"
-              value="scheduled"
-              checked={filter === "scheduled"}
-              onChange={(e) => setFilter(e.target.value)}
-            />
-            Scheduled ({controlOrders.filter((o) => o.status === "ASSIGNED").length})
-          </label>
+          <select 
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            style={{ 
+              padding: "0.5rem", 
+              borderRadius: "0.375rem", 
+              border: "1px solid #d1d5db",
+              fontSize: "0.875rem",
+              marginRight: "0.5rem"
+            }}
+          >
+            <option value="ALL">All Orders ({controlOrders.length})</option>
+            <option value="ASSIGNED">Assigned ({controlOrders.filter((o) => o.status === "ASSIGNED").length})</option>
+            <option value="IN_PROGRESS">In Progress ({controlOrders.filter((o) => o.status === "IN_PROGRESS").length})</option>
+            <option value="COMPLETED">Completed ({controlOrders.filter((o) => o.status === "COMPLETED").length})</option>
+            <option value="HALTED">Halted ({controlOrders.filter((o) => o.status === "HALTED").length})</option>
+            <option value="ABANDONED">Abandoned ({controlOrders.filter((o) => o.status === "ABANDONED").length})</option>
+          </select>
         </div>
 
         <button onClick={fetchControlOrders} disabled={loading} className="refresh-btn">
@@ -303,7 +290,11 @@ function ManufacturingWorkstationPage() {
           {loading && !selectedOrder ? (
             <div className="loading">Loading manufacturing tasks...</div>
           ) : filteredOrders.length === 0 ? (
-            <div className="no-orders">No manufacturing tasks in this filter</div>
+            <div className="no-orders">
+              {filterStatus !== "ALL" 
+                ? `No manufacturing tasks with status: ${filterStatus}` 
+                : "No manufacturing tasks in this filter"}
+            </div>
           ) : (
             filteredOrders.map((order) => (
               <div

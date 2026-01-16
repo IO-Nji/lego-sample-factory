@@ -5,16 +5,16 @@ export default function OrderCard({ order, type = "customer", children }) {
   // Border color by type
   const borderColors = {
     customer: "#3b82f6", // blue
-    production: "#10b981", // green
+    production: "#8b5cf6", // purple - distinct from other order types
     warehouse: "#f59e0b", // yellow
-    assembly: "#ef4444", // red
+    assembly: "#10b981", // green
     supply: "#6366f1", // indigo
     default: "#d1d5db", // gray
   };
   const borderColor = borderColors[type] || borderColors.default;
 
   return (
-    <div className="order-card" style={{ border: `2px solid ${borderColor}` }}>
+    <div className="order-card" style={{ borderLeft: `4px solid ${borderColor}` }}>
       <div className="order-card-header">
         <span className="order-card-id">Order #{order.orderNumber || order.id}</span>
         <span className={`order-card-status status-badge status-${(order.status || "unknown").toLowerCase()}`}>{order.status || "UNKNOWN"}</span>

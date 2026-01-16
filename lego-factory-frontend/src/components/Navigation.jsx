@@ -132,6 +132,26 @@ function Navigation() {
               </li>
             </ul>
           </li>
+        ) : session?.user?.role === "PRODUCTION_PLANNING" ? (
+          /* Production Planning with Manual Scheduler submenu */
+          <li className={isParentActive(["/production-planning"]) ? "has-submenu active" : "has-submenu"}>
+            <button 
+              type="button" 
+              className="menu-toggle"
+              onClick={() => toggleMenu("planning")}
+            >
+              {getRoleTitle()}
+              <span className={`arrow ${expandedMenus.planning ? "expanded" : ""}`}>▼</span>
+            </button>
+            <ul className="submenu" style={{ display: expandedMenus.planning ? "block" : undefined }}>
+              <li className={isActive("/production-planning") ? "active" : ""}>
+                <Link to="/production-planning">Dashboard</Link>
+              </li>
+              <li className={isActive("/production-planning/manual-scheduler") ? "active" : ""}>
+                <Link to="/production-planning/manual-scheduler">Manual Scheduler</Link>
+              </li>
+            </ul>
+          </li>
         ) : (
           <li className={isActive(getRoleRoute()) ? "active" : ""}>
             <Link to={getRoleRoute()}>{getRoleTitle()}</Link>

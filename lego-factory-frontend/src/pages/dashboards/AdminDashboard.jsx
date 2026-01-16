@@ -292,7 +292,7 @@ function AdminDashboard() {
 
   useEffect(() => {
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 10000); // Refresh every 10s
+    const interval = setInterval(fetchDashboardData, 30000); // Increased to 30s to reduce page jump
     return () => clearInterval(interval);
   }, [fetchDashboardData]);
 

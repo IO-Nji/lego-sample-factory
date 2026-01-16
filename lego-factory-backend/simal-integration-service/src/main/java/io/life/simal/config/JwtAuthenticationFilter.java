@@ -21,7 +21,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        return path.startsWith("/h2-console") || path.startsWith("/actuator") || path.startsWith("/error");
+        return path.startsWith("/h2-console") 
+            || path.startsWith("/actuator") 
+            || path.startsWith("/error")
+            || path.startsWith("/api/simal"); // Skip JWT validation for SimAL endpoints
     }
 
     @Override

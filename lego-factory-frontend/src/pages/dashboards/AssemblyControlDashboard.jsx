@@ -7,6 +7,8 @@ import "../../styles/DashboardLayout.css";
 function AssemblyControlDashboard() {
   const { session } = useAuth();
   const [controlOrders, setControlOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [filterStatus, setFilterStatus] = useState("ALL");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -26,16 +28,30 @@ function AssemblyControlDashboard() {
     setNotifications([]);
   };
 
+  const applyFilter = (ordersList, status) => {
+    if (status === "ALL") {
+      setFilteredOrders(ordersList);
+    } else {
+      setFilteredOrders(ordersList.filter(order => order.status === status));
+    }
+  };
+
   const fetchControlOrders = async () => {
     const workstationId = session?.user?.workstationId;
-    if (!workstationId) return;
+    if (!workstationId) {
+      setControlOrders([]);
+      setFilteredOrders([]);
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
       const response = await axios.get(`/api/assembly-control-orders/workstation/${workstationId}`);
-      setControlOrders(Array.isArray(response.data) ? response.data : []);
+      const ordersList = Array.isArray(response.data) ? response.data : [];
+      setControlOrders(ordersList);
+      applyFilter(ordersList, filterStatus);
     } catch (err) {
       setError("Failed to load assembly orders: " + (err.response?.data?.message || err.message));
     } finally {
@@ -46,22 +62,45 @@ function AssemblyControlDashboard() {
   useEffect(() => {
     if (session?.user?.workstationId) {
       fetchControlOrders();
-      const interval = setInterval(fetchControlOrders, 10000);
+      const interval = setInterval(fetchControlOrders, 30000); // Increased to 30s to reduce page jump
       return () => clearInterval(interval);
     }
   }, [session?.user?.workstationId]);
+
+  useEffect(() => {
+    applyFilter(controlOrders, filterStatus);
+  }, [filterStatus, controlOrders]);
 
   const renderOrdersTable = () => (
     <>
       <div className="dashboard-box-header dashboard-box-header-green">
         <h2 className="dashboard-box-header-title">⚙️ Assembly Control Orders</h2>
-        <button 
-          onClick={fetchControlOrders} 
-          disabled={loading} 
-          className="dashboard-box-header-action"
-        >
-          {loading ? "Refreshing..." : "Refresh"}
-        </button>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <select 
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            style={{ 
+              padding: "0.5rem", 
+              borderRadius: "0.375rem", 
+              border: "1px solid #d1d5db",
+              fontSize: "0.875rem"
+            }}
+          >
+            <option value="ALL">All Orders</option>
+            <option value="ASSIGNED">Assigned</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="HALTED">Halted</option>
+            <option value="ABANDONED">Abandoned</option>
+          </select>
+          <button 
+            onClick={fetchControlOrders} 
+            disabled={loading} 
+            className="dashboard-box-header-action"
+          >
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
       </div>
       <div className="dashboard-box-content">
         {loading ? (
@@ -70,7 +109,7 @@ function AssemblyControlDashboard() {
           </div>
         ) : (
           <div>
-            {controlOrders.length > 0 ? (
+            {filteredOrders.length > 0 ? (
               <table className="dashboard-table">
                 <thead>
                   <tr>
@@ -100,7 +139,11 @@ function AssemblyControlDashboard() {
             ) : (
               <div className="dashboard-empty-state">
                 <p className="dashboard-empty-state-title">No assembly orders assigned</p>
-                <p className="dashboard-empty-state-text">Orders will appear here when assigned to your workstation</p>
+                <p className="dashboard-empty-state-text">
+                  {filterStatus !== "ALL" 
+                    ? `No orders with status: ${filterStatus}` 
+                    : "Orders will appear here when assigned to your workstation"}
+                </p>
               </div>
             )}
           </div>

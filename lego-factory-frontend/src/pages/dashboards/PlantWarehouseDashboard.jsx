@@ -11,6 +11,8 @@ function PlantWarehouseDashboard() {
   const [products, setProducts] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState({});
   const [orders, setOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [filterStatus, setFilterStatus] = useState("ALL");
   const [inventory, setInventory] = useState([]);
   const [workstations, setWorkstations] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -46,10 +48,22 @@ function PlantWarehouseDashboard() {
       if (session?.user?.workstationId) {
         fetchInventory();
       }
-    }, 10000);
+    }, 30000); // Increased to 30s to reduce page jump
 
     return () => clearInterval(inventoryInterval);
   }, [session?.user?.workstationId]);
+
+  useEffect(() => {
+    applyFilter(orders, filterStatus);
+  }, [filterStatus, orders]);
+
+  const applyFilter = (ordersList, status) => {
+    if (status === "ALL") {
+      setFilteredOrders(ordersList);
+    } else {
+      setFilteredOrders(ordersList.filter(order => order.status === status));
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -72,11 +86,14 @@ function PlantWarehouseDashboard() {
   const fetchOrders = async () => {
     if (!session?.user?.workstationId) {
       setOrders([]);
+      setFilteredOrders([]);
       return;
     }
     try {
       const response = await axios.get("/api/customer-orders/workstation/" + session.user.workstationId);
-      setOrders(Array.isArray(response.data) ? response.data : []);
+      const ordersList = Array.isArray(response.data) ? response.data : [];
+      setOrders(ordersList);
+      applyFilter(ordersList, filterStatus);
     } catch (err) {
       if (err.response?.status !== 404) {
         setError("Failed to load orders: " + (err.response?.data?.message || err.message));
@@ -352,11 +369,31 @@ function PlantWarehouseDashboard() {
     <>
       <div className="dashboard-box-header dashboard-box-header-blue">
         <h2 className="dashboard-box-header-title">📋 Recent Orders</h2>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <select 
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            style={{ 
+              padding: "0.5rem", 
+              borderRadius: "0.375rem", 
+              border: "1px solid #d1d5db",
+              fontSize: "0.875rem"
+            }}
+          >
+            <option value="ALL">All Orders</option>
+            <option value="PENDING">Pending</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="PROCESSING">Processing</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="DELIVERED">Delivered</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
       </div>
       <div className="dashboard-box-content">
-        {Array.isArray(orders) && orders.length > 0 ? (
+        {Array.isArray(filteredOrders) && filteredOrders.length > 0 ? (
           <div className="dashboard-orders-grid">
-            {orders.map((order) => (
+            {filteredOrders.map((order) => (
               <CustomerOrderCard
                 key={order.id}
                 order={order}
@@ -375,7 +412,11 @@ function PlantWarehouseDashboard() {
         ) : (
           <div className="dashboard-empty-state">
             <p className="dashboard-empty-state-title">No orders found</p>
-            <p className="dashboard-empty-state-text">Orders will appear here when created</p>
+            <p className="dashboard-empty-state-text">
+              {filterStatus !== "ALL" 
+                ? `No orders with status: ${filterStatus}` 
+                : "Orders will appear here when created"}
+            </p>
           </div>
         )}
       </div>
