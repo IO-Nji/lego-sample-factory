@@ -40,7 +40,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         "/api/masterdata/product-variants/**",
         "/api/masterdata/modules/**",
         "/api/masterdata/parts/**",
-        "/api/simal/**",  // Allow public access to SimAL mock endpoints
         "/actuator/health",
         "/actuator/info",
         "/error"

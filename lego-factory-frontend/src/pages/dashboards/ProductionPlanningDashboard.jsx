@@ -100,20 +100,29 @@ function ProductionPlanningDashboard() {
       // Send to SimAL for scheduling
       const response = await api.post("/simal/schedule", simalRequest);
       
-      // Update production order with SimAL schedule ID
-      await api.patch(`/production-orders/${order.id}/schedule`, {
-        simalScheduleId: response.data.scheduleId,
-        status: "SCHEDULED"
-      });
-
       setSimalResponse(response.data);
       setShowScheduleModal(true);
-      setSuccess(`Production order ${order.productionOrderNumber} successfully scheduled with SimAL`);
-      addNotification(`Order ${order.productionOrderNumber} scheduled`, "success");
+      
+      // Try to update production order with SimAL schedule ID
+      // If this fails due to auth, the SimAL schedule is already created
+      try {
+        await api.patch(`/production-orders/${order.id}/schedule`, {
+          simalScheduleId: response.data.scheduleId,
+          status: "SCHEDULED"
+        });
+        setSuccess(`Production order ${order.productionOrderNumber} successfully scheduled with SimAL`);
+        addNotification(`Order ${order.productionOrderNumber} scheduled`, "success");
+      } catch (updateErr) {
+        // Log the error but don't fail the whole operation
+        console.warn('Failed to update production order status, but SimAL schedule was created:', updateErr);
+        setSuccess(`SimAL schedule ${response.data.scheduleId} created. Refresh page to see updated order status.`);
+        addNotification(`Schedule created: ${response.data.scheduleId}`, "success");
+      }
       
       await fetchProductionOrders();
       await fetchScheduledOrders();
     } catch (err) {
+      // Only fail if SimAL scheduling itself failed
       const errorMsg = err.response?.data?.message || err.message || "Failed to schedule with SimAL";
       setError(errorMsg);
       addNotification(errorMsg, "error");

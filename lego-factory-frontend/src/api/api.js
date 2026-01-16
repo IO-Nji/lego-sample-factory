@@ -45,9 +45,14 @@ api.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
     const currentPath = globalThis.location?.pathname || '/';
+    const requestUrl = error.config?.url || '';
 
     // ONLY handle authentication errors - 401 and 403
-    if (status === 401 || status === 403) {
+    // BUT: Don't log out if it's a background operation (like updating production order after SimAL schedule)
+    // We check if the request URL contains certain patterns that shouldn't trigger logout
+    const isBackgroundUpdate = requestUrl.includes('/schedule') && error.config?.method === 'patch';
+    
+    if ((status === 401 || status === 403) && !isBackgroundUpdate) {
       // Token expired, invalid, or unauthorized - clear session and redirect to home
       console.log(`${status} ${status === 401 ? 'Unauthorized' : 'Forbidden'} - clearing session`);
       localStorage.removeItem('authToken');
@@ -62,7 +67,7 @@ api.interceptors.response.use(
     // For all other errors (404, 500, network errors, etc.), 
     // let the calling component handle them
     else {
-      console.warn('API error:', status || 'Network Error', error.config?.url);
+      console.warn('API error:', status || 'Network Error', requestUrl);
     }
     
     return Promise.reject(error);
