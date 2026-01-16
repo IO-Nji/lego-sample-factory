@@ -3,17 +3,17 @@
 /* Compact, status-aware order display cards   */
 /* ============================================ */
 
+/* Import base order card dimensions */
+@import './OrderCardBase.css';
+
 /* Base Card Container */
 .customer-order-card {
+  /* Use base dimensions */
+  composes: order-card-base;
+  
+  /* Customer-specific styling */
   background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
   border: 2px solid #e0e0e0;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
-  max-width: max-content;
 }
 
 .customer-order-card:hover {
@@ -113,12 +113,15 @@
   gap: 0.25rem;
 }
 
-/* Product Items Grid - 2 columns per row */
+/* Product Items Grid - 2 columns per row, max 2 rows (4 items total) */
 .order-items-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, minmax(1.5rem, auto)); /* Fixed 2 rows */
   gap: 0.5rem; /* Horizontal spacing between items */
   width: 100%;
+  max-height: 4rem; /* Limit height to 2 rows */
+  overflow: hidden; /* Hide items beyond 2 rows */
 }
 
 /* Individual Item - Simple list format without boxes */
@@ -175,13 +178,22 @@
   padding: 1rem 0;
 }
 
-.order-date {
-  font-size: 0.5rem;
-  color: #2a2c2f;
-  text-align: right;
-  margin-top: auto;
-  padding-top: 0.25rem;
-  border-top: 1px solid #f3f4f6;
+/* Date and notification row - imported from OrderCardBase.css */
+.order-date-notification-row {
+  border-top-color: #f3f4f6;
+}
+
+/* Date styling inherited from OrderCardBase.css */
+
+/* Customer order specific notification colors */
+.customer-order-card .order-notification-message.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.customer-order-card .order-notification-message.info {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 /* ============================================ */

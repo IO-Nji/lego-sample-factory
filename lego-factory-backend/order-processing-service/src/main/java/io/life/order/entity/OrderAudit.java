@@ -29,6 +29,12 @@ public class OrderAudit {
     @Column(length = 1000)
     private String description;
 
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column(name = "user_role", length = 50)
+    private String userRole;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

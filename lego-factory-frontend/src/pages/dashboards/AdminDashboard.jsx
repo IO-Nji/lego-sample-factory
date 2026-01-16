@@ -36,15 +36,15 @@ function AdminDashboard() {
 
   // Track last data to prevent unnecessary updates
   const lastDataRef = useRef(null);
-  const previousOrdersRef = useRef(new Map());
+  // previousOrdersRef removed - now using backend audit logs
 
-  const addNotification = useCallback((message, type = 'info') => {
+  const addNotification = useCallback((message, type = 'info', userRole = 'ADMIN') => {
     const newNotification = {
       id: Date.now() + Math.random(),
       message,
       type,
       timestamp: new Date().toISOString(),
-      station: 'ADMIN'
+      station: getRoleAcronym(userRole)
     };
     setNotifications(prev => [newNotification, ...prev]);
   }, []);
@@ -53,7 +53,55 @@ function AdminDashboard() {
     setNotifications([]);
   };
 
-  // Function to detect and log order status changes
+  // Function to convert audit logs to notifications
+  const auditLogToNotification = (audit) => {
+    // Remove "Order " prefix from description if it exists
+    let message = audit.description;
+    if (message && message.startsWith('Order ')) {
+      message = message.substring(6); // Remove "Order " (6 characters)
+    }
+    
+    // Determine notification type based on event
+    let type = 'info';
+    if (audit.eventType.includes('COMPLETED')) {
+      type = 'success';
+    } else if (audit.eventType.includes('CANCELLED') || audit.eventType.includes('ERROR')) {
+      type = 'error';
+    } else if (audit.eventType.includes('PROCESSING') || audit.eventType.includes('IN_PROGRESS')) {
+      type = 'info';
+    } else if (audit.eventType.includes('PENDING') || audit.eventType.includes('CREATED')) {
+      type = 'warning';
+    }
+    
+    return {
+      id: audit.id,
+      message: message || `${audit.eventType} for ${audit.orderType} order ${audit.orderId}`,
+      type: type,
+      timestamp: audit.createdAt,
+      station: getRoleAcronym(audit.userRole || 'ADMIN')
+    };
+  };
+
+  // Fetch audit logs from backend
+  const fetchAuditLogs = useCallback(async () => {
+    try {
+      const response = await api.get('/orders/audit/recent?limit=50');
+      const auditLogs = response.data || [];
+      
+      // Convert audit logs to notifications
+      const auditNotifications = auditLogs.map(auditLogToNotification);
+      
+      // Only update if there are new logs
+      if (auditNotifications.length > 0) {
+        setNotifications(auditNotifications);
+      }
+    } catch (err) {
+      console.error('Failed to fetch audit logs:', err);
+    }
+  }, []);
+
+  // Function to detect and log order status changes (DEPRECATED - now using backend audit logs)
+  /* DEPRECATED: detectOrderChanges
   const detectOrderChanges = (allOrders) => {
     const currentOrdersMap = new Map();
     
@@ -72,7 +120,7 @@ function AdminDashboard() {
           // New order created
           const orderType = getOrderType(currentOrder.orderNumber);
           addNotification(
-            `New ${orderType} order created: ${currentOrder.orderNumber || `#${currentOrder.id}`}`,
+            `New ${orderType} order created: ${currentOrder.orderNumber || \`#${currentOrder.id}\`}`,
             'info'
           );
         } else if (previousOrder.status !== currentOrder.status) {
@@ -83,7 +131,7 @@ function AdminDashboard() {
                            currentOrder.status === 'PROCESSING' ? 'info' : 'warning';
           
           addNotification(
-            `${orderType} order ${currentOrder.orderNumber || `#${currentOrder.id}`}: ${previousOrder.status} → ${currentOrder.status}`,
+            \`${orderType} order ${currentOrder.orderNumber || \`#${currentOrder.id}\`}: ${previousOrder.status} → ${currentOrder.status}\`,
             statusType
           );
         }
@@ -93,6 +141,7 @@ function AdminDashboard() {
     // Update previous orders reference
     previousOrdersRef.current = currentOrdersMap;
   };
+  */
 
   // Map role names to acronyms for compact display
   const getRoleAcronym = (role) => {
@@ -115,10 +164,10 @@ function AdminDashboard() {
   const getOrderType = (orderNumber) => {
     if (!orderNumber) return 'Order';
     const prefix = orderNumber.split('-')[0];
-    if (prefix === 'CUST') return 'Customer Order';
-    if (prefix === 'PROD') return 'Production Order';
-    if (prefix === 'ASM') return 'Assembly Order';
-    if (prefix === 'WH' || prefix === 'SUP') return 'Supply Order';
+    if (prefix === 'CUST') return 'Customer';
+    if (prefix === 'PROD') return 'Production';
+    if (prefix === 'ASM') return 'Assembly';
+    if (prefix === 'WH' || prefix === 'SUP') return 'Supply';
     return 'Order';
   };
 
@@ -218,8 +267,8 @@ function AdminDashboard() {
         productionByType,
       };
 
-      // Detect order status changes for notifications
-      detectOrderChanges(allOrders);
+      // Fetch audit logs for notifications (replaced detectOrderChanges)
+      fetchAuditLogs();
 
       // OPTIMIZATION: Only update state if data has actually changed
       // Use JSON comparison for deep equality check
@@ -239,7 +288,7 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [dashboardData.totalOrders, addNotification]);
+  }, [dashboardData.totalOrders, fetchAuditLogs]);
 
   useEffect(() => {
     fetchDashboardData();

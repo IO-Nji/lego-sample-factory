@@ -18,8 +18,42 @@ public class OrderAuditController {
 
     @GetMapping
     public ResponseEntity<List<OrderAudit>> list(
-            @RequestParam String orderType,
-            @RequestParam Long orderId) {
-        return ResponseEntity.ok(auditService.find(orderType, orderId));
+            @RequestParam(required = false) String orderType,
+            @RequestParam(required = false) Long orderId) {
+        if (orderType != null && orderId != null) {
+            return ResponseEntity.ok(auditService.find(orderType, orderId));
+        }
+        return ResponseEntity.badRequest().build();
+    }
+    
+    @GetMapping("/recent")
+    public ResponseEntity<List<OrderAudit>> recent(
+            @RequestParam(defaultValue = "50") int limit) {
+        return ResponseEntity.ok(auditService.findRecent(limit));
+    }
+    
+    @PostMapping("/login")
+    public ResponseEntity<OrderAudit> logLogin(
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-Authenticated-Role", required = false) String userRole,
+            @RequestHeader(value = "X-Authenticated-Username", required = false) String username) {
+        
+        OrderAudit audit = new OrderAudit();
+        audit.setOrderType("SYSTEM");
+        audit.setOrderId(0L); // No specific order for login events
+        audit.setEventType("USER_LOGIN");
+        audit.setDescription("User logged in");
+        audit.setUserRole(userRole != null ? userRole : "UNKNOWN");
+        
+        if (userId != null) {
+            try {
+                audit.setUserId(Long.parseLong(userId));
+            } catch (NumberFormatException e) {
+                // Leave userId as null if parsing fails
+            }
+        }
+        
+        OrderAudit saved = auditService.saveAudit(audit);
+        return ResponseEntity.ok(saved);
     }
 }

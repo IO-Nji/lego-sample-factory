@@ -43,6 +43,26 @@ const Notification = ({
       hour12: false 
     });
   };
+  
+  const formatLoginTimestamp = (timestamp) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const time = date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+    const dateStr = date.toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: '2-digit'
+    });
+    return `${time} ${dateStr}`;
+  };
+  
+  const isLoginNotification = (notification) => {
+    return notification.message === 'User logged in' || 
+           notification.message === 'Logged in';
+  };
 
   const getNotificationIcon = (type) => {
     switch (type) {
@@ -80,27 +100,45 @@ const Notification = ({
             <p className={styles.emptyText}>No notifications</p>
           </div>
         ) : (
-          notifications.map((notification) => (
-            <div 
-              key={notification.id}
-              className={`${styles.notificationItem} ${styles[notification.type || 'info']}`}
-            >
-              <span className={styles.icon}>
-                {getNotificationIcon(notification.type)}
-              </span>
-              <span className={styles.timestamp}>
-                {formatTimestamp(notification.timestamp)}
-              </span>
-              <span className={styles.message}>
-                {notification.message}
-              </span>
-              {notification.station && (
-                <span className={styles.station}>
-                  [{notification.station}]
-                </span>
-              )}
-            </div>
-          ))
+          notifications.map((notification) => {
+            const isLogin = isLoginNotification(notification);
+            return (
+              <div 
+                key={notification.id}
+                className={`${styles.notificationItem} ${styles[notification.type || 'info']}`}
+              >
+                {isLogin ? (
+                  <>
+                    <span className={styles.message}>
+                      Logged in {formatLoginTimestamp(notification.timestamp)}
+                    </span>
+                    {notification.station && (
+                      <span className={styles.station}>
+                        [{notification.station}]
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className={styles.icon}>
+                      {getNotificationIcon(notification.type)}
+                    </span>
+                    <span className={styles.timestamp}>
+                      {formatTimestamp(notification.timestamp)}
+                    </span>
+                    <span className={styles.message}>
+                      {notification.message}
+                    </span>
+                    {notification.station && (
+                      <span className={styles.station}>
+                        [{notification.station}]
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
       

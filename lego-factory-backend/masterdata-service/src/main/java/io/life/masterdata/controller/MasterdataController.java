@@ -39,6 +39,13 @@ public class MasterdataController {
             .collect(Collectors.toList());
     }
 
+    @GetMapping("/modules/{id}")
+    public ResponseEntity<ModuleDto> getModuleById(@PathVariable Long id) {
+        return moduleService.findById(id)
+            .map(module -> ResponseEntity.ok(toModuleDto(module)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/workstations")
     public List<WorkstationDto> getWorkstations() {
         return workstationService.findAll();
@@ -49,6 +56,13 @@ public class MasterdataController {
         return partService.findAll().stream()
             .map(this::toPartDto)
             .collect(Collectors.toList());
+    }
+
+    @GetMapping("/parts/{id}")
+    public ResponseEntity<PartDto> getPartById(@PathVariable Long id) {
+        return partService.findById(id)
+            .map(part -> ResponseEntity.ok(toPartDto(part)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     // --- Modules CRUD ---

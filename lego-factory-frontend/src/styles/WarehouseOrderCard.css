@@ -4,17 +4,18 @@
 /* Uses orange/purple tones for differentiation */
 /* ============================================ */
 
+/* Import base order card dimensions */
+@import './OrderCardBase.css';
+
 /* Base Card Container */
 .warehouse-order-card {
+  /* Use base dimensions */
+  composes: order-card-base;
+  
+  /* Warehouse-specific styling */
   background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%); /* Orange tint */
   border: 2px solid #fed7aa;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
   box-shadow: 0 1px 1px rgba(251, 146, 60, 0.1);
-  max-width: max-content;
 }
 
 .warehouse-order-card:hover {
@@ -25,23 +26,23 @@
 
 /* Status Indicator - Left Border Colors */
 .warehouse-order-card.status-pending {
-  border-left: 4px solid #f59e0b; /* Amber - awaiting action */
+  border-left: 2px solid #f59e0b; /* Amber - awaiting action */
 }
 
 .warehouse-order-card.status-processing {
-  border-left: 4px solid #8b5cf6; /* Purple - in progress */
+  border-left: 2px solid #8b5cf6; /* Purple - in progress */
 }
 
 .warehouse-order-card.status-fulfilled {
-  border-left: 4px solid #10b981; /* Green - success */
+  border-left: 2px solid #10b981; /* Green - success */
 }
 
 .warehouse-order-card.status-rejected {
-  border-left: 4px solid #ef4444; /* Red - rejected */
+  border-left: 2px solid #ef4444; /* Red - rejected */
 }
 
 .warehouse-order-card.status-cancelled {
-  border-left: 4px solid #6b7280; /* Gray - inactive */
+  border-left: 2px solid #6b7280; /* Gray - inactive */
   opacity: 0.7;
 }
 
@@ -164,12 +165,15 @@
   color: #4c1d95; /* Dark indigo */
 }
 
-/* Product Items Grid - 2 columns per row */
+/* Product Items Grid - 2 columns per row, max 2 rows (4 items total) */
 .warehouse-order-card .order-items-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, minmax(1.5rem, auto)); /* Fixed 2 rows */
   gap: 0.5rem;
   width: 100%;
+  max-height: 4rem; /* Limit height to 2 rows */
+  overflow: hidden; /* Hide items beyond 2 rows */
 }
 
 /* Individual Item - Simple list format */
@@ -234,13 +238,22 @@
   padding: 1rem 0;
 }
 
-.warehouse-order-card .order-date {
-  font-size: 0.5rem;
+/* Date and notification row - imported from OrderCardBase.css */
+.warehouse-order-card .order-date-notification-row {
+  border-top-color: #fed7aa;
+}
+
+/* Date styling inherited from OrderCardBase.css */
+
+/* Warehouse order specific notification colors (orange theme) */
+.warehouse-order-card .order-notification-message.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.warehouse-order-card .order-notification-message.info {
+  background: #fef3c7;
   color: #78350f;
-  text-align: right;
-  margin-top: auto;
-  padding-top: 0.25rem;
-  border-top: 1px solid #fed7aa;
 }
 
 /* ============================================ */

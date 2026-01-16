@@ -2,7 +2,14 @@
    ORDER CARD COMPONENT STYLES
    ============================================ */
 
+/* Import base order card dimensions */
+@import './OrderCardBase.css';
+
 .order-card {
+  /* Use fixed-width variant for backward compatibility */
+  composes: order-card-base order-card-fixed;
+  
+  /* OrderCard-specific styling */
   background: #fff;
   border-radius: 0.4rem;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
@@ -10,8 +17,6 @@
   padding: 0.5rem 0.7rem;
   transition: box-shadow 0.2s;
   border: 2px solid #d1d5db;
-  min-width: 320px;
-  max-width: 320px;
   font-size: 0.8rem;
 }
 

@@ -21,6 +21,7 @@ public class JwtTokenProvider {
 
     private static final String ROLE_CLAIM = "role";
     private static final String WORKSTATION_ID_CLAIM = "workstationId";
+    private static final String USER_ID_CLAIM = "userId";
 
     private final JwtProperties properties;
     private final SecretKey signingKey;
@@ -36,6 +37,7 @@ public class JwtTokenProvider {
 
         String tokenValue = Jwts.builder()
             .setSubject(user.getUsername())
+            .claim(USER_ID_CLAIM, user.getId())
             .claim(ROLE_CLAIM, user.getRole().name())
             .claim(WORKSTATION_ID_CLAIM, user.getWorkstationId())
             .setIssuedAt(Date.from(now))

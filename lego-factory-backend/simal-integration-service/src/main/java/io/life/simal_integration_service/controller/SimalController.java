@@ -342,6 +342,61 @@ public class SimalController {
     }
 
     /**
+     * Generate control orders from SimAL schedule - simplified endpoint
+     * This endpoint accepts a POST body with scheduleId and productionOrderId
+     */
+    @PostMapping("/generate-control-orders")
+    public ResponseEntity<Map<String, Object>> generateControlOrders(
+            @RequestBody GenerateControlOrdersRequest request) {
+
+        log.info("Generating control orders for schedule: {}, production order: {}", 
+                request.getScheduleId(), request.getProductionOrderId());
+
+        SimalScheduledOrderResponse schedule = scheduledOrders.get(request.getScheduleId());
+        if (schedule == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put(STATUS, "ERROR");
+            errorResponse.put("message", "Schedule not found: " + request.getScheduleId());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        }
+
+        try {
+            Map<String, String> createdOrders = controlOrderIntegrationService
+                    .createControlOrdersFromSchedule(schedule, request.getProductionOrderId());
+
+            // Separate production and assembly control orders
+            List<String> productionControlOrders = new ArrayList<>();
+            List<String> assemblyControlOrders = new ArrayList<>();
+
+            for (Map.Entry<String, String> entry : createdOrders.entrySet()) {
+                if (entry.getValue().startsWith("PCO-")) {
+                    productionControlOrders.add(entry.getValue());
+                } else if (entry.getValue().startsWith("ACO-")) {
+                    assemblyControlOrders.add(entry.getValue());
+                }
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("scheduleId", request.getScheduleId());
+            response.put("productionOrderId", request.getProductionOrderId());
+            response.put("productionControlOrders", productionControlOrders);
+            response.put("assemblyControlOrders", assemblyControlOrders);
+            response.put("totalControlOrders", createdOrders.size());
+            response.put(STATUS, "SUCCESS");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error generating control orders: {}", e.getMessage(), e);
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put(STATUS, "ERROR");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
      * Batch create control orders for multiple schedules.
      * Useful for processing multiple production orders in one operation.
      *
@@ -421,6 +476,39 @@ public class SimalController {
 
         public void setProductionOrderIds(List<Long> productionOrderIds) {
             this.productionOrderIds = productionOrderIds;
+        }
+    }
+
+    /**
+     * DTO for generate control orders request.
+     */
+    public static class GenerateControlOrdersRequest {
+        private String scheduleId;
+        private Long productionOrderId;
+        private List<Object> scheduledTasks; // Optional, for future use
+
+        public String getScheduleId() {
+            return scheduleId;
+        }
+
+        public void setScheduleId(String scheduleId) {
+            this.scheduleId = scheduleId;
+        }
+
+        public Long getProductionOrderId() {
+            return productionOrderId;
+        }
+
+        public void setProductionOrderId(Long productionOrderId) {
+            this.productionOrderId = productionOrderId;
+        }
+
+        public List<Object> getScheduledTasks() {
+            return scheduledTasks;
+        }
+
+        public void setScheduledTasks(List<Object> scheduledTasks) {
+            this.scheduledTasks = scheduledTasks;
         }
     }
 }

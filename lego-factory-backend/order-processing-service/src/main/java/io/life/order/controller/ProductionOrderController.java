@@ -133,6 +133,24 @@ public class ProductionOrderController {
     }
 
     /**
+     * Create a production order from warehouse order (Scenario 3)
+     */
+    @PostMapping("/create")
+    public ResponseEntity<ProductionOrderDTO> createProductionOrderFromWarehouse(
+            @RequestBody CreateProductionOrderFromWarehouseRequest request) {
+        ProductionOrderDTO order = productionOrderService.createProductionOrderFromWarehouse(
+                request.getSourceCustomerOrderId(),
+                request.getSourceWarehouseOrderId(),
+                request.getPriority(),
+                request.getDueDate(),
+                request.getNotes(),
+                request.getCreatedByWorkstationId(),
+                request.getAssignedWorkstationId()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
+    }
+
+    /**
      * Update production order status
      */
     @PatchMapping("/{id}/status")
@@ -156,6 +174,24 @@ public class ProductionOrderController {
                 request.getEstimatedDuration(),
                 request.getExpectedCompletionTime()
         );
+        return ResponseEntity.ok(order);
+    }
+
+    /**
+     * Schedule production order with SimAL (update schedule ID and status)
+     */
+    @PatchMapping("/{id}/schedule")
+    public ResponseEntity<ProductionOrderDTO> scheduleWithSimal(
+            @PathVariable Long id,
+            @RequestBody ScheduleRequest request) {
+        ProductionOrderDTO order = productionOrderService.linkToSimalSchedule(
+                id,
+                request.getSimalScheduleId(),
+                null,
+                null
+        );
+        // Also update status to SCHEDULED
+        order = productionOrderService.updateProductionOrderStatus(id, "SCHEDULED");
         return ResponseEntity.ok(order);
     }
 
@@ -205,6 +241,41 @@ public class ProductionOrderController {
     }
 
     /**
+     * Request class for creating production orders from warehouse orders
+     */
+    public static class CreateProductionOrderFromWarehouseRequest {
+        private Long sourceCustomerOrderId;
+        private Long sourceWarehouseOrderId;
+        private String priority;
+        private LocalDateTime dueDate;
+        private String notes;
+        private Long createdByWorkstationId;
+        private Long assignedWorkstationId;
+
+        // Getters and Setters
+        public Long getSourceCustomerOrderId() { return sourceCustomerOrderId; }
+        public void setSourceCustomerOrderId(Long sourceCustomerOrderId) { this.sourceCustomerOrderId = sourceCustomerOrderId; }
+
+        public Long getSourceWarehouseOrderId() { return sourceWarehouseOrderId; }
+        public void setSourceWarehouseOrderId(Long sourceWarehouseOrderId) { this.sourceWarehouseOrderId = sourceWarehouseOrderId; }
+
+        public String getPriority() { return priority; }
+        public void setPriority(String priority) { this.priority = priority; }
+
+        public LocalDateTime getDueDate() { return dueDate; }
+        public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
+
+        public String getNotes() { return notes; }
+        public void setNotes(String notes) { this.notes = notes; }
+
+        public Long getCreatedByWorkstationId() { return createdByWorkstationId; }
+        public void setCreatedByWorkstationId(Long createdByWorkstationId) { this.createdByWorkstationId = createdByWorkstationId; }
+
+        public Long getAssignedWorkstationId() { return assignedWorkstationId; }
+        public void setAssignedWorkstationId(Long assignedWorkstationId) { this.assignedWorkstationId = assignedWorkstationId; }
+    }
+
+    /**
      * Request class for updating production order status
      */
     public static class UpdateStatusRequest {
@@ -230,5 +301,19 @@ public class ProductionOrderController {
 
         public LocalDateTime getExpectedCompletionTime() { return expectedCompletionTime; }
         public void setExpectedCompletionTime(LocalDateTime expectedCompletionTime) { this.expectedCompletionTime = expectedCompletionTime; }
+    }
+
+    /**
+     * Request class for scheduling with SimAL
+     */
+    public static class ScheduleRequest {
+        private String simalScheduleId;
+        private String status;
+
+        public String getSimalScheduleId() { return simalScheduleId; }
+        public void setSimalScheduleId(String simalScheduleId) { this.simalScheduleId = simalScheduleId; }
+
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
     }
 }

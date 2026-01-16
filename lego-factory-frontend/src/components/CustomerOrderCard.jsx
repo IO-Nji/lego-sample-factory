@@ -36,7 +36,8 @@ function CustomerOrderCard({
   onCancel,
   isProcessing = false,
   getProductDisplayName,
-  getInventoryStatusColor
+  getInventoryStatusColor,
+  notificationMessage = null
 }) {
   
   // Check if all items have sufficient stock
@@ -106,11 +107,11 @@ function CustomerOrderCard({
         </span>
       </div>
 
-      {/* Body with Order Items */}
+      {/* Body with Order Items - Limited to 4 items (2 rows) */}
       <div className="order-card-body">
         {order.orderItems && order.orderItems.length > 0 ? (
           <div className="order-items-list">
-            {order.orderItems.map((item, idx) => {
+            {order.orderItems.slice(0, 4).map((item, idx) => {
               const inventoryItem = inventory.find(
                 (inv) => inv.itemId === item.itemId || inv.itemId === item.id
               );
@@ -146,12 +147,20 @@ function CustomerOrderCard({
           <p className="no-items">No items in order</p>
         )}
         
-        <div className="order-date">
-          {new Date(order.orderDate).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric',
-            year: 'numeric'
-          })}
+        {/* Date and Notification Row */}
+        <div className="order-date-notification-row">
+          {notificationMessage && (
+            <div className={`order-notification-message ${notificationMessage.type || 'info'}`}>
+              {notificationMessage.text}
+            </div>
+          )}
+          <div className="order-date">
+            {new Date(order.createdAt).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </div>
         </div>
       </div>
 
@@ -226,8 +235,7 @@ CustomerOrderCard.propTypes = {
   order: PropTypes.shape({
     id: PropTypes.number.isRequired,
     orderNumber: PropTypes.string.isRequired,
-    Process: PropTypes.func, // Optional: for Scenario 2 (low stock)
-  onstatus: PropTypes.string.isRequired,
+    status: PropTypes.string.isRequired,
     orderDate: PropTypes.string.isRequired,
     orderItems: PropTypes.arrayOf(PropTypes.shape({
       itemId: PropTypes.number,
@@ -239,11 +247,16 @@ CustomerOrderCard.propTypes = {
   inventory: PropTypes.array,
   onConfirm: PropTypes.func.isRequired,
   onFulfill: PropTypes.func.isRequired,
+  onProcess: PropTypes.func, // Optional: for Scenario 2 (low stock)
   onComplete: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
   isProcessing: PropTypes.bool,
   getProductDisplayName: PropTypes.func,
-  getInventoryStatusColor: PropTypes.func
+  getInventoryStatusColor: PropTypes.func,
+  notificationMessage: PropTypes.shape({
+    text: PropTypes.string.isRequired,
+    type: PropTypes.oneOf(['success', 'info', 'warning', 'error'])
+  })
 };
 
 export default CustomerOrderCard;

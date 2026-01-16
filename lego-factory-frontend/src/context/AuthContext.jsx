@@ -35,6 +35,15 @@ export function AuthProvider({ children }) {
       const payload = { token, tokenType, expiresAt, user };
       storeSession(payload);
       setSession(payload);
+      
+      // Log the login event for audit trail
+      try {
+        await api.post('/orders/audit/login');
+      } catch (auditError) {
+        console.warn('Failed to log login event:', auditError);
+        // Don't fail login if audit logging fails
+      }
+      
       return payload;
     } catch (error) {
       console.error('Login error:', error.response?.status, error.response?.data);

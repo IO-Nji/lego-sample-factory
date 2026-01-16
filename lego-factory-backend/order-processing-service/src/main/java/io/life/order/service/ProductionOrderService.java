@@ -2,7 +2,9 @@ package io.life.order.service;
 
 import io.life.order.dto.ProductionOrderDTO;
 import io.life.order.entity.ProductionOrder;
+import io.life.order.entity.WarehouseOrder;
 import io.life.order.repository.ProductionOrderRepository;
+import io.life.order.repository.WarehouseOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -26,9 +28,12 @@ public class ProductionOrderService {
     private static final String PRODUCTION_ORDER_NOT_FOUND = "Production order not found: ";
 
     private final ProductionOrderRepository productionOrderRepository;
+    private final WarehouseOrderRepository warehouseOrderRepository;
 
-    public ProductionOrderService(ProductionOrderRepository productionOrderRepository) {
+    public ProductionOrderService(ProductionOrderRepository productionOrderRepository,
+                                 WarehouseOrderRepository warehouseOrderRepository) {
         this.productionOrderRepository = productionOrderRepository;
+        this.warehouseOrderRepository = warehouseOrderRepository;
     }
 
     /**
@@ -44,11 +49,26 @@ public class ProductionOrderService {
             Long createdByWorkstationId,
             Long assignedWorkstationId) {
 
+        // If sourceCustomerOrderId is null, fetch it from the warehouse order
+        Long customerOrderId = sourceCustomerOrderId;
+        if (customerOrderId == null && sourceWarehouseOrderId != null) {
+            @SuppressWarnings("null")
+            WarehouseOrder warehouseOrder = warehouseOrderRepository.findById(sourceWarehouseOrderId)
+                    .orElseThrow(() -> new RuntimeException("Warehouse order not found: " + sourceWarehouseOrderId));
+            customerOrderId = warehouseOrder.getSourceCustomerOrderId();
+            logger.info("Fetched customer order ID {} from warehouse order {}", 
+                    customerOrderId, sourceWarehouseOrderId);
+        }
+
+        if (customerOrderId == null) {
+            throw new RuntimeException("sourceCustomerOrderId is required and could not be determined from warehouse order");
+        }
+
         String productionOrderNumber = generateProductionOrderNumber();
 
         ProductionOrder productionOrder = ProductionOrder.builder()
                 .productionOrderNumber(productionOrderNumber)
-                .sourceCustomerOrderId(sourceCustomerOrderId)
+                .sourceCustomerOrderId(customerOrderId)
                 .sourceWarehouseOrderId(sourceWarehouseOrderId)
                 .status("CREATED")
                 .priority(priority)

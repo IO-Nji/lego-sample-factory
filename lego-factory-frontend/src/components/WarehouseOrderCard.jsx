@@ -12,30 +12,50 @@ import '../styles/WarehouseOrderCard.css';
  * @param {Function} onConfirm - Handler for confirming order (PENDING → PROCESSING)
  * @param {Function} onFulfill - Handler for fulfilling order
  * @param {Function} onCancel - Handler for cancelling order
+ * @param {Function} onCreateProductionOrder - Handler for creating production order
+ * @param {boolean} needsProduction - Whether production order is needed (stock insufficient)
  * @param {boolean} isProcessing - Whether fulfillment is in progress
  * @param {boolean} isConfirming - Whether confirmation is in progress
  * @param {Function} getProductDisplayName - Function to format product names with acronyms
+ * @param {Object} notificationMessage - Optional notification message {text, type}
  */
 function WarehouseOrderCard({ 
   order, 
   onConfirm,
   onFulfill,
   onCancel,
+  onCreateProductionOrder,
+  onSelectPriority,
+  needsProduction = false,
   isProcessing = false,
   isConfirming = false,
-  getProductDisplayName
+  showPrioritySelection = false,
+  creatingOrder = false,
+  getProductDisplayName,
+  notificationMessage = null
 }) {
   
-  // Determine which buttons to show based on order status
+  // Determine which buttons to show based on order status and stock availability
   const getAvailableActions = () => {
     const status = order.status;
     
     switch(status) {
       case 'PENDING':
+        // Only Confirm and Cancel buttons available
         return { confirm: true, cancel: true };
       
       case 'PROCESSING':
-        return { fulfill: true, cancel: true };
+        // After confirmation, show EITHER Fulfill OR Production Order based on stock
+        // If already showing priority selection, don't show other buttons
+        if (showPrioritySelection) {
+          return { prioritySelection: true };
+        }
+        // Show fulfill if sufficient stock, otherwise show production order button
+        if (needsProduction) {
+          return { createProduction: true, cancel: true };
+        } else {
+          return { fulfill: true, cancel: true };
+        }
       
       case 'FULFILLED':
       case 'CANCELLED':
@@ -96,10 +116,10 @@ function WarehouseOrderCard({
           </div>
         )}
 
-        {/* Order Items */}
+        {/* Order Items - Limited to 4 items (2 rows) */}
         {order.warehouseOrderItems && order.warehouseOrderItems.length > 0 ? (
           <div className="order-items-list">
-            {order.warehouseOrderItems.map((item) => {
+            {order.warehouseOrderItems.slice(0, 4).map((item) => {
               const itemName = getProductDisplayName ? 
                 getProductDisplayName(item.itemId, item.itemType) : 
                 (item.itemName || `Item ${item.itemId}`);
@@ -120,12 +140,20 @@ function WarehouseOrderCard({
           <p className="no-items">No items in order</p>
         )}
         
-        <div className="order-date">
-          {new Date(order.createdAt).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric',
-            year: 'numeric'
-          })}
+        {/* Date and Notification Row */}
+        <div className="order-date-notification-row">
+          {notificationMessage && (
+            <div className={`order-notification-message ${notificationMessage.type || 'info'}`}>
+              {notificationMessage.text}
+            </div>
+          )}
+          <div className="order-date">
+            {new Date(order.createdAt).toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </div>
         </div>
       </div>
 
@@ -155,6 +183,60 @@ function WarehouseOrderCard({
               >
                 {isProcessing ? 'Fulfilling...' : 'Fulfill'}
               </Button>
+            )}
+
+            {actions.createProduction && onCreateProductionOrder && (
+              <Button 
+                variant="warning" 
+                size="small" 
+                onClick={() => onCreateProductionOrder(order)}
+                disabled={isProcessing || isConfirming || creatingOrder}
+                title="Module stock insufficient - create production order"
+              >
+                🏭 Order Production
+              </Button>
+            )}
+
+            {/* Priority Selection Buttons - shown after clicking Production Order */}
+            {actions.prioritySelection && onSelectPriority && (
+              <>
+                <Button 
+                  variant="success" 
+                  size="small" 
+                  onClick={() => onSelectPriority(order, 'LOW')}
+                  disabled={creatingOrder}
+                  title="Low priority"
+                >
+                  {creatingOrder ? '...' : '🟢 LOW'}
+                </Button>
+                <Button 
+                  variant="primary" 
+                  size="small" 
+                  onClick={() => onSelectPriority(order, 'NORMAL')}
+                  disabled={creatingOrder}
+                  title="Normal priority"
+                >
+                  {creatingOrder ? '...' : '🔵 NORMAL'}
+                </Button>
+                <Button 
+                  variant="warning" 
+                  size="small" 
+                  onClick={() => onSelectPriority(order, 'HIGH')}
+                  disabled={creatingOrder}
+                  title="High priority"
+                >
+                  {creatingOrder ? '...' : '🟠 HIGH'}
+                </Button>
+                <Button 
+                  variant="danger" 
+                  size="small" 
+                  onClick={() => onSelectPriority(order, 'URGENT')}
+                  disabled={creatingOrder}
+                  title="Urgent priority"
+                >
+                  {creatingOrder ? '...' : '🔴 URGENT'}
+                </Button>
+              </>
             )}
             
             {actions.cancel && (
@@ -186,6 +268,7 @@ WarehouseOrderCard.propTypes = {
         id: PropTypes.number,
         itemId: PropTypes.number,
         itemName: PropTypes.string,
+        itemType: PropTypes.string,
         requestedQuantity: PropTypes.number,
         fulfilledQuantity: PropTypes.number
       })
@@ -195,9 +278,18 @@ WarehouseOrderCard.propTypes = {
   onConfirm: PropTypes.func,
   onFulfill: PropTypes.func,
   onCancel: PropTypes.func,
+  onCreateProductionOrder: PropTypes.func,
+  onSelectPriority: PropTypes.func,
+  needsProduction: PropTypes.bool,
   isProcessing: PropTypes.bool,
   isConfirming: PropTypes.bool,
-  getProductDisplayName: PropTypes.func
+  showPrioritySelection: PropTypes.bool,
+  creatingOrder: PropTypes.bool,
+  getProductDisplayName: PropTypes.func,
+  notificationMessage: PropTypes.shape({
+    text: PropTypes.string.isRequired,
+    type: PropTypes.oneOf(['success', 'info', 'warning', 'error'])
+  })
 };
 
 export default WarehouseOrderCard;

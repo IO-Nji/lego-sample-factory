@@ -54,7 +54,9 @@ public class WarehouseOrderService {
      * Get all warehouse orders
      */
     public List<WarehouseOrderDTO> getAllWarehouseOrders() {
-        return warehouseOrderRepository.findAll().stream()
+        List<WarehouseOrder> orders = warehouseOrderRepository.findAll();
+        logger.info("Fetching all warehouse orders - found {} orders", orders.size());
+        return orders.stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -73,7 +75,9 @@ public class WarehouseOrderService {
      * Used to retrieve orders that need to be fulfilled (e.g., Modules Supermarket)
      */
     public List<WarehouseOrderDTO> getWarehouseOrdersByFulfillingWorkstationId(Long fulfillingWorkstationId) {
-        return warehouseOrderRepository.findByFulfillingWorkstationId(fulfillingWorkstationId).stream()
+        List<WarehouseOrder> orders = warehouseOrderRepository.findByFulfillingWorkstationId(fulfillingWorkstationId);
+        logger.info("Fetching warehouse orders for workstation {} - found {} orders", fulfillingWorkstationId, orders.size());
+        return orders.stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -460,9 +464,13 @@ public class WarehouseOrderService {
 
         // Map warehouse order items
         if (order.getWarehouseOrderItems() != null) {
+            logger.info("Mapping warehouse order {} - Found {} items", 
+                order.getWarehouseOrderNumber(), order.getWarehouseOrderItems().size());
             dto.setWarehouseOrderItems(order.getWarehouseOrderItems().stream()
                     .map(this::mapItemToDTO)
                     .collect(Collectors.toList()));
+        } else {
+            logger.warn("Mapping warehouse order {} - Items are NULL", order.getWarehouseOrderNumber());
         }
 
         return dto;

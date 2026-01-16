@@ -81,6 +81,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     if (role != null) {
                         headers.set("X-Authenticated-Role", role.toString());
                     }
+                    Object userId = claims.get("userId");
+                    if (userId != null) {
+                        headers.set("X-User-Id", userId.toString());
+                    }
                 })
                 .build();
             return chain.filter(exchange.mutate().request(mutated).build());

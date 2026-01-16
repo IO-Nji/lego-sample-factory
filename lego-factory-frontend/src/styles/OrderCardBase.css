@@ -1,0 +1,125 @@
+/* ============================================ */
+/* ORDER CARD BASE STYLES                      */
+/* Common dimensions and layout for all order  */
+/* card types (Customer, Warehouse, etc.)      */
+/* ============================================ */
+
+/* Base dimensions - can be customized per card type */
+.order-card-base {
+  width: 100%;
+  min-width: 320px;
+  max-width: 400px;
+  height: 280px; /* Fixed height - no variable height */
+  
+  /* Common layout properties */
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Hover effect base */
+.order-card-base:hover {
+  transform: translateY(-2px);
+}
+
+/* ============================================ */
+/* ORDER CARD NOTIFICATION MESSAGES            */
+/* Short messages/updates displayed with date  */
+/* ============================================ */
+
+/* Container for date and notification - flex row */
+.order-date-notification-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.25rem;
+  border-top: 1px solid;
+  min-height: 1.5rem;
+}
+
+/* Date styling - aligned right, matches notification font */
+.order-date {
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 0.5rem;
+  font-weight: 500;
+  color: #2a2c2f;
+  text-align: right;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* Notification message styling - aligned left, matches date font */
+.order-notification-message {
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 0.5rem;
+  font-weight: 500;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: fadeIn 0.3s ease-out;
+  text-align: left;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Message type variants */
+.order-notification-message.success {
+  background: #d1fae5;
+  color: #065f46;
+  border-left: 2px solid #10b981;
+}
+
+.order-notification-message.info {
+  background: #dbeafe;
+  color: #1e40af;
+  border-left: 2px solid #3b82f6;
+}
+
+.order-notification-message.warning {
+  background: #fef3c7;
+  color: #92400e;
+  border-left: 2px solid #f59e0b;
+}
+
+.order-notification-message.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border-left: 2px solid #ef4444;
+}
+
+/* Size variants - override base dimensions if needed */
+.order-card-compact {
+  min-width: 280px;
+  max-width: 350px;
+  min-height: 240px;
+}
+
+.order-card-expanded {
+  min-width: 360px;
+  max-width: 450px;
+  min-height: 320px;
+}
+
+/* Fixed width variant (for older OrderCard.css style) */
+.order-card-fixed {
+  min-width: 320px;
+  max-width: 320px;
+  min-height: auto;
+}
