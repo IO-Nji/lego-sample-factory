@@ -31,12 +31,12 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         // Seed workstations
         if (workstationService.findAll().isEmpty()) {
-            workstationService.save(createWorkstationDto(null, "Injection Molding Station 1", "MANUFACTURING", "Plastic injection molding equipment", true));
-            workstationService.save(createWorkstationDto(null, "Parts Pre-Production 1", "MANUFACTURING", "Parts preparation and assembly", true));
-            workstationService.save(createWorkstationDto(null, "Part Finishing 1", "MANUFACTURING", "Part finishing and quality control", true));
-            workstationService.save(createWorkstationDto(null, "Gear Assembly 1", "ASSEMBLY", "Gear assembly station", true));
-            workstationService.save(createWorkstationDto(null, "Motor Assembly 1", "ASSEMBLY", "Motor assembly station", true));
-            workstationService.save(createWorkstationDto(null, "Final Assembly 1", "ASSEMBLY", "Final assembly station", true));
+            workstationService.save(createWorkstationDto(null, "Injection Molding Station", "MANUFACTURING", "Plastic injection molding equipment", true));
+            workstationService.save(createWorkstationDto(null, "Parts Pre-Production", "MANUFACTURING", "Parts preparation and assembly", true));
+            workstationService.save(createWorkstationDto(null, "Part Finishing", "MANUFACTURING", "Part finishing and quality control", true));
+            workstationService.save(createWorkstationDto(null, "Gear Assembly", "ASSEMBLY", "Gear assembly station", true));
+            workstationService.save(createWorkstationDto(null, "Motor Assembly", "ASSEMBLY", "Motor assembly station", true));
+            workstationService.save(createWorkstationDto(null, "Final Assembly", "ASSEMBLY", "Final assembly station", true));
             workstationService.save(createWorkstationDto(null, "Plant Warehouse", "WAREHOUSE", "Main warehouse for Plant", true));
             workstationService.save(createWorkstationDto(null, "Modules Supermarket", "WAREHOUSE", "Modules inventory point", true));
             workstationService.save(createWorkstationDto(null, "Parts Supply Warehouse", "WAREHOUSE", "Parts supply warehouse", true));

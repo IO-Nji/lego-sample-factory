@@ -343,6 +343,43 @@ public class SimalController {
     }
 
     /**
+     * Helper method to get item name from masterdata-service.
+     * Fetches the actual part/module name based on itemId and itemType.
+     *
+     * @param itemId The ID of the item
+     * @param itemType The type of item ("MODULE", "PART", or "PRODUCT_VARIANT")
+     * @return The actual item name or a fallback name
+     */
+    public String getItemName(Long itemId, String itemType) {
+        if (itemId == null || itemType == null) {
+            return "Unknown Item";
+        }
+
+        try {
+            String endpoint = switch (itemType.toUpperCase()) {
+                case "MODULE" -> "/masterdata/modules/" + itemId;
+                case "PART" -> "/masterdata/parts/" + itemId;
+                case "PRODUCT_VARIANT", "PRODUCT" -> "/masterdata/product-variants/" + itemId;
+                default -> null;
+            };
+
+            if (endpoint != null) {
+                String url = masterdataApiBaseUrl + endpoint;
+                Map<String, Object> item = restTemplate.getForObject(url, Map.class);
+
+                if (item != null && item.containsKey("name")) {
+                    return (String) item.get("name");
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch item name for {} (type: {}): {}", itemId, itemType, e.getMessage());
+        }
+
+        // Fallback to generic name if fetch fails
+        return itemType + " #" + itemId;
+    }
+
+    /**
      * Helper method to calculate estimated completion time.
      */
     private String calculateCompletionTime(int totalMinutes) {

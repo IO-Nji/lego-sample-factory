@@ -383,8 +383,20 @@ public class ControlOrderIntegrationService {
                     new io.life.simal_integration_service.dto.SimalProductionOrderRequest.OrderLineItem();
 
             Long itemId = getLongValue(item.get("itemId"));
+            String itemType = (String) item.get("itemType"); // MODULE, PART, or PRODUCT_VARIANT
+            
             lineItem.setItemId(itemId != null ? itemId.toString() : null);
-            lineItem.setItemName((String) item.get("itemName"));
+            
+            // Fetch actual item name from masterdata-service
+            String actualItemName = null;
+            if (itemId != null && itemType != null && controller instanceof io.life.simal_integration_service.controller.SimalController) {
+                io.life.simal_integration_service.controller.SimalController simalController =
+                        (io.life.simal_integration_service.controller.SimalController) controller;
+                actualItemName = simalController.getItemName(itemId, itemType);
+            }
+            
+            // Use actual name if fetched, otherwise fall back to warehouse order item name
+            lineItem.setItemName(actualItemName != null ? actualItemName : (String) item.get("itemName"));
             lineItem.setQuantity(getIntValue(item.get("requestedQuantity")));
             lineItem.setEstimatedDuration(30); // Default 30 minutes per item
             lineItem.setWorkstationType("MANUFACTURING"); // Default type
