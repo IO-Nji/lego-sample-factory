@@ -51,6 +51,12 @@ public class MasterdataController {
         return workstationService.findAll();
     }
 
+    @GetMapping("/workstations/{id}")
+    public ResponseEntity<WorkstationDto> getWorkstationById(@PathVariable Long id) {
+        WorkstationDto workstation = workstationService.findById(id);
+        return workstation != null ? ResponseEntity.ok(workstation) : ResponseEntity.notFound().build();
+    }
+
     @GetMapping("/parts")
     public List<PartDto> getParts() {
         return partService.findAll().stream()

@@ -8,9 +8,11 @@ import io.life.simal_integration_service.repository.ScheduledTaskRepository;
 import io.life.simal_integration_service.service.ControlOrderIntegrationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -36,13 +38,19 @@ public class SimalController {
     private final ControlOrderIntegrationService controlOrderIntegrationService;
     private final ScheduledOrderRepository scheduledOrderRepository;
     private final ScheduledTaskRepository scheduledTaskRepository;
+    private final RestTemplate restTemplate;
+
+    @Value("${masterdata.api.base-url:http://masterdata-service:8013/api}")
+    private String masterdataApiBaseUrl;
 
     public SimalController(ControlOrderIntegrationService controlOrderIntegrationService,
                           ScheduledOrderRepository scheduledOrderRepository,
-                          ScheduledTaskRepository scheduledTaskRepository) {
+                          ScheduledTaskRepository scheduledTaskRepository,
+                          RestTemplate restTemplate) {
         this.controlOrderIntegrationService = controlOrderIntegrationService;
         this.scheduledOrderRepository = scheduledOrderRepository;
         this.scheduledTaskRepository = scheduledTaskRepository;
+        this.restTemplate = restTemplate;
     }
 
     /**
@@ -312,17 +320,26 @@ public class SimalController {
     }
 
     /**
-     * Helper method to get workstation name from ID.
+     * Helper method to get workstation name from masterdata-service.
      */
     private String getWorkstationName(String workstationId) {
-        return switch (workstationId) {
-            case "WS-1" -> "Manufacturing Bay 1";
-            case "WS-2" -> "Manufacturing Bay 2";
-            case "WS-3" -> "Assembly Line 1";
-            case "WS-4" -> "Assembly Line 2";
-            case "WS-8" -> "Modules Supermarket";
-            default -> "Workstation " + workstationId;
-        };
+        try {
+            // Parse workstation ID (e.g., "WS-1" -> 1)
+            Long id = Long.parseLong(workstationId.replace("WS-", ""));
+            
+            // Fetch workstation from masterdata-service
+            String url = masterdataApiBaseUrl + "/masterdata/workstations/" + id;
+            Map<String, Object> workstation = restTemplate.getForObject(url, Map.class);
+            
+            if (workstation != null && workstation.containsKey("name")) {
+                return (String) workstation.get("name");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch workstation name for {}: {}", workstationId, e.getMessage());
+        }
+        
+        // Fallback to generic name if fetch fails
+        return "Workstation " + workstationId;
     }
 
     /**

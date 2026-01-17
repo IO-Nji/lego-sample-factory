@@ -30,6 +30,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/masterdata/product-variants/**").permitAll()
                 .requestMatchers("/api/masterdata/modules/**").permitAll()
                 .requestMatchers("/api/masterdata/parts/**").permitAll()
+                .requestMatchers("/api/masterdata/workstations/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

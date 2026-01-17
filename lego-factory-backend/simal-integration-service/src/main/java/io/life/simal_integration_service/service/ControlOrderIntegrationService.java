@@ -411,7 +411,23 @@ public class ControlOrderIntegrationService {
 
             log.info("Successfully scheduled production order {} in SimAL", productionOrderId);
 
-            return response.getBody();
+            // 8. Automatically create control orders from the schedule
+            io.life.simal_integration_service.dto.SimalScheduledOrderResponse scheduleResponse = response.getBody();
+            if (scheduleResponse != null && scheduleResponse.getScheduleId() != null) {
+                try {
+                    log.info("Auto-creating control orders for schedule: {}", scheduleResponse.getScheduleId());
+                    Map<String, String> createdOrders = createControlOrdersFromSchedule(
+                            scheduleResponse, productionOrderId);
+                    log.info("Created {} control orders for production order {}", 
+                            createdOrders.size(), productionOrderId);
+                } catch (Exception controlOrderError) {
+                    log.error("Failed to auto-create control orders (schedule still created): {}", 
+                            controlOrderError.getMessage());
+                    // Don't fail the whole operation if control order creation fails
+                }
+            }
+
+            return scheduleResponse;
 
         } catch (Exception e) {
             log.error("Error submitting production order to SimAL", e);
