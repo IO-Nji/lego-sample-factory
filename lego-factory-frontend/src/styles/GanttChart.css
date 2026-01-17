@@ -146,6 +146,17 @@
   cursor: move;
 }
 
+.gantt-task.editable:active {
+  cursor: grabbing;
+}
+
+.gantt-task.dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
 .gantt-task.hovered {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
@@ -159,6 +170,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.manual-adjustment-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+  margin-right: 0.25rem;
+  animation: fadeIn 0.3s ease;
 }
 
 /* Tooltip */
@@ -176,6 +198,7 @@
   z-index: 100;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   pointer-events: none;
+  min-width: 200px;
 }
 
 .gantt-tooltip::after {
@@ -197,6 +220,28 @@
 
 .tooltip-row strong {
   margin-right: 0.5rem;
+}
+
+.tooltip-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0.5rem 0;
+}
+
+.tooltip-row.manual-adjustment-info {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Legend */

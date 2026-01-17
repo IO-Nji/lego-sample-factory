@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/api';
 import GanttChart from '../components/GanttChart';
 import { Button } from '../components';
+import { useAuth } from '../context/AuthContext';
 import '../styles/ManualScheduler.css';
 
 /**
@@ -15,6 +16,7 @@ import '../styles/ManualScheduler.css';
  * - Visualize conflicts and resource allocation
  */
 function ManualSchedulerPage() {
+  const { session } = useAuth();
   const [scheduledOrders, setScheduledOrders] = useState([]);
   const [productionOrders, setProductionOrders] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -27,7 +29,7 @@ function ManualSchedulerPage() {
     workstationId: '',
     scheduledStartTime: '',
     duration: '',
-    priority: 'NORMAL'
+    reason: ''
   });
 
   // Fetch scheduled orders from SimAL
@@ -72,7 +74,7 @@ function ManualSchedulerPage() {
     (order.scheduledTasks || []).map(task => ({
       ...task,
       id: task.taskId,
-      workstationName: task.workstation,
+      workstationName: task.workstationName, // Use workstationName from DTO
       startTime: task.startTime,
       endTime: task.endTime,
       status: order.status || 'SCHEDULED'
@@ -86,10 +88,41 @@ function ManualSchedulerPage() {
       workstationId: task.workstationId || '',
       scheduledStartTime: task.startTime || '',
       duration: task.duration || '',
-      priority: 'NORMAL'
+      reason: ''
     });
     setError(null);
     setSuccess(null);
+  };
+
+  // Handle task drag-and-drop
+  const handleTaskDragEnd = async (task, newStartTime) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Format datetime for API
+      const formattedStartTime = newStartTime.toISOString().slice(0, 16);
+      
+      await api.put(`/simal/tasks/${task.taskId}/reschedule`, {
+        workstationId: task.workstationId,
+        scheduledStartTime: formattedStartTime,
+        duration: task.duration,
+        reason: 'Drag-and-drop reschedule'
+      }, {
+        headers: {
+          'X-User-Id': session?.user?.username || 'system'
+        }
+      });
+
+      setSuccess(`Task rescheduled to ${newStartTime.toLocaleString()}`);
+      fetchScheduledOrders(); // Refresh
+    } catch (err) {
+      console.error('Drag reschedule failed:', err);
+      setError('Failed to reschedule task: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle form input changes
@@ -107,6 +140,11 @@ function ManualSchedulerPage() {
       return;
     }
 
+    if (!adjustmentForm.workstationId || !adjustmentForm.scheduledStartTime || !adjustmentForm.duration) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -117,13 +155,18 @@ function ManualSchedulerPage() {
         workstationId: adjustmentForm.workstationId,
         scheduledStartTime: adjustmentForm.scheduledStartTime,
         duration: parseInt(adjustmentForm.duration),
-        priority: adjustmentForm.priority
+        reason: adjustmentForm.reason || 'Manual adjustment'
+      }, {
+        headers: {
+          'X-User-Id': session?.user?.username || 'system'
+        }
       });
 
       setSuccess(`Task ${selectedTask.taskId} rescheduled successfully`);
       setSelectedTask(null);
       fetchScheduledOrders(); // Refresh
     } catch (err) {
+      console.error('Manual reschedule failed:', err);
       setError('Failed to reschedule task: ' + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
@@ -137,7 +180,7 @@ function ManualSchedulerPage() {
       workstationId: '',
       scheduledStartTime: '',
       duration: '',
-      priority: 'NORMAL'
+      reason: ''
     });
     setError(null);
     setSuccess(null);
@@ -181,6 +224,7 @@ function ManualSchedulerPage() {
         <GanttChart
           scheduledTasks={tasksForGantt}
           onTaskClick={handleTaskClick}
+          onTaskDragEnd={handleTaskDragEnd}
           editable={true}
         />
       </div>
@@ -205,7 +249,7 @@ function ManualSchedulerPage() {
             <div className="adjustment-form">
               {/* Selected Task Info */}
               <div className="selected-task-info">
-                <h3>Selected Task: {selectedTask.taskType || selectedTask.operationType}</h3>
+                <h3>Selected Task: {selectedTask.itemName || selectedTask.taskType || selectedTask.operationType}</h3>
                 <div className="task-details-grid">
                   <div className="detail-item">
                     <span className="label">Task ID:</span>
@@ -213,7 +257,7 @@ function ManualSchedulerPage() {
                   </div>
                   <div className="detail-item">
                     <span className="label">Current Workstation:</span>
-                    <span className="value">{selectedTask.workstation}</span>
+                    <span className="value">{selectedTask.workstationName || selectedTask.workstation}</span>
                   </div>
                   <div className="detail-item">
                     <span className="label">Current Start:</span>
@@ -231,13 +275,19 @@ function ManualSchedulerPage() {
                       {selectedTask.status}
                     </span>
                   </div>
+                  {selectedTask.manuallyAdjusted && (
+                    <div className="detail-item">
+                      <span className="label">Manual Adjustment:</span>
+                      <span className="value manual-badge">✏️ Yes</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Adjustment Form */}
               <div className="form-grid">
                 <div className="form-group">
-                  <label htmlFor="workstation">New Workstation ID</label>
+                  <label htmlFor="workstation">New Workstation ID *</label>
                   <input
                     id="workstation"
                     type="text"
@@ -245,22 +295,24 @@ function ManualSchedulerPage() {
                     onChange={(e) => handleFormChange('workstationId', e.target.value)}
                     placeholder="Enter workstation ID"
                     className="form-input"
+                    required
                   />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="startTime">New Start Time</label>
+                  <label htmlFor="startTime">New Start Time *</label>
                   <input
                     id="startTime"
                     type="datetime-local"
                     value={adjustmentForm.scheduledStartTime}
                     onChange={(e) => handleFormChange('scheduledStartTime', e.target.value)}
                     className="form-input"
+                    required
                   />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="duration">New Duration (minutes)</label>
+                  <label htmlFor="duration">New Duration (minutes) *</label>
                   <input
                     id="duration"
                     type="number"
@@ -269,23 +321,20 @@ function ManualSchedulerPage() {
                     placeholder="Duration in minutes"
                     min="1"
                     className="form-input"
+                    required
                   />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="priority">Priority</label>
-                  <select
-                    id="priority"
-                    value={adjustmentForm.priority}
-                    onChange={(e) => handleFormChange('priority', e.target.value)}
+                  <label htmlFor="reason">Adjustment Reason</label>
+                  <input
+                    id="reason"
+                    type="text"
+                    value={adjustmentForm.reason}
+                    onChange={(e) => handleFormChange('reason', e.target.value)}
+                    placeholder="Why are you making this change?"
                     className="form-input"
-                  >
-                    <option value="LOW">Low</option>
-                    <option value="NORMAL">Normal</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="HIGH">High</option>
-                    <option value="URGENT">Urgent</option>
-                  </select>
+                  />
                 </div>
               </div>
 
@@ -294,7 +343,7 @@ function ManualSchedulerPage() {
                 <Button 
                   variant="primary" 
                   onClick={handleSubmitAdjustment}
-                  disabled={loading || !adjustmentForm.workstationId || !adjustmentForm.scheduledStartTime}
+                  disabled={loading || !adjustmentForm.workstationId || !adjustmentForm.scheduledStartTime || !adjustmentForm.duration}
                 >
                   {loading ? 'Applying...' : '✅ Apply Changes'}
                 </Button>
@@ -310,7 +359,8 @@ function ManualSchedulerPage() {
           ) : (
             <div className="no-selection">
               <p>Click on a task in the Gantt chart above to adjust its schedule</p>
-              <p className="hint">You can also drag tasks to reschedule them visually</p>
+              <p className="hint">💡 Tip: You can drag tasks left/right in the Gantt chart to reschedule them quickly</p>
+              <p className="hint">✏️ Tasks with manual adjustments are marked with a pencil icon</p>
             </div>
           )}
         </div>

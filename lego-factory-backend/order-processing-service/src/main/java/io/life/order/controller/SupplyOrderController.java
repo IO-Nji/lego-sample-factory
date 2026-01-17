@@ -1,11 +1,17 @@
 package io.life.order.controller;
 
 import io.life.order.dto.SupplyOrderDTO;
+import io.life.order.dto.SupplyOrderItemDTO;
 import io.life.order.service.SupplyOrderService;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +28,41 @@ public class SupplyOrderController {
 
     public SupplyOrderController(SupplyOrderService supplyOrderService) {
         this.supplyOrderService = supplyOrderService;
+    }
+
+    /**
+     * Request object for creating a new supply order.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CreateSupplyOrderRequest {
+        private Long sourceControlOrderId;
+        private String sourceControlOrderType; // PRODUCTION or ASSEMBLY
+        private Long requestingWorkstationId;
+        private String priority;
+        private LocalDateTime requestedByTime;
+        private List<SupplyOrderItemDTO> requiredItems;
+        private String notes;
+    }
+
+    /**
+     * Create a new supply order.
+     * Called by production/assembly control operators to request parts from warehouse.
+     */
+    @PostMapping
+    public ResponseEntity<SupplyOrderDTO> createSupplyOrder(@RequestBody CreateSupplyOrderRequest request) {
+        SupplyOrderDTO order = supplyOrderService.createSupplyOrder(
+                request.getSourceControlOrderId(),
+                request.getSourceControlOrderType(),
+                request.getRequestingWorkstationId(),
+                request.getPriority(),
+                request.getRequestedByTime(),
+                request.getRequiredItems(),
+                request.getNotes()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 
     /**

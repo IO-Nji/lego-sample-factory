@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import axios from "axios";
-import "../styles/StandardPage.css";
-import "../styles/DashboardStandard.css";
-import "../styles/ControlPages.css";
+import api from "../api/api";
+import { DashboardLayout, StatCard, Button, Card, Badge } from "../components";
+import "../styles/DashboardLayout.css";
 
 /**
  * Generic Workstation Page - Used for both Manufacturing and Assembly
@@ -13,18 +12,18 @@ import "../styles/ControlPages.css";
  * Displays tasks and allows operators to complete them.
  */
 function ManufacturingWorkstationPage() {
-  const { workstationType } = useParams(); // injection-molding, parts-pre-production, part-finishing, gear-assembly, motor-assembly, final-assembly
+  const { workstationType } = useParams();
   const { session } = useAuth();
   const [controlOrders, setControlOrders] = useState([]);
-  const [activeOrders, setActiveOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [operatorNotes, setOperatorNotes] = useState("");
-  const [filterStatus, setFilterStatus] = useState("ALL"); // Filter by status
+  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  const workstationId = session?.user?.workstationId;
+  const workstationId = session?.user?.workstation?.id;
 
   // Map manufacturing workstation types to API endpoints
   const manufacturingEndpoints = {
@@ -68,8 +67,7 @@ function ManufacturingWorkstationPage() {
   useEffect(() => {
     if (workstationId) {
       fetchControlOrders();
-      // Refresh every 10 seconds
-      const interval = setInterval(fetchControlOrders, 10000);
+      const interval = setInterval(fetchControlOrders, 30000); // 30 seconds
       return () => clearInterval(interval);
     }
   }, [workstationId, workstationType]);
@@ -80,24 +78,11 @@ function ManufacturingWorkstationPage() {
     setError(null);
 
     try {
-      const response = await axios.get(
-        `${apiEndpoint}/workstation/${workstationId}`
-      );
+      const response = await api.get(`${apiEndpoint}/workstation/${workstationId}`);
       const orders = Array.isArray(response.data) ? response.data : [];
       setControlOrders(orders);
-
-      // Get active orders
-      const active = orders.filter((o) => o.status === "IN_PROGRESS");
-      setActiveOrders(active);
-
-      if (orders.length === 0) {
-        setSuccessMessage(`No ${taskType} tasks assigned yet`);
-      }
     } catch (err) {
-      setError(
-        `Failed to load ${taskType} tasks: ` +
-          (err.response?.data?.message || err.message)
-      );
+      setError(`Failed to load ${taskType} tasks: ` + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
@@ -106,39 +91,11 @@ function ManufacturingWorkstationPage() {
   const startProduction = async (orderId) => {
     try {
       setLoading(true);
-      const response = await axios.post(
-        `${apiEndpoint}/${orderId}/start`,
-        { operatorId: session?.user?.id || "UNKNOWN" }
-      );
-      setSelectedOrder(response.data);
+      await api.post(`${apiEndpoint}/${orderId}/start`, { operatorId: session?.user?.id || "UNKNOWN" });
       await fetchControlOrders();
-      setSuccessMessage(`${taskType.charAt(0).toUpperCase() + taskType.slice(1)} task started successfully!`);
-      setTimeout(() => setSuccessMessage(null), 3000);
+      setSuccess(`${taskType.charAt(0).toUpperCase() + taskType.slice(1)} task started successfully!`);
     } catch (err) {
       setError(`Failed to start ${taskType}: ` + (err.response?.data?.message || err.message));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateNotes = async (orderId) => {
-    if (!operatorNotes.trim()) {
-      setError("Please enter notes before updating");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await axios.patch(
-        `${apiEndpoint}/${orderId}/notes`,
-        { notes: operatorNotes }
-      );
-      setSelectedOrder(response.data);
-      setOperatorNotes("");
-      setSuccessMessage("Notes updated successfully!");
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      setError("Failed to update notes: " + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
@@ -149,29 +106,20 @@ function ManufacturingWorkstationPage() {
       ? "Are you sure the assembly task is complete and quality checks have passed?"
       : "Are you sure the manufacturing task is complete and quality checks have passed?";
     
-    if (!window.confirm(message)) {
-      return;
-    }
+    if (!window.confirm(message)) return;
 
     try {
       setLoading(true);
-      const response = await axios.put(
-        `${apiEndpoint}/${orderId}/complete`,
-        {}
-      );
+      await api.put(`${apiEndpoint}/${orderId}/complete`, {});
       setSelectedOrder(null);
-      setOperatorNotes("");
+      setShowDetailsModal(false);
       await fetchControlOrders();
       const creditMsg = isAssembly && workstationType === "final-assembly"
         ? "Plant Warehouse has been credited with a finished product."
         : "Modules Supermarket has been credited with a module unit.";
-      setSuccessMessage(`${taskType.charAt(0).toUpperCase() + taskType.slice(1)} task completed successfully! ${creditMsg}`);
-      setTimeout(() => setSuccessMessage(null), 3000);
+      setSuccess(`${taskType.charAt(0).toUpperCase() + taskType.slice(1)} task completed! ${creditMsg}`);
     } catch (err) {
-      setError(
-        `Failed to complete ${taskType} task: ` +
-          (err.response?.data?.message || err.message)
-      );
+      setError(`Failed to complete ${taskType} task: ` + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
@@ -183,327 +131,242 @@ function ManufacturingWorkstationPage() {
 
     try {
       setLoading(true);
-      const response = await axios.post(
-        `${apiEndpoint}/${orderId}/halt`,
-        { reason: reason }
-      );
+      await api.post(`${apiEndpoint}/${orderId}/halt`, { reason });
       setSelectedOrder(null);
-      setOperatorNotes("");
+      setShowDetailsModal(false);
       await fetchControlOrders();
-      setError(null);
-      setSuccessMessage(`${taskType.charAt(0).toUpperCase() + taskType.slice(1)} task halted and logged`);
-      setTimeout(() => setSuccessMessage(null), 3000);
+      setSuccess(`${taskType.charAt(0).toUpperCase() + taskType.slice(1)} task halted and logged`);
     } catch (err) {
-      setError(
-        `Failed to halt ${taskType}: ` +
-          (err.response?.data?.message || err.message)
-      );
+      setError(`Failed to halt ${taskType}: ` + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      ASSIGNED: "#FFA500", // Orange
-      IN_PROGRESS: "#4CAF50", // Green
-      COMPLETED: "#2196F3", // Blue
-      HALTED: "#F44336", // Red
-      ABANDONED: "#9C27B0", // Purple
-    };
-    return colors[status] || "#757575";
-  };
-
-  const getPriorityColor = (priority) => {
-    const colors = {
-      LOW: "#81C784",
-      MEDIUM: "#FFB74D",
-      HIGH: "#EF5350",
-      URGENT: "#C62828",
-    };
-    return colors[priority] || "#757575";
-  };
-
-  const formatDateTime = (dateString) => {
-    if (!dateString) return "Not started";
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
-
   const getFilteredOrders = () => {
-    if (filterStatus === "ALL") {
-      return controlOrders;
-    }
+    if (filterStatus === "ALL") return controlOrders;
     return controlOrders.filter((o) => o.status === filterStatus);
+  };
+
+  const handleViewDetails = (order) => {
+    setSelectedOrder(order);
+    setShowDetailsModal(true);
+  };
+
+  // Stats cards
+  const renderStatsCards = () => {
+    const total = controlOrders.length;
+    const assigned = controlOrders.filter(o => o.status === "ASSIGNED").length;
+    const inProgress = controlOrders.filter(o => o.status === "IN_PROGRESS").length;
+    const completed = controlOrders.filter(o => o.status === "COMPLETED").length;
+
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
+        <StatCard value={total} label="Total Tasks" variant="primary" />
+        <StatCard value={assigned} label="Assigned" variant="info" />
+        <StatCard value={inProgress} label="In Progress" variant="warning" />
+        <StatCard value={completed} label="Completed" variant="success" />
+      </div>
+    );
+  };
+
+  // Filter controls
+  const renderFilterControls = () => (
+    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+      <select 
+        value={filterStatus}
+        onChange={(e) => setFilterStatus(e.target.value)}
+        style={{ padding: "0.5rem", borderRadius: "0.375rem", border: "1px solid #d1d5db", fontSize: "0.875rem" }}
+      >
+        <option value="ALL">All Tasks</option>
+        <option value="ASSIGNED">Assigned</option>
+        <option value="IN_PROGRESS">In Progress</option>
+        <option value="COMPLETED">Completed</option>
+        <option value="HALTED">Halted</option>
+      </select>
+      <Button 
+        variant="secondary"
+        size="small"
+        onClick={fetchControlOrders} 
+        disabled={loading}
+      >
+        {loading ? "Refreshing..." : "Refresh"}
+      </Button>
+    </div>
+  );
+
+  // Orders display
+  const renderOrders = () => {
+    const filteredOrders = getFilteredOrders();
+
+    if (loading && controlOrders.length === 0) {
+      return <div className="dashboard-empty-state">Loading tasks...</div>;
+    }
+
+    if (filteredOrders.length === 0) {
+      return (
+        <div className="dashboard-empty-state">
+          <p className="dashboard-empty-state-title">No tasks</p>
+          <p className="dashboard-empty-state-text">
+            {filterStatus !== "ALL" 
+              ? `No tasks with status: ${filterStatus}` 
+              : `No ${taskType} tasks assigned yet`}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
+        {filteredOrders.map((order) => (
+          <Card key={order.id} style={{ padding: "1rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.75rem" }}>
+              <div>
+                <h3 style={{ fontSize: "1.125rem", fontWeight: "600", margin: "0 0 0.25rem 0" }}>
+                  {order.controlOrderNumber}
+                </h3>
+                <p style={{ fontSize: "0.875rem", color: "#6b7280", margin: 0 }}>
+                  Production Order #{order.sourceProductionOrderId}
+                </p>
+              </div>
+              <Badge 
+                variant={
+                  order.status === "COMPLETED" ? "success" :
+                  order.status === "IN_PROGRESS" ? "warning" :
+                  order.status === "HALTED" ? "danger" :
+                  "default"
+                }
+              >
+                {order.status}
+              </Badge>
+            </div>
+            
+            <div style={{ marginBottom: "0.75rem", fontSize: "0.875rem" }}>
+              <div style={{ marginBottom: "0.25rem" }}>
+                <span style={{ fontWeight: "500" }}>Priority:</span> {order.priority || "MEDIUM"}
+              </div>
+              <div style={{ marginBottom: "0.25rem" }}>
+                <span style={{ fontWeight: "500" }}>Target:</span> {new Date(order.targetCompletionTime).toLocaleString()}
+              </div>
+            </div>
+            
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              {order.status === "ASSIGNED" && (
+                <Button variant="success" size="small" onClick={() => startProduction(order.id)}>
+                  Start Task
+                </Button>
+              )}
+              {order.status === "IN_PROGRESS" && (
+                <>
+                  <Button variant="success" size="small" onClick={() => completeProduction(order.id)}>
+                    Complete
+                  </Button>
+                  <Button variant="warning" size="small" onClick={() => haltProduction(order.id)}>
+                    Halt
+                  </Button>
+                </>
+              )}
+              <Button variant="outline" size="small" onClick={() => handleViewDetails(order)}>
+                View Details
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  // Details modal
+  const renderDetailsModal = () => {
+    if (!showDetailsModal || !selectedOrder) return null;
+
+    return (
+      <div className="modal">
+        <div className="modal-overlay" onClick={() => setShowDetailsModal(false)} />
+        <div className="modal-content">
+          <div className="modal-header">
+            <h2>{taskType.charAt(0).toUpperCase() + taskType.slice(1)} Task: {selectedOrder.controlOrderNumber}</h2>
+            <button onClick={() => setShowDetailsModal(false)} className="modal-close">×</button>
+          </div>
+          <div className="modal-body">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem" }}>
+              <div><strong>Status:</strong> <Badge variant={
+                selectedOrder.status === "COMPLETED" ? "success" :
+                selectedOrder.status === "IN_PROGRESS" ? "warning" :
+                "default"
+              }>{selectedOrder.status}</Badge></div>
+              <div><strong>Priority:</strong> {selectedOrder.priority || "MEDIUM"}</div>
+              <div><strong>Production Order:</strong> #{selectedOrder.sourceProductionOrderId}</div>
+              <div><strong>SimAL Schedule ID:</strong> {selectedOrder.simalScheduleId}</div>
+              <div><strong>Target Start:</strong> {new Date(selectedOrder.targetStartTime).toLocaleString()}</div>
+              <div><strong>Target Completion:</strong> {new Date(selectedOrder.targetCompletionTime).toLocaleString()}</div>
+              {selectedOrder.actualStartTime && (
+                <div><strong>Actual Start:</strong> {new Date(selectedOrder.actualStartTime).toLocaleString()}</div>
+              )}
+              {selectedOrder.actualCompletionTime && (
+                <div><strong>Actual Completion:</strong> {new Date(selectedOrder.actualCompletionTime).toLocaleString()}</div>
+              )}
+              {selectedOrder.actualDurationMinutes && (
+                <div><strong>Duration:</strong> {selectedOrder.actualDurationMinutes} minutes</div>
+              )}
+            </div>
+            {selectedOrder.productionInstructions && (
+              <div style={{ marginTop: "1rem" }}>
+                <strong>Production Instructions:</strong>
+                <p style={{ marginTop: "0.5rem", padding: "0.75rem", backgroundColor: "#f3f4f6", borderRadius: "0.375rem" }}>
+                  {selectedOrder.productionInstructions}
+                </p>
+              </div>
+            )}
+            {selectedOrder.qualityCheckpoints && (
+              <div style={{ marginTop: "1rem" }}>
+                <strong>Quality Checkpoints:</strong>
+                <p style={{ marginTop: "0.5rem", padding: "0.75rem", backgroundColor: "#f3f4f6", borderRadius: "0.375rem" }}>
+                  {selectedOrder.qualityCheckpoints}
+                </p>
+              </div>
+            )}
+            {selectedOrder.safetyProcedures && (
+              <div style={{ marginTop: "1rem" }}>
+                <strong>Safety Procedures:</strong>
+                <p style={{ marginTop: "0.5rem", padding: "0.75rem", backgroundColor: "#fef3c7", borderRadius: "0.375rem" }}>
+                  {selectedOrder.safetyProcedures}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const filteredOrders = getFilteredOrders();
 
   return (
-    <div className="control-page">
-      <h1>{stationTitle}</h1>
-
-      {error && (
-        <div className="error-message">
-          <span>{error}</span>
-          <button onClick={() => setError(null)}>✕</button>
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="success-message">
-          <span>{successMessage}</span>
-          <button onClick={() => setSuccessMessage(null)}>✕</button>
-        </div>
-      )}
-
-      <div className="controls-section">
-        <div className="filters">
-          <select 
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            style={{ 
-              padding: "0.5rem", 
-              borderRadius: "0.375rem", 
-              border: "1px solid #d1d5db",
-              fontSize: "0.875rem",
-              marginRight: "0.5rem"
-            }}
-          >
-            <option value="ALL">All Orders ({controlOrders.length})</option>
-            <option value="ASSIGNED">Assigned ({controlOrders.filter((o) => o.status === "ASSIGNED").length})</option>
-            <option value="IN_PROGRESS">In Progress ({controlOrders.filter((o) => o.status === "IN_PROGRESS").length})</option>
-            <option value="COMPLETED">Completed ({controlOrders.filter((o) => o.status === "COMPLETED").length})</option>
-            <option value="HALTED">Halted ({controlOrders.filter((o) => o.status === "HALTED").length})</option>
-            <option value="ABANDONED">Abandoned ({controlOrders.filter((o) => o.status === "ABANDONED").length})</option>
-          </select>
-        </div>
-
-        <button onClick={fetchControlOrders} disabled={loading} className="refresh-btn">
-          🔄 Refresh
-        </button>
-      </div>
-
-      <div className="main-content">
-        <div className="orders-list">
-          <h2>📋 Manufacturing Tasks</h2>
-          {loading && !selectedOrder ? (
-            <div className="loading">Loading manufacturing tasks...</div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="no-orders">
-              {filterStatus !== "ALL" 
-                ? `No manufacturing tasks with status: ${filterStatus}` 
-                : "No manufacturing tasks in this filter"}
+    <>
+      <DashboardLayout
+        title={stationTitle}
+        subtitle={`Execute ${taskType} tasks for ${session?.user?.workstation?.name || 'workstation'}`}
+        icon={isAssembly ? "⚙️" : "🏭"}
+        layout="compact"
+        statsCards={renderStatsCards()}
+        primaryContent={
+          <div className="dashboard-box">
+            <div className="dashboard-box-header dashboard-box-header-green">
+              <h2 className="dashboard-box-header-title">{taskType.charAt(0).toUpperCase() + taskType.slice(1)} Tasks</h2>
+              {renderFilterControls()}
             </div>
-          ) : (
-            filteredOrders.map((order) => (
-              <div
-                key={order.id}
-                className={`order-card ${selectedOrder?.id === order.id ? "selected" : ""}`}
-                onClick={() => {
-                  setSelectedOrder(order);
-                  setOperatorNotes(order.operatorNotes || "");
-                }}
-              >
-                <div className="order-header">
-                  <span className="order-number">{order.controlOrderNumber}</span>
-                  <span
-                    className="status-badge"
-                    style={{ backgroundColor: getStatusColor(order.status) }}
-                  >
-                    {order.status}
-                  </span>
-                  <span
-                    className="priority-badge"
-                    style={{ color: getPriorityColor(order.priority) }}
-                  >
-                    {order.priority}
-                  </span>
-                </div>
-                <div className="order-details">
-                  <span>From Production Order: {order.sourceProductionOrderId}</span>
-                  <span>Target: {formatDateTime(order.targetCompletionTime)}</span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        <div className="order-details-panel">
-          {selectedOrder ? (
-            <div className="details-content">
-              <h2>📌 Manufacturing Task Details</h2>
-
-              <div className="detail-group">
-                <h3>Task Information</h3>
-                <div className="detail-row">
-                  <span className="label">Task Number:</span>
-                  <span className="value">{selectedOrder.controlOrderNumber}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Production Order ID:</span>
-                  <span className="value">{selectedOrder.sourceProductionOrderId}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Status:</span>
-                  <span
-                    className="status-badge"
-                    style={{ backgroundColor: getStatusColor(selectedOrder.status) }}
-                  >
-                    {selectedOrder.status}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Priority:</span>
-                  <span
-                    className="priority-badge"
-                    style={{ color: getPriorityColor(selectedOrder.priority) }}
-                  >
-                    {selectedOrder.priority}
-                  </span>
-                </div>
-              </div>
-
-              <div className="detail-group">
-                <h3>⏱️ Timeline</h3>
-                <div className="detail-row">
-                  <span className="label">Target Start:</span>
-                  <span className="value">
-                    {formatDateTime(selectedOrder.targetStartTime)}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Target Completion:</span>
-                  <span className="value">
-                    {formatDateTime(selectedOrder.targetCompletionTime)}
-                  </span>
-                </div>
-                {selectedOrder.actualStartTime && (
-                  <div className="detail-row">
-                    <span className="label">Actual Start:</span>
-                    <span className="value">
-                      {formatDateTime(selectedOrder.actualStartTime)}
-                    </span>
-                  </div>
-                )}
-                {selectedOrder.actualCompletionTime && (
-                  <div className="detail-row">
-                    <span className="label">Actual Completion:</span>
-                    <span className="value">
-                      {formatDateTime(selectedOrder.actualCompletionTime)}
-                    </span>
-                  </div>
-                )}
-                {selectedOrder.actualDurationMinutes && (
-                  <div className="detail-row">
-                    <span className="label">Duration:</span>
-                    <span className="value">{selectedOrder.actualDurationMinutes} minutes</span>
-                  </div>
-                )}
-              </div>
-
-              {selectedOrder.productionInstructions && (
-                <div className="detail-group">
-                  <h3>📋 Manufacturing Instructions</h3>
-                  <div className="instructions-box">
-                    {selectedOrder.productionInstructions}
-                  </div>
-                </div>
-              )}
-
-              {selectedOrder.qualityCheckpoints && (
-                <div className="detail-group">
-                  <h3>✓ Quality Checkpoints</h3>
-                  <div className="checkpoints-box">
-                    {selectedOrder.qualityCheckpoints}
-                  </div>
-                </div>
-              )}
-
-              {selectedOrder.safetyProcedures && (
-                <div className="detail-group">
-                  <h3>⚠️ Safety Procedures</h3>
-                  <div className="safety-box">
-                    {selectedOrder.safetyProcedures}
-                  </div>
-                </div>
-              )}
-
-              {selectedOrder.status === "IN_PROGRESS" && (
-                <>
-                  <div className="detail-group">
-                    <h3>📝 Operator Notes</h3>
-                    <textarea
-                      className="notes-input"
-                      placeholder="Enter progress notes, issues, or observations..."
-                      value={operatorNotes}
-                      onChange={(e) => setOperatorNotes(e.target.value)}
-                      rows="3"
-                    />
-                    <button
-                      className="action-btn update-btn"
-                      onClick={() => updateNotes(selectedOrder.id)}
-                      disabled={loading}
-                    >
-                      💾 Update Notes
-                    </button>
-                  </div>
-
-                  <div className="action-buttons">
-                    <button
-                      className="action-btn complete-btn"
-                      onClick={() => completeProduction(selectedOrder.id)}
-                      disabled={loading}
-                    >
-                      ✅ Complete Task & Award Modules
-                    </button>
-                    <button
-                      className="action-btn halt-btn"
-                      onClick={() => haltProduction(selectedOrder.id)}
-                      disabled={loading}
-                    >
-                      ⏸️ Halt Task
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {selectedOrder.status === "ASSIGNED" && (
-                <div className="action-buttons">
-                  <button
-                    className="action-btn start-btn"
-                    onClick={() => startProduction(selectedOrder.id)}
-                    disabled={loading}
-                  >
-                    ▶️ Start Task
-                  </button>
-                </div>
-              )}
-
-              {selectedOrder.status === "COMPLETED" && (
-                <div className="completion-info">
-                  <h3>✅ Task Completed</h3>
-                  <p>This manufacturing task has been completed successfully.</p>
-                  <p>Modules have been awarded to the Modules Supermarket.</p>
-                </div>
-              )}
-
-              {selectedOrder.status === "HALTED" && (
-                <div className="halt-info">
-                  <h3>⏸️ Task Halted</h3>
-                  <p>This manufacturing task has been halted.</p>
-                  {selectedOrder.operatorNotes && (
-                    <p>Reason: {selectedOrder.operatorNotes}</p>
-                  )}
-                </div>
-              )}
+            <div className="dashboard-box-content">
+              {renderOrders()}
             </div>
-          ) : (
-            <div className="no-selection">Select a manufacturing task to view details</div>
-          )}
-        </div>
-      </div>
-    </div>
+          </div>
+        }
+        messages={{ error, success }}
+        onDismissError={() => setError(null)}
+        onDismissSuccess={() => setSuccess(null)}
+      />
+      {renderDetailsModal()}
+    </>
   );
 }
 

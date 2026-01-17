@@ -88,13 +88,49 @@ function ProductionPlanningDashboard() {
     setSuccess(null);
 
     try {
+      // Fetch warehouse order items if this production order came from a warehouse order
+      let lineItems = [];
+      if (order.sourceWarehouseOrderId) {
+        try {
+          const warehouseOrderResponse = await api.get(`/warehouse-orders/${order.sourceWarehouseOrderId}`);
+          const warehouseOrder = warehouseOrderResponse.data;
+          
+          // Convert warehouse order items to SimAL line items format
+          // Note: Backend returns warehouseOrderItems, not items
+          const woItems = warehouseOrder.warehouseOrderItems || warehouseOrder.items || [];
+          lineItems = woItems.map((item, index) => ({
+            itemId: item.itemId,
+            itemName: item.itemName,
+            quantity: item.requestedQuantity,
+            estimatedDuration: 30, // Default 30 minutes per module
+            workstationType: item.itemType === "MODULE" ? "ASSEMBLY" : "MANUFACTURING"
+          }));
+        } catch (err) {
+          console.warn('Could not fetch warehouse order items:', err);
+          // Continue with empty items - SimAL will use default test data
+        }
+      }
+
+      // If no items from warehouse order, create default items for testing
+      if (lineItems.length === 0) {
+        lineItems = [
+          {
+            itemId: 1,
+            itemName: "Default Module",
+            quantity: 1,
+            estimatedDuration: 30,
+            workstationType: "MANUFACTURING"
+          }
+        ];
+      }
+
       // Prepare SimAL request
       const simalRequest = {
         orderNumber: order.productionOrderNumber,
         productionOrderId: order.id,
         priority: order.priority || "MEDIUM",
         dueDate: order.dueDate,
-        items: [] // In real implementation, this would come from order details
+        lineItems: lineItems // Send actual line items to SimAL
       };
 
       // Send to SimAL for scheduling

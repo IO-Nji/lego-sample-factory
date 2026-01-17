@@ -138,6 +138,14 @@
   font-weight: 500;
 }
 
+.manual-badge {
+  color: #f59e0b !important;
+  font-weight: 600 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .status-badge {
   display: inline-block;
   padding: 0.25rem 0.5rem;

@@ -40,6 +40,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         "/api/masterdata/product-variants/**",
         "/api/masterdata/modules/**",
         "/api/masterdata/parts/**",
+        "/api/production-control-orders",
+        "/api/assembly-control-orders",
         "/actuator/health",
         "/actuator/info",
         "/error"

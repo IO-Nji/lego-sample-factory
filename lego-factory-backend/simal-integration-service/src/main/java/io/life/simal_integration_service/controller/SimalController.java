@@ -1,45 +1,53 @@
 package io.life.simal_integration_service.controller;
 
-import io.life.simal_integration_service.dto.SimalProductionOrderRequest;
-import io.life.simal_integration_service.dto.SimalScheduledOrderResponse;
-import io.life.simal_integration_service.dto.SimalUpdateTimeRequest;
+import io.life.simal_integration_service.dto.*;
+import io.life.simal_integration_service.entity.ScheduledOrder;
+import io.life.simal_integration_service.entity.ScheduledTask;
+import io.life.simal_integration_service.repository.ScheduledOrderRepository;
+import io.life.simal_integration_service.repository.ScheduledTaskRepository;
 import io.life.simal_integration_service.service.ControlOrderIntegrationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * Mock SimAL Integration Controller.
+ * SimAL Integration Controller with Database Persistence.
  * Provides endpoints for production order scheduling and status updates.
- * Data is stored in-memory for demonstration purposes.
+ * Data is persisted in database (H2/PostgreSQL).
  */
 @RestController
 @RequestMapping("/api/simal")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"})
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:1011", "http://localhost"})
 public class SimalController {
 
     private static final Logger log = LoggerFactory.getLogger(SimalController.class);
     private static final String SCHEDULE_ID = "scheduleId";
     private static final String STATUS = "status";
 
-    // In-memory storage for scheduled orders
-    private final Map<String, SimalScheduledOrderResponse> scheduledOrders = new HashMap<>();
     private final DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_DATE_TIME;
     private final ControlOrderIntegrationService controlOrderIntegrationService;
+    private final ScheduledOrderRepository scheduledOrderRepository;
+    private final ScheduledTaskRepository scheduledTaskRepository;
 
-    public SimalController(ControlOrderIntegrationService controlOrderIntegrationService) {
+    public SimalController(ControlOrderIntegrationService controlOrderIntegrationService,
+                          ScheduledOrderRepository scheduledOrderRepository,
+                          ScheduledTaskRepository scheduledTaskRepository) {
         this.controlOrderIntegrationService = controlOrderIntegrationService;
+        this.scheduledOrderRepository = scheduledOrderRepository;
+        this.scheduledTaskRepository = scheduledTaskRepository;
     }
 
     /**
-     * Mock endpoint to submit a production order for scheduling.
-     * Generates a schedule with realistic task assignments.
+     * Submit a production order for scheduling with database persistence.
+     * Generates a schedule with realistic task assignments and saves to database.
      *
      * @param request Production order request
      * @return Scheduled order response with task assignments
@@ -54,25 +62,62 @@ public class SimalController {
         String scheduleId = "SCHED-" + System.currentTimeMillis();
 
         // Generate scheduled tasks based on order items
-        List<SimalScheduledOrderResponse.ScheduledTask> tasks = generateScheduledTasks(request, scheduleId);
+        List<SimalScheduledOrderResponse.ScheduledTask> taskDtos = generateScheduledTasks(request, scheduleId);
 
         // Calculate total duration
-        int totalDuration = tasks.stream()
+        int totalDuration = taskDtos.stream()
                 .mapToInt(task -> task.getDuration() != null ? task.getDuration() : 0)
                 .sum();
+
+        LocalDateTime estimatedCompletion = LocalDateTime.now().plusMinutes(totalDuration);
+
+        // Create entity to persist
+        ScheduledOrder orderEntity = ScheduledOrder.builder()
+                .scheduleId(scheduleId)
+                .orderNumber(request.getOrderNumber())
+                .status("SCHEDULED")
+                .estimatedCompletionTime(estimatedCompletion)
+                .totalDuration(totalDuration)
+                .build();
+
+        // Save order first to get ID
+        ScheduledOrder savedOrder = scheduledOrderRepository.save(orderEntity);
+        log.info("Saved scheduled order to database: {}", scheduleId);
+
+        // Convert DTOs to entities and set the saved order reference (use final reference for lambda)
+        final ScheduledOrder finalSavedOrder = savedOrder;
+        List<ScheduledTask> taskEntities = taskDtos.stream()
+                .map(taskDto -> ScheduledTask.builder()
+                        .taskId(taskDto.getTaskId())
+                        .itemId(taskDto.getItemId())
+                        .itemName(taskDto.getItemName())
+                        .quantity(taskDto.getQuantity())
+                        .workstationId(taskDto.getWorkstationId())
+                        .workstationName(taskDto.getWorkstationName())
+                        .startTime(LocalDateTime.parse(taskDto.getStartTime(), isoFormatter))
+                        .endTime(LocalDateTime.parse(taskDto.getEndTime(), isoFormatter))
+                        .duration(taskDto.getDuration())
+                        .status(taskDto.getStatus())
+                        .sequence(taskDto.getSequence())
+                        .scheduledOrder(finalSavedOrder)
+                        .build())
+                .collect(Collectors.toList());
+
+        savedOrder.getScheduledTasks().addAll(taskEntities);
+
+        // Save again to persist tasks
+        savedOrder = scheduledOrderRepository.save(savedOrder);
+        log.info("Saved {} tasks for schedule: {}", taskEntities.size(), scheduleId);
 
         // Build response
         SimalScheduledOrderResponse response = SimalScheduledOrderResponse.builder()
                 .scheduleId(scheduleId)
                 .orderNumber(request.getOrderNumber())
                 .status("SCHEDULED")
-                .estimatedCompletionTime(calculateCompletionTime(totalDuration))
-                .scheduledTasks(tasks)
+                .estimatedCompletionTime(isoFormatter.format(estimatedCompletion))
+                .scheduledTasks(taskDtos)
                 .totalDuration(totalDuration)
                 .build();
-
-        // Store in-memory
-        scheduledOrders.put(scheduleId, response);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -88,18 +133,24 @@ public class SimalController {
     }
 
     /**
-     * Mock endpoint to retrieve all scheduled orders.
+     * Retrieve all scheduled orders from database.
      *
      * @return List of all scheduled orders
      */
     @GetMapping("/scheduled-orders")
     public ResponseEntity<List<SimalScheduledOrderResponse>> getScheduledOrders() {
-        log.info("Fetching all scheduled orders. Total: {}", scheduledOrders.size());
-        return ResponseEntity.ok(new ArrayList<>(scheduledOrders.values()));
+        List<ScheduledOrder> orders = scheduledOrderRepository.findAllByOrderByCreatedAtDesc();
+        log.info("Fetching all scheduled orders from database. Total: {}", orders.size());
+        
+        List<SimalScheduledOrderResponse> responses = orders.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(responses);
     }
 
     /**
-     * Mock endpoint to retrieve a specific scheduled order by ID.
+     * Retrieve a specific scheduled order by ID from database.
      *
      * @param scheduleId Schedule ID
      * @return Scheduled order or 404 if not found
@@ -107,13 +158,15 @@ public class SimalController {
     @GetMapping("/scheduled-orders/{scheduleId}")
     public ResponseEntity<SimalScheduledOrderResponse> getScheduledOrder(
             @PathVariable String scheduleId) {
-        log.info("Fetching schedule: {}", scheduleId);
+        log.info("Fetching schedule from database: {}", scheduleId);
 
-        SimalScheduledOrderResponse order = scheduledOrders.get(scheduleId);
-        if (order == null) {
+        Optional<ScheduledOrder> orderOpt = scheduledOrderRepository.findByScheduleId(scheduleId);
+        if (orderOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(order);
+        
+        SimalScheduledOrderResponse response = convertToResponse(orderOpt.get());
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -129,13 +182,15 @@ public class SimalController {
 
         log.info("Updating time for schedule: {}, task: {}", request.getScheduleId(), request.getTaskId());
 
-        SimalScheduledOrderResponse order = scheduledOrders.get(request.getScheduleId());
+        // Find order in database
+        ScheduledOrder order = scheduledOrderRepository.findByScheduleId(request.getScheduleId())
+                .orElse(null);
         if (order == null) {
             return ResponseEntity.notFound().build();
         }
 
         // Find and update the task
-        SimalScheduledOrderResponse.ScheduledTask taskToUpdate = order.getScheduledTasks()
+        ScheduledTask taskToUpdate = order.getScheduledTasks()
                 .stream()
                 .filter(task -> task.getTaskId().equals(request.getTaskId()))
                 .findFirst()
@@ -147,10 +202,20 @@ public class SimalController {
 
         // Update task with actual times
         if (request.getActualStartTime() != null) {
-            taskToUpdate.setStartTime(request.getActualStartTime());
+            try {
+                LocalDateTime startTime = LocalDateTime.parse(request.getActualStartTime(), isoFormatter);
+                taskToUpdate.setStartTime(startTime);
+            } catch (Exception e) {
+                log.error("Failed to parse actualStartTime: {}", request.getActualStartTime(), e);
+            }
         }
         if (request.getActualEndTime() != null) {
-            taskToUpdate.setEndTime(request.getActualEndTime());
+            try {
+                LocalDateTime endTime = LocalDateTime.parse(request.getActualEndTime(), isoFormatter);
+                taskToUpdate.setEndTime(endTime);
+            } catch (Exception e) {
+                log.error("Failed to parse actualEndTime: {}", request.getActualEndTime(), e);
+            }
         }
         if (request.getActualDuration() != null) {
             taskToUpdate.setDuration(request.getActualDuration());
@@ -159,10 +224,14 @@ public class SimalController {
             taskToUpdate.setStatus(request.getStatus());
         }
 
-        // Update overall order status based on tasks
-        updateOrderStatus(order);
+        // Save updated task
+        scheduledTaskRepository.save(taskToUpdate);
 
-        return ResponseEntity.ok(order);
+        // Update overall order status based on tasks
+        updateOrderStatusFromTasks(order);
+        scheduledOrderRepository.save(order);
+
+        return ResponseEntity.ok(convertToResponse(order));
     }
 
     /**
@@ -176,16 +245,15 @@ public class SimalController {
             @PathVariable String orderNumber) {
         log.info("Fetching schedule for order: {}", orderNumber);
 
-        SimalScheduledOrderResponse order = scheduledOrders.values()
+        ScheduledOrder order = scheduledOrderRepository.findByOrderNumber(orderNumber)
                 .stream()
-                .filter(o -> o.getOrderNumber().equals(orderNumber))
                 .findFirst()
                 .orElse(null);
 
         if (order == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(order);
+        return ResponseEntity.ok(convertToResponse(order));
     }
 
     /**
@@ -267,32 +335,6 @@ public class SimalController {
     /**
      * Helper method to update overall order status based on tasks.
      */
-    private void updateOrderStatus(SimalScheduledOrderResponse order) {
-        if (order.getScheduledTasks() == null || order.getScheduledTasks().isEmpty()) {
-            return;
-        }
-
-        long completedTasks = order.getScheduledTasks().stream()
-                .filter(t -> "COMPLETED".equals(t.getStatus()))
-                .count();
-
-        long failedTasks = order.getScheduledTasks().stream()
-                .filter(t -> "FAILED".equals(t.getStatus()))
-                .count();
-
-        long totalTasks = order.getScheduledTasks().size();
-
-        if (failedTasks > 0) {
-            order.setStatus("FAILED");
-        } else if (completedTasks == totalTasks) {
-            order.setStatus("COMPLETED");
-        } else if (completedTasks > 0) {
-            order.setStatus("IN_PROGRESS");
-        } else {
-            order.setStatus("SCHEDULED");
-        }
-    }
-
     /**
      * Create control orders from a scheduled order.
      * Processes the SimAL schedule and generates ProductionControlOrder and AssemblyControlOrder
@@ -309,10 +351,14 @@ public class SimalController {
 
         log.info("Creating control orders from schedule: {}", scheduleId);
 
-        SimalScheduledOrderResponse schedule = scheduledOrders.get(scheduleId);
-        if (schedule == null) {
+        ScheduledOrder orderEntity = scheduledOrderRepository.findByScheduleId(scheduleId)
+                .orElse(null);
+        if (orderEntity == null) {
             return ResponseEntity.notFound().build();
         }
+
+        // Convert entity to DTO for control order integration
+        SimalScheduledOrderResponse schedule = convertToResponse(orderEntity);
 
         if (productionOrderId == null) {
             productionOrderId = 1L; // Default for testing
@@ -352,13 +398,17 @@ public class SimalController {
         log.info("Generating control orders for schedule: {}, production order: {}", 
                 request.getScheduleId(), request.getProductionOrderId());
 
-        SimalScheduledOrderResponse schedule = scheduledOrders.get(request.getScheduleId());
-        if (schedule == null) {
+        ScheduledOrder orderEntity = scheduledOrderRepository.findByScheduleId(request.getScheduleId())
+                .orElse(null);
+        if (orderEntity == null) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put(STATUS, "ERROR");
             errorResponse.put("message", "Schedule not found: " + request.getScheduleId());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         }
+
+        // Convert entity to DTO for control order integration
+        SimalScheduledOrderResponse schedule = convertToResponse(orderEntity);
 
         try {
             Map<String, String> createdOrders = controlOrderIntegrationService
@@ -418,12 +468,16 @@ public class SimalController {
             Long productionOrderId = i < request.getProductionOrderIds().size() ?
                     request.getProductionOrderIds().get(i) : (long)(i + 1);
 
-            SimalScheduledOrderResponse schedule = scheduledOrders.get(scheduleId);
-            if (schedule == null) {
+            ScheduledOrder orderEntity = scheduledOrderRepository.findByScheduleId(scheduleId)
+                    .orElse(null);
+            if (orderEntity == null) {
                 failureCount++;
                 results.add(Map.of(SCHEDULE_ID, scheduleId, STATUS, "NOT_FOUND"));
                 continue;
             }
+
+            // Convert entity to DTO for control order integration
+            SimalScheduledOrderResponse schedule = convertToResponse(orderEntity);
 
             try {
                 Map<String, String> createdOrders = controlOrderIntegrationService
@@ -509,6 +563,192 @@ public class SimalController {
 
         public void setScheduledTasks(List<Object> scheduledTasks) {
             this.scheduledTasks = scheduledTasks;
+        }
+    }
+
+    // ========================================================================
+    // NEW: Manual Scheduling Endpoint
+    // ========================================================================
+
+    /**
+     * Manual reschedule endpoint - allows Production Planning to adjust task schedules.
+     * Persists changes to database with audit trail.
+     *
+     * @param taskId Task ID to reschedule
+     * @param request Reschedule request with new time/workstation
+     * @param userId User making the change (from JWT header)
+     * @return Updated task response
+     */
+    @PutMapping("/tasks/{taskId}/reschedule")
+    public ResponseEntity<ScheduledTaskResponse> rescheduleTask(
+            @PathVariable String taskId,
+            @RequestBody RescheduleRequest request,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        
+        log.info("Manual reschedule request for task: {} by user: {}", taskId, userId);
+        
+        // Find task in database
+        ScheduledTask task = scheduledTaskRepository.findByTaskId(taskId)
+                .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, 
+                    "Task not found: " + taskId
+                ));
+        
+        // Update task with new schedule
+        task.setWorkstationId(request.getWorkstationId());
+        task.setWorkstationName(getWorkstationName(request.getWorkstationId()));
+        task.setStartTime(request.getScheduledStartTime());
+        task.setDuration(request.getDuration());
+        task.setEndTime(request.getScheduledStartTime().plusMinutes(request.getDuration()));
+        
+        // Mark as manually adjusted
+        task.setManuallyAdjusted(true);
+        task.setAdjustedBy(userId != null ? userId : "system");
+        task.setAdjustedAt(LocalDateTime.now());
+        task.setAdjustmentReason(request.getReason() != null ? request.getReason() : "Manual reschedule");
+        
+        ScheduledTask savedTask = scheduledTaskRepository.save(task);
+        log.info("Task {} rescheduled successfully", taskId);
+        
+        // Update parent order status if needed
+        ScheduledOrder order = task.getScheduledOrder();
+        updateOrderStatusFromTasks(order);
+        scheduledOrderRepository.save(order);
+        
+        // Convert to response DTO
+        ScheduledTaskResponse response = convertToTaskResponse(savedTask);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get all manually adjusted tasks.
+     *
+     * @return List of manually adjusted tasks
+     */
+    @GetMapping("/tasks/manually-adjusted")
+    public ResponseEntity<List<ScheduledTaskResponse>> getManuallyAdjustedTasks() {
+        List<ScheduledTask> tasks = scheduledTaskRepository.findByManuallyAdjusted(true);
+        List<ScheduledTaskResponse> responses = tasks.stream()
+                .map(this::convertToTaskResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
+    }
+
+    // ========================================================================
+    // Helper Methods
+    // ========================================================================
+
+    /**
+     * Convert ScheduledOrder entity to DTO response.
+     */
+    private SimalScheduledOrderResponse convertToResponse(ScheduledOrder order) {
+        List<SimalScheduledOrderResponse.ScheduledTask> taskDtos = order.getScheduledTasks().stream()
+                .map(task -> SimalScheduledOrderResponse.ScheduledTask.builder()
+                        .taskId(task.getTaskId())
+                        .itemId(task.getItemId())
+                        .itemName(task.getItemName())
+                        .quantity(task.getQuantity())
+                        .workstationId(task.getWorkstationId())
+                        .workstationName(task.getWorkstationName())
+                        .startTime(isoFormatter.format(task.getStartTime()))
+                        .endTime(isoFormatter.format(task.getEndTime()))
+                        .duration(task.getDuration())
+                        .status(task.getStatus())
+                        .sequence(task.getSequence())
+                        .build())
+                .collect(Collectors.toList());
+
+        return SimalScheduledOrderResponse.builder()
+                .scheduleId(order.getScheduleId())
+                .orderNumber(order.getOrderNumber())
+                .status(order.getStatus())
+                .estimatedCompletionTime(isoFormatter.format(order.getEstimatedCompletionTime()))
+                .scheduledTasks(taskDtos)
+                .totalDuration(order.getTotalDuration())
+                .build();
+    }
+
+    /**
+     * Convert ScheduledTask entity to DTO response.
+     */
+    private ScheduledTaskResponse convertToTaskResponse(ScheduledTask task) {
+        return ScheduledTaskResponse.builder()
+                .taskId(task.getTaskId())
+                .itemId(task.getItemId())
+                .itemName(task.getItemName())
+                .quantity(task.getQuantity())
+                .workstationId(task.getWorkstationId())
+                .workstationName(task.getWorkstationName())
+                .startTime(task.getStartTime())
+                .endTime(task.getEndTime())
+                .duration(task.getDuration())
+                .status(task.getStatus())
+                .sequence(task.getSequence())
+                .manuallyAdjusted(task.getManuallyAdjusted())
+                .adjustedBy(task.getAdjustedBy())
+                .adjustedAt(task.getAdjustedAt())
+                .adjustmentReason(task.getAdjustmentReason())
+                .build();
+    }
+
+    /**
+     * Update order status based on all tasks status.
+     */
+    private void updateOrderStatusFromTasks(ScheduledOrder order) {
+        List<ScheduledTask> tasks = order.getScheduledTasks();
+        if (tasks == null || tasks.isEmpty()) {
+            return;
+        }
+
+        long completedTasks = tasks.stream()
+                .filter(t -> "COMPLETED".equals(t.getStatus()))
+                .count();
+
+        long failedTasks = tasks.stream()
+                .filter(t -> "FAILED".equals(t.getStatus()))
+                .count();
+
+        long totalTasks = tasks.size();
+
+        if (failedTasks > 0) {
+            order.setStatus("FAILED");
+        } else if (completedTasks == totalTasks) {
+            order.setStatus("COMPLETED");
+        } else if (completedTasks > 0) {
+            order.setStatus("IN_PROGRESS");
+        } else {
+            order.setStatus("SCHEDULED");
+        }
+    }
+
+    /**
+     * Schedule a production order by fetching it from order-processing-service.
+     * This endpoint retrieves the production order and associated warehouse order items,
+     * then creates a schedule in SimAL with those items.
+     *
+     * @param productionOrderId The production order ID to schedule
+     * @return Scheduled order response with task assignments
+     */
+    @PostMapping("/schedule-production-order/{productionOrderId}")
+    public ResponseEntity<SimalScheduledOrderResponse> scheduleProductionOrder(
+            @PathVariable Long productionOrderId) {
+        
+        log.info("Scheduling production order ID: {}", productionOrderId);
+        
+        try {
+            // Delegate to ControlOrderIntegrationService to fetch and schedule
+            SimalScheduledOrderResponse response = controlOrderIntegrationService
+                    .scheduleProductionOrderById(productionOrderId, this);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Error scheduling production order {}: {}", productionOrderId, e.getMessage(), e);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to schedule production order: " + e.getMessage(),
+                    e
+            );
         }
     }
 }

@@ -319,4 +319,117 @@ public class ControlOrderIntegrationService {
                 "- Test functionality before completion\n" +
                 "- Document any defects or rework required";
     }
+
+    /**
+     * Schedule a production order by fetching it from order-processing-service
+     * and submitting to SimAL with warehouse order items.
+     *
+     * @param productionOrderId The production order ID
+     * @param controller The SimalController instance to call submitProductionOrder
+     * @return The scheduled order response from SimAL
+     */
+    public io.life.simal_integration_service.dto.SimalScheduledOrderResponse scheduleProductionOrderById(
+            Long productionOrderId,
+            Object controller) {
+
+        log.info("Fetching production order {} to schedule", productionOrderId);
+
+        // 1. Fetch production order from order-processing-service
+        String productionOrderUrl = orderProcessingApiBaseUrl + "/production-orders/" + productionOrderId;
+        Map<String, Object> productionOrder = restTemplate.getForObject(productionOrderUrl, Map.class);
+
+        if (productionOrder == null) {
+            throw new IllegalArgumentException("Production order not found: " + productionOrderId);
+        }
+
+        log.info("Retrieved production order: {}", productionOrder.get("productionOrderNumber"));
+
+        // 2. Get warehouse order ID from production order
+        Object warehouseOrderIdObj = productionOrder.get("sourceWarehouseOrderId");
+        if (warehouseOrderIdObj == null) {
+            throw new IllegalArgumentException(
+                    "Production order has no associated warehouse order: " + productionOrderId);
+        }
+
+        Long warehouseOrderId = warehouseOrderIdObj instanceof Number ?
+                ((Number) warehouseOrderIdObj).longValue() : Long.parseLong(warehouseOrderIdObj.toString());
+
+        // 3. Fetch warehouse order with items
+        String warehouseOrderUrl = orderProcessingApiBaseUrl + "/warehouse-orders/" + warehouseOrderId;
+        Map<String, Object> warehouseOrder = restTemplate.getForObject(warehouseOrderUrl, Map.class);
+
+        if (warehouseOrder == null) {
+            throw new IllegalArgumentException("Warehouse order not found: " + warehouseOrderId);
+        }
+
+        // 4. Extract warehouse order items
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> warehouseOrderItems =
+                (List<Map<String, Object>>) warehouseOrder.get("warehouseOrderItems");
+
+        if (warehouseOrderItems == null || warehouseOrderItems.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Warehouse order has no items: " + warehouseOrderId);
+        }
+
+        log.info("Found {} items in warehouse order", warehouseOrderItems.size());
+
+        // 5. Convert warehouse order items to SimAL line items
+        List<io.life.simal_integration_service.dto.SimalProductionOrderRequest.OrderLineItem> lineItems =
+                new ArrayList<>();
+
+        for (Map<String, Object> item : warehouseOrderItems) {
+            io.life.simal_integration_service.dto.SimalProductionOrderRequest.OrderLineItem lineItem =
+                    new io.life.simal_integration_service.dto.SimalProductionOrderRequest.OrderLineItem();
+
+            Long itemId = getLongValue(item.get("itemId"));
+            lineItem.setItemId(itemId != null ? itemId.toString() : null);
+            lineItem.setItemName((String) item.get("itemName"));
+            lineItem.setQuantity(getIntValue(item.get("requestedQuantity")));
+            lineItem.setEstimatedDuration(30); // Default 30 minutes per item
+            lineItem.setWorkstationType("MANUFACTURING"); // Default type
+
+            lineItems.add(lineItem);
+        }
+
+        // 6. Build SimAL production order request
+        io.life.simal_integration_service.dto.SimalProductionOrderRequest request =
+                new io.life.simal_integration_service.dto.SimalProductionOrderRequest();
+
+        request.setOrderNumber((String) productionOrder.get("productionOrderNumber"));
+        request.setPriority((String) productionOrder.get("priority"));
+        request.setDueDate((String) productionOrder.get("dueDate"));
+        request.setLineItems(lineItems);
+
+        // 7. Submit to SimAL via controller
+        try {
+            io.life.simal_integration_service.controller.SimalController simalController =
+                    (io.life.simal_integration_service.controller.SimalController) controller;
+
+            org.springframework.http.ResponseEntity<io.life.simal_integration_service.dto.SimalScheduledOrderResponse> response =
+                    simalController.submitProductionOrder(request);
+
+            log.info("Successfully scheduled production order {} in SimAL", productionOrderId);
+
+            return response.getBody();
+
+        } catch (Exception e) {
+            log.error("Error submitting production order to SimAL", e);
+            throw new RuntimeException("Failed to schedule production order in SimAL: " + e.getMessage(), e);
+        }
+    }
+
+    private Long getLongValue(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        return value != null ? Long.parseLong(value.toString()) : null;
+    }
+
+    private Integer getIntValue(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        return value != null ? Integer.parseInt(value.toString()) : null;
+    }
 }

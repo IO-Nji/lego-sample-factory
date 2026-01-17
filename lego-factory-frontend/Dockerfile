@@ -1,6 +1,6 @@
 # lego-factory-app/frontend/Dockerfile
 # Multi-stage build
-FROM node:21-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -38,10 +38,10 @@ RUN VITE_API_GATEWAY_URL=/api npm run build
 # --- MODIFICATION END ---
 
 # Production stage
-FROM nginx:alpine
+FROM nginx:1.25-alpine
 
-# Install wget for health checks
-RUN apk add --no-cache wget
+# Install curl for health checks (more reliable than wget in Alpine)
+RUN apk add --no-cache curl
 
 # Remove default nginx config to avoid conflicts
 RUN rm -f /etc/nginx/conf.d/default.conf
@@ -62,9 +62,9 @@ RUN echo 'server { listen 80; location /health { return 200 "healthy\n"; add_hea
 # Expose port
 EXPOSE 80
 
-# Health check
+# Health check using curl instead of wget
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost/health || exit 1
+  CMD curl -f http://localhost/health || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

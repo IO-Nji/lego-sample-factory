@@ -13,14 +13,18 @@ import '../styles/GanttChart.css';
  * 
  * @param {Array} scheduledTasks - Array of task objects with workstation, duration, start/end times
  * @param {Function} onTaskClick - Handler when a task bar is clicked
- * @param {Function} onTaskDrag - Handler for drag-and-drop rescheduling
+ * @param {Function} onTaskDragEnd - Handler for drag-and-drop rescheduling
  * @param {boolean} editable - Whether tasks can be dragged/edited
  */
-function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDrag, editable = false }) {
+function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable = false }) {
   const [timeScale, setTimeScale] = useState('hours'); // 'hours', 'days', 'weeks'
   const [viewStart, setViewStart] = useState(null);
   const [viewEnd, setViewEnd] = useState(null);
   const [hoveredTask, setHoveredTask] = useState(null);
+  const [draggedTask, setDraggedTask] = useState(null);
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragCurrentX, setDragCurrentX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const chartRef = useRef(null);
 
   // Initialize view range based on tasks
@@ -56,6 +60,64 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDrag, editable = f
       setViewEnd(end);
     }
   }, [scheduledTasks]);
+
+  // Drag-and-drop handlers
+  const handleDragStart = (task, e) => {
+    if (!editable) return;
+    setDraggedTask(task);
+    setDragStartX(e.clientX);
+    setDragCurrentX(e.clientX);
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDrag = (e) => {
+    if (!isDragging || !draggedTask) return;
+    if (e.clientX === 0) return; // Ignore invalid drag events
+    setDragCurrentX(e.clientX);
+  };
+
+  const handleDragEnd = (e) => {
+    if (!draggedTask || !chartRef.current || !viewStart || !viewEnd) {
+      resetDrag();
+      return;
+    }
+
+    // Calculate time offset based on drag distance
+    const chartRect = chartRef.current.getBoundingClientRect();
+    const timelineElement = chartRef.current.querySelector('.gantt-row-timeline');
+    if (!timelineElement) {
+      resetDrag();
+      return;
+    }
+
+    const timelineRect = timelineElement.getBoundingClientRect();
+    const dragDistance = dragCurrentX - dragStartX;
+    const timelineWidth = timelineRect.width;
+    const totalDuration = viewEnd - viewStart;
+    
+    // Calculate time offset in milliseconds
+    const timeOffset = (dragDistance / timelineWidth) * totalDuration;
+    
+    // Calculate new start time
+    const originalStartTime = new Date(draggedTask.startTime || draggedTask.scheduledStartTime);
+    const newStartTime = new Date(originalStartTime.getTime() + timeOffset);
+    
+    // Only trigger callback if moved more than 5 minutes
+    const minutesMoved = Math.abs(timeOffset / (1000 * 60));
+    if (minutesMoved > 5 && onTaskDragEnd) {
+      onTaskDragEnd(draggedTask, newStartTime);
+    }
+
+    resetDrag();
+  };
+
+  const resetDrag = () => {
+    setDraggedTask(null);
+    setDragStartX(0);
+    setDragCurrentX(0);
+    setIsDragging(false);
+  };
 
   // Group tasks by workstation
   const groupTasksByWorkstation = () => {
@@ -194,23 +256,30 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDrag, editable = f
                 <div className="gantt-row-timeline">
                   {tasks.map((task, idx) => {
                     const position = calculateTaskPosition(task);
+                    const isBeingDragged = draggedTask?.id === task.id || draggedTask?.taskId === task.taskId;
+                    
                     return (
                       <div
                         key={task.id || idx}
-                        className={`gantt-task ${editable ? 'editable' : ''} ${hoveredTask === task.id ? 'hovered' : ''}`}
+                        className={`gantt-task ${editable ? 'editable' : ''} ${hoveredTask === task.id ? 'hovered' : ''} ${isBeingDragged ? 'dragging' : ''}`}
                         style={{
                           left: `${position.left}%`,
                           width: `${position.width}%`,
-                          backgroundColor: getStatusColor(task.status)
+                          backgroundColor: getStatusColor(task.status),
+                          cursor: editable ? 'grab' : 'pointer',
+                          opacity: isBeingDragged ? 0.6 : 1
                         }}
                         onClick={() => onTaskClick && onTaskClick(task)}
                         onMouseEnter={() => setHoveredTask(task.id)}
                         onMouseLeave={() => setHoveredTask(null)}
                         draggable={editable}
-                        onDragEnd={(e) => editable && onTaskDrag && onTaskDrag(task, e)}
+                        onDragStart={(e) => handleDragStart(task, e)}
+                        onDrag={handleDrag}
+                        onDragEnd={handleDragEnd}
                       >
                         <span className="task-label">
-                          {task.taskType || task.operationType || 'Task'} 
+                          {task.manuallyAdjusted && <span className="manual-adjustment-badge" title="Manually adjusted">✏️</span>}
+                          {task.taskType || task.operationType || task.itemName || 'Task'} 
                           {task.duration && ` (${task.duration}min)`}
                         </span>
                         
@@ -218,7 +287,7 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDrag, editable = f
                         {hoveredTask === task.id && (
                           <div className="gantt-tooltip">
                             <div className="tooltip-row">
-                              <strong>Task:</strong> {task.taskType || task.operationType}
+                              <strong>Task:</strong> {task.taskType || task.operationType || task.itemName}
                             </div>
                             <div className="tooltip-row">
                               <strong>Start:</strong> {formatTime(new Date(task.startTime || task.scheduledStartTime))}
@@ -232,6 +301,29 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDrag, editable = f
                             <div className="tooltip-row">
                               <strong>Status:</strong> {task.status}
                             </div>
+                            {task.manuallyAdjusted && (
+                              <>
+                                <div className="tooltip-divider" />
+                                <div className="tooltip-row manual-adjustment-info">
+                                  <strong>✏️ Manually Adjusted</strong>
+                                </div>
+                                {task.adjustedBy && (
+                                  <div className="tooltip-row">
+                                    <strong>By:</strong> {task.adjustedBy}
+                                  </div>
+                                )}
+                                {task.adjustedAt && (
+                                  <div className="tooltip-row">
+                                    <strong>At:</strong> {new Date(task.adjustedAt).toLocaleString()}
+                                  </div>
+                                )}
+                                {task.adjustmentReason && (
+                                  <div className="tooltip-row">
+                                    <strong>Reason:</strong> {task.adjustmentReason}
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </div>
                         )}
                       </div>

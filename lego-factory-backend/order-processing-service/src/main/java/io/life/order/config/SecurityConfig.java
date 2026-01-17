@@ -29,6 +29,11 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/error").permitAll()
+                // Allow internal service-to-service calls from SimAL
+                .requestMatchers("/api/production-control-orders").permitAll()
+                .requestMatchers("/api/assembly-control-orders").permitAll()
+                .requestMatchers("/api/production-orders/**").permitAll()
+                .requestMatchers("/api/warehouse-orders/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
