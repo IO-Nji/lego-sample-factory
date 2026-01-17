@@ -144,3 +144,6 @@ COMPONENT_NAMES_ENHANCEMENT.md
 PROJECT_TECHNICAL_OVERVIEW.md
 BLOG POST
 test-schedule-data.sh
+test-control-orders-complete.sh
+test-production-workflow.sh
+test-scheduling-quick.sh
