@@ -53,8 +53,8 @@ function DashboardSelector() {
       return <Navigate to={`/manufacturing/${getManufacturingWorkstationType()}`} replace />;
     case "ASSEMBLY_WORKSTATION":
       return <Navigate to={`/assembly/${getAssemblyWorkstationType()}`} replace />;
-    case "PARTS_SUPPLY_WAREHOUSE":
-      return <Navigate to="/parts-supply-warehouse" replace />;
+    case "PARTS_SUPPLY":
+      return <Navigate to="/parts-supply" replace />;
     default:
       // Unknown role, go to generic dashboard
       return <Navigate to="/dashboard" replace />;

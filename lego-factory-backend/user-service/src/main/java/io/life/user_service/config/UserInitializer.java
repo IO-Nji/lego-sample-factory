@@ -58,7 +58,7 @@ public class UserInitializer implements CommandLineRunner {
         createUserIfNotExists("part_finishing", DEFAULT_PASSWORD, UserRole.MANUFACTURING, 3L);
         
         // Create parts supply user
-        createUserIfNotExists("parts_supply_warehouse", DEFAULT_PASSWORD, UserRole.PARTS_SUPPLY, 9L);
+        createUserIfNotExists("parts_supply", DEFAULT_PASSWORD, UserRole.PARTS_SUPPLY, 9L);
         
         // Create viewer user
         createUserIfNotExists("viewer_user", DEFAULT_PASSWORD, UserRole.VIEWER, null);

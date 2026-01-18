@@ -71,7 +71,7 @@ function DashboardPage() {
     return <AssemblyWorkstationDashboard />;
   }
 
-  if (userRole === "PARTS_SUPPLY_WAREHOUSE") {
+  if (userRole === "PARTS_SUPPLY") {
     return <PartsSupplyWarehouseDashboard />;
   }
 

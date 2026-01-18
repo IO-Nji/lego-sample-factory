@@ -33,7 +33,7 @@ function App() {
   const isProductionPlanning = session?.user?.role === "PRODUCTION_PLANNING";
   const isProductionControl = session?.user?.role === "PRODUCTION_CONTROL";
   const isAssemblyControl = session?.user?.role === "ASSEMBLY_CONTROL";
-  const isPartsSupplyWarehouse = session?.user?.role === "PARTS_SUPPLY_WAREHOUSE";
+  const isPartsSupplyWarehouse = session?.user?.role === "PARTS_SUPPLY";
   const isManufacturingWorkstation = session?.user?.role === "MANUFACTURING_WORKSTATION";
   const isAssemblyWorkstation = session?.user?.role === "ASSEMBLY_WORKSTATION";
 
@@ -253,9 +253,9 @@ function App() {
           }
         />
         <Route
-          path="parts-supply-warehouse"
+          path="parts-supply"
           element={
-            <AuthGuard requiredRole="PARTS_SUPPLY_WAREHOUSE">
+            <AuthGuard requiredRole="PARTS_SUPPLY">
               <DashboardPage />
             </AuthGuard>
           }
