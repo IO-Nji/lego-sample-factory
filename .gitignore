@@ -147,3 +147,4 @@ test-schedule-data.sh
 test-control-orders-complete.sh
 test-production-workflow.sh
 test-scheduling-quick.sh
+.github/UBUNTU_DEPLOYMENT_TROUBLESHOOTING.md
