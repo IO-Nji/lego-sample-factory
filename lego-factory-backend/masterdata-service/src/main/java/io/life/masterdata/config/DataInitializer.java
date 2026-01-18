@@ -18,6 +18,16 @@ import io.life.masterdata.service.WorkstationService;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
+    private static final String TYPE_MANUFACTURING = "MANUFACTURING";
+    private static final String TYPE_ASSEMBLY = "ASSEMBLY";
+    private static final String TYPE_WAREHOUSE = "WAREHOUSE";
+    
+    // Module and Part type constants
+    private static final String TYPE_MECHANICAL = "MECHANICAL";
+    private static final String TYPE_STRUCTURAL = "STRUCTURAL";
+    private static final String TYPE_ELECTRICAL = "ELECTRICAL";
+    private static final String TYPE_DECORATIVE = "DECORATIVE";
+
     private final ProductVariantService productVariantService;
     private final ModuleService moduleService;
     private final PartService partService;
@@ -40,15 +50,15 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         // Seed workstations
         if (workstationService.findAll().isEmpty()) {
-            workstationService.save(createWorkstationDto(null, "Injection Molding Station", "MANUFACTURING", "Plastic injection molding equipment", true));
-            workstationService.save(createWorkstationDto(null, "Parts Pre-Production", "MANUFACTURING", "Parts preparation and assembly", true));
-            workstationService.save(createWorkstationDto(null, "Part Finishing", "MANUFACTURING", "Part finishing and quality control", true));
-            workstationService.save(createWorkstationDto(null, "Gear Assembly", "ASSEMBLY", "Gear assembly station", true));
-            workstationService.save(createWorkstationDto(null, "Motor Assembly", "ASSEMBLY", "Motor assembly station", true));
-            workstationService.save(createWorkstationDto(null, "Final Assembly", "ASSEMBLY", "Final assembly station", true));
-            workstationService.save(createWorkstationDto(null, "Plant Warehouse", "WAREHOUSE", "Main warehouse for Plant", true));
-            workstationService.save(createWorkstationDto(null, "Modules Supermarket", "WAREHOUSE", "Modules inventory point", true));
-            workstationService.save(createWorkstationDto(null, "Parts Supply Warehouse", "WAREHOUSE", "Parts supply warehouse", true));
+            workstationService.save(createWorkstationDto(null, "Injection Molding Station", TYPE_MANUFACTURING, "Plastic injection molding equipment", true));
+            workstationService.save(createWorkstationDto(null, "Parts Pre-Production", TYPE_MANUFACTURING, "Parts preparation and assembly", true));
+            workstationService.save(createWorkstationDto(null, "Part Finishing", TYPE_MANUFACTURING, "Part finishing and quality control", true));
+            workstationService.save(createWorkstationDto(null, "Gear Assembly", TYPE_ASSEMBLY, "Gear assembly station", true));
+            workstationService.save(createWorkstationDto(null, "Motor Assembly", TYPE_ASSEMBLY, "Motor assembly station", true));
+            workstationService.save(createWorkstationDto(null, "Final Assembly", TYPE_ASSEMBLY, "Final assembly station", true));
+            workstationService.save(createWorkstationDto(null, "Plant Warehouse", TYPE_WAREHOUSE, "Main warehouse for Plant", true));
+            workstationService.save(createWorkstationDto(null, "Modules Supermarket", TYPE_WAREHOUSE, "Modules inventory point", true));
+            workstationService.save(createWorkstationDto(null, "Parts Supply Warehouse", TYPE_WAREHOUSE, "Parts supply warehouse", true));
         }
 
         // Seed product variants (Final Products)
@@ -62,73 +72,73 @@ public class DataInitializer implements CommandLineRunner {
         // Seed modules (Sub-assemblies made from parts)
         if (moduleService.findAll().isEmpty()) {
             // Truck modules (used by both Technic Trucks)
-            moduleService.save(new Module(null, "Truck Chassis", "Heavy-duty frame with axle mounts", "MECHANICAL"));
-            moduleService.save(new Module(null, "Truck Drive System", "Motorized drivetrain with gearbox", "MECHANICAL"));
-            moduleService.save(new Module(null, "Truck Wheel Assembly", "Complete wheel set with tires and axles", "MECHANICAL"));
-            moduleService.save(new Module(null, "Truck Steering Unit", "Front wheel steering mechanism", "MECHANICAL"));
-            moduleService.save(new Module(null, "Truck Light System", "LED headlights and taillights", "ELECTRICAL"));
-            moduleService.save(new Module(null, "Truck Cab Unit", "Driver cabin with windshield", "STRUCTURAL"));
+            moduleService.save(new Module(null, "Truck Chassis", "Heavy-duty frame with axle mounts", TYPE_MECHANICAL));
+            moduleService.save(new Module(null, "Truck Drive System", "Motorized drivetrain with gearbox", TYPE_MECHANICAL));
+            moduleService.save(new Module(null, "Truck Wheel Assembly", "Complete wheel set with tires and axles", TYPE_MECHANICAL));
+            moduleService.save(new Module(null, "Truck Steering Unit", "Front wheel steering mechanism", TYPE_MECHANICAL));
+            moduleService.save(new Module(null, "Truck Light System", "LED headlights and taillights", TYPE_ELECTRICAL));
+            moduleService.save(new Module(null, "Truck Cab Unit", "Driver cabin with windshield", TYPE_STRUCTURAL));
             
             // House modules (used by Creator House)
-            moduleService.save(new Module(null, "House Wall Panel", "Pre-assembled wall section with studs", "STRUCTURAL"));
-            moduleService.save(new Module(null, "House Roof Assembly", "Pitched roof with tiles", "STRUCTURAL"));
-            moduleService.save(new Module(null, "House Window Frame", "Window with opening shutters", "STRUCTURAL"));
-            moduleService.save(new Module(null, "House Door Unit", "Entry door with hinges", "STRUCTURAL"));
-            moduleService.save(new Module(null, "House Floor Base", "Foundation platform with connectors", "STRUCTURAL"));
+            moduleService.save(new Module(null, "House Wall Panel", "Pre-assembled wall section with studs", TYPE_STRUCTURAL));
+            moduleService.save(new Module(null, "House Roof Assembly", "Pitched roof with tiles", TYPE_STRUCTURAL));
+            moduleService.save(new Module(null, "House Window Frame", "Window with opening shutters", TYPE_STRUCTURAL));
+            moduleService.save(new Module(null, "House Door Unit", "Entry door with hinges", TYPE_STRUCTURAL));
+            moduleService.save(new Module(null, "House Floor Base", "Foundation platform with connectors", TYPE_STRUCTURAL));
             
             // Castle modules (used by Castle Set)
-            moduleService.save(new Module(null, "Castle Tower Section", "Round tower segment with battlements", "STRUCTURAL"));
-            moduleService.save(new Module(null, "Castle Wall Section", "Fortified wall segment", "STRUCTURAL"));
-            moduleService.save(new Module(null, "Castle Gate Assembly", "Working drawbridge mechanism", "MECHANICAL"));
-            moduleService.save(new Module(null, "Castle Flag Post", "Tower flag with pole", "DECORATIVE"));
-            moduleService.save(new Module(null, "Castle Throne Room", "Interior decoration set", "DECORATIVE"));
+            moduleService.save(new Module(null, "Castle Tower Section", "Round tower segment with battlements", TYPE_STRUCTURAL));
+            moduleService.save(new Module(null, "Castle Wall Section", "Fortified wall segment", TYPE_STRUCTURAL));
+            moduleService.save(new Module(null, "Castle Gate Assembly", "Working drawbridge mechanism", TYPE_MECHANICAL));
+            moduleService.save(new Module(null, "Castle Flag Post", "Tower flag with pole", TYPE_DECORATIVE));
+            moduleService.save(new Module(null, "Castle Throne Room", "Interior decoration set", TYPE_DECORATIVE));
         }
 
         // Seed parts (Basic components - raw materials)
         if (partService.findAll().isEmpty()) {
             // Structural parts (injection molded basics)
-            partService.save(new Part(null, "Brick 2x4 Red", "Standard red building brick", "STRUCTURAL", 0.25));
-            partService.save(new Part(null, "Brick 2x4 Yellow", "Standard yellow building brick", "STRUCTURAL", 0.25));
-            partService.save(new Part(null, "Brick 2x4 Gray", "Standard gray building brick", "STRUCTURAL", 0.25));
-            partService.save(new Part(null, "Plate 2x4 Flat", "Thin flat plate connector", "STRUCTURAL", 0.15));
-            partService.save(new Part(null, "Beam 1x8 Technic", "Long structural beam with holes", "STRUCTURAL", 0.35));
-            partService.save(new Part(null, "Beam 1x6 Technic", "Medium structural beam", "STRUCTURAL", 0.30));
-            partService.save(new Part(null, "Slope Brick 45° 2x2", "Angled roof/body panel", "STRUCTURAL", 0.30));
-            partService.save(new Part(null, "Panel 1x4x3", "Solid wall panel piece", "STRUCTURAL", 0.40));
-            partService.save(new Part(null, "Transparent Window 1x4x3", "Clear window piece", "STRUCTURAL", 0.50));
-            partService.save(new Part(null, "Door Frame 1x4x6", "Standard door frame", "STRUCTURAL", 0.60));
+            partService.save(new Part(null, "Brick 2x4 Red", "Standard red building brick", TYPE_STRUCTURAL, 0.25));
+            partService.save(new Part(null, "Brick 2x4 Yellow", "Standard yellow building brick", TYPE_STRUCTURAL, 0.25));
+            partService.save(new Part(null, "Brick 2x4 Gray", "Standard gray building brick", TYPE_STRUCTURAL, 0.25));
+            partService.save(new Part(null, "Plate 2x4 Flat", "Thin flat plate connector", TYPE_STRUCTURAL, 0.15));
+            partService.save(new Part(null, "Beam 1x8 Technic", "Long structural beam with holes", TYPE_STRUCTURAL, 0.35));
+            partService.save(new Part(null, "Beam 1x6 Technic", "Medium structural beam", TYPE_STRUCTURAL, 0.30));
+            partService.save(new Part(null, "Slope Brick 45° 2x2", "Angled roof/body panel", TYPE_STRUCTURAL, 0.30));
+            partService.save(new Part(null, "Panel 1x4x3", "Solid wall panel piece", TYPE_STRUCTURAL, 0.40));
+            partService.save(new Part(null, "Transparent Window 1x4x3", "Clear window piece", TYPE_STRUCTURAL, 0.50));
+            partService.save(new Part(null, "Door Frame 1x4x6", "Standard door frame", TYPE_STRUCTURAL, 0.60));
             
             // Mechanical parts (moving/functional components)
-            partService.save(new Part(null, "Wheel Rim 56x34", "Truck wheel rim", "MECHANICAL", 1.20));
-            partService.save(new Part(null, "Tire 68.82x34.4", "Large rubber tire", "MECHANICAL", 1.50));
-            partService.save(new Part(null, "Axle 6L", "6-stud length axle rod", "MECHANICAL", 0.20));
-            partService.save(new Part(null, "Axle 8L", "8-stud length axle rod", "MECHANICAL", 0.25));
-            partService.save(new Part(null, "Gear 16 Tooth", "Medium drive gear", "MECHANICAL", 0.45));
-            partService.save(new Part(null, "Gear 24 Tooth", "Large drive gear", "MECHANICAL", 0.55));
-            partService.save(new Part(null, "Connector Pin", "Standard friction pin", "MECHANICAL", 0.10));
-            partService.save(new Part(null, "Bushing Half", "Half-width spacer", "MECHANICAL", 0.08));
-            partService.save(new Part(null, "Turntable Large", "Rotating base plate", "MECHANICAL", 2.50));
-            partService.save(new Part(null, "Hinge Plate 1x2", "Folding hinge connector", "MECHANICAL", 0.35));
+            partService.save(new Part(null, "Wheel Rim 56x34", "Truck wheel rim", TYPE_MECHANICAL, 1.20));
+            partService.save(new Part(null, "Tire 68.82x34.4", "Large rubber tire", TYPE_MECHANICAL, 1.50));
+            partService.save(new Part(null, "Axle 6L", "6-stud length axle rod", TYPE_MECHANICAL, 0.20));
+            partService.save(new Part(null, "Axle 8L", "8-stud length axle rod", TYPE_MECHANICAL, 0.25));
+            partService.save(new Part(null, "Gear 16 Tooth", "Medium drive gear", TYPE_MECHANICAL, 0.45));
+            partService.save(new Part(null, "Gear 24 Tooth", "Large drive gear", TYPE_MECHANICAL, 0.55));
+            partService.save(new Part(null, "Connector Pin", "Standard friction pin", TYPE_MECHANICAL, 0.10));
+            partService.save(new Part(null, "Bushing Half", "Half-width spacer", TYPE_MECHANICAL, 0.08));
+            partService.save(new Part(null, "Turntable Large", "Rotating base plate", TYPE_MECHANICAL, 2.50));
+            partService.save(new Part(null, "Hinge Plate 1x2", "Folding hinge connector", TYPE_MECHANICAL, 0.35));
             
             // Electrical parts (powered components)
-            partService.save(new Part(null, "Motor XL", "Large power motor", "ELECTRICAL", 12.99));
-            partService.save(new Part(null, "Motor M", "Medium power motor", "ELECTRICAL", 8.99));
-            partService.save(new Part(null, "LED White", "White LED light element", "ELECTRICAL", 2.50));
-            partService.save(new Part(null, "LED Red", "Red LED light element", "ELECTRICAL", 2.50));
-            partService.save(new Part(null, "LED Yellow", "Yellow LED light element", "ELECTRICAL", 2.50));
-            partService.save(new Part(null, "Battery Box AAA", "Power supply unit", "ELECTRICAL", 5.99));
-            partService.save(new Part(null, "Wire 20cm", "Electrical connector cable", "ELECTRICAL", 0.75));
-            partService.save(new Part(null, "Switch On/Off", "Power control switch", "ELECTRICAL", 1.50));
+            partService.save(new Part(null, "Motor XL", "Large power motor", TYPE_ELECTRICAL, 12.99));
+            partService.save(new Part(null, "Motor M", "Medium power motor", TYPE_ELECTRICAL, 8.99));
+            partService.save(new Part(null, "LED White", "White LED light element", TYPE_ELECTRICAL, 2.50));
+            partService.save(new Part(null, "LED Red", "Red LED light element", TYPE_ELECTRICAL, 2.50));
+            partService.save(new Part(null, "LED Yellow", "Yellow LED light element", TYPE_ELECTRICAL, 2.50));
+            partService.save(new Part(null, "Battery Box AAA", "Power supply unit", TYPE_ELECTRICAL, 5.99));
+            partService.save(new Part(null, "Wire 20cm", "Electrical connector cable", TYPE_ELECTRICAL, 0.75));
+            partService.save(new Part(null, "Switch On/Off", "Power control switch", TYPE_ELECTRICAL, 1.50));
             
             // Decorative parts (finishing touches)
-            partService.save(new Part(null, "Minifig Knight", "Castle knight figure", "DECORATIVE", 3.99));
-            partService.save(new Part(null, "Minifig Driver", "Truck driver figure", "DECORATIVE", 3.99));
-            partService.save(new Part(null, "Flag Triangular Red", "Castle banner flag", "DECORATIVE", 0.85));
-            partService.save(new Part(null, "Windshield 4x4x2", "Curved truck windshield", "DECORATIVE", 1.25));
-            partService.save(new Part(null, "Plant Leaves Green", "Decorative foliage", "DECORATIVE", 0.40));
-            partService.save(new Part(null, "Roof Tile 2x2", "Textured roof piece", "DECORATIVE", 0.30));
-            partService.save(new Part(null, "Fence 1x4x2", "Railing segment", "DECORATIVE", 0.45));
-            partService.save(new Part(null, "Treasure Chest", "Castle accessory", "DECORATIVE", 1.50));
+            partService.save(new Part(null, "Minifig Knight", "Castle knight figure", TYPE_DECORATIVE, 3.99));
+            partService.save(new Part(null, "Minifig Driver", "Truck driver figure", TYPE_DECORATIVE, 3.99));
+            partService.save(new Part(null, "Flag Triangular Red", "Castle banner flag", TYPE_DECORATIVE, 0.85));
+            partService.save(new Part(null, "Windshield 4x4x2", "Curved truck windshield", TYPE_DECORATIVE, 1.25));
+            partService.save(new Part(null, "Plant Leaves Green", "Decorative foliage", TYPE_DECORATIVE, 0.40));
+            partService.save(new Part(null, "Roof Tile 2x2", "Textured roof piece", TYPE_DECORATIVE, 0.30));
+            partService.save(new Part(null, "Fence 1x4x2", "Railing segment", TYPE_DECORATIVE, 0.45));
+            partService.save(new Part(null, "Treasure Chest", "Castle accessory", TYPE_DECORATIVE, 1.50));
         }
 
         // Seed Product-Module relationships (Bill of Materials)

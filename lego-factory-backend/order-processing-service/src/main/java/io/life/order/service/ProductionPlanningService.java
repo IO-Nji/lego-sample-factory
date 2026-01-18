@@ -1,7 +1,7 @@
 package io.life.order.service;
 
 import io.life.order.dto.ProductionOrderDTO;
-import io.life.order.repository.ProductionOrderRepository;
+import io.life.order.exception.ProductionPlanningException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +27,14 @@ public class ProductionPlanningService {
     private static final Logger logger = LoggerFactory.getLogger(ProductionPlanningService.class);
     private static final Long PRODUCTION_CONTROL_WORKSTATION_ID = 20L; // Production Control workstation
     private static final Long ASSEMBLY_CONTROL_WORKSTATION_ID = 21L;   // Assembly Control workstation
+    private static final String PRODUCTION_ORDER_NOT_FOUND = "Production order not found: ";
+    
+    // Production order status constants
+    private static final String STATUS_SUBMITTED = "SUBMITTED";
+    private static final String STATUS_SCHEDULED = "SCHEDULED";
+    private static final String STATUS_IN_PRODUCTION = "IN_PRODUCTION";
+    private static final String STATUS_COMPLETED = "COMPLETED";
+    private static final String STATUS_CANCELLED = "CANCELLED";
 
     private final ProductionOrderService productionOrderService;
     private final ProductionControlOrderService productionControlOrderService;
@@ -36,8 +44,10 @@ public class ProductionPlanningService {
     @Value("${simal.api.base-url:http://localhost:8016/api}")
     private String simalApiBaseUrl;
 
+    @Value("${simal.api.scheduled-orders-path:/simal/scheduled-orders/}")
+    private String simalScheduledOrdersPath;
+
     public ProductionPlanningService(
-            ProductionOrderRepository productionOrderRepository,
             ProductionOrderService productionOrderService,
             ProductionControlOrderService productionControlOrderService,
             AssemblyControlOrderService assemblyControlOrderService,
@@ -54,10 +64,10 @@ public class ProductionPlanningService {
      */
     public ProductionOrderDTO submitProductionOrderToSimal(Long productionOrderId) {
         ProductionOrderDTO order = productionOrderService.getProductionOrderById(productionOrderId)
-                .orElseThrow(() -> new RuntimeException("Production order not found: " + productionOrderId));
+                .orElseThrow(() -> new ProductionPlanningException(PRODUCTION_ORDER_NOT_FOUND + productionOrderId));
 
         // Check if already submitted
-        if ("SUBMITTED".equals(order.getStatus()) || "SCHEDULED".equals(order.getStatus())) {
+        if (STATUS_SUBMITTED.equals(order.getStatus()) || STATUS_SCHEDULED.equals(order.getStatus())) {
             logger.warn("Production order {} already submitted or scheduled", order.getProductionOrderNumber());
             return order;
         }
@@ -74,37 +84,48 @@ public class ProductionPlanningService {
             // Send to SimAL API
             String url = simalApiBaseUrl + "/simal/production-order";
             HttpEntity<SimalProductionOrderRequest> requestEntity = new HttpEntity<>(request);
+            @SuppressWarnings("rawtypes")
             ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                @SuppressWarnings("unchecked")
                 Map<String, Object> responseBody = response.getBody();
-                String scheduleId = (String) responseBody.get("scheduleId");
-                Integer estimatedDuration = ((Number) responseBody.get("estimatedDuration")).intValue();
-                String estimatedCompletionStr = (String) responseBody.get("estimatedCompletion");
+                if (responseBody != null) {
+                    String scheduleId = (String) responseBody.get("scheduleId");
+                    Integer estimatedDuration = ((Number) responseBody.get("estimatedDuration")).intValue();
+                    String estimatedCompletionStr = (String) responseBody.get("estimatedCompletion");
 
-                // Update production order with schedule information
-                ProductionOrderDTO updatedOrder = productionOrderService.linkToSimalSchedule(
-                        productionOrderId,
-                        scheduleId,
-                        estimatedDuration,
-                        LocalDateTime.parse(estimatedCompletionStr)
-                );
+                    // Update production order with schedule information
+                    productionOrderService.linkToSimalSchedule(
+                            productionOrderId,
+                            scheduleId,
+                            estimatedDuration,
+                            LocalDateTime.parse(estimatedCompletionStr)
+                    );
 
-                // Update status to SUBMITTED
-                updatedOrder = productionOrderService.updateProductionOrderStatus(productionOrderId, "SUBMITTED");
-                logger.info("Submitted production order {} to SimAL with schedule {}", 
-                        order.getProductionOrderNumber(), scheduleId);
+                    // Update status to SUBMITTED
+                    ProductionOrderDTO updatedOrder = productionOrderService.updateProductionOrderStatus(productionOrderId, STATUS_SUBMITTED);
+                    logger.info("Submitted production order {} to SimAL with schedule {}", 
+                            order.getProductionOrderNumber(), scheduleId);
 
-                return updatedOrder;
+                    return updatedOrder;
+                } else {
+                    logger.error("SimAL API returned null response body for production order {}", 
+                            order.getProductionOrderNumber());
+                    throw new ProductionPlanningException("SimAL API returned null response body");
+                }
             } else {
                 logger.error("Failed to submit production order {} to SimAL: HTTP {}", 
                         order.getProductionOrderNumber(), response.getStatusCode());
-                throw new RuntimeException("SimAL API returned error: " + response.getStatusCode());
+                throw new ProductionPlanningException("SimAL API returned error: " + response.getStatusCode());
             }
+        } catch (ProductionPlanningException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error submitting production order {} to SimAL: {}", 
                     order.getProductionOrderNumber(), e.getMessage(), e);
-            throw new RuntimeException("Failed to submit to SimAL: " + e.getMessage());
+            throw new ProductionPlanningException("Failed to submit production order " + 
+                    order.getProductionOrderNumber() + " to SimAL: " + e.getMessage(), e);
         }
     }
 
@@ -113,21 +134,27 @@ public class ProductionPlanningService {
      */
     public List<Map<String, Object>> getScheduledTasks(String simalScheduleId) {
         try {
-            String url = simalApiBaseUrl + "/simal/scheduled-orders/" + simalScheduleId;
+            String url = simalApiBaseUrl + simalScheduledOrdersPath + simalScheduleId;
+            @SuppressWarnings("rawtypes")
             ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                @SuppressWarnings("unchecked")
                 Map<String, Object> responseBody = response.getBody();
-                List<Map<String, Object>> tasks = (List<Map<String, Object>>) responseBody.get("tasks");
-                logger.info("Retrieved {} scheduled tasks for schedule {}", tasks.size(), simalScheduleId);
-                return tasks;
+                if (responseBody != null) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> tasks = (List<Map<String, Object>>) responseBody.get("tasks");
+                    logger.info("Retrieved {} scheduled tasks for schedule {}", tasks != null ? tasks.size() : 0, simalScheduleId);
+                    return tasks != null ? tasks : new ArrayList<>();
+                }
+                return new ArrayList<>();
             } else {
                 logger.warn("Failed to get scheduled tasks for schedule {}: HTTP {}", 
                         simalScheduleId, response.getStatusCode());
                 return new ArrayList<>();
             }
         } catch (Exception e) {
-            logger.error("Error retrieving scheduled tasks for schedule {}: {}", simalScheduleId, e.getMessage());
+            logger.error("Error retrieving scheduled tasks for schedule {}: {}", simalScheduleId, e.getMessage(), e);
             return new ArrayList<>();
         }
     }
@@ -138,7 +165,7 @@ public class ProductionPlanningService {
      */
     public ProductionOrderDTO updateProductionProgress(Long productionOrderId) {
         ProductionOrderDTO order = productionOrderService.getProductionOrderById(productionOrderId)
-                .orElseThrow(() -> new RuntimeException("Production order not found: " + productionOrderId));
+                .orElseThrow(() -> new ProductionPlanningException(PRODUCTION_ORDER_NOT_FOUND + productionOrderId));
 
         if (order.getSimalScheduleId() == null) {
             logger.warn("Production order {} not linked to SimAL schedule", order.getProductionOrderNumber());
@@ -146,21 +173,26 @@ public class ProductionPlanningService {
         }
 
         try {
-            String url = simalApiBaseUrl + "/simal/scheduled-orders/" + order.getSimalScheduleId() + "/status";
+            String url = simalApiBaseUrl + simalScheduledOrdersPath + order.getSimalScheduleId() + "/status";
+            @SuppressWarnings("rawtypes")
             ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                @SuppressWarnings("unchecked")
                 Map<String, Object> responseBody = response.getBody();
-                String status = (String) responseBody.get("status");
+                if (responseBody != null) {
+                    String status = (String) responseBody.get("status");
 
-                // Update production order status based on SimAL status
-                String newStatus = mapSimalStatusToPOStatus(status);
-                if (!newStatus.equals(order.getStatus())) {
-                    order = productionOrderService.updateProductionOrderStatus(productionOrderId, newStatus);
-                    logger.info("Updated production order {} to status {} based on SimAL", 
-                            order.getProductionOrderNumber(), newStatus);
+                    // Update production order status based on SimAL status
+                    String newStatus = mapSimalStatusToPOStatus(status);
+                    if (!newStatus.equals(order.getStatus())) {
+                        order = productionOrderService.updateProductionOrderStatus(productionOrderId, newStatus);
+                        logger.info("Updated production order {} to status {} based on SimAL", 
+                                order.getProductionOrderNumber(), newStatus);
+                    }
+
+                    return order;
                 }
-
                 return order;
             } else {
                 logger.warn("Failed to get production progress for schedule {}: HTTP {}", 
@@ -169,7 +201,7 @@ public class ProductionPlanningService {
             }
         } catch (Exception e) {
             logger.error("Error updating production progress for order {}: {}", 
-                    order.getProductionOrderNumber(), e.getMessage());
+                    order.getProductionOrderNumber(), e.getMessage(), e);
             return order;
         }
     }
@@ -179,38 +211,43 @@ public class ProductionPlanningService {
      */
     public ProductionOrderDTO startProduction(Long productionOrderId) {
         ProductionOrderDTO order = productionOrderService.getProductionOrderById(productionOrderId)
-                .orElseThrow(() -> new RuntimeException("Production order not found: " + productionOrderId));
+                .orElseThrow(() -> new ProductionPlanningException(PRODUCTION_ORDER_NOT_FOUND + productionOrderId));
 
-        if (!"SCHEDULED".equals(order.getStatus())) {
+        if (!STATUS_SCHEDULED.equals(order.getStatus())) {
             throw new IllegalStateException("Cannot start production - order status is " + order.getStatus());
         }
 
         try {
-            String url = simalApiBaseUrl + "/simal/scheduled-orders/" + order.getSimalScheduleId() + "/start";
+            String url = simalApiBaseUrl + simalScheduledOrdersPath + order.getSimalScheduleId() + "/start";
+            @SuppressWarnings("rawtypes")
             ResponseEntity<Map> response = restTemplate.postForEntity(url, new HashMap<>(), Map.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
-                order = productionOrderService.updateProductionOrderStatus(productionOrderId, "IN_PRODUCTION");
+                order = productionOrderService.updateProductionOrderStatus(productionOrderId, STATUS_IN_PRODUCTION);
                 logger.info("Started production for order {} in SimAL", order.getProductionOrderNumber());
                 return order;
             } else {
-                throw new RuntimeException("SimAL API returned error: " + response.getStatusCode());
+                throw new ProductionPlanningException("SimAL API returned error: " + response.getStatusCode());
             }
+        } catch (ProductionPlanningException e) {
+            throw e;
         } catch (Exception e) {
-            logger.error("Error starting production for order {}: {}", order.getProductionOrderNumber(), e.getMessage());
-            throw new RuntimeException("Failed to start production: " + e.getMessage());
+            logger.error("Error starting production for order {}: {}", order.getProductionOrderNumber(), e.getMessage(), e);
+            throw new ProductionPlanningException("Failed to start production for order " +
+                    order.getProductionOrderNumber() + ": " + e.getMessage(), e);
         }
     }
 
     /**
-     * Mark production as complete for a scheduled order in SimAL.
+     * Complete production for an order in SimAL.
      */
     public ProductionOrderDTO completeProduction(Long productionOrderId) {
         ProductionOrderDTO order = productionOrderService.getProductionOrderById(productionOrderId)
-                .orElseThrow(() -> new RuntimeException("Production order not found: " + productionOrderId));
+                .orElseThrow(() -> new ProductionPlanningException(PRODUCTION_ORDER_NOT_FOUND + productionOrderId));
 
         try {
-            String url = simalApiBaseUrl + "/simal/scheduled-orders/" + order.getSimalScheduleId() + "/complete";
+            String url = simalApiBaseUrl + simalScheduledOrdersPath + order.getSimalScheduleId() + "/complete";
+            @SuppressWarnings("rawtypes")
             ResponseEntity<Map> response = restTemplate.postForEntity(url, new HashMap<>(), Map.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
@@ -218,11 +255,14 @@ public class ProductionPlanningService {
                 logger.info("Completed production for order {} in SimAL", order.getProductionOrderNumber());
                 return order;
             } else {
-                throw new RuntimeException("SimAL API returned error: " + response.getStatusCode());
+                throw new ProductionPlanningException("SimAL API returned error: " + response.getStatusCode());
             }
+        } catch (ProductionPlanningException e) {
+            throw e;
         } catch (Exception e) {
-            logger.error("Error completing production for order {}: {}", order.getProductionOrderNumber(), e.getMessage());
-            throw new RuntimeException("Failed to complete production: " + e.getMessage());
+            logger.error("Error completing production for order {}: {}", order.getProductionOrderNumber(), e.getMessage(), e);
+            throw new ProductionPlanningException("Failed to complete production for order " +
+                    order.getProductionOrderNumber() + ": " + e.getMessage(), e);
         }
     }
 
@@ -232,7 +272,7 @@ public class ProductionPlanningService {
      */
     public void createControlOrdersFromSimalSchedule(Long productionOrderId, String simalScheduleId) {
         ProductionOrderDTO order = productionOrderService.getProductionOrderById(productionOrderId)
-                .orElseThrow(() -> new RuntimeException("Production order not found: " + productionOrderId));
+                .orElseThrow(() -> new ProductionPlanningException(PRODUCTION_ORDER_NOT_FOUND + productionOrderId));
 
         try {
             // Get scheduled tasks from SimAL
@@ -277,7 +317,9 @@ public class ProductionPlanningService {
             }
         } catch (Exception e) {
             logger.error("Error creating control orders from SimAL schedule {}: {}", simalScheduleId, e.getMessage(), e);
-            throw new RuntimeException("Failed to create control orders: " + e.getMessage());
+            throw new ProductionPlanningException("Failed to create control orders for production order " + 
+                    order.getProductionOrderNumber() + " from SimAL schedule " + simalScheduleId + 
+                    ": " + e.getMessage(), e);
         }
     }
 
@@ -286,11 +328,11 @@ public class ProductionPlanningService {
      */
     private String mapSimalStatusToPOStatus(String simalStatus) {
         return switch (simalStatus) {
-            case "SCHEDULED" -> "SCHEDULED";
-            case "IN_PROGRESS" -> "IN_PRODUCTION";
-            case "COMPLETED" -> "COMPLETED";
-            case "FAILED", "CANCELLED" -> "CANCELLED";
-            default -> "SCHEDULED";
+            case STATUS_SCHEDULED -> STATUS_SCHEDULED;
+            case "IN_PROGRESS" -> STATUS_IN_PRODUCTION;
+            case STATUS_COMPLETED -> STATUS_COMPLETED;
+            case "FAILED", STATUS_CANCELLED -> STATUS_CANCELLED;
+            default -> STATUS_SCHEDULED;
         };
     }
 

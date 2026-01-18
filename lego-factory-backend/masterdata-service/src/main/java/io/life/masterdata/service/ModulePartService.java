@@ -3,6 +3,7 @@ package io.life.masterdata.service;
 import io.life.masterdata.entity.ModulePart;
 import io.life.masterdata.repository.ModulePartRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
 public class ModulePartService {
     private final ModulePartRepository repository;
 
+    @Nullable
     public ModulePart save(ModulePart modulePart) {
         return repository.save(modulePart);
     }
