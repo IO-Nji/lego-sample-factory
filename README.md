@@ -1,215 +1,411 @@
-# 🏭 LEGO Sample Factory Control System
+# 🏭 LIFE - LEGO Integrated Factory Execution System
 
 <div align="center">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-6DB33F?logo=spring&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.12-6DB33F?logo=spring&logoColor=white)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://reactjs.org/)
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-success)]()
+[![Java](https://img.shields.io/badge/Java-21-007396?logo=java&logoColor=white)](https://openjdk.java.net/)
+[![Microservices](https://img.shields.io/badge/Architecture-Microservices-orange)]()
 
-**LIFE** - LEGO Integrated Factory Execution
+**Enterprise-Grade Manufacturing Execution System (MES)**
 
-*A modern, microservice-based manufacturing control platform that digitizes and automates supply chain operations for the LEGO Sample Factory.*
+*A full-stack, microservice-based supply chain control platform that translates academic manufacturing research into production software. Built from ground up for a Master's thesis demonstrating digital transformation of manufacturing operations.*
 
-[Quick Start](#-quick-start) • [Features](#-current-features) • [Architecture](#-system-architecture) • [API Documentation](#-api-design) • [Roadmap](#-roadmap)
+[View Demo](https://lego.nji.io) • [Architecture](#️-system-architecture) • [Technical Stack](#-technology-stack) • [Documentation](#-comprehensive-documentation)
 
 </div>
 
 ---
 
-## 📋 Table of Contents
+## 🎯 Project Overview
 
-- [Overview](#-overview)
-- [Current Features](#-current-features)
-- [System Architecture](#-system-architecture)
-- [Technology Stack](#-technology-stack)
-- [Quick Start](#-quick-start)
-- [API Design](#-api-design)
-- [Configuration](#-configuration)
-- [Development](#-development)
-- [Roadmap](#-roadmap)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
-- [License](#-license)
+**LIFE** (LEGO Integrated Factory Execution) is a comprehensive **Manufacturing Execution System** that digitizes and automates end-to-end supply chain operations for the LEGO Sample Factory. This project demonstrates the **practical application of academic research** in manufacturing systems, translating behavioral models and activity diagrams into a fully functional, production-ready software platform.
 
----
+### 🎓 Academic Foundation
 
-## 🎯 Overview
+- **Origin**: Master's Thesis in Industrial Engineering & Supply Chain Management
+- **Research Focus**: Digital transformation of manufacturing through microservice architecture
+- **Contribution**: Behavioral workflow models (Activity Diagrams) defining complex supply chain interactions across 9 autonomous workstations
+- **Validation**: Implements 4 distinct business scenarios from manufacturing process flows
+- **Production Integration**: Ready for deployment in real manufacturing environments
 
-**LIFE** (LEGO Integrated Factory Execution) is a production-ready prototype that modernizes manufacturing operations through intelligent digital workflows. The platform provides:
+### 💼 Business Value
 
+This system addresses critical challenges in traditional manufacturing:
 
+### 💼 Business Value
 
-- ✅ **Real-time Production Control** – End-to-end order lifecycle management from creation to fulfillment
-- 🔐 **Role-Based Access Control** – Nine distinct roles with granular permissions (Admin, Plant Warehouse, Production Control, etc.)
-- 📊 **Live Inventory Tracking** – Real-time stock monitoring across all workstations with automatic updates
-- 🎯 **Workstation Assignment** – Dynamic task allocation based on user roles and workstation capabilities
-- 📱 **Responsive Dashboards** – Role-specific interfaces optimized for operational efficiency
-- 🔄 **Automated Workflows** – Intelligent order routing and status transitions based on business rules
-- 🌐 **Microservice Architecture** – Independently scalable services with complete data isolation
+This system addresses critical challenges in traditional manufacturing:
 
-### Key Benefits
-
-- **Operational Efficiency**: Reduce manual paperwork and streamline production workflows
-- **Real-Time Visibility**: Live dashboards provide instant insight into factory operations
-- **Scalability**: Microservice design allows independent scaling of critical components
-- **Flexibility**: Modular architecture supports rapid feature development and customization
-- **Reliability**: Health checks, error handling, and comprehensive logging ensure system stability
+| **Problem** | **Solution** |
+|-------------|--------------|
+| ❌ Manual paper-based workflows | ✅ Fully digital order processing with real-time tracking |
+| ❌ Limited production visibility | ✅ Live dashboards with 5-10 second auto-refresh |
+| ❌ Data silos between workstations | ✅ Integrated microservices with RESTful APIs |
+| ❌ Inventory discrepancies | ✅ Automated stock updates with transaction audit trails |
+| ❌ Scalability constraints | ✅ Independently scalable microservices architecture |
+| ❌ Manual scheduling inefficiencies | ✅ SimAL scheduling engine integration with Gantt charts |
 
 ---
 
-## ✨ Current Features
+## 🏗️ System Architecture
 
-### 🔐 Authentication & Authorization
+### Microservices Design (6 Independent Services)
 
-- **JWT-Based Authentication** with secure token management
-- **Nine Role Types**: 
-  - `ADMIN` – System administration and user management
-  - `PLANT_WAREHOUSE` – Customer order management and fulfillment
-  - `MODULES_SUPERMARKET` – Module warehouse operations
-  - `PRODUCTION_PLANNING` – Factory-wide production scheduling
-  - `PRODUCTION_CONTROL` – Manufacturing order execution
-  - `ASSEMBLY_CONTROL` – Assembly workstation operations
-  - `PARTS_SUPPLY` – Parts warehouse management
-  - `MANUFACTURING` – Production line operations
-  - `VIEWER` – Read-only system access
-- **Workstation-Based Access Control** – Users assigned to specific workstations for targeted operations
-- **Protected Routes** with automatic token refresh and expiration handling
-
-### 📦 Product & Inventory Management
-
-- **Master Data Management**:
-  - Product variants with configurable attributes
-  - Module catalog with bill-of-materials
-  - Parts library with specifications
-  - Workstation registry (warehouses, manufacturing cells, assembly stations)
-- **Real-Time Inventory**:
-  - Live stock tracking per workstation
-  - Automated inventory updates on order fulfillment
-  - Low stock alerts and notifications
-  - Multi-location inventory visibility
-
-### 📋 Order Processing & Fulfillment
-
-- **Customer Order Lifecycle**:
-  - Order creation with multiple line items
-  - Status tracking: `PENDING` → `IN_PROGRESS` → `COMPLETED` → `DELIVERED`
-  - Workstation-specific order queues
-  - Fulfillment actions with inventory validation
-- **Production Control Orders**:
-  - Manufacturing order creation and scheduling
-  - Work-in-progress tracking
-  - Start/pause/complete workflows
-  - Notes and annotations for quality control
-- **Warehouse Supply Orders**:
-  - Cross-warehouse material requests
-  - Approval workflows
-  - Fulfillment tracking with quantity verification
-
-### 🏭 Workstation Operations
-
-- **Role-Specific Dashboards**:
-  - **Admin Dashboard**: System KPIs, user management, configuration
-  - **Plant Warehouse**: Customer order intake and fulfillment
-  - **Modules Supermarket**: Internal warehouse request handling
-  - **Production Planning**: Factory-wide scheduling and resource allocation
-  - **Production Control**: Manufacturing task execution
-  - **Assembly Control**: Assembly operation management
-- **Task Management**: Work queues, priority sorting, deadline tracking
-- **Live Updates**: Auto-refresh (5-10s intervals) for real-time data synchronization
-
-### 📊 Production Scheduling (SimAL Integration)
-
-- **Scheduling Engine**: Integration with SimAL for production planning
-- **Resource Allocation**: Workstation and material availability checks
-- **Production Control Order Generation**: Automated order creation from schedules
-- **Assembly Control Order Management**: Sub-assembly tracking and coordination
-
-### 🛡️ Error Handling & Observability
-
-- **Comprehensive Logging**: Structured logs across all microservices
-- **Health Checks**: Spring Boot Actuator endpoints for service monitoring
-- **Global Exception Handling**: Standardized error responses with meaningful messages
-- **API Gateway Monitoring**: Request/response logging and metrics
-
-   cd lego-factory-frontend
-   ```
-   Access at http://localhost:5173
-
-```powershell
-.\mvnw clean package
-
-- [ ] **Load Balancing** – Horizontal scaling of microservices
-
----
-if (isTokenExpired(token)) {
-# 🏭 LEGO Sample Factory Control System
-
-Welcome to the LEGO Sample Factory Control System! This document provides a high-level introduction, project goals, and a summary of the system's features.
-
----
-
-## Table of Contents
-
-1. [Introduction & Overview](README.intro.md)
-2. [Architecture & API Design](README.architecture.md)
-3. [Development & Operations Guide](README.devops.md)
-4. [Roadmap, Contributing & Standards](README.roadmap.md)
-5. [License, Acknowledgments & Contact](README.license.md)
-
----
-
-## Project Overview
-
-The LEGO Sample Factory is a microservice-based manufacturing execution system (MES) for managing LEGO production, inventory, and order processing. It features a modern React frontend, Spring Boot backend, and Dockerized deployment for rapid prototyping and demonstration.
-
-### Key Features
-- Role-based dashboards for admin, warehouse, modules, and production
-- Real-time inventory and order management
-- Production scheduling with SimAL integration
-- JWT authentication and secure API gateway
-- Responsive UI with live updates and notifications
-
-For detailed architecture, API endpoints, and development instructions, see the referenced topic files above.
-
----
-
-## Quick Start
-
-See [Development & Operations Guide](README.devops.md) for setup and usage instructions.
-
----
-
-## License & Acknowledgments
-
-See [License, Acknowledgments & Contact](README.license.md).
-SOFTWARE.
 ```
+┌─────────────────┐
+│   React SPA     │  ← Modern UI with role-based dashboards
+│   (Vite + Nginx)│
+└────────┬────────┘
+         │
+┌────────▼─────────────────────────────────────┐
+│   API Gateway (Spring Cloud Gateway)         │  ← JWT validation, routing, CORS
+└────────┬─────────────────────────────────────┘
+         │
+    ┌────┴────┬─────────┬──────────┬─────────┬──────────┐
+    │         │         │          │         │          │
+┌───▼───┐ ┌──▼──┐ ┌────▼────┐ ┌───▼───┐ ┌───▼────┐ ┌──▼──────┐
+│ User  │ │Master│ │Inventory│ │ Order │ │ SimAL  │ │PostgreSQL│
+│Service│ │ Data │ │ Service │ │Process│ │Integr. │ │  (Ready) │
+│ :8012 │ │:8013 │ │  :8014  │ │ :8015 │ │ :8016  │ └─────────┘
+└───────┘ └──────┘ └─────────┘ └───────┘ └────────┘
+   │         │          │           │          │
+   └─────────┴──────────┴───────────┴──────────┘
+              H2 In-Memory Databases
+          (Isolated per service - no shared DB)
+```
+
+### Key Architectural Principles
+
+- ✅ **Service Isolation**: Each microservice has independent database (H2 in-memory for dev)
+- ✅ **API-Driven Communication**: Services communicate exclusively via REST APIs (no direct DB access)
+- ✅ **Stateless Authentication**: JWT tokens with BCrypt-encrypted passwords
+- ✅ **Single Entry Point**: All external traffic flows through nginx → API Gateway
+- ✅ **Health Monitoring**: Spring Boot Actuator endpoints for each service
+- ✅ **Container Orchestration**: Docker Compose for seamless multi-service deployment
+
+**Request Flow Example:**
+```
+User Login → nginx:80 → api-gateway:8011 → user-service:8012 → JWT Token
+Order Creation → API Gateway → order-processing-service:8015 → inventory-service:8014
+```
+
+---
+
+## 💻 Technology Stack
+
+### Backend (Java 21 + Spring Boot 3.4.12)
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Framework** | Spring Boot 3.4.12 | Microservices foundation |
+| **Language** | Java 21 (LTS) | Core application logic |
+| **API Gateway** | Spring Cloud Gateway | Request routing & security |
+| **Authentication** | JWT (JJWT 0.12.6) | Stateless auth tokens |
+| **Security** | Spring Security + BCrypt | Password encryption & RBAC |
+| **Database (Dev)** | H2 In-Memory | Per-service isolation |
+| **Database (Prod)** | PostgreSQL-ready | Scalable persistence |
+| **ORM** | Spring Data JPA | Database abstraction |
+| **HTTP Client** | RestTemplate | Inter-service communication |
+| **Build Tool** | Maven | Dependency management |
+
+### Frontend (React 18 + Vite)
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Framework** | React 18 | Modern UI components |
+| **Build Tool** | Vite | Fast HMR & bundling |
+| **HTTP Client** | Axios | API requests with interceptors |
+| **Routing** | React Router v6 | SPA navigation |
+| **State** | Context API | Global auth state |
+| **Styling** | CSS Modules + Design System | 368 design tokens, reusable components |
+| **Web Server** | Nginx | Production static file serving |
+
+### DevOps & Infrastructure
+
+- **Containerization**: Docker + Docker Compose
+- **Reverse Proxy**: Nginx (port routing, load balancing ready)
+- **CI/CD Ready**: Dockerfile per service, multi-stage builds
+- **Logging**: SLF4J + Logback with structured logging
+- **Code Quality**: SonarQube integration
+- **Version Control**: Git with feature branch workflow
+
+---
+
+## ✨ Core Features
+
+### 🔐 Advanced Authentication & Authorization
+
+- **JWT-Based Authentication**: Secure, stateless token management with 1-hour expiration
+- **9 Specialized Roles**: ADMIN, PLANT_WAREHOUSE, MODULES_SUPERMARKET, PRODUCTION_PLANNING, PRODUCTION_CONTROL, ASSEMBLY_CONTROL, PARTS_SUPPLY, MANUFACTURING, VIEWER
+- **Workstation-Based Access**: Users assigned to specific factory workstations (WS-1 through WS-9)
+- **Protected Routes**: Automatic token refresh, expiration handling, 401/403 auto-logout
+
+### 🏭 Manufacturing Supply Chain (3-Tier Hierarchy)
+
+**Entity Relationship Model:**
+```
+Product Variants (Final Products) → Stored in Plant Warehouse (WS-7)
+    └── Composed of → Modules (Sub-assemblies) → Stored in Modules Supermarket (WS-8)
+            └── Composed of → Parts (Raw Materials) → Stored in Parts Supply (WS-9)
+```
+
+**9 Workstations:**
+- **WS-1**: Injection Molding (Manufacturing)
+- **WS-2**: Parts Pre-Production (Manufacturing)
+- **WS-3**: Part Finishing (Manufacturing)
+- **WS-4**: Gear Assembly (Assembly Station)
+- **WS-5**: Motor Assembly (Assembly Station)
+- **WS-6**: Final Assembly (Assembly Station)
+- **WS-7**: Plant Warehouse (Customer Fulfillment)
+- **WS-8**: Modules Supermarket (Internal Warehouse)
+- **WS-9**: Parts Supply Warehouse (Raw Materials)
+
+### 📦 Order Processing (4 Business Scenarios)
+
+Implements 4 distinct fulfillment workflows from thesis research:
+
+1. **Scenario 1: Sunny Day** - Direct fulfillment from warehouse stock
+2. **Scenario 2: Warehouse Order** - Missing products trigger module assembly
+3. **Scenario 3: Full Production** - Missing modules trigger manufacturing chain
+4. **Scenario 4: High Volume** - Large orders bypass warehouse, go direct to production
+
+**Order State Machines:**
+```
+CustomerOrder:  PENDING → CONFIRMED → PROCESSING → COMPLETED → DELIVERED
+WarehouseOrder: PENDING → PROCESSING → AWAITING_PRODUCTION → FULFILLED
+ProductionOrder: PENDING → PLANNED → IN_PRODUCTION → COMPLETED
+```
+
+### 📊 Real-Time Inventory Management
+
+- **Multi-Location Tracking**: Independent stock per workstation
+- **Transaction Audit Trail**: Immutable StockLedgerEntry for every movement (CREDIT/DEBIT/TRANSFER)
+- **Low Stock Alerts**: Configurable thresholds with automatic notifications
+- **Atomic Updates**: Database transactions ensure inventory consistency
+- **Live Dashboard**: Auto-refresh every 5-10 seconds
+
+### 🗓️ Production Planning & Scheduling
+
+- **SimAL Integration**: External scheduling engine for production optimization
+- **Gantt Chart Visualization**: Interactive timeline with task dependencies
+- **Manual Scheduling**: Drag-and-drop interface for production planners
+- **Control Order Generation**: Auto-create ProductionControlOrder and AssemblyControlOrder from schedules
+- **Real-Time Updates**: Actual vs. estimated time tracking
+
+### 📱 Role-Specific Dashboards
+
+**9 Customized Interfaces** using standardized DashboardLayout component:
+- **Admin**: System KPIs, user management, configuration
+- **Plant Warehouse**: Customer order intake & fulfillment
+- **Modules Supermarket**: Internal warehouse request handling
+- **Production Planning**: Factory-wide scheduling with Gantt charts
+- **Production Control**: Manufacturing task dispatching
+- **Assembly Control**: Assembly operation coordination
+- **Parts Supply**: Raw materials distribution
+- **Manufacturing**: Production line execution (WS-1, WS-2, WS-3)
+- **Viewer**: Read-only monitoring dashboard
+
+**Each dashboard includes:**
+- 📊 Real-time statistics (Total, Pending, In Progress, Completed orders)
+- 📋 Interactive order cards with status badges
+- 📦 Live inventory display for assigned workstation
+- ✅ One-click action buttons (Confirm, Fulfill, Start, Complete)
+- 🔄 Auto-refresh with configurable intervals
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Docker** 20.10+ & **Docker Compose** 2.0+
+- **Java 21** (for local development)
+- **Node.js 18+** (for frontend development)
+- **Git**
+
+### One-Command Deployment
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd lego-sample-factory
+
+# Start all services (Linux/Mac)
+docker-compose up -d
+
+# Start all services (Windows PowerShell - includes health checks)
+.\start-factory.ps1
+```
+
+**Access Application:**
+- Frontend: `http://localhost:1011` (or `:80` if `NGINX_ROOT_PROXY_EXTERNAL_PORT=80`)
+- API Gateway: `http://localhost:8011`
+
+### Test Accounts
+
+| Username | Password | Role | Workstation | Use Case |
+|----------|----------|------|-------------|----------|
+| `lego_admin` | `password` | ADMIN | - | System administration |
+| `warehouse_operator` | `password` | PLANT_WAREHOUSE | Plant Warehouse (WS-7) | Customer order fulfillment |
+| `modules_supermarket` | `password` | MODULES_SUPERMARKET | Modules Supermarket (WS-8) | Module warehouse operations |
+| `production_planning` | `password` | PRODUCTION_PLANNING | - | Factory-wide scheduling |
+| `production_control` | `password` | PRODUCTION_CONTROL | Injection Molding (WS-1) | Manufacturing oversight |
+| `assembly_control` | `password` | ASSEMBLY_CONTROL | Gear Assembly (WS-4) | Assembly coordination |
+
+---
+
+## 📚 Comprehensive Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [PROJECT_TECHNICAL_OVERVIEW.md](PROJECT_TECHNICAL_OVERVIEW.md) | Academic research context, thesis background, PhD proposal material |
+| [README.architecture.md](README.architecture.md) | System architecture diagrams, data models, API specifications |
+| [README.devops.md](README.devops.md) | Deployment, configuration, troubleshooting, operations guide |
+| [BusinessScenarios.md](BusinessScenarios.md) | 4 order fulfillment scenarios with step-by-step workflows |
+| [TESTING_GUIDE.md](TESTING_GUIDE.md) | End-to-end testing procedures with test accounts |
+| [IMPLEMENTATION_ROADMAP.md](_dev-docs/ai-helper-documents/IMPLEMENTATION_ROADMAP.md) | Feature development plan (3 stages) |
+| [.github/copilot-instructions.md](.github/copilot-instructions.md) | Comprehensive AI agent onboarding (550+ lines) |
+
+---
+
+## 🔧 Development Workflow
+
+### Local Backend Development
+
+```bash
+cd lego-factory-backend/<service>
+./mvnw spring-boot:run
+```
+
+### Local Frontend Development (with Hot Reload)
+
+```bash
+# Start backend services only
+docker-compose up -d api-gateway user-service masterdata-service inventory-service order-processing-service simal-integration-service
+
+# Run frontend in dev mode
+cd lego-factory-frontend
+npm install
+npm run dev  # Access at http://localhost:5173
+```
+
+### Rebuild After Code Changes
+
+```bash
+# Rebuild specific service
+docker-compose build --no-cache <service> && docker-compose up -d <service>
+
+# Rebuild frontend (CRITICAL for seeing CSS/component changes)
+docker-compose build --no-cache frontend && docker-compose up -d frontend
+# Then hard refresh browser: Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac)
+```
+
+---
+
+## 🎨 Design System
+
+**368 CSS Design Tokens** in centralized [variables.css](lego-factory-frontend/src/styles/variables.css):
+- 🎨 Color palette (primary, secondary, success, danger, warning, info)
+- 📏 Spacing scale (4px baseline grid)
+- 🔤 Typography system (Inter font family)
+- 🎭 Shadows & elevations
+- ⏱️ Animation timings
+- 🖼️ Border radius variants
+
+**10+ Reusable Components** with CSS Modules:
+- `Button` (8 variants × 3 sizes)
+- `Card` (elevated, outlined, flat)
+- `StatCard` (dashboard metrics)
+- `Table` (sortable, striped, hoverable)
+- `Badge` (status indicators)
+- `Alert` (success, error, warning, info)
+- `DashboardLayout` (standardized 9-page pattern)
+
+---
+
+## 📊 Key Technical Achievements
+
+### 1. **Microservice Isolation**
+- Each service has independent H2 database (no shared schema)
+- Services communicate exclusively via REST APIs
+- Demonstrated proper bounded context separation
+
+### 2. **Security Implementation**
+- JWT with 1-hour expiration
+- BCrypt password hashing
+- API Gateway-level authentication filter
+- Role-based route protection in frontend
+
+### 3. **Data Consistency**
+- RestTemplate inter-service calls with error handling
+- Transactional inventory updates
+- Audit trail for all stock movements
+
+### 4. **Frontend Architecture**
+- Context API for global state (auth)
+- Axios interceptors for automatic JWT injection
+- CSS Modules for scoped styling
+- DashboardLayout pattern for consistency
+
+### 5. **Operational Readiness**
+- Health check endpoints (`/actuator/health`)
+- Structured logging (SLF4J)
+- Docker Compose orchestration
+- Multi-stage Dockerfile builds
+
+---
+
+## 🛣️ Future Enhancements
+
+- [ ] **Kubernetes Deployment**: Helm charts for cloud-native scaling
+- [ ] **PostgreSQL Migration**: Production-grade persistence layer
+- [ ] **Redis Caching**: Session store & API response caching
+- [ ] **Kafka Event Streaming**: Real-time event-driven architecture
+- [ ] **Prometheus + Grafana**: Advanced monitoring & alerting
+- [ ] **OAuth2/OIDC**: Enterprise SSO integration
+- [ ] **Mobile App**: React Native companion app for shop floor
+- [ ] **AI-Powered Scheduling**: ML optimization for production planning
+- [ ] **IoT Integration**: Sensor data ingestion from factory equipment
+- [ ] **Advanced Analytics**: PowerBI/Tableau dashboards
+
+---
+
+## 📝 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **Spring Boot** team for the excellent framework
-- **React** community for the vibrant ecosystem
-- **Docker** for simplifying deployment
-- LEGO Group for inspiration
+- **Master's Thesis Supervisors**: For guidance on manufacturing system design
+- **Spring Boot Team**: Excellent microservices framework
+- **React Community**: Vibrant ecosystem and tooling
+- **LEGO Sample Factory**: Inspiration and use case validation
+- **Open Source Community**: Libraries and tools that made this possible
 
 ---
 
-## 📞 Contact & Support
+## 📧 Contact
 
-- **Repository**: [https://github.com/<your-org>/lego-sample-factory](https://github.com/<your-org>/lego-sample-factory)
-- **Issues**: [GitHub Issues](https://github.com/<your-org>/lego-sample-factory/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/<your-org>/lego-sample-factory/discussions)
+**Author**: Nji S. Chifen
+**LinkedIn**: www.linkedin.com/in/njisama
+**Email**: mail@nji.io 
+**Portfolio**: https://nji.io
+
+**For Academic/Research Inquiries**: See [PROJECT_TECHNICAL_OVERVIEW.md](PROJECT_TECHNICAL_OVERVIEW.md) for detailed research contributions and PhD proposal materials.
 
 ---
 
 <div align="center">
 
-**[⬆ Back to Top](#-lego-sample-factory-control-system)**
+**⭐ If you find this project impressive, please star it! ⭐**
 
-Made with ❤️ for LEGO Manufacturing Operations
+Built with passion for manufacturing innovation and software engineering excellence.
+
+[⬆ Back to Top](#-life---lego-integrated-factory-execution-system)
 
 </div>
