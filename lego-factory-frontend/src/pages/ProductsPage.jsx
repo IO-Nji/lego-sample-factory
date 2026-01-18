@@ -9,9 +9,9 @@ export default function ProductsPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
   const [products, setProducts] = useState([]);
-  const [modules, setModules] = useState([]);
-  const [parts, setParts] = useState([]);
+  const [productComposition, setProductComposition] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [compositionLoading, setCompositionLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [expandedModules, setExpandedModules] = useState({});
@@ -24,14 +24,8 @@ export default function ProductsPage() {
     try {
       setLoading(true);
       setError(null);
-      const [productsRes, modulesRes, partsRes] = await Promise.all([
-        api.get('/masterdata/product-variants'),
-        api.get('/masterdata/modules'),
-        api.get('/masterdata/parts')
-      ]);
+      const productsRes = await api.get('/masterdata/product-variants');
       setProducts(productsRes.data);
-      setModules(modulesRes.data);
-      setParts(partsRes.data);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err.response?.data?.message || 'Failed to load products');
@@ -40,19 +34,31 @@ export default function ProductsPage() {
     }
   };
 
+  const fetchProductComposition = async (productId) => {
+    try {
+      setCompositionLoading(true);
+      const response = await api.get(`/masterdata/product-variants/${productId}/composition`);
+      setProductComposition(response.data);
+    } catch (err) {
+      console.error('Error fetching product composition:', err);
+      setError('Failed to load product composition');
+    } finally {
+      setCompositionLoading(false);
+    }
+  };
+
+  const handleProductSelect = async (product) => {
+    setSelectedProduct(product);
+    setProductComposition(null);
+    setExpandedModules({});
+    await fetchProductComposition(product.id);
+  };
+
   const toggleModuleExpand = (moduleId) => {
     setExpandedModules(prev => ({
       ...prev,
       [moduleId]: !prev[moduleId]
     }));
-  };
-
-  const getModulePartsForProduct = (product) => {
-    return modules;
-  };
-
-  const getPartsForModule = (module) => {
-    return parts;
   };
 
   if (loading) {
@@ -77,7 +83,7 @@ export default function ProductsPage() {
       <div className="standard-page-header">
         <div className="standard-header-content">
           <h1>Products Catalog</h1>
-          <p className="standard-page-subtitle">LEGO Product Variants: {products.length} | Modules: {modules.length} | Parts: {parts.length}</p>
+          <p className="standard-page-subtitle">LEGO Product Variants: {products.length}</p>
         </div>
         {session?.user?.role === 'ADMIN' && (
           <div className="standard-header-actions">
@@ -119,51 +125,57 @@ export default function ProductsPage() {
           <div className="components-section">
             <h3>Product Components</h3>
             
-            <div className="modules-list">
-              {getModulePartsForProduct(selectedProduct).length === 0 ? (
-                <p className="empty-message">No components available for this product</p>
-              ) : (
-                getModulePartsForProduct(selectedProduct).map(module => (
-                  <div key={module.id} className="module-card">
-                    <div 
-                      className="module-header"
-                      onClick={() => toggleModuleExpand(module.id)}
-                    >
-                      <span className="expand-icon">
-                        {expandedModules[module.id] ? '▼' : '▶'}
-                      </span>
-                      <div className="module-info">
-                        <h4>{module.name}</h4>
-                        <p className="module-type">{module.type || 'COMPONENT'}</p>
-                      </div>
-                    </div>
-
-                    {expandedModules[module.id] && (
-                      <div className="module-content">
-                        <p className="module-description">{module.description}</p>
-                        
-                        <div className="parts-sublist">
-                          <h5>Parts Required:</h5>
-                          {getPartsForModule(module).length === 0 ? (
-                            <p className="empty-message">No parts specified</p>
-                          ) : (
-                            <ul>
-                              {getPartsForModule(module).map(part => (
-                                <li key={part.id} className="part-item">
-                                  <span className="part-name">{part.name}</span>
-                                  <span className="part-category">{part.category}</span>
-                                  <span className="part-cost">${part.unitCost?.toFixed(2) || '0.00'}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
+            {compositionLoading ? (
+              <p className="loading-message">Loading components...</p>
+            ) : !productComposition ? (
+              <p className="empty-message">No composition data available</p>
+            ) : (
+              <div className="modules-list">
+                {productComposition.modules.length === 0 ? (
+                  <p className="empty-message">No components available for this product</p>
+                ) : (
+                  productComposition.modules.map(module => (
+                    <div key={module.id} className="module-card">
+                      <div 
+                        className="module-header"
+                        onClick={() => toggleModuleExpand(module.id)}
+                      >
+                        <span className="expand-icon">
+                          {expandedModules[module.id] ? '▼' : '▶'}
+                        </span>
+                        <div className="module-info">
+                          <h4>{module.name} {module.quantity > 1 && <span className="quantity-badge">×{module.quantity}</span>}</h4>
+                          <p className="module-type">{module.type || 'COMPONENT'}</p>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
+
+                      {expandedModules[module.id] && (
+                        <div className="module-content">
+                          <p className="module-description">{module.description}</p>
+                          
+                          <div className="parts-sublist">
+                            <h5>Parts Required:</h5>
+                            {!module.parts || module.parts.length === 0 ? (
+                              <p className="empty-message">No parts specified</p>
+                            ) : (
+                              <ul>
+                                {module.parts.map(part => (
+                                  <li key={part.id} className="part-item">
+                                    <span className="part-name">{part.name} {part.quantity > 1 && `(×${part.quantity})`}</span>
+                                    <span className="part-category">{part.category}</span>
+                                    <span className="part-cost">${part.unitCost?.toFixed(2) || '0.00'}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -175,7 +187,7 @@ export default function ProductsPage() {
               <div 
                 key={product.id} 
                 className="product-card"
-                onClick={() => setSelectedProduct(product)}
+                onClick={() => handleProductSelect(product)}
               >
                 <div className="product-card-content">
                   <h3>{product.name}</h3>

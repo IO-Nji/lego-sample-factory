@@ -1,7 +1,15 @@
 package io.life.masterdata.controller;
 
 import io.life.masterdata.dto.ProductVariantDto;
+import io.life.masterdata.entity.Module;
+import io.life.masterdata.entity.ModulePart;
+import io.life.masterdata.entity.Part;
+import io.life.masterdata.entity.ProductModule;
 import io.life.masterdata.entity.ProductVariant;
+import io.life.masterdata.service.ModulePartService;
+import io.life.masterdata.service.ModuleService;
+import io.life.masterdata.service.PartService;
+import io.life.masterdata.service.ProductModuleService;
 import io.life.masterdata.service.ProductVariantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -24,6 +32,10 @@ import java.util.stream.Collectors;
 public class ProductVariantController {
 
     private final ProductVariantService productVariantService;
+    private final ProductModuleService productModuleService;
+    private final ModuleService moduleService;
+    private final ModulePartService modulePartService;
+    private final PartService partService;
 
     /**
      * GET /api/masterdata/product-variants
@@ -130,6 +142,68 @@ public class ProductVariantController {
             log.warn("Product variant not found with ID: {}", id);
             return ResponseEntity.notFound().build();
         }
+    }
+
+    /**
+     * GET /api/masterdata/product-variants/{id}/composition
+     * Get the complete composition (modules and parts) for a specific product
+     */
+    @GetMapping("/{id}/composition")
+    public ResponseEntity<Map<String, Object>> getProductComposition(@PathVariable Long id) {
+        log.debug("Fetching composition for product variant ID: {}", id);
+        
+        Optional<ProductVariant> productOpt = productVariantService.findById(id);
+        if (productOpt.isEmpty()) {
+            log.warn("Product variant not found with ID: {}", id);
+            return ResponseEntity.notFound().build();
+        }
+
+        // Get all modules for this product
+        List<ProductModule> productModules = productModuleService.findByProductVariantId(id);
+        
+        List<Map<String, Object>> modulesWithParts = new ArrayList<>();
+        
+        for (ProductModule pm : productModules) {
+            Optional<Module> moduleOpt = moduleService.findById(pm.getModuleId());
+            if (moduleOpt.isEmpty()) continue;
+            
+            Module module = moduleOpt.get();
+            
+            // Get all parts for this module
+            List<ModulePart> moduleParts = modulePartService.findByModuleId(module.getId());
+            
+            List<Map<String, Object>> partsDetails = new ArrayList<>();
+            for (ModulePart mp : moduleParts) {
+                Optional<Part> partOpt = partService.findById(mp.getPartId());
+                if (partOpt.isEmpty()) continue;
+                
+                Part part = partOpt.get();
+                Map<String, Object> partDetail = new HashMap<>();
+                partDetail.put("id", part.getId());
+                partDetail.put("name", part.getName());
+                partDetail.put("description", part.getDescription());
+                partDetail.put("category", part.getCategory());
+                partDetail.put("unitCost", part.getUnitCost());
+                partDetail.put("quantity", mp.getQuantity());
+                partsDetails.add(partDetail);
+            }
+            
+            Map<String, Object> moduleDetail = new HashMap<>();
+            moduleDetail.put("id", module.getId());
+            moduleDetail.put("name", module.getName());
+            moduleDetail.put("description", module.getDescription());
+            moduleDetail.put("type", module.getType());
+            moduleDetail.put("quantity", pm.getQuantity());
+            moduleDetail.put("parts", partsDetails);
+            
+            modulesWithParts.add(moduleDetail);
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("product", convertToDto(productOpt.get()));
+        response.put("modules", modulesWithParts);
+        
+        return ResponseEntity.ok(response);
     }
 
     /**
