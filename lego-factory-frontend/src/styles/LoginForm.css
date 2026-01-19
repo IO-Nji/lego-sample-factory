@@ -114,18 +114,30 @@
 
 .login-help-text {
   margin: 0;
-  font-size: 0.5rem;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
-  line-height: 1.2;
+  line-height: 1.5;
 }
 
 .login-help-text code {
   background-color: var(--color-surface);
-  padding: 1px 1px;
-  border-radius: 2px;
+  padding: 2px 4px;
+  border-radius: 3px;
   font-family: 'Courier New', monospace;
-  font-size: 0.5rem;
+  font-size: 0.7rem;
   color: #1a3a5c;
+}
+
+.login-help-text strong {
+  color: var(--color-primary);
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.login-help-text em {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
 }
 
 /* Responsive Design */

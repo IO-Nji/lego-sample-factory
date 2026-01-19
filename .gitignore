@@ -157,8 +157,8 @@ test-control-order-cards.sh
 .github/GANTT_CHART_MANUAL_SCHEDULING_IMPLEMENTATION.md
 .github/INVESTIGATION_SUMMARY_JAN14.md
 .github/PHASE2_GANTT_CHART_TESTING_GUIDE.md
-.github/STAGE3.6_TESTING_GUIDE.md
 .github/README.roadmap.md
+.github/STAGE3.6_TESTING_GUIDE.md
 .github/start-factory.ps1
 .github/test_dashboard_endpoints.ps1
 .github/frontend-design-system-docs/ComponentLibrary.md
