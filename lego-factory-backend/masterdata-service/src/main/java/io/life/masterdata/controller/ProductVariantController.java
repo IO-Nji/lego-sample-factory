@@ -145,6 +145,26 @@ public class ProductVariantController {
     }
 
     /**
+     * GET /api/masterdata/product-variants/{id}/modules
+     * Get all modules (with quantities) for a specific product variant
+     */
+    @GetMapping("/{id}/modules")
+    public ResponseEntity<List<ProductModule>> getProductModules(@PathVariable Long id) {
+        log.debug("Fetching modules for product variant ID: {}", id);
+        
+        Optional<ProductVariant> productOpt = productVariantService.findById(id);
+        if (productOpt.isEmpty()) {
+            log.warn("Product variant not found with ID: {}", id);
+            return ResponseEntity.notFound().build();
+        }
+
+        List<ProductModule> productModules = productModuleService.findByProductVariantId(id);
+        log.debug("Found {} modules for product variant ID: {}", productModules.size(), id);
+        
+        return ResponseEntity.ok(productModules);
+    }
+
+    /**
      * GET /api/masterdata/product-variants/{id}/composition
      * Get the complete composition (modules and parts) for a specific product
      */

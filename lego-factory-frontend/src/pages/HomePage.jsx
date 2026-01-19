@@ -19,6 +19,8 @@ function HomePage() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [expandedModules, setExpandedModules] = useState({});
+  const [productModules, setProductModules] = useState([]);
+  const [loadingModules, setLoadingModules] = useState(false);
 
   useEffect(() => {
     const reason = location.state?.reason || new URLSearchParams(location.search).get('reason');
@@ -65,19 +67,73 @@ function HomePage() {
     }
   }, [isAuthenticated]);
 
+  // Fetch product-specific modules and their parts when a product is selected
+  useEffect(() => {
+    if (!selectedProduct) {
+      setProductModules([]);
+      return;
+    }
+    
+    const fetchProductModules = async () => {
+      setLoadingModules(true);
+      try {
+        console.log('Fetching modules for product:', selectedProduct.id, selectedProduct.name);
+        
+        // Fetch product modules
+        const modulesResponse = await api.get(`/masterdata/product-variants/${selectedProduct.id}/modules`);
+        const productModules = modulesResponse.data;
+        
+        console.log('Product modules:', productModules);
+        
+        // For each module, fetch its parts
+        const modulesWithParts = await Promise.all(
+          productModules.map(async (productModule) => {
+            // Get module details
+            const moduleResponse = await api.get(`/masterdata/modules/${productModule.moduleId}`);
+            const moduleData = moduleResponse.data;
+            
+            // Get parts for this module
+            const partsResponse = await api.get(`/masterdata/modules/${productModule.moduleId}/parts`);
+            const moduleParts = partsResponse.data;
+            
+            // Fetch part details for each module part
+            const partsWithDetails = await Promise.all(
+              moduleParts.map(async (modulePart) => {
+                const partResponse = await api.get(`/masterdata/parts/${modulePart.partId}`);
+                return {
+                  ...partResponse.data,
+                  quantity: modulePart.quantity
+                };
+              })
+            );
+            
+            return {
+              ...moduleData,
+              quantity: productModule.quantity,
+              parts: partsWithDetails
+            };
+          })
+        );
+        
+        console.log('Modules with parts:', modulesWithParts);
+        setProductModules(modulesWithParts);
+      } catch (error) {
+        console.error('Error fetching product composition:', error);
+        // Fallback to showing message
+        setProductModules([]);
+      } finally {
+        setLoadingModules(false);
+      }
+    };
+    
+    fetchProductModules();
+  }, [selectedProduct]);
+
   const toggleModuleExpand = (moduleId) => {
     setExpandedModules(prev => ({
       ...prev,
       [moduleId]: !prev[moduleId]
     }));
-  };
-
-  const getModulePartsForProduct = (product) => {
-    return modules;
-  };
-
-  const getPartsForModule = (module) => {
-    return parts;
   };
 
   // If not authenticated, show login prompt with embedded login form
@@ -111,78 +167,6 @@ function HomePage() {
             <h3 className="section-title">Our Products</h3>
             {loadingProducts ? (
               <p className="loading-text">Loading products...</p>
-            ) : selectedProduct ? (
-              <div className="product-details">
-                <button 
-                  className="btn-back" 
-                  onClick={() => setSelectedProduct(null)}
-                >
-                  ← Back to Products
-                </button>
-                
-                <div className="product-detail-card">
-                  <h2>{selectedProduct.name}</h2>
-                  <p className="description">{selectedProduct.description}</p>
-                  <div className="specs">
-                    <div className="spec-item">
-                      <strong>Price:</strong>
-                      <span className="price">${selectedProduct.price.toFixed(2)}</span>
-                    </div>
-                    <div className="spec-item">
-                      <strong>Est. Time:</strong>
-                      <span>{selectedProduct.estimatedTimeMinutes} min</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="components-section">
-                  <h3>Product Components</h3>
-                  
-                  {getModulePartsForProduct(selectedProduct).length === 0 ? (
-                    <p className="no-data">No components available</p>
-                  ) : (
-                    getModulePartsForProduct(selectedProduct).map(module => (
-                      <div key={module.id} className="module-item">
-                        <div 
-                          onClick={() => toggleModuleExpand(module.id)}
-                          className="module-header"
-                        >
-                          <span className="expand-icon">
-                            {expandedModules[module.id] ? '▼' : '▶'}
-                          </span>
-                          <div className="module-info">
-                            <h4>{module.name}</h4>
-                            <p>{module.type || 'COMPONENT'}</p>
-                          </div>
-                        </div>
-
-                        {expandedModules[module.id] && (
-                          <div className="module-details">
-                            <p>{module.description}</p>
-                            
-                            <div className="parts-section">
-                              <h5>Parts Required:</h5>
-                              {getPartsForModule(module).length === 0 ? (
-                                <p className="no-data">No parts specified</p>
-                              ) : (
-                                <ul>
-                                  {getPartsForModule(module).map(part => (
-                                    <li key={part.id}>
-                                      <span className="part-name">{part.name}</span>
-                                      <span className="part-category">{part.category}</span>
-                                      <span className="part-cost">${part.unitCost?.toFixed(2) || '0.00'}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
             ) : products.length === 0 ? (
               <p className="no-data">No products available</p>
             ) : (
@@ -201,6 +185,92 @@ function HomePage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+            
+            {/* Product Details Overlay Dropdown */}
+            {selectedProduct && (
+              <div className="product-details-overlay">
+                <div className="product-details-modal">
+                  <button 
+                    className="btn-close-overlay" 
+                    onClick={() => setSelectedProduct(null)}
+                  >
+                    ✕
+                  </button>
+                  
+                  <div className="product-detail-card-overlay">
+                    <h2>{selectedProduct.name}</h2>
+                    <p className="description">{selectedProduct.description}</p>
+                    <div className="specs">
+                      <div className="spec-item">
+                        <strong>Price:</strong>
+                        <span className="price">${selectedProduct.price.toFixed(2)}</span>
+                      </div>
+                      <div className="spec-item">
+                        <strong>Time:</strong>
+                        <span>{selectedProduct.estimatedTimeMinutes} min</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="components-section-overlay">
+                    <h3>Product Components</h3>
+                    
+                    {loadingModules ? (
+                      <p className="loading-text">Loading modules...</p>
+                    ) : productModules.length === 0 ? (
+                      <div>
+                        <p className="no-data">No modules available for this product</p>
+                      </div>
+                    ) : (
+                      <div className="modules-grid-overlay">
+                        {productModules.map(module => (
+                          <div key={module.id} className="module-item-overlay">
+                            <div 
+                              onClick={() => toggleModuleExpand(module.id)}
+                              className="module-header-overlay"
+                            >
+                              <span className="expand-icon-overlay">
+                                {expandedModules[module.id] ? '▼' : '▶'}
+                              </span>
+                              <div className="module-info-overlay">
+                                <h4>{module.name}</h4>
+                                <span className="module-qty">Qty: {module.quantity}</span>
+                              </div>
+                            </div>
+
+                            {expandedModules[module.id] && (
+                              <div className="module-details-overlay">
+                                <p className="module-desc">{module.description}</p>
+                                <div className="module-time">Time: {module.estimatedTimeMinutes} min</div>
+                                
+                                {module.parts && module.parts.length > 0 ? (
+                                  <div className="parts-section-overlay">
+                                    <h5>Parts ({module.parts.length}):</h5>
+                                    <div className="parts-list-overlay">
+                                      {module.parts.map(part => (
+                                        <div key={part.id} className="part-item-overlay">
+                                          <span className="part-name-overlay">{part.name}</span>
+                                          <span className="part-qty-overlay">×{part.quantity}</span>
+                                          <span className="part-time-overlay">{part.estimatedTimeMinutes}m</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p style={{fontSize: '0.65rem', color: '#999', marginTop: '0.3rem'}}>
+                                    No parts configured for this module
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>
