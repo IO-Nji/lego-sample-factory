@@ -32,6 +32,7 @@ public class ProductionPlanningService {
     // Production order status constants
     private static final String STATUS_SUBMITTED = "SUBMITTED";
     private static final String STATUS_SCHEDULED = "SCHEDULED";
+    private static final String STATUS_DISPATCHED = "DISPATCHED";
     private static final String STATUS_IN_PRODUCTION = "IN_PRODUCTION";
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String STATUS_CANCELLED = "CANCELLED";
@@ -80,6 +81,21 @@ public class ProductionPlanningService {
             request.setDueDate(order.getDueDate());
             request.setPriority(order.getPriority());
             request.setNotes(order.getNotes());
+            
+            // Add line items with workstation types
+            if (order.getProductionOrderItems() != null) {
+                List<SimalLineItem> lineItems = new ArrayList<>();
+                for (ProductionOrderDTO.ProductionOrderItemDTO item : order.getProductionOrderItems()) {
+                    SimalLineItem lineItem = new SimalLineItem();
+                    lineItem.setItemId(String.valueOf(item.getItemId()));
+                    lineItem.setItemName(item.getItemName());
+                    lineItem.setQuantity(item.getQuantity());
+                    lineItem.setEstimatedDuration(item.getEstimatedTimeMinutes());
+                    lineItem.setWorkstationType(item.getWorkstationType());
+                    lineItems.add(lineItem);
+                }
+                request.setLineItems(lineItems);
+            }
 
             // Send to SimAL API
             String url = simalApiBaseUrl + "/simal/production-order";
@@ -207,24 +223,30 @@ public class ProductionPlanningService {
     }
 
     /**
-     * Start production for a scheduled order in SimAL.
+     * Dispatch production to workstations by creating control orders.
+     * This moves the order from SCHEDULED to DISPATCHED status.
+     * Control orders (ProductionControlOrder and AssemblyControlOrder) are automatically created.
      */
-    public ProductionOrderDTO startProduction(Long productionOrderId) {
+    public ProductionOrderDTO dispatchProduction(Long productionOrderId) {
         ProductionOrderDTO order = productionOrderService.getProductionOrderById(productionOrderId)
                 .orElseThrow(() -> new ProductionPlanningException(PRODUCTION_ORDER_NOT_FOUND + productionOrderId));
 
         if (!STATUS_SCHEDULED.equals(order.getStatus())) {
-            throw new IllegalStateException("Cannot start production - order status is " + order.getStatus());
+            throw new IllegalStateException("Cannot dispatch production - order must be SCHEDULED, current status: " + order.getStatus());
         }
 
         try {
-            String url = simalApiBaseUrl + simalScheduledOrdersPath + order.getSimalScheduleId() + "/start";
+            // Call SimAL to create control orders from the schedule
+            String url = simalApiBaseUrl + "/simal/scheduled-orders/" + order.getSimalScheduleId() + "/create-control-orders";
+            String fullUrl = url + "?productionOrderId=" + productionOrderId;
+            
             @SuppressWarnings("rawtypes")
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, new HashMap<>(), Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(fullUrl, new HashMap<>(), Map.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
-                order = productionOrderService.updateProductionOrderStatus(productionOrderId, STATUS_IN_PRODUCTION);
-                logger.info("Started production for order {} in SimAL", order.getProductionOrderNumber());
+                // Update status to DISPATCHED
+                order = productionOrderService.updateProductionOrderStatus(productionOrderId, STATUS_DISPATCHED);
+                logger.info("Dispatched production for order {} - control orders created", order.getProductionOrderNumber());
                 return order;
             } else {
                 throw new ProductionPlanningException("SimAL API returned error: " + response.getStatusCode());
@@ -232,8 +254,8 @@ public class ProductionPlanningService {
         } catch (ProductionPlanningException e) {
             throw e;
         } catch (Exception e) {
-            logger.error("Error starting production for order {}: {}", order.getProductionOrderNumber(), e.getMessage(), e);
-            throw new ProductionPlanningException("Failed to start production for order " +
+            logger.error("Error dispatching production for order {}: {}", order.getProductionOrderNumber(), e.getMessage(), e);
+            throw new ProductionPlanningException("Failed to dispatch production for order " +
                     order.getProductionOrderNumber() + ": " + e.getMessage(), e);
         }
     }
@@ -345,6 +367,7 @@ public class ProductionPlanningService {
         private LocalDateTime dueDate;
         private String priority;
         private String notes;
+        private List<SimalLineItem> lineItems;
 
         // Getters and Setters
         public String getProductionOrderNumber() { return productionOrderNumber; }
@@ -361,5 +384,34 @@ public class ProductionPlanningService {
 
         public String getNotes() { return notes; }
         public void setNotes(String notes) { this.notes = notes; }
+
+        public List<SimalLineItem> getLineItems() { return lineItems; }
+        public void setLineItems(List<SimalLineItem> lineItems) { this.lineItems = lineItems; }
+    }
+
+    /**
+     * Inner class for SimAL Line Item
+     */
+    public static class SimalLineItem {
+        private String itemId;
+        private String itemName;
+        private Integer quantity;
+        private Integer estimatedDuration;
+        private String workstationType;
+
+        public String getItemId() { return itemId; }
+        public void setItemId(String itemId) { this.itemId = itemId; }
+
+        public String getItemName() { return itemName; }
+        public void setItemName(String itemName) { this.itemName = itemName; }
+
+        public Integer getQuantity() { return quantity; }
+        public void setQuantity(Integer quantity) { this.quantity = quantity; }
+
+        public Integer getEstimatedDuration() { return estimatedDuration; }
+        public void setEstimatedDuration(Integer estimatedDuration) { this.estimatedDuration = estimatedDuration; }
+
+        public String getWorkstationType() { return workstationType; }
+        public void setWorkstationType(String workstationType) { this.workstationType = workstationType; }
     }
 }

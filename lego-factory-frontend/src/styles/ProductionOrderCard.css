@@ -37,6 +37,10 @@
   border-left: 2px solid #8b5cf6; /* Purple - scheduled */
 }
 
+.production-order-card.status-dispatched {
+  border-left: 2px solid #0891b2; /* Cyan - dispatched to workstations */
+}
+
 .production-order-card.status-in-production {
   border-left: 2px solid #f59e0b; /* Orange - active */
   animation: pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -96,6 +100,11 @@
 .production-order-card .order-status-badge.scheduled {
   background-color: #ede9fe; /* Light purple */
   color: #5b21b6; /* Dark purple */
+}
+
+.production-order-card .order-status-badge.dispatched {
+  background-color: #cffafe; /* Light cyan */
+  color: #155e75; /* Dark cyan */
 }
 
 .production-order-card .order-status-badge.in-production {

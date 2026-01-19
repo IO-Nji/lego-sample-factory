@@ -29,6 +29,8 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_GATEWAY_URL: /api
+    ports:
+      - "8080:80"
     environment:
       - NODE_ENV=production
     depends_on:
@@ -49,6 +51,8 @@ services:
     build:
       context: ./lego-factory-backend/api-gateway
       dockerfile: Dockerfile
+    ports:
+      - "${API_GATEWAY_HOST_PORT}:${API_GATEWAY_PORT}"
     environment:
       - SERVER_PORT=${API_GATEWAY_PORT}
       - SECURITY_JWT_SECRET=${SECURITY_JWT_SECRET}

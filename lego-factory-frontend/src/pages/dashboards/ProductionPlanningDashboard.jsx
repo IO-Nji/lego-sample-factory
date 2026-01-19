@@ -156,6 +156,20 @@ function ProductionPlanningDashboard() {
     }
   };
 
+  const handleDispatchProduction = async (orderId) => {
+    try {
+      const response = await api.post(`/production-planning/${orderId}/dispatch`);
+      setSuccess(`Production order dispatched - Control orders created and sent to workstations`);
+      addNotification("Production dispatched to workstations", "success");
+      await fetchProductionOrders();
+      await fetchScheduledOrders();
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message || "Failed to dispatch production";
+      setError(errorMsg);
+      addNotification(errorMsg, "error");
+    }
+  };
+
   const handleCancelOrder = async (orderId) => {
     if (!window.confirm("Are you sure you want to cancel this production order?")) {
       return;
@@ -178,6 +192,7 @@ function ProductionPlanningDashboard() {
       CREATED: "#6b7280",
       SUBMITTED: "#3b82f6",
       SCHEDULED: "#8b5cf6",
+      DISPATCHED: "#0891b2",
       IN_PRODUCTION: "#f59e0b",
       COMPLETED: "#10b981",
       CANCELLED: "#ef4444"
@@ -275,7 +290,7 @@ function ProductionPlanningDashboard() {
                   setSelectedOrder(order);
                   handleScheduleWithSimAL(order);
                 }}
-                onStart={(orderId) => handleUpdateStatus(orderId, "IN_PRODUCTION")}
+                onStart={(orderId) => handleDispatchProduction(orderId)}
                 onComplete={(orderId) => handleUpdateStatus(orderId, "COMPLETED")}
                 onCancel={handleCancelOrder}
                 isScheduling={schedulingInProgress[order.id]}

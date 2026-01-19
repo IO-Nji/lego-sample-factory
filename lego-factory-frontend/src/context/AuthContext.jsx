@@ -81,7 +81,7 @@ export function AuthProvider({ children }) {
       isAssemblyControl: session?.user?.role === "ASSEMBLY_CONTROL",
       isManufacturingWorkstation: session?.user?.role === "MANUFACTURING_WORKSTATION",
       isAssemblyWorkstation: session?.user?.role === "ASSEMBLY_WORKSTATION",
-      isPartsSupplyWarehouse: session?.user?.role === "PARTS_SUPPLY_WAREHOUSE",
+      isPartsSupplyWarehouse: session?.user?.role === "PARTS_SUPPLY",
       loading,
       login,
       logout,

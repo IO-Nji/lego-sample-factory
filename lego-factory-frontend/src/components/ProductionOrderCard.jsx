@@ -38,7 +38,12 @@ function ProductionOrderCard({
         return { schedule: true, cancel: true };
       
       case 'SCHEDULED':
-        return { start: true, cancel: true };
+        // Production Planning submits/dispatches (creates control orders)
+        return { submit: true, cancel: true };
+      
+      case 'DISPATCHED':
+        // Control orders created, waiting for workstations to start
+        return {}; // No actions for Production Planning
       
       case 'IN_PRODUCTION':
         return { complete: true, cancel: true };
@@ -60,6 +65,7 @@ function ProductionOrderCard({
       CREATED: 'created',
       SUBMITTED: 'submitted',
       SCHEDULED: 'scheduled',
+      DISPATCHED: 'dispatched',
       IN_PRODUCTION: 'in-production',
       COMPLETED: 'completed',
       CANCELLED: 'cancelled'
@@ -158,6 +164,16 @@ function ProductionOrderCard({
                 loading={isScheduling}
               >
                 {isScheduling ? 'Scheduling...' : '📅 Schedule'}
+              </Button>
+            )}
+
+            {actions.submit && onStart && (
+              <Button 
+                variant="success" 
+                size="small" 
+                onClick={() => onStart(order.id)}
+              >
+                📤 Submit
               </Button>
             )}
 

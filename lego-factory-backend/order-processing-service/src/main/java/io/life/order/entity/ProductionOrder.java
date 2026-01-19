@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * ProductionOrder entity represents an order sent to the Production Planning (PP) system.
@@ -55,12 +56,13 @@ public class ProductionOrder {
      * CREATED - Just created, not yet submitted to SimAL
      * SUBMITTED - Submitted to SimAL for scheduling
      * SCHEDULED - SimAL has generated a schedule
-     * IN_PRODUCTION - Production has started
+     * DISPATCHED - Control orders created and dispatched to Production/Assembly Control
+     * IN_PRODUCTION - Production has started at workstations
      * COMPLETED - Production completed
      * CANCELLED - Order cancelled
      */
     @Column(nullable = false)
-    private String status; // CREATED, SUBMITTED, SCHEDULED, IN_PRODUCTION, COMPLETED, CANCELLED
+    private String status; // CREATED, SUBMITTED, SCHEDULED, DISPATCHED, IN_PRODUCTION, COMPLETED, CANCELLED
 
     /**
      * Priority level for production.
@@ -95,6 +97,13 @@ public class ProductionOrder {
      */
     @Column(nullable = true)
     private Long assignedWorkstationId;
+
+    /**
+     * Line items representing modules/parts to be produced.
+     * Each item includes itemType (MODULE/PART), itemId, quantity, and workstationType (MANUFACTURING/ASSEMBLY).
+     */
+    @OneToMany(mappedBy = "productionOrder", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<ProductionOrderItem> productionOrderItems;
 
     /**
      * Additional notes or special instructions for production.

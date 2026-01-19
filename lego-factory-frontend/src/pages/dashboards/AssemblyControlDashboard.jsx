@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
-import { DashboardLayout, StatCard, Button, Card, Badge } from "../../components";
+import { 
+  DashboardLayout, 
+  StatCard, 
+  Button, 
+  Card, 
+  Badge,
+  AssemblyControlOrderCard 
+} from "../../components";
 import "../../styles/DashboardLayout.css";
 
 function AssemblyControlDashboard() {
@@ -253,72 +260,21 @@ function AssemblyControlDashboard() {
     return (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
         {filteredOrders.map((order) => (
-          <Card key={order.id} style={{ padding: "1rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.75rem" }}>
-              <div>
-                <h3 style={{ fontSize: "1.125rem", fontWeight: "600", margin: "0 0 0.25rem 0" }}>
-                  {order.controlOrderNumber}
-                </h3>
-                <p style={{ fontSize: "0.875rem", color: "#6b7280", margin: 0 }}>
-                  From Production Order #{order.sourceProductionOrderId}
-                </p>
-              </div>
-              <Badge 
-                variant={
-                  order.status === "COMPLETED" ? "success" :
-                  order.status === "IN_PROGRESS" ? "warning" :
-                  order.status === "HALTED" ? "danger" :
-                  "default"
-                }
-              >
-                {order.status}
-              </Badge>
-            </div>
-            
-            <div style={{ marginBottom: "0.75rem", fontSize: "0.875rem" }}>
-              <div style={{ marginBottom: "0.25rem" }}>
-                <span style={{ fontWeight: "500" }}>Priority:</span> {order.priority || "MEDIUM"}
-              </div>
-              <div style={{ marginBottom: "0.25rem" }}>
-                <span style={{ fontWeight: "500" }}>Target Start:</span> {new Date(order.targetStartTime).toLocaleString()}
-              </div>
-              <div style={{ marginBottom: "0.25rem" }}>
-                <span style={{ fontWeight: "500" }}>Target Completion:</span> {new Date(order.targetCompletionTime).toLocaleString()}
-              </div>
-            </div>
-            
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              {order.status === "ASSIGNED" && (
-                <>
-                  <Button variant="success" size="small" onClick={() => handleStartAssembly(order.id)}>
-                    Start Assembly
-                  </Button>
-                  <Button variant="primary" size="small" onClick={() => handleCreateSupplyOrder(order)}>
-                    Request Parts
-                  </Button>
-                </>
-              )}
-              {order.status === "IN_PROGRESS" && (
-                <>
-                  <Button variant="success" size="small" onClick={() => handleCompleteAssembly(order.id)}>
-                    Complete
-                  </Button>
-                  <Button variant="warning" size="small" onClick={() => handleHaltAssembly(order.id, "Operator initiated halt")}>
-                    Halt
-                  </Button>
-                </>
-              )}
-              <Button variant="outline" size="small" onClick={() => handleViewDetails(order)}>
-                View Details
-              </Button>
-            </div>
-          </Card>
+          <AssemblyControlOrderCard
+            key={order.id}
+            order={order}
+            onStart={handleStartAssembly}
+            onComplete={handleCompleteAssembly}
+            onHalt={(orderId) => handleHaltAssembly(orderId, "Operator initiated halt")}
+            onRequestParts={handleCreateSupplyOrder}
+            onViewDetails={handleViewDetails}
+          />
         ))}
       </div>
     );
   };
 
-  // Supply orders display
+  // Render supply orders list
   const renderSupplyOrders = () => {
     if (supplyOrders.length === 0) {
       return (
@@ -355,7 +311,7 @@ function AssemblyControlDashboard() {
     );
   };
 
-  // Details modal
+  // Order details modal
   const renderDetailsModal = () => {
     if (!showDetailsModal || !selectedOrder) return null;
 

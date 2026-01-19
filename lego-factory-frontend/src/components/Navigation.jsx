@@ -36,7 +36,7 @@ function Navigation() {
       ASSEMBLY_CONTROL: "ASSEMBLY CTRL",
       MANUFACTURING: "MANUFACTURING",
       ASSEMBLY_WORKSTATION: "ASSEMBLY WS",
-      PARTS_SUPPLY_WAREHOUSE: "PARTS SUPPLY"
+      PARTS_SUPPLY: "PARTS SUPPLY"
     };
     return roleTitles[role] || "DASHBOARD";
   };
@@ -55,7 +55,7 @@ function Navigation() {
       ASSEMBLY_CONTROL: "/assembly-control",
       MANUFACTURING: "/manufacturing",
       ASSEMBLY_WORKSTATION: "/assembly-workstation",
-      PARTS_SUPPLY_WAREHOUSE: "/parts-supply"
+      PARTS_SUPPLY: "/parts-supply"
     };
     return roleRoutes[role] || "/dashboard";
   };
