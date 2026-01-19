@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * DTO for ProductionOrder.
@@ -48,4 +49,23 @@ public class ProductionOrderDTO {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    private List<ProductionOrderItemDTO> productionOrderItems;
+
+    /**
+     * Inner DTO for production order line items.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ProductionOrderItemDTO {
+        private Long id;
+        private String itemType;
+        private Long itemId;
+        private String itemName;
+        private Integer quantity;
+        private Integer estimatedTimeMinutes;
+        private String workstationType;
+    }
 }

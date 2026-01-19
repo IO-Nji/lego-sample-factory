@@ -35,5 +35,9 @@ export { default as DashboardLayout } from './DashboardLayout';
 export { default as PageHeader } from './PageHeader';
 export { default as InventoryTable } from './InventoryTable';
 
+// Order Cards
+export { default as ProductionControlOrderCard } from './ProductionControlOrderCard';
+export { default as AssemblyControlOrderCard } from './AssemblyControlOrderCard';
+
 // Legacy/Alternative Components
 export { default as StatsCard } from './StatsCard';

@@ -2,7 +2,9 @@ package io.life.order.service;
 
 import io.life.order.dto.ProductionOrderDTO;
 import io.life.order.entity.ProductionOrder;
+import io.life.order.entity.ProductionOrderItem;
 import io.life.order.entity.WarehouseOrder;
+import io.life.order.entity.WarehouseOrderItem;
 import io.life.order.repository.ProductionOrderRepository;
 import io.life.order.repository.WarehouseOrderRepository;
 import org.slf4j.Logger;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -51,13 +54,15 @@ public class ProductionOrderService {
 
         // If sourceCustomerOrderId is null, fetch it from the warehouse order
         Long customerOrderId = sourceCustomerOrderId;
-        if (customerOrderId == null && sourceWarehouseOrderId != null) {
-            @SuppressWarnings("null")
-            WarehouseOrder warehouseOrder = warehouseOrderRepository.findById(sourceWarehouseOrderId)
+        WarehouseOrder warehouseOrder = null;
+        if (sourceWarehouseOrderId != null) {
+            warehouseOrder = warehouseOrderRepository.findById(sourceWarehouseOrderId)
                     .orElseThrow(() -> new RuntimeException("Warehouse order not found: " + sourceWarehouseOrderId));
-            customerOrderId = warehouseOrder.getSourceCustomerOrderId();
-            logger.info("Fetched customer order ID {} from warehouse order {}", 
-                    customerOrderId, sourceWarehouseOrderId);
+            if (customerOrderId == null) {
+                customerOrderId = warehouseOrder.getSourceCustomerOrderId();
+                logger.info("Fetched customer order ID {} from warehouse order {}", 
+                        customerOrderId, sourceWarehouseOrderId);
+            }
         }
 
         if (customerOrderId == null) {
@@ -79,10 +84,37 @@ public class ProductionOrderService {
                 .notes(notes)
                 .build();
 
+        // Create production order items from warehouse order items
+        if (warehouseOrder != null && warehouseOrder.getWarehouseOrderItems() != null) {
+            List<ProductionOrderItem> productionOrderItems = new ArrayList<>();
+            for (WarehouseOrderItem woItem : warehouseOrder.getWarehouseOrderItems()) {
+                // Determine workstation type based on item type
+                // MODULE items require ASSEMBLY (workstations WS-4, WS-5, WS-6)
+                // PART items require MANUFACTURING (workstations WS-1, WS-2, WS-3)
+                String workstationType = "MODULE".equals(woItem.getItemType()) ? "ASSEMBLY" : "MANUFACTURING";
+                
+                ProductionOrderItem poItem = ProductionOrderItem.builder()
+                        .productionOrder(productionOrder)
+                        .itemType(woItem.getItemType())
+                        .itemId(woItem.getItemId())
+                        .itemName(woItem.getItemName())
+                        .quantity(woItem.getRequestedQuantity())
+                        .estimatedTimeMinutes(30) // Default estimate, could be fetched from masterdata
+                        .workstationType(workstationType)
+                        .build();
+                productionOrderItems.add(poItem);
+                
+                logger.info("  Added production order item: {} (ID: {}) qty {} - workstation type: {}", 
+                        woItem.getItemName(), woItem.getItemId(), woItem.getRequestedQuantity(), workstationType);
+            }
+            productionOrder.setProductionOrderItems(productionOrderItems);
+        }
+
         @SuppressWarnings("null")
         ProductionOrder saved = productionOrderRepository.save(productionOrder);
-        logger.info("Created production order {} from warehouse order {} assigned to workstation {}", 
-                productionOrderNumber, sourceWarehouseOrderId, assignedWorkstationId);
+        logger.info("Created production order {} from warehouse order {} with {} items", 
+                productionOrderNumber, sourceWarehouseOrderId, 
+                saved.getProductionOrderItems() != null ? saved.getProductionOrderItems().size() : 0);
 
         return mapToDTO(saved);
     }
@@ -280,6 +312,22 @@ public class ProductionOrderService {
      * Map ProductionOrder entity to DTO.
      */
     private ProductionOrderDTO mapToDTO(ProductionOrder productionOrder) {
+        // Map production order items
+        List<ProductionOrderDTO.ProductionOrderItemDTO> itemDTOs = null;
+        if (productionOrder.getProductionOrderItems() != null) {
+            itemDTOs = productionOrder.getProductionOrderItems().stream()
+                    .map(item -> ProductionOrderDTO.ProductionOrderItemDTO.builder()
+                            .id(item.getId())
+                            .itemType(item.getItemType())
+                            .itemId(item.getItemId())
+                            .itemName(item.getItemName())
+                            .quantity(item.getQuantity())
+                            .estimatedTimeMinutes(item.getEstimatedTimeMinutes())
+                            .workstationType(item.getWorkstationType())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+        
         return ProductionOrderDTO.builder()
                 .id(productionOrder.getId())
                 .productionOrderNumber(productionOrder.getProductionOrderNumber())
@@ -297,6 +345,7 @@ public class ProductionOrderService {
                 .actualCompletionTime(productionOrder.getActualCompletionTime())
                 .createdAt(productionOrder.getCreatedAt())
                 .updatedAt(productionOrder.getUpdatedAt())
+                .productionOrderItems(itemDTOs)
                 .build();
     }
 }

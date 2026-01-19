@@ -310,12 +310,15 @@ public class SimalController {
 
     /**
      * Helper method to assign workstation based on type.
+     * MANUFACTURING: WS-1 (Injection Molding), WS-2 (Parts Pre-Production), WS-3 (Part Finishing)
+     * ASSEMBLY: WS-4 (Gear Assembly), WS-5 (Motor Assembly), WS-6 (Final Assembly)
+     * WAREHOUSE: WS-8 (Modules Supermarket)
      */
     private String assignWorkstation(String workstationType, int sequenceNumber) {
         return switch (workstationType) {
-            case "ASSEMBLY" -> "WS-" + (3 + (sequenceNumber % 2));
+            case "ASSEMBLY" -> "WS-" + (4 + (sequenceNumber % 3)); // WS-4, WS-5, WS-6
             case "WAREHOUSE" -> "WS-8";
-            default -> "WS-" + (1 + (sequenceNumber % 2)); // MANUFACTURING
+            default -> "WS-" + (1 + (sequenceNumber % 3)); // MANUFACTURING: WS-1, WS-2, WS-3
         };
     }
 

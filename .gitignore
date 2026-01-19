@@ -150,3 +150,5 @@ test-scheduling-quick.sh
 .github/UBUNTU_DEPLOYMENT_TROUBLESHOOTING.md
 githubIssue.sh
 GITHUB_ISSUES_GUIDE.md
+CONTROL_ORDER_CARDS_TESTING_GUIDE.md
+test-control-order-cards.sh

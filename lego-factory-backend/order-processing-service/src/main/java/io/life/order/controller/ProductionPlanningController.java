@@ -56,16 +56,31 @@ public class ProductionPlanningController {
     }
 
     /**
+     * Dispatch production - creates control orders and sends to workstations.
+     * Replaces startProduction - Production Planning dispatches, workstations start.
+     * POST /api/production-planning/{id}/dispatch
+     */
+    @PostMapping("/{productionOrderId}/dispatch")
+    public ResponseEntity<ProductionOrderDTO> dispatchProduction(@PathVariable Long productionOrderId) {
+        try {
+            ProductionOrderDTO order = productionPlanningService.dispatchProduction(productionOrderId);
+            return ResponseEntity.ok(order);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * @deprecated Use dispatchProduction instead. Kept for backward compatibility.
      * Start production in SimAL
      */
+    @Deprecated
     @PostMapping("/{productionOrderId}/start")
     public ResponseEntity<ProductionOrderDTO> startProduction(@PathVariable Long productionOrderId) {
-        try {
-            ProductionOrderDTO order = productionPlanningService.startProduction(productionOrderId);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        // Forward to dispatch endpoint
+        return dispatchProduction(productionOrderId);
     }
 
     /**

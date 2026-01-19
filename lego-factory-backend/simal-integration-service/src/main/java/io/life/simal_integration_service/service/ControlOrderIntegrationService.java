@@ -198,14 +198,14 @@ public class ControlOrderIntegrationService {
 
     /**
      * Determine control order type based on workstation ID.
-     * WS-1, WS-2 = PRODUCTION
-     * WS-3, WS-4 = ASSEMBLY
-     * WS-8 = (Modules Supermarket - handled separately)
+     * WS-1, WS-2, WS-3 = PRODUCTION (Manufacturing)
+     * WS-4, WS-5, WS-6 = ASSEMBLY
+     * WS-7, WS-8, WS-9 = Warehouses (handled separately)
      */
     private String determineControlOrderType(String workstationId) {
-        if (workstationId.matches("WS-[1-2]")) {
+        if (workstationId.matches("WS-[1-3]")) {
             return "PRODUCTION";
-        } else if (workstationId.matches("WS-[3-4]")) {
+        } else if (workstationId.matches("WS-[4-6]")) {
             return "ASSEMBLY";
         }
         return "UNKNOWN";
