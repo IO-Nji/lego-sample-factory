@@ -99,7 +99,12 @@ function LoginForm({ embedded = false, onSuccess, showHeader = true, showHelpTex
       {showHelpText && (
         <div className="login-footer">
           <p className="login-help-text">
-            Demo: <code>lego_admin</code> / <code>password</code>
+            <strong>Demo Accounts:</strong><br/>
+            Admin: <code>lego_admin</code> / <code>password</code><br/>
+            Plant Warehouse: <code>warehouse_operator</code><br/>
+            Production Planning: <code>production_planning</code><br/>
+            Assembly Control: <code>assembly_control</code><br/>
+            <em>Generic password for all: <code>password</code></em>
           </p>
         </div>
       )}

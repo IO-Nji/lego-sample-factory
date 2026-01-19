@@ -86,7 +86,7 @@ function HomePage() {
       <section className="home-page">
         {/* Welcome Header */}
         <div className="home-hero">
-          <h2>Welcome to the LEGO Factory</h2>
+          <h2>LIFE System - LEGO Integrated Factory Execution</h2>
         </div>
 
         {message && (
@@ -104,277 +104,223 @@ function HomePage() {
           </div>
         )}
         
-        {/* Row 1: Intro Paragraph + Login Form side by side */}
-        <div className="home-intro-section">
-          <div className="home-intro-text">
+        {/* Row 1: Products + Flow Diagram + Login Form */}
+        <div className="home-top-row">
+          {/* Products Column */}
+          <div className="home-products-column">
+            <h3 className="section-title">Our Products</h3>
+            {loadingProducts ? (
+              <p className="loading-text">Loading products...</p>
+            ) : selectedProduct ? (
+              <div className="product-details">
+                <button 
+                  className="btn-back" 
+                  onClick={() => setSelectedProduct(null)}
+                >
+                  ← Back to Products
+                </button>
+                
+                <div className="product-detail-card">
+                  <h2>{selectedProduct.name}</h2>
+                  <p className="description">{selectedProduct.description}</p>
+                  <div className="specs">
+                    <div className="spec-item">
+                      <strong>Price:</strong>
+                      <span className="price">${selectedProduct.price.toFixed(2)}</span>
+                    </div>
+                    <div className="spec-item">
+                      <strong>Est. Time:</strong>
+                      <span>{selectedProduct.estimatedTimeMinutes} min</span>
+                    </div>
+                  </div>
+                </div>
 
-            <div style={{ marginTop: '1.5rem', textAlign: 'left', lineHeight: '1.8' }}>
-            <h3 style={{ color: 'var(--color-primary)', marginBottom: '1rem', fontSize: '1.5rem' }}>Getting Started</h3>
-            <p className="subtitle">
-              Welcome to the LEGO Factory Management System - a comprehensive digital manufacturing platform designed to
-              streamline and coordinate complex production workflows across multiple interconnected factory stations.
-            </p>
+                <div className="components-section">
+                  <h3>Product Components</h3>
+                  
+                  {getModulePartsForProduct(selectedProduct).length === 0 ? (
+                    <p className="no-data">No components available</p>
+                  ) : (
+                    getModulePartsForProduct(selectedProduct).map(module => (
+                      <div key={module.id} className="module-item">
+                        <div 
+                          onClick={() => toggleModuleExpand(module.id)}
+                          className="module-header"
+                        >
+                          <span className="expand-icon">
+                            {expandedModules[module.id] ? '▼' : '▶'}
+                          </span>
+                          <div className="module-info">
+                            <h4>{module.name}</h4>
+                            <p>{module.type || 'COMPONENT'}</p>
+                          </div>
+                        </div>
 
-              <h4 style={{ color: 'var(--color-primary)', marginBottom: '0.75rem', fontSize: '1.1rem' }}>📋 Quick Navigation Guide</h4>
-              <p style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
-                <strong>Logging In:</strong> Use the login form on the right to access the system. Demo credentials are provided below the login button.
-              </p>
-              <p style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
-                <strong>User Roles:</strong> The system supports multiple roles including Admin (full access), Manager (supervisory functions), 
-                and Operator (station-specific operations). Each role has tailored dashboards and permissions.
-              </p>
-              <p style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
-                <strong>Basic Operations:</strong> After logging in, you'll access your role-specific dashboard. Navigate using the top menu bar 
-                to access different modules. Explore the Platform Features below to understand available workstations and capabilities.
-              </p>
-              <p style={{ fontSize: '0.95rem', fontStyle: 'italic', color: '#666' }}>
-                💡 <strong>Tip:</strong> Hover over the Platform Feature cards below to see detailed information about each station.
-              </p>
+                        {expandedModules[module.id] && (
+                          <div className="module-details">
+                            <p>{module.description}</p>
+                            
+                            <div className="parts-section">
+                              <h5>Parts Required:</h5>
+                              {getPartsForModule(module).length === 0 ? (
+                                <p className="no-data">No parts specified</p>
+                              ) : (
+                                <ul>
+                                  {getPartsForModule(module).map(part => (
+                                    <li key={part.id}>
+                                      <span className="part-name">{part.name}</span>
+                                      <span className="part-category">{part.category}</span>
+                                      <span className="part-cost">${part.unitCost?.toFixed(2) || '0.00'}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            ) : products.length === 0 ? (
+              <p className="no-data">No products available</p>
+            ) : (
+              <div className="products-grid-2x2">
+                {products.map(product => (
+                  <div 
+                    key={product.id} 
+                    className="product-card"
+                    onClick={() => setSelectedProduct(product)}
+                  >
+                    <h4>{product.name}</h4>
+                    <p>{product.description}</p>
+                    <div className="product-specs">
+                      <span className="price">${product.price.toFixed(2)}</span>
+                      <span className="time">{product.estimatedTimeMinutes}m</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Flow Diagram Column */}
+          <div className="home-flow-diagram-section">
+            <h3 className="section-title">Order Fulfillment Process Flow</h3>
+            
+            {/* Flow Diagram */}
+            <div className="flow-diagram">
+              {/* Row 1: Customer Order Entry */}
+              <div className="flow-row">
+                <div className="station-card" data-tooltip="Customer places order for product variants">
+                  <div className="station-icon">🛒</div>
+                  <div className="station-name">Customer Order</div>
+                </div>
+                <div className="flow-arrow">→</div>
+                <div className="station-card" data-tooltip="Final product storage and order fulfillment (WS-7)">
+                  <div className="station-icon">🏭</div>
+                  <div className="station-name">Plant Warehouse</div>
+                </div>
+                <div className="flow-arrow">→</div>
+                <div className="station-card" data-tooltip="Check stock availability">
+                  <div className="station-icon">✅</div>
+                  <div className="station-name">Stock Check</div>
+                </div>
+                <div className="flow-arrow">→</div>
+                <div className="station-card" data-tooltip="Order delivered to customer">
+                  <div className="station-icon">📦</div>
+                  <div className="station-name">Delivery</div>
+                </div>
+              </div>
+              
+              {/* Row 2: Downward arrow */}
+              <div className="flow-row">
+                <div className="flow-spacer"></div>
+                <div className="flow-arrow-down">↓</div>
+                <div className="flow-note">If stock unavailable</div>
+                <div className="flow-spacer"></div>
+              </div>
+              
+              {/* Row 3: Production Flow */}
+              <div className="flow-row">
+                <div className="station-card" data-tooltip="Intermediate module storage and management (WS-8)">
+                  <div className="station-icon">🏢</div>
+                  <div className="station-name">Modules Supermarket</div>
+                </div>
+                <div className="flow-arrow">→</div>
+                <div className="station-card" data-tooltip="Final assembly of product variants (WS-6)">
+                  <div className="station-icon">🔨</div>
+                  <div className="station-name">Final Assembly</div>
+                </div>
+                <div className="flow-arrow">→</div>
+                <div className="station-card" data-tooltip="Strategic production scheduling and resource planning">
+                  <div className="station-icon">📋</div>
+                  <div className="station-name">Production Planning</div>
+                </div>
+              </div>
+              
+              {/* Row 4: Downward arrow */}
+              <div className="flow-row">
+                <div className="flow-spacer"></div>
+                <div className="flow-arrow-down">↓</div>
+                <div className="flow-note">If modules unavailable</div>
+                <div className="flow-spacer"></div>
+              </div>
+              
+              {/* Row 5: Manufacturing Flow */}
+              <div className="flow-row">
+                <div className="station-card" data-tooltip="Raw materials storage and distribution (WS-9)">
+                  <div className="station-icon">📦</div>
+                  <div className="station-name">Parts Supply</div>
+                </div>
+                <div className="flow-arrow">→</div>
+                <div className="station-card" data-tooltip="Injection molding and part production (WS-1,2,3)">
+                  <div className="station-icon">🔧</div>
+                  <div className="station-name">Manufacturing</div>
+                </div>
+                <div className="flow-arrow">→</div>
+                <div className="station-card" data-tooltip="Component assembly into modules (WS-4,5)">
+                  <div className="station-icon">⚙️</div>
+                  <div className="station-name">Assembly</div>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="home-login-container">
-            <LoginForm embedded={true} showHeader={false} showHelpText={true} />
+          
+          <div className="home-login-section">
+            <LoginForm embedded={true} showHeader={true} showHelpText={true} />
           </div>
         </div>
 
-        {/* Row 2: Platform Features and Products side by side */}
-        <div className="home-content">
-          <div className="home-features-products-row">
-            {/* Column 1: Platform Features */}
-            <div className="home-features-column">
-              <h3 style={{ textAlign: 'center', color: 'var(--color-primary)', marginBottom: 'var(--spacing-lg)' }}>
-                Platform Features
-              </h3>
-              <div className="feature-cards-grid">
-                <FeatureCard
-                  icon="🏭"
-                  title="Plant Warehouse"
-                  description="Central distribution center managing customer orders and finished goods inventory. Coordinates outbound shipments and tracks order fulfillment status."
-                  detailedInfo="Handles customer order intake, inventory management of finished products, shipping coordination, and order status tracking. Integrates with ERP systems for real-time visibility."
-                />
-                <FeatureCard
-                  icon="🏢"
-                  title="Modules Supermarket"
-                  description="Pre-assembly staging area organizing module components for efficient assembly line feeding."
-                  detailedInfo="Organizes and stores pre-assembled modules, manages just-in-time delivery to assembly stations, tracks module inventory levels, and optimizes material flow to production lines."
-                />
-                <FeatureCard
-                  icon="📋"
-                  title="Production Planning"
-                  description="Strategic planning workstation scheduling production workflows and resource allocation."
-                  detailedInfo="Creates production schedules, allocates resources across workstations, optimizes workflow sequences, manages capacity planning, and coordinates with supply chain for material availability."
-                />
-                <FeatureCard
-                  icon="🏭"
-                  title="Production Control"
-                  description="Real-time monitoring hub tracking manufacturing progress and performance metrics."
-                  detailedInfo="Monitors all manufacturing workstations in real-time, tracks production KPIs, identifies bottlenecks, manages work orders, and provides live status updates to stakeholders."
-                />
-                <FeatureCard
-                  icon="⚙️"
-                  title="Assembly Control"
-                  description="Assembly operations oversight coordinating gear, motor, and final assembly stations."
-                  detailedInfo="Supervises all assembly workstations, coordinates component flow between stations, tracks assembly quality metrics, manages assembly line balancing, and ensures production targets are met."
-                />
-                <FeatureCard
-                  icon="📦"
-                  title="Parts Supply Warehouse"
-                  description="Raw materials warehouse supplying components on-demand to manufacturing and assembly."
-                  detailedInfo="Manages raw parts inventory, fulfills material requisitions from production stations, tracks parts consumption rates, handles supplier relationships, and maintains optimal stock levels."
-                />
-                <FeatureCard
-                  icon="🔧"
-                  title="Manufacturing Stations"
-                  description="Production workstations executing injection molding, pre-production, and finishing operations."
-                  detailedInfo="Operates injection molding machines for part production, handles pre-production quality checks, performs finishing operations, maintains equipment, and reports production metrics."
-                />
-                <FeatureCard
-                  icon="🔩"
-                  title="Assembly Stations"
-                  description="Assembly workstations completing gear assembly, motor integration, and final product assembly."
-                  detailedInfo="Executes gear sub-assembly tasks, integrates motors into assemblies, performs final product assembly, conducts quality inspections, and packages completed products for warehouse delivery."
-                />
+        {/* Row 2: Application Overview + Navigation Guide (Full Width) */}
+        <div className="home-bottom-row">
+          <div className="home-intro-column-fullwidth">
+            <h3 className="section-title">Application Overview</h3>
+            <div className="intro-content">
+              <p className="intro-description">
+                The <strong>LIFE System</strong> (LEGO Integrated Factory Execution) is a comprehensive digital manufacturing 
+                platform that coordinates complex production workflows across multiple interconnected factory workstations. 
+                The system manages the entire manufacturing lifecycle from raw materials to finished products.
+              </p>
+              
+              <div className="navigation-guide">
+                <h4>📋 Quick Navigation Guide</h4>
+                <ul>
+                  <li><strong>Login:</strong> Use credentials on the right to access role-specific dashboards</li>
+                  <li><strong>User Roles:</strong> Admin, Production Planning, Plant Warehouse, Assembly Control, and more</li>
+                  <li><strong>Operations:</strong> Each role provides tailored views for order management, inventory control, and production tracking</li>
+                  <li><strong>Real-time Updates:</strong> Dashboard data refreshes automatically every 30 seconds</li>
+                </ul>
+                <p className="tip">💡 <strong>Tip:</strong> Hover over the manufacturing stations above to see detailed descriptions</p>
               </div>
-            </div>
-
-            {/* Column 2: Products */}
-            <div className="home-products-column">
-              <h3 style={{ textAlign: 'center', color: 'var(--color-primary)', marginBottom: 'var(--spacing-lg)' }}>
-                Our Products
-              </h3>
-              {loadingProducts ? (
-                <p style={{ textAlign: 'center' }}>Loading products...</p>
-              ) : selectedProduct ? (
-                <div className="product-details" style={{ maxWidth: '100%', margin: '0 auto' }}>
-                  <button 
-                    className="btn-back" 
-                    onClick={() => setSelectedProduct(null)}
-                    style={{
-                      backgroundColor: '#6c757d',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      marginBottom: '15px',
-                      fontSize: '14px',
-                      fontWeight: '500'
-                    }}
-                  >
-                    ← Back to Products
-                  </button>
-                  
-                  <div style={{
-                    backgroundColor: 'white',
-                    borderLeft: '4px solid #2c5aa0',
-                    padding: '15px',
-                    borderRadius: '4px',
-                    marginBottom: '20px'
-                  }}>
-                    <h2 style={{ color: '#2c5aa0', margin: '0 0 10px 0', fontSize: '22px' }}>
-                      {selectedProduct.name}
-                    </h2>
-                    <p style={{ color: '#666', margin: '0 0 12px 0', fontSize: '14px' }}>
-                      {selectedProduct.description}
-                    </p>
-                    <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                      <div style={{ fontSize: '13px', color: '#333' }}>
-                        <strong style={{ color: '#2c5aa0', marginRight: '5px' }}>Price:</strong>
-                        <span style={{ color: '#28a745', fontSize: '16px', fontWeight: 'bold' }}>
-                          ${selectedProduct.price.toFixed(2)}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '13px', color: '#333' }}>
-                        <strong style={{ color: '#2c5aa0', marginRight: '5px' }}>Est. Time:</strong>
-                        <span>{selectedProduct.estimatedTimeMinutes} minutes</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 style={{ color: '#2c5aa0', fontSize: '18px', margin: '0 0 15px 0', borderBottom: '2px solid #2c5aa0', paddingBottom: '8px' }}>
-                      Product Components
-                    </h3>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {getModulePartsForProduct(selectedProduct).length === 0 ? (
-                        <p style={{ textAlign: 'center', color: '#999', padding: '20px', fontStyle: 'italic' }}>
-                          No components available for this product
-                        </p>
-                      ) : (
-                        getModulePartsForProduct(selectedProduct).map(module => (
-                          <div 
-                            key={module.id} 
-                            style={{
-                              backgroundColor: 'white',
-                              border: '1px solid #ddd',
-                              borderRadius: '6px',
-                              overflow: 'hidden'
-                            }}
-                          >
-                            <div 
-                              onClick={() => toggleModuleExpand(module.id)}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                padding: '12px',
-                                cursor: 'pointer',
-                                backgroundColor: expandedModules[module.id] ? '#f8f9fa' : 'white'
-                              }}
-                            >
-                              <span style={{ marginRight: '10px', fontSize: '14px' }}>
-                                {expandedModules[module.id] ? '▼' : '▶'}
-                              </span>
-                              <div>
-                                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#2c5aa0' }}>
-                                  {module.name}
-                                </h4>
-                                <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
-                                  {module.type || 'COMPONENT'}
-                                </p>
-                              </div>
-                            </div>
-
-                            {expandedModules[module.id] && (
-                              <div style={{ padding: '12px', backgroundColor: '#fafafa', borderTop: '1px solid #ddd' }}>
-                                <p style={{ color: '#666', fontSize: '14px', marginBottom: '12px' }}>
-                                  {module.description}
-                                </p>
-                                
-                                <div>
-                                  <h5 style={{ fontSize: '14px', color: '#2c5aa0', marginBottom: '8px' }}>
-                                    Parts Required:
-                                  </h5>
-                                  {getPartsForModule(module).length === 0 ? (
-                                    <p style={{ color: '#999', fontSize: '13px', fontStyle: 'italic' }}>
-                                      No parts specified
-                                    </p>
-                                  ) : (
-                                    <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                                      {getPartsForModule(module).map(part => (
-                                        <li 
-                                          key={part.id} 
-                                          style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            padding: '6px 0',
-                                            fontSize: '13px',
-                                            borderBottom: '1px solid #eee'
-                                          }}
-                                        >
-                                          <span style={{ fontWeight: '500', color: '#333' }}>{part.name}</span>
-                                          <span style={{ color: '#666', marginLeft: '10px' }}>{part.category}</span>
-                                          <span style={{ color: '#28a745', fontWeight: '600', marginLeft: '10px' }}>
-                                            ${part.unitCost?.toFixed(2) || '0.00'}
-                                          </span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : products.length === 0 ? (
-                <p style={{ textAlign: 'center', color: '#999' }}>No products available</p>
-              ) : (
-                <div className="home-products-grid-2x2">
-                  {products.map(product => (
-                    <div 
-                      key={product.id} 
-                      className="home-product-card"
-                      onClick={() => setSelectedProduct(product)}
-                    >
-                      <h3>{product.name}</h3>
-                      <p className="home-product-description">{product.description}</p>
-                      <div className="home-product-specs">
-                        <span className="price-badge">${product.price.toFixed(2)}</span>
-                        <span className="time-badge">{product.estimatedTimeMinutes}m</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <footer style={{
-          backgroundColor: 'rgba(44, 90, 160, 0.95)',
-          color: 'white',
-          textAlign: 'center',
-          padding: '1.5rem',
-          marginTop: '3rem',
-          fontSize: '0.9rem',
-          borderTop: '3px solid #2c5aa0'
-        }}>
-          <p style={{ margin: 0 }}>© {new Date().getFullYear()} <strong>nji.io</strong> - All Rights Reserved</p>
+        <footer className="home-footer">
+          <p>© {new Date().getFullYear()} <strong>nji.io</strong> - All Rights Reserved</p>
         </footer>
       </section>
     );
