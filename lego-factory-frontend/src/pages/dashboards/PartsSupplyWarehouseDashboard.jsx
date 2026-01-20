@@ -30,7 +30,7 @@ function PartsSupplyWarehouseDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get("/api/supply-orders/warehouse");
+      const response = await api.get("/supply-orders/warehouse");
       const ordersList = Array.isArray(response.data) ? response.data : [];
       setSupplyOrders(ordersList);
       applyFilters(ordersList, filterStatus, filterType);
@@ -44,7 +44,7 @@ function PartsSupplyWarehouseDashboard() {
   // Fetch parts stock for Parts Supply Warehouse (workstation 9)
   const fetchPartsStock = async () => {
     try {
-      const response = await api.get("/api/stock/workstation/9");
+      const response = await api.get("/stock/workstation/9");
       const stockList = Array.isArray(response.data) ? response.data : [];
       // Filter for parts only (itemType = PART)
       const partsOnly = stockList.filter(item => item.itemType === "PART");
@@ -84,7 +84,7 @@ function PartsSupplyWarehouseDashboard() {
 
   const handleFulfillOrder = async (orderId) => {
     try {
-      await api.put(`/api/supply-orders/${orderId}/fulfill`);
+      await api.put(`/supply-orders/${orderId}/fulfill`);
       setSuccess(`Supply order #${orderId} fulfilled successfully`);
       fetchSupplyOrders();
       fetchPartsStock(); // Refresh stock after fulfillment
@@ -98,7 +98,7 @@ function PartsSupplyWarehouseDashboard() {
     if (!reason) return;
     
     try {
-      await api.put(`/api/supply-orders/${orderId}/reject`, { reason });
+      await api.put(`/supply-orders/${orderId}/reject`, { reason });
       setSuccess(`Supply order #${orderId} rejected`);
       fetchSupplyOrders();
     } catch (err) {
@@ -125,7 +125,7 @@ function PartsSupplyWarehouseDashboard() {
 
     try {
       const newQuantity = selectedPart.quantity + stockAdjustForm.quantity;
-      await api.post("/api/stock/update", null, {
+      await api.post("/stock/update", null, {
         params: {
           workstationId: 9,
           itemType: "PART",

@@ -31,20 +31,13 @@ function ProductionControlDashboard() {
     notes: ""
   });
 
-  // Fetch control orders for the production control workstation
+  // Fetch all production control orders (Production Control manages all manufacturing orders)
   const fetchControlOrders = async () => {
-    const workstationId = session?.user?.workstation?.id;
-    if (!workstationId) {
-      setControlOrders([]);
-      setFilteredOrders([]);
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      const response = await api.get(`/api/production-control-orders/workstation/${workstationId}`);
+      const response = await api.get('/production-control-orders');
       const ordersList = Array.isArray(response.data) ? response.data : [];
       setControlOrders(ordersList);
       applyFilter(ordersList, filterStatus);
@@ -64,7 +57,7 @@ function ProductionControlDashboard() {
     }
 
     try {
-      const response = await api.get(`/api/supply-orders/workstation/${workstationId}`);
+      const response = await api.get(`/supply-orders/workstation/${workstationId}`);
       setSupplyOrders(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Failed to load supply orders:", err);
@@ -97,7 +90,7 @@ function ProductionControlDashboard() {
 
   const handleStartProduction = async (orderId) => {
     try {
-      await api.post(`/api/production-control-orders/${orderId}/start`);
+      await api.post(`/production-control-orders/${orderId}/start`);
       setSuccess("Production started successfully");
       fetchControlOrders();
     } catch (err) {
@@ -107,7 +100,7 @@ function ProductionControlDashboard() {
 
   const handleCompleteProduction = async (orderId) => {
     try {
-      await api.post(`/api/production-control-orders/${orderId}/complete`);
+      await api.post(`/production-control-orders/${orderId}/complete`);
       setSuccess("Production completed successfully");
       fetchControlOrders();
     } catch (err) {
@@ -117,7 +110,7 @@ function ProductionControlDashboard() {
 
   const handleHaltProduction = async (orderId, reason) => {
     try {
-      await api.post(`/api/production-control-orders/${orderId}/halt`, { reason });
+      await api.post(`/production-control-orders/${orderId}/halt`, { reason });
       setSuccess("Production halted");
       fetchControlOrders();
     } catch (err) {
@@ -185,7 +178,7 @@ function ProductionControlDashboard() {
         notes: supplyOrderForm.notes
       };
 
-      await api.post('/api/supply-orders', requestBody);
+      await api.post('/supply-orders', requestBody);
       
       setSuccess("Supply order created successfully");
       setShowSupplyOrderModal(false);

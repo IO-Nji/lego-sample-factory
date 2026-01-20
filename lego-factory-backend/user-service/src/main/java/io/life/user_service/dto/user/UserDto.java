@@ -7,23 +7,13 @@ public class UserDto {
     private Long id;
     private String username;
     private UserRole role;
-    private Long workstationId;
-    private String workstationName;
+    private WorkstationDto workstation;
 
-    public UserDto(Long id, String username, UserRole role, Long workstationId) {
+    public UserDto(Long id, String username, UserRole role, WorkstationDto workstation) {
         this.id = id;
         this.username = username;
         this.role = role;
-        this.workstationId = workstationId;
-        this.workstationName = null;
-    }
-
-    public UserDto(Long id, String username, UserRole role, Long workstationId, String workstationName) {
-        this.id = id;
-        this.username = username;
-        this.role = role;
-        this.workstationId = workstationId;
-        this.workstationName = workstationName;
+        this.workstation = workstation;
     }
 
     public Long getId() {
@@ -38,16 +28,8 @@ public class UserDto {
         return role;
     }
 
-    public Long getWorkstationId() {
-        return workstationId;
-    }
-
-    public String getWorkstationName() {
-        return workstationName;
-    }
-
-    public void setWorkstationName(String workstationName) {
-        this.workstationName = workstationName;
+    public WorkstationDto getWorkstation() {
+        return workstation;
     }
 
 }

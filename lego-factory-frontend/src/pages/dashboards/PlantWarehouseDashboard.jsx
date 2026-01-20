@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useDashboardRefresh } from "../../context/DashboardRefreshContext";
-import axios from "axios";
+import api from "../../api/api";
 import { DashboardLayout, StatsCard, Notification } from "../../components";
 import CustomerOrderCard from "../../components/CustomerOrderCard";
 import { getProductDisplayName, getInventoryStatusColor } from "../../utils/dashboardHelpers";
@@ -37,21 +37,24 @@ function PlantWarehouseDashboard() {
   };
 
   useEffect(() => {
+    console.log('[PlantWarehouse] Component mounted, session:', session?.user);
     fetchProducts();
     fetchWorkstations();
-    if (session?.user?.workstationId) {
+    if (session?.user?.workstation?.id) {
       fetchOrders();
       fetchInventory();
+    } else {
+      console.warn('[PlantWarehouse] No workstationId in session, skipping orders/inventory fetch');
     }
 
     const inventoryInterval = setInterval(() => {
-      if (session?.user?.workstationId) {
+      if (session?.user?.workstation?.id) {
         fetchInventory();
       }
     }, 30000); // Increased to 30s to reduce page jump
 
     return () => clearInterval(inventoryInterval);
-  }, [session?.user?.workstationId]);
+  }, [session?.user?.workstation?.id]);
 
   useEffect(() => {
     applyFilter(orders, filterStatus);
@@ -66,17 +69,20 @@ function PlantWarehouseDashboard() {
   };
 
   const fetchProducts = async () => {
+    console.log('[PlantWarehouse] Fetching products...');
     try {
-      const response = await axios.get("/api/masterdata/product-variants");
+      const response = await api.get("/masterdata/product-variants");
+      console.log('[PlantWarehouse] Products received:', response.data);
       setProducts(response.data);
     } catch (err) {
+      console.error('[PlantWarehouse] Failed to fetch products:', err);
       setError("Failed to load products: " + (err.response?.data?.message || err.message));
     }
   };
 
   const fetchWorkstations = async () => {
     try {
-      const response = await axios.get("/api/masterdata/workstations");
+      const response = await api.get("/masterdata/workstations");
       setWorkstations(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Failed to load workstations:", err);
@@ -84,13 +90,14 @@ function PlantWarehouseDashboard() {
   };
 
   const fetchOrders = async () => {
-    if (!session?.user?.workstationId) {
+    const workstationId = session?.user?.workstation?.id;
+    if (!workstationId) {
       setOrders([]);
       setFilteredOrders([]);
       return;
     }
     try {
-      const response = await axios.get("/api/customer-orders/workstation/" + session.user.workstationId);
+      const response = await api.get("/customer-orders/workstation/" + workstationId);
       const ordersList = Array.isArray(response.data) ? response.data : [];
       setOrders(ordersList);
       applyFilter(ordersList, filterStatus);
@@ -102,12 +109,15 @@ function PlantWarehouseDashboard() {
   };
 
   const fetchInventory = async () => {
-    if (!session?.user?.workstationId) return;
+    const workstationId = session?.user?.workstation?.id;
+    if (!workstationId) return;
+    console.log('[PlantWarehouse] Fetching inventory for workstation:', workstationId);
     try {
-      const response = await axios.get(`/api/stock/workstation/${session.user.workstationId}`);
+      const response = await api.get(`/stock/workstation/${workstationId}`);
+      console.log('[PlantWarehouse] Inventory received:', response.data);
       setInventory(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-      console.error("Failed to fetch inventory:", err);
+      console.error('[PlantWarehouse] Failed to fetch inventory:', err);
       setInventory([]);
     }
   };
@@ -121,7 +131,8 @@ function PlantWarehouseDashboard() {
 
   const { refresh } = useDashboardRefresh();
   const handleCreateOrder = async () => {
-    if (!session?.user?.workstationId) {
+    const workstationId = session?.user?.workstation?.id;
+    if (!workstationId) {
       setError("Cannot create order: workstation ID not found in session");
       return;
     }
@@ -144,9 +155,9 @@ function PlantWarehouseDashboard() {
     setError(null);
 
     try {
-      const response = await axios.post("/api/customer-orders", {
+      const response = await api.post("/customer-orders", {
         orderItems,
-        workstationId: session.user.workstationId,
+        workstationId: workstationId,
         notes: "Plant warehouse order",
       });
 
@@ -167,7 +178,7 @@ function PlantWarehouseDashboard() {
     setError(null);
 
     try {
-      const response = await axios.put(`/api/customer-orders/${orderId}/fulfill`);
+      const response = await api.put(`/customer-orders/${orderId}/fulfill`);
       // Backend auto-determines scenario: Scenario 1 (COMPLETED) or Scenario 2/3 (PROCESSING)
       const isCompleted = response.data.status === 'COMPLETED';
       addNotification(
@@ -189,7 +200,7 @@ function PlantWarehouseDashboard() {
   const handleConfirm = async (orderId) => {
     setError(null);
     try {
-      await axios.put(`/api/customer-orders/${orderId}/confirm`);
+      await api.put(`/customer-orders/${orderId}/confirm`);
       fetchOrders();
     } catch (err) {
       setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
@@ -204,7 +215,7 @@ function PlantWarehouseDashboard() {
   const handleComplete = async (orderId) => {
     setError(null);
     try {
-      await axios.put(`/api/customer-orders/${orderId}/complete`);
+      await api.put(`/customer-orders/${orderId}/complete`);
       fetchOrders();
       fetchInventory();
     } catch (err) {
@@ -216,7 +227,7 @@ function PlantWarehouseDashboard() {
     if (!globalThis.confirm("Cancel this order?")) return;
     setError(null);
     try {
-      await axios.put(`/api/customer-orders/${orderId}/cancel`);
+      await api.put(`/customer-orders/${orderId}/cancel`);
       fetchOrders();
     } catch (err) {
       setError("Failed to cancel order: " + (err.response?.data?.message || err.message));
@@ -337,7 +348,7 @@ function PlantWarehouseDashboard() {
           </thead>
           <tbody>
             {inventory.length > 0 ? (
-              inventory.filter(item => item.itemType === "PRODUCT_VARIANT").map((item) => {
+              inventory.filter(item => item.itemType === "PRODUCT").map((item) => {
                 const product = products.find(p => p.id === item.itemId);
                 const statusColor = getInventoryStatusColor(item.quantity || 0);
                 

@@ -1,6 +1,7 @@
 import { useAuth } from "../context/AuthContext.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import StatsCard from "../components/StatsCard.jsx";
+import Footer from "../components/Footer.jsx";
 import "../styles/OverviewPage.css";
 
 function OverviewPage() {

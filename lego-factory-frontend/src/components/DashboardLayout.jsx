@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import PageHeader from './PageHeader';
+import Footer from './Footer';
 import '../styles/DashboardLayout.css';
 
 /**
@@ -154,6 +155,9 @@ function DashboardLayout({
           {infoBox}
         </div>
       )}
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

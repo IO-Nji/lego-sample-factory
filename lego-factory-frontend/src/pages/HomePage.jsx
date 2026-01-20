@@ -2,6 +2,7 @@ import DashboardPage from "./DashboardPage";
 import LoginForm from "../components/LoginForm";
 import FeatureCard from "../components/FeatureCard";
 import { WorkstationCard } from "../components";
+import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext.jsx";
 import api from "../api/api";
 import "../styles/StandardPage.css";
@@ -141,24 +142,15 @@ function HomePage() {
       // Frontend is always healthy if this code is running
       healthStatus['frontend'] = 'healthy';
       
-      // Test API Gateway by trying to fetch from a known endpoint
+      // Test API Gateway health check endpoint (public, no auth required)
       try {
-        const response = await fetch('/api/masterdata/workstations', {
+        const response = await fetch('/api/health', {
           method: 'GET',
           headers: { 'Accept': 'application/json' }
         });
         
-        if (response.ok || response.status === 401) {
-          // 200 OK or 401 Unauthorized means the API Gateway and services are UP
-          // (401 is expected for unauthenticated requests to some endpoints)
-          healthStatus['api-gateway'] = 'healthy';
-          healthStatus['user-service'] = 'healthy';
-          healthStatus['masterdata-service'] = 'healthy';
-          healthStatus['inventory-service'] = 'healthy';
-          healthStatus['order-processing-service'] = 'healthy';
-          healthStatus['simal-integration-service'] = 'healthy';
-        } else if (response.status === 404 || response.status === 403) {
-          // 404 or 403 means services are UP but endpoint not found/forbidden
+        if (response.ok) {
+          // 200 OK means the API Gateway and services are UP
           healthStatus['api-gateway'] = 'healthy';
           healthStatus['user-service'] = 'healthy';
           healthStatus['masterdata-service'] = 'healthy';
@@ -204,6 +196,7 @@ function HomePage() {
   // If not authenticated, show login prompt with embedded login form
   if (!isAuthenticated) {
     return (
+      <>
       <section className="home-page">
         {/* Welcome Header */}
         <div className="home-hero">
@@ -621,14 +614,13 @@ function HomePage() {
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <footer className="home-footer">
-          <p>© {new Date().getFullYear()} <strong>nji.io</strong> - All Rights Reserved</p>
-        </footer>
       </section>
-    );
-  }
+
+      {/* Footer */}
+      <Footer />
+    </>
+  );
+}
 
   // If authenticated, show the dashboard
   return <DashboardPage />;

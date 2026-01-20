@@ -33,18 +33,12 @@ function AssemblyControlDashboard() {
 
   // Fetch control orders for the assembly control workstation
   const fetchControlOrders = async () => {
-    const workstationId = session?.user?.workstation?.id;
-    if (!workstationId) {
-      setControlOrders([]);
-      setFilteredOrders([]);
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      const response = await api.get(`/api/assembly-control-orders/workstation/${workstationId}`);
+      // Assembly Control manages ALL assembly orders (not workstation-specific)
+      const response = await api.get('/assembly-control-orders');
       const ordersList = Array.isArray(response.data) ? response.data : [];
       setControlOrders(ordersList);
       applyFilter(ordersList, filterStatus);
@@ -64,7 +58,7 @@ function AssemblyControlDashboard() {
     }
 
     try {
-      const response = await api.get(`/api/supply-orders/workstation/${workstationId}`);
+      const response = await api.get(`/supply-orders/workstation/${workstationId}`);
       setSupplyOrders(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Failed to load supply orders:", err);
@@ -97,7 +91,7 @@ function AssemblyControlDashboard() {
 
   const handleStartAssembly = async (orderId) => {
     try {
-      await api.post(`/api/assembly-control-orders/${orderId}/start`);
+      await api.post(`/assembly-control-orders/${orderId}/start`);
       setSuccess("Assembly started successfully");
       fetchControlOrders();
     } catch (err) {
@@ -107,7 +101,7 @@ function AssemblyControlDashboard() {
 
   const handleCompleteAssembly = async (orderId) => {
     try {
-      await api.post(`/api/assembly-control-orders/${orderId}/complete`);
+      await api.post(`/assembly-control-orders/${orderId}/complete`);
       setSuccess("Assembly completed successfully");
       fetchControlOrders();
     } catch (err) {
@@ -117,7 +111,7 @@ function AssemblyControlDashboard() {
 
   const handleHaltAssembly = async (orderId, reason) => {
     try {
-      await api.post(`/api/assembly-control-orders/${orderId}/halt`, { reason });
+      await api.post(`/assembly-control-orders/${orderId}/halt`, { reason });
       setSuccess("Assembly halted");
       fetchControlOrders();
     } catch (err) {
@@ -185,7 +179,7 @@ function AssemblyControlDashboard() {
         notes: supplyOrderForm.notes
       };
 
-      await api.post('/api/supply-orders', requestBody);
+      await api.post('/supply-orders', requestBody);
       
       setSuccess("Supply order created successfully");
       setShowSupplyOrderModal(false);

@@ -63,6 +63,10 @@ function DashboardPage() {
     return <AssemblyControlDashboard />;
   }
 
+  if (userRole === "MANUFACTURING") {
+    return <ManufacturingDashboard />;
+  }
+
   if (userRole === "MANUFACTURING_WORKSTATION") {
     return <ManufacturingDashboard />;
   }

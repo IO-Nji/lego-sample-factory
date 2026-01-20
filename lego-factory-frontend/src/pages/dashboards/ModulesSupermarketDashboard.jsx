@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import axios from "axios";
+import api from "../../api/api";
 import { DashboardLayout, StatsCard, InventoryTable, Notification } from "../../components";
 import WarehouseOrderCard from "../../components/WarehouseOrderCard";
 import { getInventoryStatusColor, generateAcronym, getProductDisplayName } from "../../utils/dashboardHelpers";
@@ -45,18 +45,18 @@ function ModulesSupermarketDashboard() {
   };
 
   useEffect(() => {
-    if (session?.user?.workstationId) {
+    if (session?.user?.workstation?.id) {
       fetchWarehouseOrders();
       fetchInventory();
     }
     const interval = setInterval(() => {
-      if (session?.user?.workstationId) {
+      if (session?.user?.workstation?.id) {
         fetchWarehouseOrders();
         fetchInventory();
       }
     }, 30000); // Increased to 30s to reduce page jump
     return () => clearInterval(interval);
-  }, [session?.user?.workstationId]);
+  }, [session?.user?.workstation?.id]);
 
   useEffect(() => {
     applyFilter(warehouseOrders, filterStatus);
@@ -72,8 +72,8 @@ function ModulesSupermarketDashboard() {
 
   const fetchWarehouseOrders = async () => {
     try {
-      const workstationId = session?.user?.workstationId || 8;
-      const response = await axios.get(`/api/warehouse-orders/workstation/${workstationId}`);
+      const workstationId = session?.user?.workstation?.id || 8;
+      const response = await api.get(`/warehouse-orders/workstation/${workstationId}`);
       const data = response.data;
       console.log('[WarehouseOrders] Fetched data:', JSON.stringify(data, null, 2));
       if (Array.isArray(data)) {
@@ -96,9 +96,9 @@ function ModulesSupermarketDashboard() {
   };
 
   const fetchInventory = async () => {
-    if (!session?.user?.workstationId) return;
+    if (!session?.user?.workstation?.id) return;
     try {
-      const response = await axios.get(`/api/stock/workstation/${session.user.workstationId}`);
+      const response = await api.get(`/stock/workstation/${session.user.workstation.id}`);
       setInventory(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Failed to fetch inventory:", err);
@@ -111,7 +111,7 @@ function ModulesSupermarketDashboard() {
     setError(null);
 
     try {
-      await axios.put(`/api/warehouse-orders/${orderId}/confirm`);
+      await api.put(`/warehouse-orders/${orderId}/confirm`);
       addNotification(`Order ${orderNumber} confirmed - checking stock availability...`, 'success');
       
       // Fetch updated orders and inventory to check stock automatically
@@ -133,7 +133,7 @@ function ModulesSupermarketDashboard() {
     setError(null);
 
     try {
-      const response = await axios.put(`/api/warehouse-orders/${orderId}/fulfill-modules`);
+      const response = await api.put(`/warehouse-orders/${orderId}/fulfill-modules`);
       addNotification(`Order ${orderNumber} fulfilled`, 'success');
       await fetchWarehouseOrders();
       await fetchInventory();
@@ -150,7 +150,7 @@ function ModulesSupermarketDashboard() {
     setError(null);
     
     try {
-      await axios.patch(`/api/warehouse-orders/${orderId}/status?status=CANCELLED`);
+      await api.patch(`/warehouse-orders/${orderId}/status?status=CANCELLED`);
       addNotification("Warehouse order cancelled", 'warning');
       await fetchWarehouseOrders();
     } catch (err) {
@@ -239,12 +239,12 @@ function ModulesSupermarketDashboard() {
         priority: productionOrderForm.priority,
         dueDate: null,
         notes: productionOrderForm.notes,
-        createdByWorkstationId: session?.user?.workstationId,
+        createdByWorkstationId: session?.user?.workstation?.id,
         assignedWorkstationId: null, // Will be assigned by production planning
         triggerScenario: 'SCENARIO_3'
       };
 
-      const response = await axios.post('/api/production-orders/create', payload);
+      const response = await api.post('/production-orders/create', payload);
       addNotification(`Production order ${response.data.productionOrderNumber} created`, 'success');
       setShowProductionOrderForm(false);
       setProductionOrderForm({

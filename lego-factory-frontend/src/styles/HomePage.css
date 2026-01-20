@@ -1171,21 +1171,6 @@
   font-style: italic;
 }
 
-/* Footer */
-.home-footer {
-  background-color: rgba(44, 90, 160, 0.95);
-  color: white;
-  text-align: center;
-  padding: 1.5rem;
-  margin-top: 2rem;
-  font-size: 0.9rem;
-  border-top: 3px solid #2c5aa0;
-}
-
-.home-footer p {
-  margin: 0;
-}
-
 /* Responsive Design */
 @media (max-width: 1200px) {
   .home-top-row,

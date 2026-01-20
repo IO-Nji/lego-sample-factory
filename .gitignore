@@ -168,3 +168,9 @@ test-control-order-cards.sh
 .github/frontend-design-system-docs/StandardizedDashboardPattern.md
 .github/.gitlab-ci.yml
 .github/README.devops.md
+BROWSER_CACHE_FIX.md
+.github/CONTROL_ORDERS_FIX_SUMMARY.md
+.github/CONTROL_ORDERS_STATUS.md
+.github/test-control-orders-visibility.sh
+.github/test-frontend-integration.sh
+.github/UI_TESTING_CHECKLIST_CONTROL_ORDERS.md
