@@ -1,6 +1,7 @@
 import DashboardPage from "./DashboardPage";
 import LoginForm from "../components/LoginForm";
 import FeatureCard from "../components/FeatureCard";
+import { WorkstationCard } from "../components";
 import { useAuth } from "../context/AuthContext.jsx";
 import api from "../api/api";
 import "../styles/StandardPage.css";
@@ -21,6 +22,7 @@ function HomePage() {
   const [expandedModules, setExpandedModules] = useState({});
   const [productModules, setProductModules] = useState([]);
   const [loadingModules, setLoadingModules] = useState(false);
+  const [serviceHealth, setServiceHealth] = useState({});
 
   useEffect(() => {
     const reason = location.state?.reason || new URLSearchParams(location.search).get('reason');
@@ -128,6 +130,69 @@ function HomePage() {
     
     fetchProductModules();
   }, [selectedProduct]);
+
+  // Fetch service health status
+  useEffect(() => {
+    if (isAuthenticated) return; // Skip if authenticated
+    
+    const fetchServiceHealth = async () => {
+      const healthStatus = {};
+      
+      // Frontend is always healthy if this code is running
+      healthStatus['frontend'] = 'healthy';
+      
+      // Test API Gateway by trying to fetch from a known endpoint
+      try {
+        const response = await fetch('/api/masterdata/workstations', {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+        
+        if (response.ok || response.status === 401) {
+          // 200 OK or 401 Unauthorized means the API Gateway and services are UP
+          // (401 is expected for unauthenticated requests to some endpoints)
+          healthStatus['api-gateway'] = 'healthy';
+          healthStatus['user-service'] = 'healthy';
+          healthStatus['masterdata-service'] = 'healthy';
+          healthStatus['inventory-service'] = 'healthy';
+          healthStatus['order-processing-service'] = 'healthy';
+          healthStatus['simal-integration-service'] = 'healthy';
+        } else if (response.status === 404 || response.status === 403) {
+          // 404 or 403 means services are UP but endpoint not found/forbidden
+          healthStatus['api-gateway'] = 'healthy';
+          healthStatus['user-service'] = 'healthy';
+          healthStatus['masterdata-service'] = 'healthy';
+          healthStatus['inventory-service'] = 'healthy';
+          healthStatus['order-processing-service'] = 'healthy';
+          healthStatus['simal-integration-service'] = 'healthy';
+        } else {
+          // Other errors mean services might be down
+          healthStatus['api-gateway'] = 'down';
+          healthStatus['user-service'] = 'down';
+          healthStatus['masterdata-service'] = 'down';
+          healthStatus['inventory-service'] = 'down';
+          healthStatus['order-processing-service'] = 'down';
+          healthStatus['simal-integration-service'] = 'down';
+        }
+      } catch (error) {
+        console.error('Health check failed:', error);
+        // Network error means services are down
+        healthStatus['api-gateway'] = 'down';
+        healthStatus['user-service'] = 'down';
+        healthStatus['masterdata-service'] = 'down';
+        healthStatus['inventory-service'] = 'down';
+        healthStatus['order-processing-service'] = 'down';
+        healthStatus['simal-integration-service'] = 'down';
+      }
+      
+      setServiceHealth(healthStatus);
+    };
+
+    fetchServiceHealth();
+    const interval = setInterval(fetchServiceHealth, 15000); // Poll every 15 seconds
+    
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   const toggleModuleExpand = (moduleId) => {
     setExpandedModules(prev => ({
@@ -283,25 +348,29 @@ function HomePage() {
             <div className="flow-diagram">
               {/* Row 1: Customer Order Entry */}
               <div className="flow-row">
-                <div className="station-card" data-tooltip="Customer places order for product variants">
-                  <div className="station-icon">🛒</div>
-                  <div className="station-name">Customer Order</div>
-                </div>
+                <WorkstationCard 
+                  icon="🛒" 
+                  name="Customer Order" 
+                  tooltip="Customer places order for product variants"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Final product storage and order fulfillment (WS-7)">
-                  <div className="station-icon">🏭</div>
-                  <div className="station-name">Plant Warehouse</div>
-                </div>
+                <WorkstationCard 
+                  icon="🏭" 
+                  name="Plant Warehouse" 
+                  tooltip="Final product storage and order fulfillment | Username: warehouse_operator"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Check stock availability">
-                  <div className="station-icon">✅</div>
-                  <div className="station-name">Stock Check</div>
-                </div>
+                <WorkstationCard 
+                  icon="✅" 
+                  name="Stock Check" 
+                  tooltip="Check stock availability"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Order delivered to customer">
-                  <div className="station-icon">📦</div>
-                  <div className="station-name">Delivery</div>
-                </div>
+                <WorkstationCard 
+                  icon="📦" 
+                  name="Delivery" 
+                  tooltip="Order delivered to customer"
+                />
               </div>
               
               {/* Row 2: Downward arrow */}
@@ -314,20 +383,23 @@ function HomePage() {
               
               {/* Row 3: Production Flow */}
               <div className="flow-row">
-                <div className="station-card" data-tooltip="Intermediate module storage and management (WS-8)">
-                  <div className="station-icon">🏢</div>
-                  <div className="station-name">Modules Supermarket</div>
-                </div>
+                <WorkstationCard 
+                  icon="🏢" 
+                  name="Modules Supermarket" 
+                  tooltip="Intermediate module storage and management | Username: modules_supermarket"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Final assembly of product variants (WS-6)">
-                  <div className="station-icon">🔨</div>
-                  <div className="station-name">Final Assembly</div>
-                </div>
+                <WorkstationCard 
+                  icon="🔨" 
+                  name="Final Assembly" 
+                  tooltip="Final assembly of product variants | Username: assembly_control"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Strategic production scheduling and resource planning">
-                  <div className="station-icon">📋</div>
-                  <div className="station-name">Production Planning</div>
-                </div>
+                <WorkstationCard 
+                  icon="📋" 
+                  name="Production Planning" 
+                  tooltip="Strategic production scheduling and resource planning | Username: production_planning"
+                />
               </div>
               
               {/* Row 4: Downward arrow */}
@@ -340,20 +412,23 @@ function HomePage() {
               
               {/* Row 5: Manufacturing Flow */}
               <div className="flow-row">
-                <div className="station-card" data-tooltip="Raw materials storage and distribution (WS-9)">
-                  <div className="station-icon">📦</div>
-                  <div className="station-name">Parts Supply</div>
-                </div>
+                <WorkstationCard 
+                  icon="📦" 
+                  name="Parts Supply" 
+                  tooltip="Raw materials storage and distribution | Username: parts_supply_warehouse"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Injection molding and part production (WS-1,2,3)">
-                  <div className="station-icon">🔧</div>
-                  <div className="station-name">Manufacturing</div>
-                </div>
+                <WorkstationCard 
+                  icon="🔧" 
+                  name="Manufacturing" 
+                  tooltip="Injection molding and part production | Username: injection_molding"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Component assembly into modules (WS-4,5)">
-                  <div className="station-icon">⚙️</div>
-                  <div className="station-name">Assembly</div>
-                </div>
+                <WorkstationCard 
+                  icon="⚙️" 
+                  name="Assembly" 
+                  tooltip="Component assembly into modules | Username: assembly_control"
+                />
               </div>
             </div>
           </div>
@@ -363,27 +438,186 @@ function HomePage() {
           </div>
         </div>
 
-        {/* Row 2: Application Overview + Navigation Guide (Full Width) */}
-        <div className="home-bottom-row">
-          <div className="home-intro-column-fullwidth">
+        {/* Row 2: Application Overview (Full Width) */}
+        <div className="home-overview-row">
+          <div className="home-overview-section">
             <h3 className="section-title">Application Overview</h3>
-            <div className="intro-content">
-              <p className="intro-description">
-                The <strong>LIFE System</strong> (LEGO Integrated Factory Execution) is a comprehensive digital manufacturing 
-                platform that coordinates complex production workflows across multiple interconnected factory workstations. 
-                The system manages the entire manufacturing lifecycle from raw materials to finished products.
+            <div className="overview-content">
+              <p className="overview-description">
+                The <strong>LIFE System</strong> (LEGO Integrated Factory Execution) is an enterprise-grade digital manufacturing 
+                execution system (MES) built from the ground up to demonstrate the practical application of academic research 
+                in industrial engineering. This comprehensive platform digitizes and automates end-to-end supply chain operations 
+                across nine autonomous workstations, coordinating complex production workflows from raw materials to finished products.
               </p>
               
-              <div className="navigation-guide">
-                <h4>📋 Quick Navigation Guide</h4>
-                <ul>
-                  <li><strong>Login:</strong> Use credentials on the right to access role-specific dashboards</li>
-                  <li><strong>User Roles:</strong> Admin, Production Planning, Plant Warehouse, Assembly Control, and more</li>
-                  <li><strong>Operations:</strong> Each role provides tailored views for order management, inventory control, and production tracking</li>
-                  <li><strong>Real-time Updates:</strong> Dashboard data refreshes automatically every 30 seconds</li>
-                </ul>
-                <p className="tip">💡 <strong>Tip:</strong> Hover over the manufacturing stations above to see detailed descriptions</p>
+              <div className="tech-highlights-split">
+                {/* Left Column - Right Aligned */}
+                <div className="tech-column tech-column-left">
+                  <div className="tech-feature">
+                    <div className="feature-header">
+                      <span className="feature-icon">🏗️</span>
+                      <strong>Microservices Architecture</strong>
+                    </div>
+                    <p>6 independently scalable Spring Boot services with isolated H2 databases, orchestrated via Docker Compose</p>
+                  </div>
+                  
+                  <div className="tech-feature">
+                    <div className="feature-header">
+                      <span className="feature-icon">🔐</span>
+                      <strong>Enterprise Security</strong>
+                    </div>
+                    <p>JWT-based authentication with BCrypt encryption, role-based access control across 9 user roles</p>
+                  </div>
+                </div>
+                
+                {/* Center Divider */}
+                <div className="tech-divider"></div>
+                
+                {/* Right Column - Left Aligned */}
+                <div className="tech-column tech-column-right">
+                  <div className="tech-feature">
+                    <div className="feature-header">
+                      <span className="feature-icon">⚡</span>
+                      <strong>Modern Tech Stack</strong>
+                    </div>
+                    <p>Spring Boot 3.4.12 (Java 21) backend + React 18 (Vite) frontend + Spring Cloud Gateway + Nginx reverse proxy</p>
+                  </div>
+                  
+                  <div className="tech-feature">
+                    <div className="feature-header">
+                      <span className="feature-icon">📊</span>
+                      <strong>Real-Time Operations</strong>
+                    </div>
+                    <p>Live inventory tracking, automated order fulfillment, SimAL scheduling integration with interactive Gantt charts</p>
+                  </div>
+                </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 3: Navigation Guide + Microservices Architecture (Two Columns) */}
+        <div className="home-guide-row">
+          {/* Column 1: Navigation Guide */}
+          <div className="home-navigation-column">
+            <h3 className="section-title">📋 Quick Navigation Guide</h3>
+            <div className="navigation-content">
+              <div className="nav-item">
+                <span className="nav-icon">🔑</span>
+                <div>
+                  <strong>Login:</strong> Hover over workstation cards above to see usernames. Generic password: <code>password</code>
+                </div>
+              </div>
+              
+              <div className="nav-item">
+                <span className="nav-icon">👥</span>
+                <div>
+                  <strong>User Roles:</strong> Each role has a dedicated dashboard (Admin, Production Planning, Plant Warehouse, 
+                  Modules Supermarket, Assembly Control, Parts Supply, Manufacturing)
+                </div>
+              </div>
+              
+              <div className="nav-item">
+                <span className="nav-icon">📦</span>
+                <div>
+                  <strong>Operations:</strong> Role-specific interfaces for customer orders, warehouse orders, production orders, 
+                  inventory management, and supply chain coordination
+                </div>
+              </div>
+              
+              <div className="nav-item">
+                <span className="nav-icon">🔄</span>
+                <div>
+                  <strong>Real-time Updates:</strong> Dashboard data refreshes automatically every 5-30 seconds depending on the view
+                </div>
+              </div>
+              
+              <div className="nav-item">
+                <span className="nav-icon">📈</span>
+                <div>
+                  <strong>Production Scenarios:</strong> System supports 4 fulfillment workflows - direct fulfillment, warehouse orders, 
+                  production via modules, and high-volume direct production planning
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 2: Microservices Architecture Diagram */}
+          <div className="home-architecture-column">
+            <h3 className="section-title">🏗️ Microservices Architecture</h3>
+            <div className="architecture-diagram">
+              {/* Frontend Layer */}
+              <div className="arch-layer">
+                <div className={`service-box frontend ${serviceHealth['frontend'] || 'unknown'}`}>
+                  <span className="service-name">React SPA</span>
+                  <span className="service-tech">(Vite + Nginx)</span>
+                </div>
+              </div>
+              
+              <div className="arch-arrow-down">↓</div>
+              
+              {/* API Gateway Layer */}
+              <div className="arch-layer">
+                <div className={`service-box gateway ${serviceHealth['api-gateway'] || 'unknown'}`}>
+                  <span className="service-name">API Gateway</span>
+                  <span className="service-tech">:8011</span>
+                  <span className={`health-indicator ${serviceHealth['api-gateway'] || 'unknown'}`}></span>
+                </div>
+              </div>
+              
+              <div className="arch-arrow-down">↓</div>
+              
+              {/* Backend Services Layer */}
+              <div className="arch-layer services-grid">
+                <div className={`service-box ${serviceHealth['user-service'] || 'unknown'}`}>
+                  <span className="service-name">User Service</span>
+                  <span className="service-tech">:8012</span>
+                  <span className={`health-indicator ${serviceHealth['user-service'] || 'unknown'}`}></span>
+                </div>
+                
+                <div className={`service-box ${serviceHealth['masterdata-service'] || 'unknown'}`}>
+                  <span className="service-name">Masterdata</span>
+                  <span className="service-tech">:8013</span>
+                  <span className={`health-indicator ${serviceHealth['masterdata-service'] || 'unknown'}`}></span>
+                </div>
+                
+                <div className={`service-box ${serviceHealth['inventory-service'] || 'unknown'}`}>
+                  <span className="service-name">Inventory</span>
+                  <span className="service-tech">:8014</span>
+                  <span className={`health-indicator ${serviceHealth['inventory-service'] || 'unknown'}`}></span>
+                </div>
+                
+                <div className={`service-box ${serviceHealth['order-processing-service'] || 'unknown'}`}>
+                  <span className="service-name">Order Processing</span>
+                  <span className="service-tech">:8015</span>
+                  <span className={`health-indicator ${serviceHealth['order-processing-service'] || 'unknown'}`}></span>
+                </div>
+                
+                <div className={`service-box ${serviceHealth['simal-integration-service'] || 'unknown'}`}>
+                  <span className="service-name">SimAL Integration</span>
+                  <span className="service-tech">:8016</span>
+                  <span className={`health-indicator ${serviceHealth['simal-integration-service'] || 'unknown'}`}></span>
+                </div>
+              </div>
+              
+              <div className="arch-note">
+                <span className="db-icon">💾</span> H2 In-Memory Databases (Isolated per service)
+              </div>
+            </div>
+            
+            <div className="health-legend">
+              <span className="legend-item">
+                <span className="health-dot healthy"></span> Healthy
+              </span>
+              <span className="legend-item">
+                <span className="health-dot degraded"></span> Degraded
+              </span>
+              <span className="legend-item">
+                <span className="health-dot down"></span> Down
+              </span>
+              <span className="legend-item">
+                <span className="health-dot unknown"></span> Unknown
+              </span>
             </div>
           </div>
         </div>

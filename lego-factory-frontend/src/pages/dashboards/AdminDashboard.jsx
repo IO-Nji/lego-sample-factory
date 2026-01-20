@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../../api/api";
-import { StatCard, Button, Notification, PageHeader } from "../../components";
+import { StatCard, Button, Notification, PageHeader, WorkstationCard, StatisticsGrid } from "../../components";
 import PieChart from "../../components/PieChart";
 import BarChart from "../../components/BarChart";
-import StatusMonitor from "../../components/StatusMonitor";
 import "../../styles/Chart.css";
 import "../../styles/DashboardLayout.css";
 
@@ -238,11 +237,19 @@ function AdminDashboard() {
           .replace('Warehouse', 'WH')
           .replace('Control', 'Ctrl');
         
+        // Check for active/pending orders at this workstation
+        const activeOrdersAtStation = allOrders.filter(order => {
+          // Check if order is assigned to this workstation and not completed/cancelled
+          return order.workstationId === ws.id && 
+                 ['PENDING', 'PROCESSING', 'CONFIRMED', 'IN_PROGRESS'].includes(order.status);
+        }).length;
+        
         return {
           id: ws.id,
           name: shortName,
           status: ws.status || 'ACTIVE',
           details: ws.description || `Type: ${ws.type || 'N/A'}`,
+          hasActiveOrders: activeOrdersAtStation > 0,
         };
       });
 
@@ -372,157 +379,164 @@ function AdminDashboard() {
         </Button>
       </div>
 
-      {/* Row 1: 8 StatCards in a single row */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(8, 1fr)', 
-        gap: '1rem',
-        marginBottom: '1.5rem',
-        justifyItems: 'center'
-      }}>
-        <StatCard 
-          title="TOTAL"
-          value={dashboardData.totalOrders}
-          icon="📦"
-          color="primary"
-        />
-        <StatCard 
-          title="PENDING"
-          value={dashboardData.pendingOrders}
-          icon="⏳"
-          color="warning"
-          threshold={10}
-          thresholdType="high"
-        />
-        <StatCard 
-          title="Processing"
-          value={dashboardData.processingOrders}
-          icon="⚙️"
-          color="info"
-        />
-        <StatCard 
-          title="Completed"
-          value={dashboardData.completedOrders}
-          icon="✓"
-          color="success"
-        />
-        <StatCard 
-          title="Workstations"
-          value={dashboardData.activeWorkstations}
-          icon="🏭"
-          color="primary"
-        />
-        <StatCard 
-          title="Users"
-          value={dashboardData.totalUsers}
-          icon="👥"
-          color="info"
-        />
-        <StatCard 
-          title="Products"
-          value={dashboardData.totalProducts}
-          icon="🎨"
-          color="success"
-        />
-        <StatCard 
-          title="Low Stock"
-          value={dashboardData.lowStockItems}
-          icon="⚠️"
-          color="danger"
-          threshold={1}
-          thresholdType="low"
-        />
-      </div>
-
-      {/* Row 2: 3 Columns - Notifications, 2 Charts, User Roles Chart */}
+      {/* Row 1: System Activity Log (flex) | Statistics Grid (fixed) | Stacked Charts (fixed) */}
       <div style={{ 
         display: 'flex',
-        gap: '1rem',
-        marginBottom: '1.5rem',
-        alignItems: 'flex-start'
+        gap: '1.25rem',
+        marginBottom: '2rem',
+        alignItems: 'stretch',
+        height: '380px'
       }}>
-        {/* Column 1: Notifications - Takes remaining space */}
+        {/* Column 1: System Activity Log - Takes remaining space, constrained height */}
         <div style={{ 
           flex: '1',
-          minHeight: '400px'
+          height: '100%',
+          maxHeight: '380px',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
         }}>
-          <Notification 
-            notifications={notifications}
-            title="System Activity"
-            maxVisible={10}
-            onClear={clearNotifications}
+          <div style={{ height: '100%', overflow: 'hidden' }}>
+            <Notification 
+              notifications={notifications}
+              title="SYSTEM ACTIVITY LOG"
+              maxVisible={10}
+              onClear={clearNotifications}
+            />
+          </div>
+        </div>
+
+        {/* Column 2: Statistics Grid - Fixed width, compact 4x2 layout, centered vertically */}
+        <div style={{ 
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%'
+        }}>
+          <StatisticsGrid 
+            stats={[
+              { value: dashboardData.totalOrders, label: "TOTAL", variant: "primary", icon: "📦" },
+              { value: dashboardData.pendingOrders, label: "PENDING", variant: "warning", icon: "⏳" },
+              { value: dashboardData.processingOrders, label: "PROCESSING", variant: "info", icon: "⚙️" },
+              { value: dashboardData.completedOrders, label: "COMPLETED", variant: "success", icon: "✓" },
+              { value: dashboardData.activeWorkstations, label: "WORKSTATIONS", variant: "primary", icon: "🏭" },
+              { value: dashboardData.totalUsers, label: "USERS", variant: "info", icon: "👥" },
+              { value: dashboardData.totalProducts, label: "PRODUCTS", variant: "success", icon: "🎨" },
+              { value: dashboardData.lowStockItems, label: "LOW STOCK", variant: "danger", icon: "⚠️" },
+            ]}
           />
         </div>
 
-        {/* Column 2: Existing Charts - Fixed width */}
+        {/* Column 3: Stacked Charts - Fixed width, centered vertically */}
         <div style={{ 
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem',
-          flexShrink: 0
+          flexShrink: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%'
         }}>
           <PieChart 
-            title="Order Status Distribution"
+            title="ORDER STATUS DISTRIBUTION"
             data={orderStatusData}
             size={110}
           />
           <PieChart 
-            title="Production by Type"
+            title="PRODUCTION BY TYPE"
             data={productionTypeData}
             size={110}
           />
         </div>
-
-        {/* Column 3: User Roles Chart - Fixed width, vertically centered */}
-        <div style={{ 
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '400px',
-          flexShrink: 0
-        }}>
-          <PieChart 
-            title="User Roles Distribution"
-            data={userRoleData}
-            size={180}
-          />
-        </div>
       </div>
 
-      {/* Row 3: Workstation Monitor + Recent Orders (unchanged) */}
-      <div style={{ padding: '0' }}>
+      {/* Row 2: Workstation Monitor + User Roles + Recent Orders */}
+      <div style={{ padding: '0', marginTop: '2rem' }}>
         <div style={{ 
           display: 'flex', 
-          gap: '1rem',
+          gap: '1.25rem',
           alignItems: 'stretch'
         }}>
-          {/* Workstation Status Monitor - 50% */}
-          <div style={{ flex: '0 0 calc(50% - 0.5rem)', minWidth: 0 }}>
-            <StatusMonitor 
-              title="Workstation Status Monitor"
-              items={dashboardData.workstations}
-              onItemClick={(item) => console.log('Workstation clicked:', item)}
-              compact={true}
-              gridLayout={true}
-            />
+          {/* Workstation Status Monitor - 33% */}
+          <div style={{ flex: '0 0 calc(33.33% - 0.67rem)', minWidth: 0 }}>
+            <div className="chart-container" style={{ padding: '0.5rem' }}>
+              <h3 className="component-title">WORKSTATION STATUS MONITOR</h3>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '0.35rem',
+                padding: '0'
+              }}>
+                {dashboardData.workstations.map((ws) => {
+                  // Determine status based on actual orders at workstation
+                  // 'active' (yellow) only when workstation has pending/processing orders
+                  // 'idle' (blue) when no active orders
+                  const status = ws.hasActiveOrders ? 'active' : 'idle';
+                  
+                  // Get icon based on workstation name
+                  const getWorkstationIcon = (name) => {
+                    const nameLower = (name || '').toLowerCase();
+                    if (nameLower.includes('plant') && nameLower.includes('wh')) return '🏭';
+                    if (nameLower.includes('modules') || nameLower.includes('mods')) return '🏢';
+                    if (nameLower.includes('parts')) return '📦';
+                    if (nameLower.includes('final') && nameLower.includes('assy')) return '🔨';
+                    if (nameLower.includes('gear')) return '⚙️';
+                    if (nameLower.includes('motor')) return '🔧';
+                    if (nameLower.includes('injection')) return '💉';
+                    if (nameLower.includes('pre')) return '⚡';
+                    if (nameLower.includes('finishing')) return '✨';
+                    return '⚙️';
+                  };
+                  
+                  return (
+                    <WorkstationCard
+                      key={ws.id}
+                      icon={getWorkstationIcon(ws.name)}
+                      name={ws.name}
+                      tooltip={`${ws.details || 'Workstation details'} | Status: ${ws.status || 'ACTIVE'}`}
+                      status={status}
+                      onClick={() => console.log('Workstation clicked:', ws)}
+                    />
+                  );
+                })}
+                {dashboardData.workstations.length === 0 && (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
+                    No workstations available
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           
-          {/* Recent Orders - 50% */}
-          <div className="chart-container" style={{ flex: '0 0 calc(50% - 0.5rem)', minWidth: 0, minHeight: '400px' }}>
-            <h3 className="chart-title">RECENT ORDERS</h3>
+          {/* User Roles Distribution - 33% */}
+          <div style={{ flex: '0 0 calc(33.33% - 0.67rem)', minWidth: 0 }}>
+            <div className="chart-container" style={{ padding: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <PieChart 
+                title="USER ROLES DISTRIBUTION"
+                data={userRoleData}
+                size={180}
+              />
+            </div>
+          </div>
+          
+          {/* Recent Orders - 33% */}
+          <div className="chart-container" style={{ flex: '0 0 calc(33.33% - 0.67rem)', minWidth: 0, padding: '0.5rem' }}>
+            <h3 className="component-title">RECENT ORDERS</h3>
             {dashboardData.recentOrders.length > 0 ? (
-              <div style={{ overflowY: 'auto', maxHeight: '350px' }}>
+              <div style={{ overflowY: 'auto', maxHeight: '320px' }}>
                 <table style={{ 
                   width: '100%', 
                   borderCollapse: 'collapse',
-                  fontSize: '0.75rem'
+                  fontSize: '0.7rem',
+                  tableLayout: 'fixed'
                 }}>
                   <thead style={{ position: 'sticky', top: 0, background: 'white', zIndex: 1 }}>
                     <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                      <th style={{ padding: '0.4rem 0.3rem', textAlign: 'left', fontWeight: 600, fontSize: '0.7rem', width: '15%' }}>ID</th>
-                      <th style={{ padding: '0.4rem 0.3rem', textAlign: 'left', fontWeight: 600, fontSize: '0.7rem', width: '30%' }}>Order No.</th>
-                      <th style={{ padding: '0.4rem 0.3rem', textAlign: 'left', fontWeight: 600, fontSize: '0.7rem', width: '25%' }}>Type</th>
-                      <th style={{ padding: '0.4rem 0.3rem', textAlign: 'left', fontWeight: 600, fontSize: '0.7rem', width: '30%' }}>Status</th>
+                      <th style={{ padding: '0.3rem 0.2rem', textAlign: 'left', fontWeight: 600, fontSize: '0.65rem', width: '35px' }}>ID</th>
+                      <th style={{ padding: '0.3rem 0.2rem', textAlign: 'left', fontWeight: 600, fontSize: '0.65rem', width: '90px' }}>Order No.</th>
+                      <th style={{ padding: '0.3rem 0.2rem', textAlign: 'left', fontWeight: 600, fontSize: '0.65rem', width: '70px' }}>Type</th>
+                      <th style={{ padding: '0.3rem 0.2rem', textAlign: 'left', fontWeight: 600, fontSize: '0.65rem', width: '85px' }}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -546,18 +560,19 @@ function AdminDashboard() {
                       
                       return (
                         <tr key={order.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                          <td style={{ padding: '0.4rem 0.3rem', fontSize: '0.7rem' }}>#{order.id}</td>
-                          <td style={{ padding: '0.4rem 0.3rem', fontSize: '0.7rem', fontFamily: 'monospace' }}>{order.orderNumber || 'N/A'}</td>
-                          <td style={{ padding: '0.4rem 0.3rem', fontSize: '0.7rem' }}>{orderType}</td>
-                          <td style={{ padding: '0.4rem 0.3rem' }}>
+                          <td style={{ padding: '0.25rem 0.2rem', fontSize: '0.65rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>#{order.id}</td>
+                          <td style={{ padding: '0.25rem 0.2rem', fontSize: '0.65rem', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{order.orderNumber || 'N/A'}</td>
+                          <td style={{ padding: '0.25rem 0.2rem', fontSize: '0.65rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{orderType}</td>
+                          <td style={{ padding: '0.25rem 0.2rem' }}>
                             <span style={{ 
-                              padding: '0.15rem 0.35rem',
+                              padding: '0.1rem 0.3rem',
                               borderRadius: '3px',
-                              fontSize: '0.65rem',
+                              fontSize: '0.6rem',
                               fontWeight: 600,
                               color: 'white',
                               backgroundColor: statusColors[order.status] || '#6b7280',
-                              display: 'inline-block'
+                              display: 'inline-block',
+                              whiteSpace: 'nowrap'
                             }}>
                               {order.status}
                             </span>

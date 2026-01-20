@@ -10,7 +10,7 @@ import {
   LoadingSpinner, 
   Alert, 
   Badge,
-  Button 
+  Button
 } from '../components';
 import '../styles/OverviewPage.css';
 

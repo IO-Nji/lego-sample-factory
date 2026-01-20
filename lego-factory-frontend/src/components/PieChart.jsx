@@ -1,5 +1,6 @@
 import React from 'react';
 import '../styles/Chart.css';
+import '../styles/DashboardLayout.css'; // Import for .component-title class
 
 /**
  * PieChart - Reusable pie chart component using CSS conic-gradient
@@ -13,7 +14,7 @@ function PieChart({ data, title, size = 200 }) {
   if (total === 0) {
     return (
       <div className="chart-container">
-        {title && <h3 className="chart-title">{title}</h3>}
+        {title && <h3 className="component-title">{title}</h3>}
         <div className="chart-empty">No data available</div>
       </div>
     );
@@ -30,7 +31,7 @@ function PieChart({ data, title, size = 200 }) {
 
   return (
     <div className="chart-container">
-      {title && <h3 className="chart-title">{title}</h3>}
+      {title && <h3 className="component-title">{title}</h3>}
       <div className="pie-chart-wrapper">
         <div 
           className="pie-chart" 

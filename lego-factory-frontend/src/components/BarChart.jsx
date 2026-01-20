@@ -1,5 +1,6 @@
 import React from 'react';
 import '../styles/Chart.css';
+import '../styles/DashboardLayout.css'; // Import for .component-title class
 
 /**
  * BarChart - Reusable horizontal/vertical bar chart component
@@ -14,7 +15,7 @@ function BarChart({ data, title, orientation = 'horizontal', maxValue }) {
   if (data.length === 0) {
     return (
       <div className="chart-container">
-        {title && <h3 className="chart-title">{title}</h3>}
+        {title && <h3 className="component-title">{title}</h3>}
         <div className="chart-empty">No data available</div>
       </div>
     );
@@ -22,7 +23,7 @@ function BarChart({ data, title, orientation = 'horizontal', maxValue }) {
 
   return (
     <div className="chart-container">
-      {title && <h3 className="chart-title">{title}</h3>}
+      {title && <h3 className="component-title">{title}</h3>}
       <div className={`bar-chart bar-chart-${orientation}`}>
         {data.map((item, index) => {
           const percentage = (item.value / max) * 100;

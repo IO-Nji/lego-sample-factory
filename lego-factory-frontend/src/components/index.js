@@ -12,6 +12,7 @@
 export { default as Button } from './Button';
 export { default as Card } from './Card';
 export { default as StatCard } from './StatCard';
+export { default as StatisticsGrid } from './StatisticsGrid';
 export { default as Badge } from './Badge';
 
 // Data Display
@@ -38,6 +39,9 @@ export { default as InventoryTable } from './InventoryTable';
 // Order Cards
 export { default as ProductionControlOrderCard } from './ProductionControlOrderCard';
 export { default as AssemblyControlOrderCard } from './AssemblyControlOrderCard';
+
+// Workstation Components
+export { default as WorkstationCard } from './WorkstationCard';
 
 // Legacy/Alternative Components
 export { default as StatsCard } from './StatsCard';

@@ -16,9 +16,11 @@
 }
 
 .chart-title {
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-gray-700);
   margin: 0 0 0.5rem 0;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid var(--color-border);

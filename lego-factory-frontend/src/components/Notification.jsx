@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import styles from './Notification.module.css';
+import '../styles/DashboardLayout.css'; // Import for .component-title class
 
 /**
  * Notification Component - Console-like notification display
@@ -77,7 +78,7 @@ const Notification = ({
   return (
     <div className={styles.notificationContainer}>
       <div className={styles.header}>
-        <h3 className={styles.title}>{title}</h3>
+        <h3 className="component-title" style={{ margin: 0 }}>{title}</h3>
         {onClear && notifications.length > 0 && (
           <button 
             className={styles.clearButton}
