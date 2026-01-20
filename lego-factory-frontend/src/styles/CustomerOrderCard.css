@@ -153,9 +153,10 @@
 /* ============================================ */
 .orders-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important; /* Allows 5+ cards per row */
+  grid-template-columns: repeat(auto-fill, 380px) !important; /* Fixed 380px width - matches OrderCardBase */
   gap: 0.5rem !important;
   margin-top: 1rem;
+  justify-content: start; /* Align cards to the left when not filling the row */
 }
 
 /* ============================================ */
@@ -165,7 +166,7 @@
 /* Tablet and smaller screens (≤1024px) */
 @media (max-width: 1024px) {
   .orders-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, 380px); /* Maintain fixed width on tablets */
     gap: 1rem;
   }
   
@@ -183,7 +184,7 @@
 /* Mobile devices (≤640px) */
 @media (max-width: 640px) {
   .orders-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* Stack vertically on mobile, allow full width */
     gap: 0.75rem;
   }
   

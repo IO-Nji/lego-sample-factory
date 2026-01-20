@@ -38,6 +38,7 @@ export { default as PageHeader } from './PageHeader';
 export { default as InventoryTable } from './InventoryTable';
 
 // Order Cards
+export { default as BaseOrderCard } from './BaseOrderCard';
 export { default as ProductionControlOrderCard } from './ProductionControlOrderCard';
 export { default as AssemblyControlOrderCard } from './AssemblyControlOrderCard';
 

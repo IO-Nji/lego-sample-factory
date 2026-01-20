@@ -173,9 +173,10 @@
 /* ============================================ */
 .orders-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Allows 5+ cards per row */
+  grid-template-columns: repeat(auto-fill, 380px); /* Fixed 380px width - matches OrderCardBase */
   gap: 0.5rem;
   margin-bottom: 1rem;
+  justify-content: start; /* Align cards to the left when not filling the row */
 }
 
 .order-card {
