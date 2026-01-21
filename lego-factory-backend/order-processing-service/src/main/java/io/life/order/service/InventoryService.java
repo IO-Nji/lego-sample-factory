@@ -41,7 +41,7 @@ public class InventoryService {
             // Determine item type based on workstation
             // Modules Supermarket (ID 8) deals with MODULES
             // Plant Warehouse (ID 7) deals with PRODUCTS
-            String itemType = (workstationId == 8L) ? "MODULE" : "PRODUCT";
+            String itemType = (workstationId == 8L) ? "MODULE" : "PRODUCT_VARIANT";
             
             String url = inventoryServiceUrl + "/api/stock/workstation/" + workstationId
                     + "/item?itemType=" + itemType + "&itemId=" + itemId;
@@ -61,6 +61,30 @@ public class InventoryService {
                     workstationId, itemId, e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Check if Modules Supermarket has all required modules in stock.
+     * Used for Scenario 2 pure implementation.
+     * 
+     * @param moduleRequirements Map of module ID to required quantity
+     * @return true if all modules are available in sufficient quantities
+     */
+    public boolean checkModulesAvailability(Map<Long, Integer> moduleRequirements) {
+        logger.info("Checking availability for {} different modules in Modules Supermarket", moduleRequirements.size());
+        
+        for (Map.Entry<Long, Integer> entry : moduleRequirements.entrySet()) {
+            Long moduleId = entry.getKey();
+            Integer requiredQty = entry.getValue();
+            
+            if (!checkStock(8L, moduleId, requiredQty)) {
+                logger.info("Module {} insufficient: required {}", moduleId, requiredQty);
+                return false;
+            }
+        }
+        
+        logger.info("All required modules available in Modules Supermarket");
+        return true;
     }
 
     /**

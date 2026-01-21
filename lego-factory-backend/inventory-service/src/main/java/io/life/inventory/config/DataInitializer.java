@@ -83,11 +83,13 @@ public class DataInitializer implements CommandLineRunner {
 	private void seedModulesSupermarketStock() {
 		Long modulesSupermarketId = 8L;
 
-		// Module inventory
-		createStockRecord(modulesSupermarketId, "MODULE", 1L, 50);  // Chassis Module
-		createStockRecord(modulesSupermarketId, "MODULE", 2L, 40);  // Electrical Module
-		createStockRecord(modulesSupermarketId, "MODULE", 3L, 45);  // Wheel Assembly
-		createStockRecord(modulesSupermarketId, "MODULE", 4L, 30);  // Control Panel
+		// Module inventory - All 6 modules required for Product #1 assembly
+		createStockRecord(modulesSupermarketId, "MODULE", 1L, 50);  // Module #1 (Truck Chassis)
+		createStockRecord(modulesSupermarketId, "MODULE", 2L, 40);  // Module #2 (Truck Drive System)
+		createStockRecord(modulesSupermarketId, "MODULE", 3L, 45);  // Module #3 (Truck Wheel Assembly)
+		createStockRecord(modulesSupermarketId, "MODULE", 4L, 30);  // Module #4 (Truck Steering Unit)
+		createStockRecord(modulesSupermarketId, "MODULE", 5L, 35);  // Module #5 (Truck Light System)
+		createStockRecord(modulesSupermarketId, "MODULE", 6L, 25);  // Module #6 (Truck Cab Unit)
 
 		log.info("Seeded Modules Supermarket (WS-8) with module inventory");
 	}

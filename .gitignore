@@ -174,3 +174,5 @@ BROWSER_CACHE_FIX.md
 .github/test-control-orders-visibility.sh
 .github/test-frontend-integration.sh
 .github/UI_TESTING_CHECKLIST_CONTROL_ORDERS.md
+SCENARIO2_TEST_GUIDE.md
+test-scenario-2.sh

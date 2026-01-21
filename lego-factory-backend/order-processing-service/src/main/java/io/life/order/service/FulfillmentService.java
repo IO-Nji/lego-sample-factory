@@ -15,7 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -141,9 +143,9 @@ public class FulfillmentService {
     }
 
     /**
-     * Scenario 2: Warehouse Order
+     * Scenario 2: Warehouse Order (Pure Implementation)
      * No items available locally. Create a warehouse order for all items.
-     * Also automatically create a production order for the shortfall.
+     * Check if Modules Supermarket has the modules before deciding to trigger production.
      * Order status changes to PROCESSING.
      */
     private CustomerOrderDTO scenario2_WarehouseOrder(CustomerOrder order) {
@@ -184,29 +186,75 @@ public class FulfillmentService {
         orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "WAREHOUSE_ORDER_CREATED",
             "Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created (Scenario 2)");
 
-        // AUTO-TRIGGER: Create production order for shortfall (all items not available locally)
-        logger.info("Auto-triggering production order for Scenario 2 shortfall");
-        try {
+        // CHECK MODULES SUPERMARKET STOCK: Only trigger production if modules are missing
+        // For each product variant in the order, resolve its module composition
+        // and check if MS has all required modules
+        Map<Long, Integer> aggregatedModuleRequirements = new HashMap<>();
+        
+        for (OrderItem item : order.getOrderItems()) {
+            if (!"PRODUCT_VARIANT".equals(item.getItemType())) {
+                logger.warn("Order item is not a PRODUCT_VARIANT: {} - skipping module resolution", item.getItemType());
+                continue;
+            }
+            
+            // Get module requirements for this product variant
+            Map<Long, Integer> moduleReqs = masterdataService.getModuleRequirementsForProduct(
+                item.getItemId(), 
+                item.getQuantity()
+            );
+            
+            // Aggregate with existing requirements
+            for (Map.Entry<Long, Integer> entry : moduleReqs.entrySet()) {
+                aggregatedModuleRequirements.merge(entry.getKey(), entry.getValue(), Integer::sum);
+            }
+            
+            logger.info("Product variant {} (qty {}) requires {} different modules", 
+                item.getItemId(), item.getQuantity(), moduleReqs.size());
+        }
+        
+        logger.info("Total aggregated module requirements: {} different modules", 
+            aggregatedModuleRequirements.size());
+
+        boolean modulesSupermarketHasStock = inventoryService.checkModulesAvailability(aggregatedModuleRequirements);
+
+        if (modulesSupermarketHasStock) {
+            // Pure Scenario 2: Modules available, wait for manual MS fulfillment
+            logger.info("Modules Supermarket has all modules - warehouse order remains PENDING for manual fulfillment");
+            order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + 
+                "Scenario 2: Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created (modules available in MS)");
+            orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "STATUS_PROCESSING", 
+                "Scenario 2 processing (waiting on Modules Supermarket manual fulfillment)");
+        } else {
+            // Scenario 3: Modules missing, auto-trigger production
+            logger.info("Modules Supermarket lacks some modules - auto-triggering production order (Scenario 3 path)");
+            try {
                 ProductionOrderDTO productionOrder = productionOrderService.createProductionOrderFromWarehouse(
                     order.getId(),                              // sourceCustomerOrderId
                     warehouseOrder.getId(),                     // sourceWarehouseOrderId
                     "NORMAL",                                   // priority (default)
                     LocalDateTime.now().plusDays(7),             // dueDate (7 days from now)
-                    "Auto-created for warehouse order " + warehouseOrder.getWarehouseOrderNumber(),
+                    "Auto-created for warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " (insufficient MS stock)",
                     order.getWorkstationId(),                    // createdByWorkstationId
                     MODULES_SUPERMARKET_WORKSTATION_ID           // assignedWorkstationId (Modules Supermarket)
-            );
-            logger.info("Production order {} auto-created for Scenario 2 shortfall", productionOrder.getProductionOrderNumber());
+                );
+                logger.info("Production order {} auto-created due to insufficient MS stock", productionOrder.getProductionOrderNumber());
                 orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "PRODUCTION_ORDER_CREATED",
-                    "Production order auto-created for warehouse order " + warehouseOrder.getWarehouseOrderNumber());
-        } catch (Exception e) {
-            logger.error("Failed to auto-create production order for Scenario 2", e);
+                    "Production order auto-created (insufficient stock in Modules Supermarket)");
+                
+                order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + 
+                    "Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created + Production order " + 
+                    productionOrder.getProductionOrderNumber() + " auto-triggered (Scenario 3)");
+            } catch (Exception e) {
+                logger.error("Failed to auto-create production order for missing modules", e);
+                order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + 
+                    "Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created (production order creation failed)");
+            }
+            orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "STATUS_PROCESSING", 
+                "Processing with production (insufficient MS stock)");
         }
 
         // Update customer order status
         order.setStatus(PROCESSING);
-        order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + "Scenario 2: Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created + Production order auto-triggered");
-        orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "STATUS_PROCESSING", "Scenario 2 processing (waiting on warehouse)");
 
         return mapToDTO(customerOrderRepository.save(order));
     }
