@@ -189,8 +189,8 @@ function PlantWarehouseDashboard() {
           : `Order ${response.data.orderNumber} processing`, 
         'success'
       );
-      fetchOrders();
-      fetchInventory();
+      await fetchOrders();
+      await fetchInventory(); // Refresh inventory to show updated quantities
     } catch (err) {
       setError("Failed to fulfill order: " + (err.response?.data?.message || err.message));
       addNotification("Failed to fulfill order", 'error');
@@ -290,7 +290,7 @@ function PlantWarehouseDashboard() {
   // Render Inventory Table using InventoryTable component
   const renderInventory = () => (
     <InventoryTable
-      title="Inventory"
+      title="Product Inventory"
       icon="📦"
       inventory={inventory}
       itemType="PRODUCT"

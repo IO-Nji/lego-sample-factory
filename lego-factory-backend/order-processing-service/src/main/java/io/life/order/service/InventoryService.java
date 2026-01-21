@@ -39,9 +39,17 @@ public class InventoryService {
     public boolean checkStock(Long workstationId, Long itemId, Integer quantity) {
         try {
             // Determine item type based on workstation
+            // Parts Supply Warehouse (ID 9) deals with PARTS
             // Modules Supermarket (ID 8) deals with MODULES
-            // Plant Warehouse (ID 7) deals with PRODUCTS
-            String itemType = (workstationId == 8L) ? "MODULE" : "PRODUCT_VARIANT";
+            // Plant Warehouse (ID 7) deals with PRODUCTS (not PRODUCT_VARIANT)
+            String itemType;
+            if (workstationId == 9L) {
+                itemType = "PART";
+            } else if (workstationId == 8L) {
+                itemType = "MODULE";
+            } else {
+                itemType = "PRODUCT";
+            }
             
             String url = inventoryServiceUrl + "/api/stock/workstation/" + workstationId
                     + "/item?itemType=" + itemType + "&itemId=" + itemId;
@@ -100,9 +108,17 @@ public class InventoryService {
             String url = inventoryServiceUrl + "/api/stock/adjust";
             
             // Determine item type based on workstation
+            // Parts Supply Warehouse (ID 9) deals with PARTS
             // Modules Supermarket (ID 8) deals with MODULES
             // Plant Warehouse (ID 7) deals with PRODUCTS
-            String itemType = (workstationId == 8L) ? "MODULE" : "PRODUCT";
+            String itemType;
+            if (workstationId == 9L) {
+                itemType = "PART";
+            } else if (workstationId == 8L) {
+                itemType = "MODULE";
+            } else {
+                itemType = "PRODUCT";
+            }
             
             Map<String, Object> request = new HashMap<>();
             request.put("workstationId", workstationId);

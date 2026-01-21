@@ -26,6 +26,7 @@ public class WarehouseOrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(WarehouseOrderService.class);
     private static final Long PLANT_WAREHOUSE_WORKSTATION_ID = 7L;
+    private static final Long MODULES_SUPERMARKET_WORKSTATION_ID = 8L;
     private static final Long FINAL_ASSEMBLY_WORKSTATION_ID = 6L;
     private static final String WAREHOUSE_AUDIT_SOURCE = "WAREHOUSE";
 
@@ -35,19 +36,22 @@ public class WarehouseOrderService {
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderAuditService orderAuditService;
     private final AssemblyControlOrderService assemblyControlOrderService;
+    private final MasterdataService masterdataService;
 
     public WarehouseOrderService(WarehouseOrderRepository warehouseOrderRepository,
                                  InventoryService inventoryService,
                                  ProductionOrderService productionOrderService,
                                  CustomerOrderRepository customerOrderRepository,
                                  OrderAuditService orderAuditService,
-                                 AssemblyControlOrderService assemblyControlOrderService) {
+                                 AssemblyControlOrderService assemblyControlOrderService,
+                                 MasterdataService masterdataService) {
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.inventoryService = inventoryService;
         this.productionOrderService = productionOrderService;
         this.customerOrderRepository = customerOrderRepository;
         this.orderAuditService = orderAuditService;
         this.assemblyControlOrderService = assemblyControlOrderService;
+        this.masterdataService = masterdataService;
     }
 
     /**
@@ -159,41 +163,124 @@ public class WarehouseOrderService {
         orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLMENT_STARTED",
             "Warehouse order fulfillment started: " + order.getWarehouseOrderNumber());
 
-        // STEP 1: Check which items are available at Modules Supermarket (workstation 8)
-        boolean allItemsAvailable = order.getWarehouseOrderItems().stream()
-                .allMatch(item -> inventoryService.checkStock(
-                        order.getFulfillingWorkstationId(),
-                        item.getItemId(),
-                        item.getRequestedQuantity()
-                ));
+        // STEP 1: Resolve module requirements for all products in this warehouse order
+        // Warehouse order items have itemType="PRODUCT" - need to resolve to modules
+        Map<Long, Integer> aggregatedModuleRequirements = new HashMap<>();
+        
+        for (WarehouseOrderItem item : order.getWarehouseOrderItems()) {
+            if ("PRODUCT".equals(item.getItemType())) {
+                // Get module requirements for this product
+                Map<Long, Integer> moduleReqs = masterdataService.getModuleRequirementsForProduct(
+                    item.getItemId(), 
+                    item.getRequestedQuantity()
+                );
+                
+                // Aggregate module requirements
+                for (Map.Entry<Long, Integer> entry : moduleReqs.entrySet()) {
+                    aggregatedModuleRequirements.merge(entry.getKey(), entry.getValue(), Integer::sum);
+                }
+                
+                logger.info("  Product {} (qty {}) requires {} different modules", 
+                    item.getItemName(), item.getRequestedQuantity(), moduleReqs.size());
+            } else {
+                logger.warn("Warehouse order item is not PRODUCT type: {} - cannot resolve modules", item.getItemType());
+            }
+        }
+        
+        logger.info("Total module requirements: {} different modules", aggregatedModuleRequirements.size());
+        
+        // STEP 2: Check if Modules Supermarket has all required modules
+        boolean allModulesAvailable = inventoryService.checkModulesAvailability(aggregatedModuleRequirements);
 
-        if (allItemsAvailable) {
-            // SCENARIO A: All items available - Direct fulfillment
-            logger.info("Scenario A: All items available in Modules Supermarket - Direct fulfillment");
-            return fulfillAllItems(order);
+        if (allModulesAvailable) {
+            // SCENARIO A: All modules available - Debit modules, create Final Assembly orders
+            logger.info("Scenario A: All required modules available in Modules Supermarket - Direct fulfillment");
+            return fulfillAllItemsWithModules(order, aggregatedModuleRequirements);
         } else {
-            // Check if ANY items are available
-            boolean anyItemsAvailable = order.getWarehouseOrderItems().stream()
-                    .anyMatch(item -> inventoryService.checkStock(
-                            order.getFulfillingWorkstationId(),
-                            item.getItemId(),
-                            item.getRequestedQuantity()
-                    ));
-
-            if (anyItemsAvailable) {
-                // SCENARIO B: Partial items available - Partial fulfillment + Auto-create production order
-                logger.info("Scenario B: Partial items available in Modules Supermarket");
+            // Check if ANY modules are available
+            int availableCount = 0;
+            for (Map.Entry<Long, Integer> moduleReq : aggregatedModuleRequirements.entrySet()) {
+                if (inventoryService.checkStock(MODULES_SUPERMARKET_WORKSTATION_ID, moduleReq.getKey(), moduleReq.getValue())) {
+                    availableCount++;
+                }
+            }
+            
+            if (availableCount > 0 && availableCount < aggregatedModuleRequirements.size()) {
+                // SCENARIO B: Some modules available - Partial fulfillment + Auto-create production order
+                logger.info("Scenario B: {} of {} modules available in Modules Supermarket", availableCount, aggregatedModuleRequirements.size());
                 return fulfillPartialAndTriggerProduction(order);
             } else {
-                // SCENARIO C: No items available - Auto-create production order for all
-                logger.info("Scenario C: No items available in Modules Supermarket - Creating production order for complete order");
+                // SCENARIO C: No modules available - Auto-create production order for all
+                logger.info("Scenario C: No modules available in Modules Supermarket - Creating production order");
                 return fulfillNoneAndTriggerProduction(order);
             }
         }
     }
 
     /**
-     * Scenario A: All items available - Deduct from Modules Supermarket, complete order
+     * Scenario A: All modules available - Debit required modules, create Final Assembly orders
+     * This is the NEW CORRECT implementation that debits MODULES not PRODUCTS
+     */
+    private WarehouseOrderDTO fulfillAllItemsWithModules(WarehouseOrder order, Map<Long, Integer> moduleRequirements) {
+        logger.info("Fulfilling warehouse order {} by debiting {} modules", order.getWarehouseOrderNumber(), moduleRequirements.size());
+
+        boolean allModulesDebited = true;
+        
+        // Debit each required module from Modules Supermarket (WS-8)
+        for (Map.Entry<Long, Integer> moduleReq : moduleRequirements.entrySet()) {
+            Long moduleId = moduleReq.getKey();
+            Integer quantity = moduleReq.getValue();
+            
+            try {
+                // Debit module inventory at Modules Supermarket (WS-8)
+                // updateStock will automatically use "MODULE" itemType for workstation 8
+                boolean debited = inventoryService.updateStock(
+                    MODULES_SUPERMARKET_WORKSTATION_ID,  // workstation 8
+                    moduleId,                             // module ID
+                    quantity                              // quantity (will be converted to negative delta)
+                );
+                
+                if (debited) {
+                    logger.info("  ✓ Debited module {} qty {} from Modules Supermarket", moduleId, quantity);
+                } else {
+                    allModulesDebited = false;
+                    logger.error("  ✗ Failed to debit module {} qty {}", moduleId, quantity);
+                }
+            } catch (Exception e) {
+                allModulesDebited = false;
+                logger.error("  ✗ Error debiting module {}: {}", moduleId, e.getMessage());
+            }
+        }
+        
+        if (allModulesDebited) {
+            // Mark warehouse order items as fulfilled
+            for (WarehouseOrderItem item : order.getWarehouseOrderItems()) {
+                item.setFulfilledQuantity(item.getRequestedQuantity());
+            }
+            
+            // Mark warehouse order as FULFILLED
+            order.setStatus("FULFILLED");
+            logger.info("Warehouse order {} fulfilled - modules debited, creating Final Assembly orders", order.getWarehouseOrderNumber());
+            
+            // CREATE FINAL ASSEMBLY ORDERS (Proper Scenario 2 workflow)
+            // Modules debited from Modules Supermarket, now Final Assembly needs to assemble products
+            // Final Assembly completion will credit Plant Warehouse
+            createFinalAssemblyOrdersFromWarehouseOrder(order);
+            
+            orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLED",
+                    "Modules fulfilled, Final Assembly orders created - awaiting assembly completion");
+        } else {
+            order.setStatus("PARTIALLY_FULFILLED");
+            logger.warn("Warehouse order {} partially fulfilled due to inventory errors", order.getWarehouseOrderNumber());
+            orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "PARTIAL_FULFILLMENT",
+                    "Some modules could not be debited - check inventory logs");
+        }
+
+        return mapToDTO(warehouseOrderRepository.save(order));
+    }
+
+    /**
+     * Scenario A (DEPRECATED): All items available - Deduct from Modules Supermarket, complete order
      * PROPER Scenario 2: Create AssemblyControlOrders for Final Assembly station
      * Final Assembly will credit Plant Warehouse when they complete their work
      */
@@ -388,7 +475,10 @@ public class WarehouseOrderService {
                                 "Check product quality and specifications",
                                 "Perform final product testing",
                                 "Package for Plant Warehouse delivery",
-                                estimatedDuration
+                                estimatedDuration,
+                                productId,                         // itemId
+                                "PRODUCT",                         // itemType
+                                quantity                           // quantity
                         );
                         
                         logger.info("✓ Final Assembly order created for Product #{} ({}) qty {}", 

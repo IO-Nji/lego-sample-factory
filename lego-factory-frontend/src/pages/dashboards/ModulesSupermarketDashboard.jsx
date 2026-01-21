@@ -9,6 +9,7 @@ function ModulesSupermarketDashboard() {
   const { session } = useAuth();
   const [warehouseOrders, setWarehouseOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [fulfillmentInProgress, setFulfillmentInProgress] = useState({});
@@ -43,6 +44,7 @@ function ModulesSupermarketDashboard() {
   };
 
   useEffect(() => {
+    fetchModules(); // Fetch modules master data on mount
     if (session?.user?.workstation?.id) {
       fetchWarehouseOrders();
       fetchInventory();
@@ -86,6 +88,16 @@ function ModulesSupermarketDashboard() {
     } catch (err) {
       console.error("Failed to fetch inventory:", err);
       setInventory([]);
+    }
+  };
+
+  const fetchModules = async () => {
+    try {
+      const response = await api.get("/masterdata/modules");
+      setModules(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error("Failed to fetch modules:", err);
+      setModules([]);
     }
   };
 
@@ -349,11 +361,13 @@ function ModulesSupermarketDashboard() {
         items={[]}
         getStatusColor={getInventoryStatusColor}
         getItemName={(item) => {
-          if (item.itemName) {
-            const acronym = generateAcronym(item.itemName);
-            return `${acronym} (${item.itemName})`;
+          // Find module from fetched masterdata by itemId
+          const module = modules.find(m => m.id === item.itemId);
+          if (module?.name) {
+            const acronym = generateAcronym(module.name);
+            return `${acronym} (${module.name})`;
           }
-          return `${item.itemType} #${item.itemId}`;
+          return `MODULE #${item.itemId}`;
         }}
         headerColor="purple"
       />

@@ -8,18 +8,22 @@ import BaseOrderCard from './BaseOrderCard';
  * Implements smart button visibility logic (Scenario 1 & 2):
  * - PENDING: Only shows "Confirm" button
  * - CONFIRMED: Shows "Fulfill" (if enough stock) OR "Process" (if insufficient stock) + "Cancel"
- * - PROCESSING: Shows "Complete" button (after warehouse order fulfilled) + "Cancel"
+ * - PROCESSING: No action buttons (waiting for Final Assembly to complete and update status)
  * - COMPLETED: No action buttons
  * 
  * Scenario 1 (Enough Stock): PENDING → CONFIRMED → (Fulfill) → COMPLETED
- * Scenario 2 (Low Stock): PENDING → CONFIRMED → (Process) → PROCESSING → (Complete) → COMPLETED
+ * Scenario 2 (Low Stock): PENDING → CONFIRMED → (Process) → PROCESSING → (Final Assembly completes) → CONFIRMED → (Fulfill) → COMPLETED
+ * 
+ * Important: When order is PROCESSING, it means a warehouse order was created and Final Assembly
+ * is working on it. Once Final Assembly completes, it updates the customer order status back to
+ * CONFIRMED, at which point Plant Warehouse can fulfill it.
  * 
  * @param {Object} order - Order object with id, orderNumber, status, orderDate, orderItems
  * @param {Array} inventory - Current warehouse inventory for stock checking
  * @param {Function} onConfirm - Handler for confirming order
- * @param {Function} onFulfill - Handler for fulfilling order (Scenario 1: enough stock)
+ * @param {Function} onFulfill - Handler for fulfilling order (Scenario 1: enough stock, or after Final Assembly)
  * @param {Function} onProcess - Handler for processing order (Scenario 2: creates warehouse order)
- * @param {Function} onComplete - Handler for completing order (Scenario 2: after warehouse fulfilled)
+ * @param {Function} onComplete - Handler for completing order (DEPRECATED - not used in current flow)
  * @param {Function} onCancel - Handler for cancelling order
  * @param {boolean} isProcessing - Whether any action is in progress
  * @param {Function} getProductDisplayName - Function to format product names
@@ -45,9 +49,19 @@ function CustomerOrderCard({
     
     return order.orderItems.every(item => {
       const inventoryItem = inventory.find(
-        (inv) => inv.itemId === item.itemId || inv.itemId === item.id
+        (inv) => inv.itemType === item.itemType && inv.itemId === item.itemId
       );
       const stockQuantity = inventoryItem?.quantity || 0;
+      
+      console.log(`[CustomerOrderCard] Stock check for item ${item.itemId}:`, {
+        itemType: item.itemType,
+        itemId: item.itemId,
+        requestedQty: item.quantity,
+        availableStock: stockQuantity,
+        hasStock: stockQuantity >= item.quantity,
+        inventoryItem
+      });
+      
       return stockQuantity >= item.quantity;
     });
   };
@@ -88,11 +102,9 @@ function CustomerOrderCard({
         }
       
       case 'PROCESSING':
-        // After warehouse order is fulfilled, allow completion
-        return [
-          { label: 'Complete Order', variant: 'success', onClick: () => onComplete(order.id), show: true },
-          { label: 'Cancel', variant: 'danger', onClick: () => onCancel(order.id), show: true }
-        ];
+        // Order is being processed (warehouse order created, waiting for Final Assembly)
+        // No actions available - waiting for Final Assembly to complete and update status to CONFIRMED
+        return [];
       
       case 'COMPLETED':
       case 'CANCELLED':
@@ -120,7 +132,7 @@ function CustomerOrderCard({
   // Transform order items to BaseOrderCard format
   const transformedItems = order.orderItems?.map(item => {
     const inventoryItem = inventory.find(
-      (inv) => inv.itemId === item.itemId || inv.itemId === item.id
+      (inv) => inv.itemType === item.itemType && inv.itemId === item.itemId
     );
     const stockQuantity = inventoryItem?.quantity || 0;
     const statusColor = getInventoryStatusColor ? 
@@ -128,8 +140,8 @@ function CustomerOrderCard({
       (stockQuantity >= item.quantity ? '#059669' : '#dc2626');
     
     const productName = getProductDisplayName ? 
-      getProductDisplayName(item.itemId || item.id, item.itemType) : 
-      `Product #${item.itemId || item.id}`;
+      getProductDisplayName(item.itemId, item.itemType) : 
+      `Product #${item.itemId}`;
 
     const hasStock = stockQuantity >= item.quantity;
 

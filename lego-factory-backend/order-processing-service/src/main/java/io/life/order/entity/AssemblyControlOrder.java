@@ -39,6 +39,16 @@ public class AssemblyControlOrder {
     @Column(nullable = false)
     private String status; // ASSIGNED, IN_PROGRESS, COMPLETED, HALTED, ABANDONED
 
+    // Item being assembled (MODULE or PRODUCT_VARIANT)
+    @Column(nullable = false)
+    private Long itemId;
+
+    @Column(nullable = false, length = 50)
+    private String itemType; // MODULE or PRODUCT
+
+    @Column(nullable = false)
+    private Integer quantity;
+
     @Column(nullable = false)
     private LocalDateTime targetStartTime;
 
