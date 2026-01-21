@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
-import { DashboardLayout, Notification, ProductionControlOrderCard, StatCard } from "../../components";
+import { 
+  StandardDashboardLayout,
+  OrdersSection,
+  ActivityLog,
+  StatisticsGrid,
+  ProductionControlOrderCard 
+} from "../../components";
 import "../../styles/DashboardLayout.css";
 
 function ManufacturingDashboard() {
@@ -97,94 +103,65 @@ function ManufacturingDashboard() {
     }
   };
 
-  const statsCards = (
-    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-      <StatCard
-        value={controlOrders.length}
-        label="Total Orders"
-        variant="primary"
-      />
-      <StatCard
-        value={controlOrders.filter(o => o.status === 'ASSIGNED').length}
-        label="Assigned"
-        variant="warning"
-      />
-      <StatCard
-        value={controlOrders.filter(o => o.status === 'IN_PROGRESS').length}
-        label="In Progress"
-        variant="info"
-      />
-      <StatCard
-        value={controlOrders.filter(o => o.status === 'COMPLETED').length}
-        label="Completed"
-        variant="success"
-      />
-    </div>
+  const statsData = [
+    { value: controlOrders.length, label: 'Total Orders', variant: 'default', icon: '📦' },
+    { value: controlOrders.filter(o => o.status === 'ASSIGNED').length, label: 'Assigned', variant: 'warning', icon: '📝' },
+    { value: controlOrders.filter(o => o.status === 'IN_PROGRESS').length, label: 'In Progress', variant: 'info', icon: '⚙️' },
+    { value: controlOrders.filter(o => o.status === 'COMPLETED').length, label: 'Completed', variant: 'success', icon: '✅' },
+  ];
+
+  // Activity log rendering
+  const renderActivity = () => (
+    <ActivityLog 
+      notifications={notifications}
+      onClear={clearNotifications}
+    />
   );
 
-  const primaryContent = (
-    <div className="dashboard-box-content">
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        <label htmlFor="filterStatus" style={{ fontWeight: 500 }}>Filter by Status:</label>
-        <select 
-          id="filterStatus"
-          value={filterStatus} 
-          onChange={(e) => setFilterStatus(e.target.value)}
-          style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-        >
-          <option value="ALL">All Orders</option>
-          <option value="ASSIGNED">Assigned</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="COMPLETED">Completed</option>
-        </select>
-      </div>
-      
-      {loading && <p>Loading production orders...</p>}
-      {error && <div style={{ color: 'red', padding: '1rem', background: '#fee', borderRadius: '4px' }}>{error}</div>}
-      
-      {!loading && !error && filteredOrders.length === 0 && (
-        <div className="dashboard-empty-state">
-          <p className="dashboard-empty-state-title">No Production Orders</p>
-          <p className="dashboard-empty-state-text">
-            {filterStatus === "ALL" 
-              ? "No production orders assigned to this workstation yet" 
-              : `No orders with status: ${filterStatus}`}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-
-  const ordersSection = (
-    <div className="orders-grid">
-      {filteredOrders.map(order => (
+  // Production orders rendering using OrdersSection
+  const renderProductionOrders = () => (
+    <OrdersSection
+      title="Production Orders"
+      icon="🔧"
+      orders={controlOrders}
+      filterOptions={[
+        { value: 'ALL', label: 'All Orders' },
+        { value: 'ASSIGNED', label: 'Assigned' },
+        { value: 'IN_PROGRESS', label: 'In Progress' },
+        { value: 'COMPLETED', label: 'Completed' }
+      ]}
+      sortOptions={[
+        { value: 'orderNumber', label: 'Order Number' },
+        { value: 'status', label: 'Status' }
+      ]}
+      searchKeys={['controlOrderNumber']}
+      sortKey="controlOrderNumber"
+      renderCard={(order) => (
         <ProductionControlOrderCard
           key={order.id}
           order={order}
           onStart={() => handleStartProduction(order.id)}
           onComplete={() => handleCompleteProduction(order.id)}
         />
-      ))}
-    </div>
+      )}
+      emptyMessage="No production orders assigned to this workstation yet"
+      searchPlaceholder="Search by order number..."
+    />
   );
 
   return (
-    <DashboardLayout
+    <StandardDashboardLayout
       title="Manufacturing Workstation"
       subtitle={`Production orders for ${session?.user?.workstation?.name || 'Manufacturing'}`}
       icon="🔧"
-      layout="default"
-      statsCards={statsCards}
-      primaryContent={primaryContent}
-      secondaryContent={
-        <Notification 
-          notifications={notifications}
-          title="Manufacturing Activity"
-          maxVisible={5}
-          onClear={clearNotifications}
-        />
-      }
-      ordersSection={ordersSection}
+      activityContent={renderActivity()}
+      statsContent={<StatisticsGrid stats={statsData} />}
+      formContent={null}
+      contentGrid={renderProductionOrders()}
+      inventoryContent={null}
+      messages={{ error, success: null }}
+      onDismissError={() => setError(null)}
+      onDismissSuccess={() => {}}
     />
   );
 }

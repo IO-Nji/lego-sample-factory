@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../../api/api";
-import { StatCard, Button, Notification, PageHeader, WorkstationCard, StatisticsGrid } from "../../components";
+import { StatCard, Button, ActivityLog, PageHeader, WorkstationCard, StatisticsGrid } from "../../components";
 import PieChart from "../../components/PieChart";
 import BarChart from "../../components/BarChart";
 import "../../styles/Chart.css";
@@ -12,6 +12,7 @@ import "../../styles/DashboardLayout.css";
  * 
  * OPTIMIZATION: Uses shallow comparison to prevent unnecessary re-renders
  * Only updates state when data actually changes
+ * STANDARDIZED: Uses ActivityLog, StatisticsGrid, and custom layout for complex admin features
  */
 function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -397,7 +398,7 @@ function AdminDashboard() {
           flexDirection: 'column'
         }}>
           <div style={{ height: '100%', overflow: 'hidden' }}>
-            <Notification 
+            <ActivityLog 
               notifications={notifications}
               title="SYSTEM ACTIVITY LOG"
               maxVisible={10}
