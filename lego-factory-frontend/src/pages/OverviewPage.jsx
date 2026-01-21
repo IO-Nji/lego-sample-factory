@@ -1,11 +1,22 @@
 import { useAuth } from "../context/AuthContext.jsx";
 import PageHeader from "../components/PageHeader.jsx";
-import StatsCard from "../components/StatsCard.jsx";
+import { StatisticsGrid } from "../components";
 import Footer from "../components/Footer.jsx";
 import "../styles/OverviewPage.css";
 
 function OverviewPage() {
   const { session } = useAuth();
+
+  const statsData = [
+    { value: 'Online', label: 'System Status', variant: 'success', icon: '✓' },
+    { value: '-', label: 'Active Orders', variant: 'info', icon: '📦' },
+    { value: '-', label: 'Pending Tasks', variant: 'warning', icon: '⚠' },
+    { value: '0', label: 'Notifications', variant: 'default', icon: '🔔' },
+    { value: '-', label: 'Total Users', variant: 'info', icon: '👥' },
+    { value: '-', label: 'Workstations', variant: 'default', icon: '🏭' },
+    { value: '-', label: 'Inventory Items', variant: 'info', icon: '📊' },
+    { value: '-', label: 'Completed Today', variant: 'success', icon: '✅' },
+  ];
 
   return (
     <div className="overview-page">
@@ -15,33 +26,7 @@ function OverviewPage() {
       />
 
       <div className="overview-grid">
-        <StatsCard
-          title="System Status"
-          value="Online"
-          icon="✓"
-          variant="success"
-        />
-        
-        <StatsCard
-          title="Active Orders"
-          value="-"
-          icon="📦"
-          variant="info"
-        />
-        
-        <StatsCard
-          title="Pending Tasks"
-          value="-"
-          icon="⚠"
-          variant="warning"
-        />
-        
-        <StatsCard
-          title="Notifications"
-          value="0"
-          icon="🔔"
-          variant="default"
-        />
+        <StatisticsGrid stats={statsData} />
       </div>
 
       <div className="placeholder-section">

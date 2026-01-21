@@ -1,0 +1,206 @@
+/* Standardized Dashboard Layout - Two Row Design */
+
+.dashboardContainer {
+  width: 100%;
+  max-width: 100%;
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.dashboardHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.dashboardIcon {
+  font-size: 2rem;
+}
+
+.dashboardHeaderContent {
+  flex: 1;
+}
+
+.dashboardTitle {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.dashboardSubtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: var(--spacing-1) 0 0 0;
+}
+
+/* Top Row - 3 Columns */
+.topRow {
+  display: grid;
+  grid-template-columns: 1fr auto 20%;
+  gap: var(--spacing-4);
+  align-items: center;
+  height: 300px;
+}
+
+.activityColumn {
+  min-width: 0; /* Allow shrinking */
+  height: 300px;
+}
+
+.statsColumn {
+  width: fit-content;
+  min-width: 350px;
+  max-width: 350px;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.formColumn {
+  width: 100%;
+  height: 300px;
+}
+
+/* Bottom Row - 2 Columns */
+.bottomRow {
+  display: grid;
+  grid-template-columns: 80% 20%;
+  gap: var(--spacing-4);
+  align-items: start;
+}
+
+.ordersColumn {
+  min-width: 0; /* Allow shrinking */
+}
+
+.inventoryColumn {
+  width: 100%;
+  min-width: 0;
+}
+
+.filterColumn {
+  width: 100%;
+  min-width: 280px;
+}
+
+/* Card Styling */
+.card {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+  box-shadow: var(--shadow-sm);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-3);
+  padding-bottom: var(--spacing-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cardTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.cardContent {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Orders Grid */
+.ordersGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-8);
+  justify-content: start;
+}
+
+/* Filter Form Styling */
+.filterForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.filterLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.filterButtonGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.filterButton {
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterButton:hover {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-primary);
+}
+
+.filterButton.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .topRow {
+    grid-template-columns: 1fr;
+  }
+  
+  .bottomRow {
+    grid-template-columns: 1fr;
+  }
+  
+  .statsColumn,
+  .formColumn,
+  .filterColumn {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .ordersGrid {
+    grid-template-columns: 1fr;
+  }
+}

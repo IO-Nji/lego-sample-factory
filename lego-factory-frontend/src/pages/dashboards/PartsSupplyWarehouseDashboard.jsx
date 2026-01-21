@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
-import { DashboardLayout, StatCard, Button, Card, Badge } from "../../components";
+import { DashboardLayout, StatisticsGrid, Button, Card, Badge } from "../../components";
 import "../../styles/DashboardLayout.css";
 
 function PartsSupplyWarehouseDashboard() {
@@ -143,23 +143,27 @@ function PartsSupplyWarehouseDashboard() {
   };
 
   // Render Stats Cards
-  const renderStatsCards = () => {
+  // Stats data for StatisticsGrid
+  const statsData = (() => {
     const totalOrders = supplyOrders.length;
     const pendingOrders = supplyOrders.filter(o => o.status === "PENDING").length;
     const inProgressOrders = supplyOrders.filter(o => o.status === "IN_PROGRESS").length;
     const fulfilledOrders = supplyOrders.filter(o => o.status === "FULFILLED").length;
+    const rejectedOrders = supplyOrders.filter(o => o.status === "REJECTED").length;
     const lowStockParts = partsStock.filter(p => p.quantity < 50).length;
+    const totalParts = partsStock.reduce((sum, p) => sum + p.quantity, 0);
 
-    return (
-      <>
-        <StatCard value={totalOrders} label="Total Orders" icon="📦" variant="primary" />
-        <StatCard value={pendingOrders} label="Pending" icon="⏳" variant="warning" />
-        <StatCard value={inProgressOrders} label="In Progress" icon="🔄" variant="info" />
-        <StatCard value={fulfilledOrders} label="Fulfilled" icon="✓" variant="success" />
-        <StatCard value={lowStockParts} label="Low Stock Parts" icon="⚠️" variant="danger" threshold={5} thresholdType="high" />
-      </>
-    );
-  };
+    return [
+      { value: totalOrders, label: 'Total Orders', variant: 'default', icon: '📦' },
+      { value: pendingOrders, label: 'Pending', variant: 'pending', icon: '⏳' },
+      { value: inProgressOrders, label: 'In Progress', variant: 'info', icon: '🔄' },
+      { value: fulfilledOrders, label: 'Fulfilled', variant: 'success', icon: '✅' },
+      { value: rejectedOrders, label: 'Rejected', variant: 'danger', icon: '❌' },
+      { value: lowStockParts, label: 'Low Stock Parts', variant: 'warning', icon: '⚠️' },
+      { value: partsStock.length, label: 'Part Types', variant: 'info', icon: '🔧' },
+      { value: totalParts, label: 'Total Parts', variant: 'default', icon: '📊' },
+    ];
+  })();
 
   // Render Supply Orders Section
   const renderSupplyOrdersSection = () => (
@@ -527,7 +531,7 @@ function PartsSupplyWarehouseDashboard() {
         subtitle={`Manage parts supply orders and inventory${session?.user?.workstation ? ` | ${session.user.workstation.name}` : ''}`}
         icon="📦"
         layout="default"
-        statsCards={renderStatsCards()}
+        statsCards={<StatisticsGrid stats={statsData} />}
         primaryContent={renderPartsStockSection()}
         ordersSection={renderSupplyOrdersSection()}
         infoBox={renderInfoBox()}

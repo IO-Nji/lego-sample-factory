@@ -3,7 +3,7 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import ErrorNotification from "../components/ErrorNotification";
 import PageHeader from "../components/PageHeader";
-import StatsCard from "../components/StatsCard";
+import { StatisticsGrid } from "../components";
 import { getErrorMessage } from "../utils/errorHandler";
 import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
@@ -260,30 +260,31 @@ function InventoryManagementPage() {
     return allInventory[selectedWorkstationId] || [];
   };
 
-  const renderOverviewTab = () => (
-    <div className="overview-tab">
-      <h3>Inventory Statistics</h3>
-      <div className="stats-grid">
-        <StatsCard value={totalInventoryItems} label="Total Items" variant="default" />
-        <StatsCard value={workstations.length} label="Workstations" variant="default" />
-        <StatsCard 
-          value={lowStockItems.length} 
-          label="Low Stock Items" 
-          variant={lowStockItems.length > 0 ? "pending" : "completed"} 
-        />
-        <StatsCard 
-          value={Object.keys(allInventory).length} 
-          label="Active Locations" 
-          variant="default" 
-        />
-      </div>
+  const renderOverviewTab = () => {
+    const statsData = [
+      { value: totalInventoryItems, label: 'Total Items', variant: 'default', icon: '📊' },
+      { value: workstations.length, label: 'Workstations', variant: 'default', icon: '🏭' },
+      { value: lowStockItems.length, label: 'Low Stock Items', variant: lowStockItems.length > 0 ? 'warning' : 'success', icon: '⚠️' },
+      { value: Object.keys(allInventory).length, label: 'Active Locations', variant: 'default', icon: '📍' },
+      { value: recentLedger.length, label: 'Recent Transactions', variant: 'info', icon: '📋' },
+      { value: 0, label: 'Pending Adjustments', variant: 'default', icon: '⏳' },
+      { value: 0, label: 'Critical Stock', variant: 'danger', icon: '🚨' },
+      { value: 0, label: 'Overstock Items', variant: 'info', icon: '📦' },
+    ];
 
-      {lowStockItems.length > 0 && (
-        <div className="dashboard-section" style={{ marginTop: '1.5rem' }}>
-          <h3>⚠️ Low Stock Alert</h3>
-          <table className="products-table">
-            <thead>
-              <tr>
+    return (
+      <div className="overview-tab">
+        <h3>Inventory Statistics</h3>
+        <div className="stats-grid">
+          <StatisticsGrid stats={statsData} />
+        </div>
+
+        {lowStockItems.length > 0 && (
+          <div className="dashboard-section" style={{ marginTop: '1.5rem' }}>
+            <h3>⚠️ Low Stock Alert</h3>
+            <table className="products-table">
+              <thead>
+                <tr>
                 <th>Workstation</th>
                 <th>Item Type</th>
                 <th>Item ID</th>
@@ -316,12 +317,12 @@ function InventoryManagementPage() {
             </tbody>
           </table>
         </div>
-      )}
+        )}
 
-      <div className="all-workstations-section" style={{ marginTop: '1.5rem' }}>
-        <h3>📦 All Workstations Inventory Summary</h3>
-        <div className="workstations-grid">
-          {workstations.map(ws => {
+        <div className="all-workstations-section" style={{ marginTop: '1.5rem' }}>
+          <h3>📦 All Workstations Inventory Summary</h3>
+          <div className="workstations-grid">
+            {workstations.map(ws => {
             const wsInventory = allInventory[ws.id] || [];
             const wsTotal = wsInventory.reduce((sum, item) => sum + (item.quantity || 0), 0);
             return (
@@ -347,9 +348,10 @@ function InventoryManagementPage() {
             );
           })}
         </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderLedgerTab = () => (
     <div className="ledger-tab">

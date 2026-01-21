@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
-import { DashboardLayout, StatsCard, InventoryTable, Notification } from "../../components";
+import axios from 'axios';
+import { StandardDashboardLayout, StatisticsGrid, InventoryTable, ActivityLog, OrdersSection } from "../../components";
 import WarehouseOrderCard from "../../components/WarehouseOrderCard";
 import { getInventoryStatusColor, generateAcronym, getProductDisplayName } from "../../utils/dashboardHelpers";
 
 function ModulesSupermarketDashboard() {
   const { session } = useAuth();
   const [warehouseOrders, setWarehouseOrders] = useState([]);
-  const [filteredOrders, setFilteredOrders] = useState([]);
-  const [filterStatus, setFilterStatus] = useState("ALL");
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -58,18 +57,6 @@ function ModulesSupermarketDashboard() {
     return () => clearInterval(interval);
   }, [session?.user?.workstation?.id]);
 
-  useEffect(() => {
-    applyFilter(warehouseOrders, filterStatus);
-  }, [filterStatus, warehouseOrders]);
-
-  const applyFilter = (ordersList, status) => {
-    if (status === "ALL") {
-      setFilteredOrders(ordersList);
-    } else {
-      setFilteredOrders(ordersList.filter(order => order.status === status));
-    }
-  };
-
   const fetchWarehouseOrders = async () => {
     try {
       const workstationId = session?.user?.workstation?.id || 8;
@@ -78,16 +65,13 @@ function ModulesSupermarketDashboard() {
       console.log('[WarehouseOrders] Fetched data:', JSON.stringify(data, null, 2));
       if (Array.isArray(data)) {
         setWarehouseOrders(data);
-        applyFilter(data, filterStatus);
         setError(null);
       } else {
         setWarehouseOrders([]);
-        setFilteredOrders([]);
       }
     } catch (err) {
       if (err.response?.status === 404) {
         setWarehouseOrders([]);
-        setFilteredOrders([]);
         setError(null);
       } else {
         setError("Failed to load warehouse orders: " + (err.response?.data?.message || err.message));
@@ -270,31 +254,17 @@ function ModulesSupermarketDashboard() {
     return '#10b981';
   };
 
-  // Render Stats Cards
-  const renderStatsCards = () => (
-    <>
-      <StatsCard 
-        value={warehouseOrders.length} 
-        label="Total Orders" 
-        variant="default"
-      />
-      <StatsCard 
-        value={warehouseOrders.filter(o => o.status === "PENDING").length} 
-        label="Pending" 
-        variant="pending"
-      />
-      <StatsCard 
-        value={warehouseOrders.filter(o => o.status === "PROCESSING").length} 
-        label="Processing" 
-        variant="processing"
-      />
-      <StatsCard 
-        value={warehouseOrders.filter(o => o.status === "FULFILLED").length} 
-        label="Fulfilled" 
-        variant="completed"
-      />
-    </>
-  );
+  // Stats data for StatisticsGrid
+  const statsData = [
+    { value: warehouseOrders.length, label: 'Total Orders', variant: 'default', icon: '📦' },
+    { value: warehouseOrders.filter(o => o.status === "PENDING").length, label: 'Pending', variant: 'pending', icon: '⏳' },
+    { value: warehouseOrders.filter(o => o.status === "PROCESSING").length, label: 'Processing', variant: 'processing', icon: '⚙️' },
+    { value: warehouseOrders.filter(o => o.status === "FULFILLED").length, label: 'Fulfilled', variant: 'success', icon: '✅' },
+    { value: inventory.length, label: 'Module Types', variant: 'info', icon: '🔧' },
+    { value: inventory.reduce((sum, item) => sum + item.quantity, 0), label: 'Total Stock', variant: 'default', icon: '📊' },
+    { value: inventory.filter(item => item.quantity < 10).length, label: 'Low Stock', variant: 'warning', icon: '⚠️' },
+    { value: inventory.filter(item => item.quantity === 0).length, label: 'Out of Stock', variant: 'danger', icon: '🚫' },
+  ];
 
   // Check if production order is needed for a warehouse order
   // ARCHITECTURE:
@@ -391,109 +361,88 @@ function ModulesSupermarketDashboard() {
     );
   };
 
-  // Render Warehouse Orders Section
+  // Render Warehouse Orders Section using standardized OrdersSection
   const renderWarehouseOrdersSection = () => (
-    <>
-      <div className="dashboard-box-header dashboard-box-header-orange">
-        <h2 className="dashboard-box-header-title">📋 Warehouse Orders</h2>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          <select 
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            style={{ 
-              padding: "0.5rem", 
-              borderRadius: "0.375rem", 
-              border: "1px solid #d1d5db",
-              fontSize: "0.875rem"
-            }}
-          >
-            <option value="ALL">All Orders</option>
-            <option value="PENDING">Pending</option>
-            <option value="CONFIRMED">Confirmed</option>
-            <option value="PROCESSING">Processing</option>
-            <option value="FULFILLED">Fulfilled</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
-          <button 
-            onClick={fetchWarehouseOrders} 
-            disabled={loading} 
-            className="dashboard-box-header-action"
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
-      </div>
-      <div className="dashboard-box-content">
-        {Array.isArray(filteredOrders) && filteredOrders.length > 0 ? (
-          <div className="dashboard-orders-grid">
-            {filteredOrders.map((order) => (
-              <WarehouseOrderCard
-                key={order.id}
-                order={order}
-                onConfirm={handleConfirmOrder}
-                onFulfill={handleFulfillOrder}
-                onCancel={handleCancel}
-                onCreateProductionOrder={handleCreateProductionOrder}
-                  onSelectPriority={handleSelectPriority}
-                  needsProduction={checkIfProductionNeeded(order)}
-                  isProcessing={fulfillmentInProgress[order.id]}
-                  isConfirming={confirmationInProgress[order.id]}
-                  showPrioritySelection={prioritySelectionMode[order.id]}
-                  creatingOrder={creatingProductionOrder}
-                  notificationMessage={orderMessages[order.id]}
-                  getProductDisplayName={getProductDisplayName}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="dashboard-empty-state">
-            <p className="dashboard-empty-state-title">No warehouse orders found</p>
-            <p className="dashboard-empty-state-text">
-              {filterStatus !== "ALL" 
-                ? `No orders with status: ${filterStatus}` 
-                : "Orders will appear here when created"}
-            </p>
-          </div>
-        )}
-      </div>
-    </>
+    <OrdersSection
+      title="Warehouse Orders"
+      icon="📋"
+      orders={warehouseOrders}
+      filterOptions={[
+        { value: 'ALL', label: 'All Orders' },
+        { value: 'PENDING', label: 'Pending' },
+        { value: 'CONFIRMED', label: 'Confirmed' },
+        { value: 'PROCESSING', label: 'Processing' },
+        { value: 'FULFILLED', label: 'Fulfilled' },
+        { value: 'CANCELLED', label: 'Cancelled' }
+      ]}
+      sortOptions={[
+        { value: 'warehouseOrderNumber', label: 'Order Number' },
+        { value: 'orderDate', label: 'Order Date' },
+        { value: 'status', label: 'Status' }
+      ]}
+      renderCard={(order) => (
+        <WarehouseOrderCard
+          key={order.id}
+          order={order}
+          onConfirm={handleConfirmOrder}
+          onFulfill={handleFulfillOrder}
+          onCancel={handleCancel}
+          onCreateProductionOrder={handleCreateProductionOrder}
+          onSelectPriority={handleSelectPriority}
+          needsProduction={checkIfProductionNeeded(order)}
+          isProcessing={fulfillmentInProgress[order.id]}
+          isConfirming={confirmationInProgress[order.id]}
+          showPrioritySelection={prioritySelectionMode[order.id]}
+          creatingOrder={creatingProductionOrder}
+          notificationMessage={orderMessages[order.id]}
+          getProductDisplayName={getProductDisplayName}
+        />
+      )}
+      searchPlaceholder="Search by order number..."
+      emptyMessage="No warehouse orders found"
+    />
   );
 
-  // Render Info Box
+  // Render Info Box - Compact version to fit row height
   const renderInfoBox = () => (
-    <div className="dashboard-info-box">
-      <h3 style={{ fontWeight: 'bold', fontSize: '1rem', marginBottom: '1rem', color: '#9a3412' }}>
-        About Warehouse Orders & Production
+    <div className="dashboard-info-box" style={{ padding: '0.75rem' }}>
+      <h3 style={{ fontWeight: 'bold', fontSize: '0.875rem', marginBottom: '0.5rem', color: '#9a3412' }}>
+        Operations Guide
       </h3>
-      <ul style={{ marginLeft: '1.5rem', fontSize: '0.875rem', lineHeight: '1.75', color: '#9a3412' }}>
-        <li><strong>SCENARIO 2:</strong> Plant Warehouse requests items from Modules Supermarket</li>
-        <li><strong>Fulfill Order:</strong> Complete warehouse orders if sufficient module stock available</li>
-        <li><strong>Create Production Order:</strong> If modules are out of stock, create production order</li>
-        <li><strong>Module Inventory:</strong> View current stock levels for all modules</li>
-        <li>Orders are automatically fetched every 15 seconds for real-time updates</li>
+      <ul style={{ marginLeft: '1rem', fontSize: '0.8125rem', lineHeight: '1.4', color: '#9a3412', marginBottom: '0' }}>
+        <li><strong>Fulfill:</strong> Complete orders with available modules</li>
+        <li><strong>Production:</strong> Create order if modules insufficient</li>
+        <li><strong>Priority:</strong> Select urgency level for production</li>
       </ul>
     </div>
   );
 
+  // Render Activity Log using standardized ActivityLog component
+  const renderActivity = () => (
+    <ActivityLog
+      title="Supermarket Activity"
+      icon="📢"
+      notifications={notifications}
+      onClear={clearNotifications}
+      maxVisible={50}
+      emptyMessage="No recent activity"
+    />
+  );
+
+  // Render Statistics
+  const renderStats = () => <StatisticsGrid stats={statsData} />;
+
   return (
     <>
-      <DashboardLayout
-        title="Modules Supermarket Dashboard"
-        subtitle={`Manage warehouse orders and module inventory${session?.user?.workstationId ? ` | Workstation ID: ${session.user.workstationId}` : ''}`}
+      <StandardDashboardLayout
+        title="Modules Supermarket"
+        subtitle="Module Warehouse Operations | WS-8"
         icon="🏭"
-        layout="compact"
-        statsCards={renderStatsCards()}
-        primaryContent={renderModuleInventory()}
-        notifications={
-          <Notification 
-            notifications={notifications}
-            title="Supermarket Activity"
-            maxVisible={5}
-            onClear={clearNotifications}
-          />
-        }
-        ordersSection={renderWarehouseOrdersSection()}
-        infoBox={renderInfoBox()}
+        activityContent={renderActivity()}
+        statsContent={renderStats()}
+        formContent={renderInfoBox()}
+        contentGrid={renderWarehouseOrdersSection()}
+        inventoryContent={renderModuleInventory()}
       />
 
       {/* Production Order Creation Modal */}

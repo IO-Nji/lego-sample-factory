@@ -2,17 +2,27 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useDashboardRefresh } from "../../context/DashboardRefreshContext";
 import api from "../../api/api";
-import { DashboardLayout, StatsCard, Notification } from "../../components";
+import { 
+  StandardDashboardLayout, 
+  StatisticsGrid, 
+  Notification, 
+  OrdersSection,
+  InventoryTable,
+  FormCard,
+  ActivityLog
+} from "../../components";
 import CustomerOrderCard from "../../components/CustomerOrderCard";
 import { getProductDisplayName, getInventoryStatusColor } from "../../utils/dashboardHelpers";
+import styles from "../../components/StandardDashboardLayout.module.css";
 
 function PlantWarehouseDashboard() {
   const { session } = useAuth();
   const [products, setProducts] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState({});
   const [orders, setOrders] = useState([]);
-  const [filteredOrders, setFilteredOrders] = useState([]);
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("orderDate");
   const [inventory, setInventory] = useState([]);
   const [workstations, setWorkstations] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -56,16 +66,9 @@ function PlantWarehouseDashboard() {
     return () => clearInterval(inventoryInterval);
   }, [session?.user?.workstation?.id]);
 
-  useEffect(() => {
-    applyFilter(orders, filterStatus);
-  }, [filterStatus, orders]);
-
   const applyFilter = (ordersList, status) => {
-    if (status === "ALL") {
-      setFilteredOrders(ordersList);
-    } else {
-      setFilteredOrders(ordersList.filter(order => order.status === status));
-    }
+    // Kept for backward compatibility - OrdersSection handles filtering now
+    return ordersList;
   };
 
   const fetchProducts = async () => {
@@ -234,30 +237,109 @@ function PlantWarehouseDashboard() {
     }
   };
 
-  // Render Stats Cards
-  const renderStatsCards = () => (
-    <>
-      <StatsCard 
-        value={orders.length} 
-        label="Total Orders" 
-        variant="default"
-      />
-      <StatsCard 
-        value={orders.filter(o => o.status === "PENDING").length} 
-        label="Pending" 
-        variant="pending"
-      />
-      <StatsCard 
-        value={orders.filter(o => o.status === "CONFIRMED" || o.status === "PROCESSING").length} 
-        label="In Progress" 
-        variant="processing"
-      />
-      <StatsCard 
-        value={orders.filter(o => o.status === "COMPLETED" || o.status === "DELIVERED").length} 
-        label="Completed" 
-        variant="completed"
-      />
-    </>
+  // Stats data for StatisticsGrid
+  const statsData = [
+    { value: orders.length, label: 'Total Orders', variant: 'default', icon: '📦' },
+    { value: orders.filter(o => o.status === "PENDING").length, label: 'Pending', variant: 'pending', icon: '⏳' },
+    { value: orders.filter(o => o.status === "PROCESSING").length, label: 'Processing', variant: 'processing', icon: '⚙️' },
+    { value: orders.filter(o => o.status === "COMPLETED").length, label: 'Completed', variant: 'success', icon: '✅' },
+    { value: inventory.filter(item => item.itemType === "PRODUCT").length, label: 'Product Types', variant: 'info', icon: '🏷️' },
+    { value: inventory.filter(item => item.itemType === "PRODUCT").reduce((sum, item) => sum + (item.quantity || 0), 0), label: 'Total Stock', variant: 'default', icon: '📊' },
+    { value: inventory.filter(item => item.quantity < 5).length, label: 'Low Stock', variant: 'warning', icon: '⚠️' },
+    { value: inventory.filter(item => item.quantity === 0).length, label: 'Out of Stock', variant: 'danger', icon: '🚫' },
+  ];
+
+  // Render Activity/Notifications using ActivityLog component
+  const renderActivity = () => (
+    <ActivityLog
+      title="Warehouse Activity"
+      icon="📢"
+      notifications={notifications}
+      onClear={clearNotifications}
+      maxVisible={50}
+      emptyMessage="No recent activity"
+    />
+  );
+
+  // Render Statistics Grid for new layout
+  const renderStats = () => (
+    <StatisticsGrid stats={statsData} />
+  );
+
+  // Render Create Order Form using FormCard component
+  const renderFormCompact = () => (
+    <FormCard
+      title="New Order"
+      icon="➕"
+      items={products}
+      selectedItems={selectedProducts}
+      onItemChange={(itemId, quantity) => {
+        setSelectedProducts({
+          ...selectedProducts,
+          [itemId]: quantity
+        });
+      }}
+      onSubmit={handleCreateOrder}
+      loading={loading}
+      buttonText={loading ? "Creating..." : "Create Order"}
+      getItemDisplayName={(item) => item.name}
+      emptyMessage="No products"
+      columnHeaders={{ item: 'Product', quantity: 'Qty' }}
+    />
+  );
+
+  // Render Inventory Table using InventoryTable component
+  const renderInventory = () => (
+    <InventoryTable
+      title="Inventory"
+      icon="📦"
+      inventory={inventory}
+      itemType="PRODUCT"
+      getItemDisplayName={getProductDisplayName}
+      getStatusColor={getInventoryStatusColor}
+      emptyMessage="No inventory items"
+      columnHeaders={{ item: 'Product', quantity: 'Qty' }}
+    />
+  );
+
+  // Render Orders Grid using OrdersSection component
+  const renderOrdersGrid = () => (
+    <OrdersSection
+      title="Customer Orders"
+      icon="📋"
+      orders={orders}
+      filterOptions={[
+        { value: 'ALL', label: 'All Orders' },
+        { value: 'PENDING', label: 'Pending' },
+        { value: 'CONFIRMED', label: 'Confirmed' },
+        { value: 'PROCESSING', label: 'Processing' },
+        { value: 'COMPLETED', label: 'Completed' },
+        { value: 'DELIVERED', label: 'Delivered' },
+        { value: 'CANCELLED', label: 'Cancelled' }
+      ]}
+      sortOptions={[
+        { value: 'orderDate', label: 'Order Date' },
+        { value: 'orderNumber', label: 'Order Number' },
+        { value: 'status', label: 'Status' }
+      ]}
+      renderCard={(order) => (
+        <CustomerOrderCard
+          key={order.id}
+          order={order}
+          inventory={inventory}
+          onConfirm={handleConfirm}
+          onFulfill={handleFulfillOrder}
+          onProcess={handleProcessing}
+          onComplete={handleComplete}
+          onCancel={handleCancel}
+          isProcessing={fulfillingOrderId === order.id}
+          getProductDisplayName={getProductDisplayName}
+          getInventoryStatusColor={getInventoryStatusColor}
+        />
+      )}
+      searchPlaceholder="CUST-XXX"
+      emptyMessage="No customer orders found"
+    />
   );
 
   // Render Create Order Form (Primary Content)
@@ -331,126 +413,16 @@ function PlantWarehouseDashboard() {
     </>
   );
 
-  // Render Inventory Display (Secondary Content)
-  const renderInventoryDisplay = () => (
-    <>
-      <div className="dashboard-box-header dashboard-box-header-green">
-        <h2 className="dashboard-box-header-title">📦 Current Inventory</h2>
-      </div>
-      <div style={{ overflowX: 'auto', maxHeight: '400px' }}>
-        <table className="dashboard-table">
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Quantity</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {inventory.length > 0 ? (
-              inventory.filter(item => item.itemType === "PRODUCT").map((item) => {
-                const product = products.find(p => p.id === item.itemId);
-                const statusColor = getInventoryStatusColor(item.quantity || 0);
-                
-                return (
-                  <tr key={item.id}>
-                    <td>{product?.name || item.itemName || `Product #${item.itemId}`}</td>
-                    <td style={{ fontWeight: 'bold' }}>{item.quantity || 0}</td>
-                    <td style={{ color: statusColor, fontWeight: 'bold' }}>
-                      {item.quantity > 10 ? 'In Stock' : item.quantity > 0 ? 'Low Stock' : 'Out of Stock'}
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan="3" style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
-                  No inventory data
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </>
-  );
-
-  // Render Orders Section
-  const renderOrdersSection = () => (
-    <>
-      <div className="dashboard-box-header dashboard-box-header-blue">
-        <h2 className="dashboard-box-header-title">📋 Recent Orders</h2>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          <select 
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            style={{ 
-              padding: "0.5rem", 
-              borderRadius: "0.375rem", 
-              border: "1px solid #d1d5db",
-              fontSize: "0.875rem"
-            }}
-          >
-            <option value="ALL">All Orders</option>
-            <option value="PENDING">Pending</option>
-            <option value="CONFIRMED">Confirmed</option>
-            <option value="PROCESSING">Processing</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="DELIVERED">Delivered</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
-        </div>
-      </div>
-      <div className="dashboard-box-content">
-        {Array.isArray(filteredOrders) && filteredOrders.length > 0 ? (
-          <div className="dashboard-orders-grid">
-            {filteredOrders.map((order) => (
-              <CustomerOrderCard
-                key={order.id}
-                order={order}
-                inventory={inventory}
-                onConfirm={handleConfirm}
-                onFulfill={handleFulfillOrder}
-                onProcess={handleProcessing}
-                onComplete={handleComplete}
-                onCancel={handleCancel}
-                isProcessing={fulfillingOrderId === order.id}
-                getProductDisplayName={getProductDisplayName}
-                getInventoryStatusColor={getInventoryStatusColor}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="dashboard-empty-state">
-            <p className="dashboard-empty-state-title">No orders found</p>
-            <p className="dashboard-empty-state-text">
-              {filterStatus !== "ALL" 
-                ? `No orders with status: ${filterStatus}` 
-                : "Orders will appear here when created"}
-            </p>
-          </div>
-        )}
-      </div>
-    </>
-  );
-
   return (
-    <DashboardLayout
-      title="Plant Warehouse Dashboard"
-      subtitle={`Manage inventory and customer orders${session?.user?.workstationId ? ` | Workstation ID: ${session.user.workstationId}` : ''}`}
+    <StandardDashboardLayout
+      title="Plant Warehouse"
+      subtitle={`Customer Order Management${session?.user?.workstationId ? ` | Workstation ${session.user.workstationId}` : ''}`}
       icon="🏢"
-      layout="compact"
-      statsCards={renderStatsCards()}
-      primaryContent={renderCreateOrderForm()}
-      notifications={
-        <Notification 
-          notifications={notifications}
-          title="Warehouse Activity"
-          maxVisible={5}
-          onClear={clearNotifications}
-        />
-      }
-      ordersSection={renderOrdersSection()}
+      activityContent={renderActivity()}
+      statsContent={renderStats()}
+      formContent={renderFormCompact()}
+      contentGrid={renderOrdersGrid()}
+      inventoryContent={renderInventory()}
     />
   );
 }

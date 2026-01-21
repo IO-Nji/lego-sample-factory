@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
-import { DashboardLayout, StatCard, Button, Card, Badge } from "../../components";
+import { DashboardLayout, StatisticsGrid, Button, Card, Badge } from "../../components";
 import "../../styles/DashboardLayout.css";
 
 function AssemblyWorkstationDashboard() {
@@ -145,21 +145,26 @@ function AssemblyWorkstationDashboard() {
   };
 
   // Stats cards
-  const renderStatsCards = () => {
+  // Stats data for StatisticsGrid
+  const statsData = (() => {
     const total = assemblyOrders.length;
     const assigned = assemblyOrders.filter(o => o.status === "ASSIGNED").length;
     const inProgress = assemblyOrders.filter(o => o.status === "IN_PROGRESS").length;
     const completed = assemblyOrders.filter(o => o.status === "COMPLETED").length;
+    const pending = assemblyOrders.filter(o => o.status === "PENDING").length;
+    const rejected = assemblyOrders.filter(o => o.status === "REJECTED").length;
 
-    return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
-        <StatCard value={total} label="Total Tasks" variant="primary" />
-        <StatCard value={assigned} label="Assigned" variant="info" />
-        <StatCard value={inProgress} label="In Progress" variant="warning" />
-        <StatCard value={completed} label="Completed" variant="success" />
-      </div>
-    );
-  };
+    return [
+      { value: total, label: 'Total Tasks', variant: 'default', icon: '📦' },
+      { value: pending, label: 'Pending', variant: 'pending', icon: '⏳' },
+      { value: assigned, label: 'Assigned', variant: 'info', icon: '📝' },
+      { value: inProgress, label: 'In Progress', variant: 'warning', icon: '⚙️' },
+      { value: completed, label: 'Completed', variant: 'success', icon: '✅' },
+      { value: rejected, label: 'Rejected', variant: 'danger', icon: '❌' },
+      { value: 0, label: 'On Hold', variant: 'default', icon: '⏸️' },
+      { value: 0, label: 'Delayed', variant: 'warning', icon: '⏱️' },
+    ];
+  })();
 
   // Filter controls
   const renderFilterControls = () => (
@@ -345,7 +350,7 @@ function AssemblyWorkstationDashboard() {
         subtitle={`Execute assembly tasks for ${session?.user?.workstation?.name || 'workstation'}`}
         icon="🔩"
         layout="compact"
-        statsCards={renderStatsCards()}
+        statsCards={<StatisticsGrid stats={statsData} />}
         primaryContent={
           <div className="dashboard-box">
             <div className="dashboard-box-header dashboard-box-header-green">
