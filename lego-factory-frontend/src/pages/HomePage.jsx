@@ -537,16 +537,18 @@ function HomePage() {
 
           {/* Column 2: Microservices Architecture Diagram */}
           <div className="home-architecture-column">
-            <h3 className="section-title">🏗️ Microservices Architecture</h3>
+            <h3 className="section-title">🏗️ Microservice Communication</h3>
             <div className="architecture-diagram">
-              {/* Frontend Layer - Grouped Box */}
+              {/* Frontend Layer */}
               <div className="service-group frontend-group">
                 <div className="group-label">Frontend Layer</div>
-                <div className="group-features">UI Workflow • Real-time Updates • Role-based Navigation</div>
                 <div className="arch-layer">
-                  <div className={`service-box frontend ${serviceHealth['frontend'] || 'unknown'}`}>
-                    <span className="service-name">React SPA</span>
-                    <span className="service-tech">(Vite + Nginx)</span>
+                  <div 
+                    className={`service-box frontend ${serviceHealth['frontend'] || 'unknown'}`}
+                    title="React SPA - User interface with real-time updates, role-based dashboards, order management, and inventory tracking. Built with Vite and served via Nginx."
+                  >
+                    <span className="service-name">React App</span>
+                    <span className="service-tech">UI Layer</span>
                   </div>
                 </div>
               </div>
@@ -555,53 +557,76 @@ function HomePage() {
               
               {/* API Gateway Layer */}
               <div className="arch-layer">
-                <div className={`service-box gateway ${serviceHealth['api-gateway'] || 'unknown'}`}>
+                <div 
+                  className={`service-box gateway ${serviceHealth['api-gateway'] || 'unknown'}`}
+                  title="API Gateway - Central routing hub with JWT authentication, request filtering, and load balancing. Routes all frontend requests to backend microservices."
+                >
                   <span className="service-name">API Gateway</span>
-                  <span className="service-tech">:8011</span>
+                  <span className="service-tech">Auth & Routing</span>
                   <span className={`health-indicator ${serviceHealth['api-gateway'] || 'unknown'}`}></span>
                 </div>
               </div>
               
               <div className="arch-arrow-down">↓</div>
               
-              {/* Backend Services Layer - Grouped Box */}
+              {/* Backend Services Layer - Show Gateway Communication */}
               <div className="service-group backend-group">
                 <div className="group-label">Backend Services</div>
-                <div className="group-features">User Management • Business Logic • Database Access • Order Processing</div>
-                <div className="arch-layer services-grid">
-                  <div className={`service-box ${serviceHealth['user-service'] || 'unknown'}`}>
-                    <span className="service-name">User Service</span>
-                    <span className="service-tech">:8012</span>
+                
+                {/* Primary Services (Gateway Routes) */}
+                <div className="arch-layer services-primary">
+                  <div 
+                    className={`service-box service-user ${serviceHealth['user-service'] || 'unknown'}`}
+                    title="User Service - Authentication & authorization with JWT tokens, user management, role-based access control (9 roles), and workstation assignments."
+                  >
+                    <span className="service-name">User</span>
                     <span className={`health-indicator ${serviceHealth['user-service'] || 'unknown'}`}></span>
                   </div>
                   
-                  <div className={`service-box ${serviceHealth['masterdata-service'] || 'unknown'}`}>
-                    <span className="service-name">Masterdata</span>
-                    <span className="service-tech">:8013</span>
-                    <span className={`health-indicator ${serviceHealth['masterdata-service'] || 'unknown'}`}></span>
-                  </div>
-                  
-                  <div className={`service-box ${serviceHealth['inventory-service'] || 'unknown'}`}>
-                    <span className="service-name">Inventory</span>
-                    <span className="service-tech">:8014</span>
-                    <span className={`health-indicator ${serviceHealth['inventory-service'] || 'unknown'}`}></span>
-                  </div>
-                  
-                  <div className={`service-box ${serviceHealth['order-processing-service'] || 'unknown'}`}>
-                    <span className="service-name">Order Processing</span>
-                    <span className="service-tech">:8015</span>
+                  <div 
+                    className={`service-box service-order ${serviceHealth['order-processing-service'] || 'unknown'}`}
+                    title="Order Processing - Customer orders, warehouse orders, production orders, fulfillment workflows, order state management, and production scheduling integration."
+                  >
+                    <span className="service-name">Order</span>
                     <span className={`health-indicator ${serviceHealth['order-processing-service'] || 'unknown'}`}></span>
                   </div>
                   
-                  <div className={`service-box ${serviceHealth['simal-integration-service'] || 'unknown'}`}>
-                    <span className="service-name">SimAL Integration</span>
-                    <span className="service-tech">:8016</span>
+                  <div 
+                    className={`service-box service-simal ${serviceHealth['simal-integration-service'] || 'unknown'}`}
+                    title="SimAL Integration - Production scheduling with Gantt charts, manufacturing timeline optimization, control order generation, and real-time schedule adjustments."
+                  >
+                    <span className="service-name">SimAL</span>
                     <span className={`health-indicator ${serviceHealth['simal-integration-service'] || 'unknown'}`}></span>
                   </div>
                 </div>
                 
+                <div className="service-communication-arrows">
+                  <div className="comm-arrow">Inter-service Communication</div>
+                </div>
+                
+                {/* Secondary Services (Called by other services) */}
+                <div className="arch-layer services-secondary">
+                  <div 
+                    className={`service-box service-masterdata ${serviceHealth['masterdata-service'] || 'unknown'}`}
+                    title="Masterdata Service - Product variants, modules, parts catalog, bill-of-materials (BOM), workstation definitions, and manufacturing hierarchies."
+                  >
+                    <span className="service-name">Masterdata</span>
+                    <span className={`health-indicator ${serviceHealth['masterdata-service'] || 'unknown'}`}></span>
+                  </div>
+                  
+                  <div 
+                    className={`service-box service-inventory ${serviceHealth['inventory-service'] || 'unknown'}`}
+                    title="Inventory Service - Real-time stock tracking across 9 workstations, stock ledger audit trail, low stock alerts, and inventory transactions (credit/debit/transfer)."
+                  >
+                    <span className="service-name">Inventory</span>
+                    <span className={`health-indicator ${serviceHealth['inventory-service'] || 'unknown'}`}></span>
+                  </div>
+                </div>
+                
                 <div className="arch-note">
-                  <span className="db-icon">💾</span> H2 In-Memory Databases (Isolated per service)
+                  <span className="db-icon">💾</span> Independent H2 Databases
+                  <span className="note-separator">•</span>
+                  <span className="comm-icon">📡</span> Docker DNS Communication
                 </div>
               </div>
             </div>
