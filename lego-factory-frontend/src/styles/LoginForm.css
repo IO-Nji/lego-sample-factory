@@ -10,11 +10,11 @@
 }
 
 .login-form-standalone {
-  padding: var(--spacing-xs);
+  padding: var(--spacing-md);
 }
 
 .login-form-embedded {
-  padding: var(--spacing-xs);
+  padding: var(--spacing-md);
   box-shadow: var(--shadow-sm);
 }
 
@@ -103,6 +103,12 @@
   background-color: var(--color-surface);
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* Reduce padding for sign-in button in login form */
+.login-form button[type="submit"] {
+  padding: var(--spacing-xs) var(--spacing-sm) !important;
+  height: 36px !important;
 }
 
 .login-footer {

@@ -28,10 +28,15 @@ public final class UserMapper {
     }
 
     public static UserDto toDto(User user) {
-        String workstationName = user.getWorkstationId() != null 
-            ? WORKSTATION_NAMES.getOrDefault(user.getWorkstationId(), "Unknown Workstation")
-            : null;
-        return new UserDto(user.getId(), user.getUsername(), user.getRole(), user.getWorkstationId(), workstationName);
+        WorkstationDto workstation = null;
+        if (user.getWorkstationId() != null) {
+            String workstationName = WORKSTATION_NAMES.getOrDefault(
+                user.getWorkstationId(), 
+                "Unknown Workstation"
+            );
+            workstation = new WorkstationDto(user.getWorkstationId(), workstationName);
+        }
+        return new UserDto(user.getId(), user.getUsername(), user.getRole(), workstation);
     }
 
     public static List<UserDto> toDtoList(List<User> users) {

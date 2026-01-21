@@ -18,6 +18,9 @@ public class AssemblyControlOrderDTO {
     private Long assignedWorkstationId;
     private String simalScheduleId;
     private String status;
+    private Long itemId;
+    private String itemType;
+    private Integer quantity;
     private LocalDateTime targetStartTime;
     private LocalDateTime targetCompletionTime;
     private LocalDateTime actualStartTime;

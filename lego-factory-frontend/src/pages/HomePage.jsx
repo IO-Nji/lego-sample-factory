@@ -1,6 +1,8 @@
 import DashboardPage from "./DashboardPage";
 import LoginForm from "../components/LoginForm";
 import FeatureCard from "../components/FeatureCard";
+import { WorkstationCard } from "../components";
+import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext.jsx";
 import api from "../api/api";
 import "../styles/StandardPage.css";
@@ -19,6 +21,9 @@ function HomePage() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [expandedModules, setExpandedModules] = useState({});
+  const [productModules, setProductModules] = useState([]);
+  const [loadingModules, setLoadingModules] = useState(false);
+  const [serviceHealth, setServiceHealth] = useState({});
 
   useEffect(() => {
     const reason = location.state?.reason || new URLSearchParams(location.search).get('reason');
@@ -65,6 +70,122 @@ function HomePage() {
     }
   }, [isAuthenticated]);
 
+  // Fetch product-specific modules and their parts when a product is selected
+  useEffect(() => {
+    if (!selectedProduct) {
+      setProductModules([]);
+      return;
+    }
+    
+    const fetchProductModules = async () => {
+      setLoadingModules(true);
+      try {
+        console.log('Fetching modules for product:', selectedProduct.id, selectedProduct.name);
+        
+        // Fetch product modules
+        const modulesResponse = await api.get(`/masterdata/product-variants/${selectedProduct.id}/modules`);
+        const productModules = modulesResponse.data;
+        
+        console.log('Product modules:', productModules);
+        
+        // For each module, fetch its parts
+        const modulesWithParts = await Promise.all(
+          productModules.map(async (productModule) => {
+            // Get module details
+            const moduleResponse = await api.get(`/masterdata/modules/${productModule.moduleId}`);
+            const moduleData = moduleResponse.data;
+            
+            // Get parts for this module
+            const partsResponse = await api.get(`/masterdata/modules/${productModule.moduleId}/parts`);
+            const moduleParts = partsResponse.data;
+            
+            // Fetch part details for each module part
+            const partsWithDetails = await Promise.all(
+              moduleParts.map(async (modulePart) => {
+                const partResponse = await api.get(`/masterdata/parts/${modulePart.partId}`);
+                return {
+                  ...partResponse.data,
+                  quantity: modulePart.quantity
+                };
+              })
+            );
+            
+            return {
+              ...moduleData,
+              quantity: productModule.quantity,
+              parts: partsWithDetails
+            };
+          })
+        );
+        
+        console.log('Modules with parts:', modulesWithParts);
+        setProductModules(modulesWithParts);
+      } catch (error) {
+        console.error('Error fetching product composition:', error);
+        // Fallback to showing message
+        setProductModules([]);
+      } finally {
+        setLoadingModules(false);
+      }
+    };
+    
+    fetchProductModules();
+  }, [selectedProduct]);
+
+  // Fetch service health status
+  useEffect(() => {
+    if (isAuthenticated) return; // Skip if authenticated
+    
+    const fetchServiceHealth = async () => {
+      const healthStatus = {};
+      
+      // Frontend is always healthy if this code is running
+      healthStatus['frontend'] = 'healthy';
+      
+      // Test API Gateway health check endpoint (public, no auth required)
+      try {
+        const response = await fetch('/api/health', {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+        
+        if (response.ok) {
+          // 200 OK means the API Gateway and services are UP
+          healthStatus['api-gateway'] = 'healthy';
+          healthStatus['user-service'] = 'healthy';
+          healthStatus['masterdata-service'] = 'healthy';
+          healthStatus['inventory-service'] = 'healthy';
+          healthStatus['order-processing-service'] = 'healthy';
+          healthStatus['simal-integration-service'] = 'healthy';
+        } else {
+          // Other errors mean services might be down
+          healthStatus['api-gateway'] = 'down';
+          healthStatus['user-service'] = 'down';
+          healthStatus['masterdata-service'] = 'down';
+          healthStatus['inventory-service'] = 'down';
+          healthStatus['order-processing-service'] = 'down';
+          healthStatus['simal-integration-service'] = 'down';
+        }
+      } catch (error) {
+        console.error('Health check failed:', error);
+        // Network error means services are down
+        healthStatus['api-gateway'] = 'down';
+        healthStatus['user-service'] = 'down';
+        healthStatus['masterdata-service'] = 'down';
+        healthStatus['inventory-service'] = 'down';
+        healthStatus['order-processing-service'] = 'down';
+        healthStatus['simal-integration-service'] = 'down';
+      }
+      
+      setServiceHealth(healthStatus);
+    };
+
+    fetchServiceHealth();
+    const interval = setInterval(fetchServiceHealth, 15000); // Poll every 15 seconds
+    
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
   const toggleModuleExpand = (moduleId) => {
     setExpandedModules(prev => ({
       ...prev,
@@ -72,17 +193,10 @@ function HomePage() {
     }));
   };
 
-  const getModulePartsForProduct = (product) => {
-    return modules;
-  };
-
-  const getPartsForModule = (module) => {
-    return parts;
-  };
-
   // If not authenticated, show login prompt with embedded login form
   if (!isAuthenticated) {
     return (
+      <>
       <section className="home-page">
         {/* Welcome Header */}
         <div className="home-hero">
@@ -111,78 +225,6 @@ function HomePage() {
             <h3 className="section-title">Our Products</h3>
             {loadingProducts ? (
               <p className="loading-text">Loading products...</p>
-            ) : selectedProduct ? (
-              <div className="product-details">
-                <button 
-                  className="btn-back" 
-                  onClick={() => setSelectedProduct(null)}
-                >
-                  ← Back to Products
-                </button>
-                
-                <div className="product-detail-card">
-                  <h2>{selectedProduct.name}</h2>
-                  <p className="description">{selectedProduct.description}</p>
-                  <div className="specs">
-                    <div className="spec-item">
-                      <strong>Price:</strong>
-                      <span className="price">${selectedProduct.price.toFixed(2)}</span>
-                    </div>
-                    <div className="spec-item">
-                      <strong>Est. Time:</strong>
-                      <span>{selectedProduct.estimatedTimeMinutes} min</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="components-section">
-                  <h3>Product Components</h3>
-                  
-                  {getModulePartsForProduct(selectedProduct).length === 0 ? (
-                    <p className="no-data">No components available</p>
-                  ) : (
-                    getModulePartsForProduct(selectedProduct).map(module => (
-                      <div key={module.id} className="module-item">
-                        <div 
-                          onClick={() => toggleModuleExpand(module.id)}
-                          className="module-header"
-                        >
-                          <span className="expand-icon">
-                            {expandedModules[module.id] ? '▼' : '▶'}
-                          </span>
-                          <div className="module-info">
-                            <h4>{module.name}</h4>
-                            <p>{module.type || 'COMPONENT'}</p>
-                          </div>
-                        </div>
-
-                        {expandedModules[module.id] && (
-                          <div className="module-details">
-                            <p>{module.description}</p>
-                            
-                            <div className="parts-section">
-                              <h5>Parts Required:</h5>
-                              {getPartsForModule(module).length === 0 ? (
-                                <p className="no-data">No parts specified</p>
-                              ) : (
-                                <ul>
-                                  {getPartsForModule(module).map(part => (
-                                    <li key={part.id}>
-                                      <span className="part-name">{part.name}</span>
-                                      <span className="part-category">{part.category}</span>
-                                      <span className="part-cost">${part.unitCost?.toFixed(2) || '0.00'}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
             ) : products.length === 0 ? (
               <p className="no-data">No products available</p>
             ) : (
@@ -203,6 +245,92 @@ function HomePage() {
                 ))}
               </div>
             )}
+            
+            {/* Product Details Overlay Dropdown */}
+            {selectedProduct && (
+              <div className="product-details-overlay">
+                <div className="product-details-modal">
+                  <button 
+                    className="btn-close-overlay" 
+                    onClick={() => setSelectedProduct(null)}
+                  >
+                    ✕
+                  </button>
+                  
+                  <div className="product-detail-card-overlay">
+                    <h2>{selectedProduct.name}</h2>
+                    <p className="description">{selectedProduct.description}</p>
+                    <div className="specs">
+                      <div className="spec-item">
+                        <strong>Price:</strong>
+                        <span className="price">${selectedProduct.price.toFixed(2)}</span>
+                      </div>
+                      <div className="spec-item">
+                        <strong>Time:</strong>
+                        <span>{selectedProduct.estimatedTimeMinutes} min</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="components-section-overlay">
+                    <h3>Product Components</h3>
+                    
+                    {loadingModules ? (
+                      <p className="loading-text">Loading modules...</p>
+                    ) : productModules.length === 0 ? (
+                      <div>
+                        <p className="no-data">No modules available for this product</p>
+                      </div>
+                    ) : (
+                      <div className="modules-grid-overlay">
+                        {productModules.map(module => (
+                          <div key={module.id} className="module-item-overlay">
+                            <div 
+                              onClick={() => toggleModuleExpand(module.id)}
+                              className="module-header-overlay"
+                            >
+                              <span className="expand-icon-overlay">
+                                {expandedModules[module.id] ? '▼' : '▶'}
+                              </span>
+                              <div className="module-info-overlay">
+                                <h4>{module.name}</h4>
+                                <span className="module-qty">Qty: {module.quantity}</span>
+                              </div>
+                            </div>
+
+                            {expandedModules[module.id] && (
+                              <div className="module-details-overlay">
+                                <p className="module-desc">{module.description}</p>
+                                <div className="module-time">Time: {module.estimatedTimeMinutes} min</div>
+                                
+                                {module.parts && module.parts.length > 0 ? (
+                                  <div className="parts-section-overlay">
+                                    <h5>Parts ({module.parts.length}):</h5>
+                                    <div className="parts-list-overlay">
+                                      {module.parts.map(part => (
+                                        <div key={part.id} className="part-item-overlay">
+                                          <span className="part-name-overlay">{part.name}</span>
+                                          <span className="part-qty-overlay">×{part.quantity}</span>
+                                          <span className="part-time-overlay">{part.estimatedTimeMinutes}m</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p style={{fontSize: '0.65rem', color: '#999', marginTop: '0.3rem'}}>
+                                    No parts configured for this module
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Flow Diagram Column */}
@@ -213,25 +341,29 @@ function HomePage() {
             <div className="flow-diagram">
               {/* Row 1: Customer Order Entry */}
               <div className="flow-row">
-                <div className="station-card" data-tooltip="Customer places order for product variants">
-                  <div className="station-icon">🛒</div>
-                  <div className="station-name">Customer Order</div>
-                </div>
+                <WorkstationCard 
+                  icon="🛒" 
+                  name="Customer Order" 
+                  tooltip="Customer places order for product variants"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Final product storage and order fulfillment (WS-7)">
-                  <div className="station-icon">🏭</div>
-                  <div className="station-name">Plant Warehouse</div>
-                </div>
+                <WorkstationCard 
+                  icon="🏭" 
+                  name="Plant Warehouse" 
+                  tooltip="Final product storage and order fulfillment | Username: warehouse_operator"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Check stock availability">
-                  <div className="station-icon">✅</div>
-                  <div className="station-name">Stock Check</div>
-                </div>
+                <WorkstationCard 
+                  icon="✅" 
+                  name="Stock Check" 
+                  tooltip="Check stock availability"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Order delivered to customer">
-                  <div className="station-icon">📦</div>
-                  <div className="station-name">Delivery</div>
-                </div>
+                <WorkstationCard 
+                  icon="📦" 
+                  name="Delivery" 
+                  tooltip="Order delivered to customer"
+                />
               </div>
               
               {/* Row 2: Downward arrow */}
@@ -244,20 +376,23 @@ function HomePage() {
               
               {/* Row 3: Production Flow */}
               <div className="flow-row">
-                <div className="station-card" data-tooltip="Intermediate module storage and management (WS-8)">
-                  <div className="station-icon">🏢</div>
-                  <div className="station-name">Modules Supermarket</div>
-                </div>
+                <WorkstationCard 
+                  icon="🏢" 
+                  name="Modules Supermarket" 
+                  tooltip="Intermediate module storage and management | Username: modules_supermarket"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Final assembly of product variants (WS-6)">
-                  <div className="station-icon">🔨</div>
-                  <div className="station-name">Final Assembly</div>
-                </div>
+                <WorkstationCard 
+                  icon="🔨" 
+                  name="Final Assembly" 
+                  tooltip="Final assembly of product variants | Username: assembly_control"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Strategic production scheduling and resource planning">
-                  <div className="station-icon">📋</div>
-                  <div className="station-name">Production Planning</div>
-                </div>
+                <WorkstationCard 
+                  icon="📋" 
+                  name="Production Planning" 
+                  tooltip="Strategic production scheduling and resource planning | Username: production_planning"
+                />
               </div>
               
               {/* Row 4: Downward arrow */}
@@ -270,20 +405,23 @@ function HomePage() {
               
               {/* Row 5: Manufacturing Flow */}
               <div className="flow-row">
-                <div className="station-card" data-tooltip="Raw materials storage and distribution (WS-9)">
-                  <div className="station-icon">📦</div>
-                  <div className="station-name">Parts Supply</div>
-                </div>
+                <WorkstationCard 
+                  icon="📦" 
+                  name="Parts Supply" 
+                  tooltip="Raw materials storage and distribution | Username: parts_supply_warehouse"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Injection molding and part production (WS-1,2,3)">
-                  <div className="station-icon">🔧</div>
-                  <div className="station-name">Manufacturing</div>
-                </div>
+                <WorkstationCard 
+                  icon="🔧" 
+                  name="Manufacturing" 
+                  tooltip="Injection molding and part production | Username: injection_molding"
+                />
                 <div className="flow-arrow">→</div>
-                <div className="station-card" data-tooltip="Component assembly into modules (WS-4,5)">
-                  <div className="station-icon">⚙️</div>
-                  <div className="station-name">Assembly</div>
-                </div>
+                <WorkstationCard 
+                  icon="⚙️" 
+                  name="Assembly" 
+                  tooltip="Component assembly into modules | Username: assembly_control"
+                />
               </div>
             </div>
           </div>
@@ -293,38 +431,229 @@ function HomePage() {
           </div>
         </div>
 
-        {/* Row 2: Application Overview + Navigation Guide (Full Width) */}
-        <div className="home-bottom-row">
-          <div className="home-intro-column-fullwidth">
+        {/* Row 2: Application Overview (Full Width) */}
+        <div className="home-overview-row">
+          <div className="home-overview-section">
             <h3 className="section-title">Application Overview</h3>
-            <div className="intro-content">
-              <p className="intro-description">
-                The <strong>LIFE System</strong> (LEGO Integrated Factory Execution) is a comprehensive digital manufacturing 
-                platform that coordinates complex production workflows across multiple interconnected factory workstations. 
-                The system manages the entire manufacturing lifecycle from raw materials to finished products.
+            <div className="overview-content">
+              <p className="overview-description">
+                The <strong>LIFE System</strong> (LEGO Integrated Factory Execution) is an enterprise-grade digital manufacturing 
+                execution system (MES) built from the ground up to demonstrate the practical application of academic research 
+                in industrial engineering. This comprehensive platform digitizes and automates end-to-end supply chain operations 
+                across nine autonomous workstations, coordinating complex production workflows from raw materials to finished products.
               </p>
               
-              <div className="navigation-guide">
-                <h4>📋 Quick Navigation Guide</h4>
-                <ul>
-                  <li><strong>Login:</strong> Use credentials on the right to access role-specific dashboards</li>
-                  <li><strong>User Roles:</strong> Admin, Production Planning, Plant Warehouse, Assembly Control, and more</li>
-                  <li><strong>Operations:</strong> Each role provides tailored views for order management, inventory control, and production tracking</li>
-                  <li><strong>Real-time Updates:</strong> Dashboard data refreshes automatically every 30 seconds</li>
-                </ul>
-                <p className="tip">💡 <strong>Tip:</strong> Hover over the manufacturing stations above to see detailed descriptions</p>
+              <div className="tech-highlights-split">
+                {/* Left Column - Right Aligned */}
+                <div className="tech-column tech-column-left">
+                  <div className="tech-feature">
+                    <div className="feature-header">
+                      <span className="feature-icon">🏗️</span>
+                      <strong>Microservices Architecture</strong>
+                    </div>
+                    <p>6 independently scalable Spring Boot services with isolated H2 databases, orchestrated via Docker Compose</p>
+                  </div>
+                  
+                  <div className="tech-feature">
+                    <div className="feature-header">
+                      <span className="feature-icon">🔐</span>
+                      <strong>Enterprise Security</strong>
+                    </div>
+                    <p>JWT-based authentication with BCrypt encryption, role-based access control across 9 user roles</p>
+                  </div>
+                </div>
+                
+                {/* Center Divider */}
+                <div className="tech-divider"></div>
+                
+                {/* Right Column - Left Aligned */}
+                <div className="tech-column tech-column-right">
+                  <div className="tech-feature">
+                    <div className="feature-header">
+                      <span className="feature-icon">⚡</span>
+                      <strong>Modern Tech Stack</strong>
+                    </div>
+                    <p>Spring Boot 3.4.12 (Java 21) backend + React 18 (Vite) frontend + Spring Cloud Gateway + Nginx reverse proxy</p>
+                  </div>
+                  
+                  <div className="tech-feature">
+                    <div className="feature-header">
+                      <span className="feature-icon">📊</span>
+                      <strong>Real-Time Operations</strong>
+                    </div>
+                    <p>Live inventory tracking, automated order fulfillment, SimAL scheduling integration with interactive Gantt charts</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <footer className="home-footer">
-          <p>© {new Date().getFullYear()} <strong>nji.io</strong> - All Rights Reserved</p>
-        </footer>
+        {/* Row 3: Navigation Guide + Microservices Architecture (Two Columns) */}
+        <div className="home-guide-row">
+          {/* Column 1: Navigation Guide */}
+          <div className="home-navigation-column">
+            <h3 className="section-title">📋 Quick Navigation Guide</h3>
+            <div className="navigation-content">
+              <div className="nav-item">
+                <span className="nav-icon">🔑</span>
+                <div>
+                  <strong>Login:</strong> Hover over workstation cards above to see usernames. Generic password: <code>password</code>
+                </div>
+              </div>
+              
+              <div className="nav-item">
+                <span className="nav-icon">👥</span>
+                <div>
+                  <strong>User Roles:</strong> Each role has a dedicated dashboard (Admin, Production Planning, Plant Warehouse, 
+                  Modules Supermarket, Assembly Control, Parts Supply, Manufacturing)
+                </div>
+              </div>
+              
+              <div className="nav-item">
+                <span className="nav-icon">📦</span>
+                <div>
+                  <strong>Operations:</strong> Role-specific interfaces for customer orders, warehouse orders, production orders, 
+                  inventory management, and supply chain coordination
+                </div>
+              </div>
+              
+              <div className="nav-item">
+                <span className="nav-icon">🔄</span>
+                <div>
+                  <strong>Real-time Updates:</strong> Dashboard data refreshes automatically every 5-30 seconds depending on the view
+                </div>
+              </div>
+              
+              <div className="nav-item">
+                <span className="nav-icon">📈</span>
+                <div>
+                  <strong>Production Scenarios:</strong> System supports 4 fulfillment workflows - direct fulfillment, warehouse orders, 
+                  production via modules, and high-volume direct production planning
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 2: Microservices Architecture Diagram */}
+          <div className="home-architecture-column">
+            <h3 className="section-title">🏗️ Microservice Communication</h3>
+            <div className="architecture-diagram">
+              {/* Frontend Layer */}
+              <div className="service-group frontend-group">
+                <div className="group-label">Frontend Layer</div>
+                <div className="arch-layer">
+                  <div 
+                    className={`service-box frontend ${serviceHealth['frontend'] || 'unknown'}`}
+                    title="React SPA - User interface with real-time updates, role-based dashboards, order management, and inventory tracking. Built with Vite and served via Nginx."
+                  >
+                    <span className="service-name">React App</span>
+                    <span className="service-tech">UI Layer</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="arch-arrow-down">↓</div>
+              
+              {/* API Gateway Layer */}
+              <div className="arch-layer">
+                <div 
+                  className={`service-box gateway ${serviceHealth['api-gateway'] || 'unknown'}`}
+                  title="API Gateway - Central routing hub with JWT authentication, request filtering, and load balancing. Routes all frontend requests to backend microservices."
+                >
+                  <span className="service-name">API Gateway</span>
+                  <span className="service-tech">Auth & Routing</span>
+                  <span className={`health-indicator ${serviceHealth['api-gateway'] || 'unknown'}`}></span>
+                </div>
+              </div>
+              
+              <div className="arch-arrow-down">↓</div>
+              
+              {/* Backend Services Layer - Show Gateway Communication */}
+              <div className="service-group backend-group">
+                <div className="group-label">Backend Services</div>
+                
+                {/* Primary Services (Gateway Routes) */}
+                <div className="arch-layer services-primary">
+                  <div 
+                    className={`service-box service-user ${serviceHealth['user-service'] || 'unknown'}`}
+                    title="User Service - Authentication & authorization with JWT tokens, user management, role-based access control (9 roles), and workstation assignments."
+                  >
+                    <span className="service-name">User</span>
+                    <span className={`health-indicator ${serviceHealth['user-service'] || 'unknown'}`}></span>
+                  </div>
+                  
+                  <div 
+                    className={`service-box service-order ${serviceHealth['order-processing-service'] || 'unknown'}`}
+                    title="Order Processing - Customer orders, warehouse orders, production orders, fulfillment workflows, order state management, and production scheduling integration."
+                  >
+                    <span className="service-name">Order</span>
+                    <span className={`health-indicator ${serviceHealth['order-processing-service'] || 'unknown'}`}></span>
+                  </div>
+                  
+                  <div 
+                    className={`service-box service-simal ${serviceHealth['simal-integration-service'] || 'unknown'}`}
+                    title="SimAL Integration - Production scheduling with Gantt charts, manufacturing timeline optimization, control order generation, and real-time schedule adjustments."
+                  >
+                    <span className="service-name">SimAL</span>
+                    <span className={`health-indicator ${serviceHealth['simal-integration-service'] || 'unknown'}`}></span>
+                  </div>
+                </div>
+                
+                <div className="service-communication-arrows">
+                  <div className="comm-arrow">Inter-service Communication</div>
+                </div>
+                
+                {/* Secondary Services (Called by other services) */}
+                <div className="arch-layer services-secondary">
+                  <div 
+                    className={`service-box service-masterdata ${serviceHealth['masterdata-service'] || 'unknown'}`}
+                    title="Masterdata Service - Product variants, modules, parts catalog, bill-of-materials (BOM), workstation definitions, and manufacturing hierarchies."
+                  >
+                    <span className="service-name">Masterdata</span>
+                    <span className={`health-indicator ${serviceHealth['masterdata-service'] || 'unknown'}`}></span>
+                  </div>
+                  
+                  <div 
+                    className={`service-box service-inventory ${serviceHealth['inventory-service'] || 'unknown'}`}
+                    title="Inventory Service - Real-time stock tracking across 9 workstations, stock ledger audit trail, low stock alerts, and inventory transactions (credit/debit/transfer)."
+                  >
+                    <span className="service-name">Inventory</span>
+                    <span className={`health-indicator ${serviceHealth['inventory-service'] || 'unknown'}`}></span>
+                  </div>
+                </div>
+                
+                <div className="arch-note">
+                  <span className="db-icon">💾</span> Independent H2 Databases
+                  <span className="note-separator">•</span>
+                  <span className="comm-icon">📡</span> Docker DNS Communication
+                </div>
+              </div>
+            </div>
+            
+            <div className="health-legend">
+              <span className="legend-item">
+                <span className="health-dot healthy"></span> Healthy
+              </span>
+              <span className="legend-item">
+                <span className="health-dot degraded"></span> Degraded
+              </span>
+              <span className="legend-item">
+                <span className="health-dot down"></span> Down
+              </span>
+              <span className="legend-item">
+                <span className="health-dot unknown"></span> Unknown
+              </span>
+            </div>
+          </div>
+        </div>
       </section>
-    );
-  }
+
+      {/* Footer */}
+      <Footer />
+    </>
+  );
+}
 
   // If authenticated, show the dashboard
   return <DashboardPage />;

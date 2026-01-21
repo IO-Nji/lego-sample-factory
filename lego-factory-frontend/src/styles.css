@@ -67,7 +67,6 @@ body {
 @import './styles/Button.css';
 @import './styles/LoginForm.css';
 @import './styles/AddNewUserForm.css';
-@import './styles/StatsCard.css';
 @import './styles/CustomerOrderCard.css';
 @import './styles/WarehouseOrderCard.css';
 
@@ -1266,11 +1265,9 @@ table td {
 
 /* ==========================================
    STANDARDIZED STATISTICS BOX STYLING
-   Use these classes for any stats/metrics displays
-   Consolidated in StatsCard.css
+   Use StatisticsGrid component with StatCard components
+   See AdminDashboard for reference implementation
    ========================================== */
-
-/* .stats-grid definition moved to StatsCard.css to avoid conflicts */
 
 /* Individual stat box - legacy support */
 .stat-box {

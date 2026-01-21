@@ -63,7 +63,8 @@ public class AssemblyControlOrderService {
     }
 
     /**
-     * Create an assembly control order from a production order.
+     * Create a new assembly control order (backwards compatible version without item info).
+     * Uses default values for itemId (1L), itemType ("MODULE"), quantity (1).
      */
     public AssemblyControlOrderDTO createControlOrder(
             Long sourceProductionOrderId,
@@ -77,6 +78,35 @@ public class AssemblyControlOrderService {
             String testingProcedures,
             String packagingRequirements,
             Integer estimatedDurationMinutes) {
+        
+        // Call the full method with default item values
+        return createControlOrder(
+                sourceProductionOrderId, assignedWorkstationId, simalScheduleId,
+                priority, targetStartTime, targetCompletionTime,
+                assemblyInstructions, qualityCheckpoints, testingProcedures,
+                packagingRequirements, estimatedDurationMinutes,
+                1L, "MODULE", 1  // Default values for backwards compatibility
+        );
+    }
+
+    /**
+     * Create a new assembly control order (full version with item info).
+     */
+    public AssemblyControlOrderDTO createControlOrder(
+            Long sourceProductionOrderId,
+            Long assignedWorkstationId,
+            String simalScheduleId,
+            String priority,
+            LocalDateTime targetStartTime,
+            LocalDateTime targetCompletionTime,
+            String assemblyInstructions,
+            String qualityCheckpoints,
+            String testingProcedures,
+            String packagingRequirements,
+            Integer estimatedDurationMinutes,
+            Long itemId,
+            String itemType,
+            Integer quantity) {
 
         String controlOrderNumber = generateControlOrderNumber();
 
@@ -94,6 +124,9 @@ public class AssemblyControlOrderService {
                 .testingProcedures(testingProcedures)
                 .packagingRequirements(packagingRequirements)
                 .estimatedDurationMinutes(estimatedDurationMinutes)
+                .itemId(itemId)
+                .itemType(itemType)
+                .quantity(quantity)
                 .build();
 
         @SuppressWarnings("null")
@@ -289,7 +322,7 @@ public class AssemblyControlOrderService {
 
         // Step 3: Credit Plant Warehouse inventory (fire-and-forget) - FINAL ASSEMBLY ONLY
         try {
-            creditPlantWarehouse(order.getSourceProductionOrderId(), 1);
+            creditPlantWarehouse(order.getItemId(), order.getQuantity());
         } catch (Exception e) {
             logger.warn("Failed to credit Plant Warehouse for order {}: {}", order.getSourceProductionOrderId(), e.getMessage());
             // Don't throw - completion already succeeded, inventory update is secondary
@@ -473,15 +506,15 @@ public class AssemblyControlOrderService {
 
     /**
      * Credit Plant Warehouse inventory when final assembly completes.
-     * Awards one finished product unit to Plant Warehouse (workstation 7).
+     * Awards finished product units to Plant Warehouse (workstation 7).
      * Only used for Final Assembly workstations.
      */
-    private void creditPlantWarehouse(Long productionOrderId, Integer quantity) {
+    private void creditPlantWarehouse(Long productId, Integer quantity) {
         try {
-            inventoryService.updateStock(plantWarehouseWorkstationId, 1L, quantity);
-            logger.info("Credited Plant Warehouse with {} finished units for production order {}", quantity, productionOrderId);
+            inventoryService.updateStock(plantWarehouseWorkstationId, productId, quantity);
+            logger.info("Credited Plant Warehouse with {} units of Product #{}", quantity, productId);
         } catch (Exception e) {
-            logger.error("Failed to credit Plant Warehouse for production order {}", productionOrderId, e);
+            logger.error("Failed to credit Plant Warehouse with Product #{}", productId, e);
             throw new RuntimeException("Inventory credit failed: " + e.getMessage(), e);
         }
     }

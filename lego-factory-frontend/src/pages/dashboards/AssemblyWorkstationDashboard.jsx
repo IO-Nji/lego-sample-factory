@@ -1,20 +1,43 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
-import { DashboardLayout, StatCard, Button, Card, Badge } from "../../components";
+import { 
+  StandardDashboardLayout,
+  OrdersSection,
+  ActivityLog,
+  StatisticsGrid,
+  AssemblyControlOrderCard,
+  Button, 
+  Card, 
+  Badge 
+} from "../../components";
 import "../../styles/DashboardLayout.css";
 
 function AssemblyWorkstationDashboard() {
   const { session } = useAuth();
   const [assemblyOrders, setAssemblyOrders] = useState([]);
-  const [filteredOrders, setFilteredOrders] = useState([]);
-  const [filterStatus, setFilterStatus] = useState("ALL");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [processingOrderId, setProcessingOrderId] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+
+  const addNotification = (message, type = 'info') => {
+    const newNotification = {
+      id: Date.now() + Math.random(),
+      message,
+      type,
+      timestamp: new Date().toISOString(),
+      station: 'ASSY-WS'
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
 
   // Determine assembly type from workstation name
   const getAssemblyType = () => {
@@ -36,22 +59,9 @@ function AssemblyWorkstationDashboard() {
     }
   }, [session?.user?.workstationId]);
 
-  useEffect(() => {
-    applyFilter(assemblyOrders, filterStatus);
-  }, [filterStatus, assemblyOrders]);
-
-  const applyFilter = (ordersList, status) => {
-    if (status === "ALL") {
-      setFilteredOrders(ordersList);
-    } else {
-      setFilteredOrders(ordersList.filter(order => order.status === status));
-    }
-  };
-
   const fetchAssemblyOrders = async () => {
     if (!session?.user?.workstation?.id) {
       setAssemblyOrders([]);
-      setFilteredOrders([]);
       return;
     }
     
@@ -60,12 +70,10 @@ function AssemblyWorkstationDashboard() {
       const response = await api.get(`${apiEndpoint}/workstation/${session.user.workstation.id}`);
       const ordersList = Array.isArray(response.data) ? response.data : [];
       setAssemblyOrders(ordersList);
-      applyFilter(ordersList, filterStatus);
       setError(null);
     } catch (err) {
       if (err.response?.status === 404) {
         setAssemblyOrders([]);
-        setFilteredOrders([]);
       } else {
         setError("Failed to load assembly orders: " + (err.response?.data?.message || err.message));
       }
@@ -80,10 +88,14 @@ function AssemblyWorkstationDashboard() {
 
     try {
       await api.put(`${apiEndpoint}/${orderId}/start`);
-      setSuccess(`Assembly task started successfully!`);
+      const message = `Assembly task started successfully!`;
+      setSuccess(message);
+      addNotification({ message, type: 'success' });
       fetchAssemblyOrders();
     } catch (err) {
-      setError("Failed to start assembly: " + (err.response?.data?.message || err.message));
+      const errorMsg = "Failed to start assembly: " + (err.response?.data?.message || err.message);
+      setError(errorMsg);
+      addNotification({ message: errorMsg, type: 'error' });
     } finally {
       setProcessingOrderId(null);
     }
@@ -99,14 +111,16 @@ function AssemblyWorkstationDashboard() {
       const isFinalAssembly = assemblyType === "final-assembly";
       await api.put(`${apiEndpoint}/${orderId}/complete`);
       
-      setSuccess(
-        isFinalAssembly 
-          ? "Assembly completed! Product credited to Plant Warehouse." 
-          : "Assembly completed! Module credited to Modules Supermarket."
-      );
+      const message = isFinalAssembly 
+        ? "Assembly completed! Product credited to Plant Warehouse." 
+        : "Assembly completed! Module credited to Modules Supermarket.";
+      setSuccess(message);
+      addNotification({ message, type: 'success' });
       fetchAssemblyOrders();
     } catch (err) {
-      setError("Failed to complete assembly: " + (err.response?.data?.message || err.message));
+      const errorMsg = "Failed to complete assembly: " + (err.response?.data?.message || err.message);
+      setError(errorMsg);
+      addNotification({ message: errorMsg, type: 'error' });
     } finally {
       setProcessingOrderId(null);
     }
@@ -145,142 +159,66 @@ function AssemblyWorkstationDashboard() {
   };
 
   // Stats cards
-  const renderStatsCards = () => {
+  // Stats data for StatisticsGrid
+  const statsData = (() => {
     const total = assemblyOrders.length;
     const assigned = assemblyOrders.filter(o => o.status === "ASSIGNED").length;
     const inProgress = assemblyOrders.filter(o => o.status === "IN_PROGRESS").length;
     const completed = assemblyOrders.filter(o => o.status === "COMPLETED").length;
+    const pending = assemblyOrders.filter(o => o.status === "PENDING").length;
+    const rejected = assemblyOrders.filter(o => o.status === "REJECTED").length;
 
-    return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
-        <StatCard value={total} label="Total Tasks" variant="primary" />
-        <StatCard value={assigned} label="Assigned" variant="info" />
-        <StatCard value={inProgress} label="In Progress" variant="warning" />
-        <StatCard value={completed} label="Completed" variant="success" />
-      </div>
-    );
-  };
+    return [
+      { value: total, label: 'Total Tasks', variant: 'default', icon: '📦' },
+      { value: pending, label: 'Pending', variant: 'pending', icon: '⏳' },
+      { value: assigned, label: 'Assigned', variant: 'info', icon: '📝' },
+      { value: inProgress, label: 'In Progress', variant: 'warning', icon: '⚙️' },
+      { value: completed, label: 'Completed', variant: 'success', icon: '✅' },
+      { value: rejected, label: 'Rejected', variant: 'danger', icon: '❌' },
+      { value: 0, label: 'On Hold', variant: 'default', icon: '⏸️' },
+      { value: 0, label: 'Delayed', variant: 'warning', icon: '⏱️' },
+    ];
+  })();
 
-  // Filter controls
-  const renderFilterControls = () => (
-    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-      <select 
-        value={filterStatus}
-        onChange={(e) => setFilterStatus(e.target.value)}
-        style={{ padding: "0.5rem", borderRadius: "0.375rem", border: "1px solid #d1d5db", fontSize: "0.875rem" }}
-      >
-        <option value="ALL">All Tasks</option>
-        <option value="ASSIGNED">Assigned</option>
-        <option value="IN_PROGRESS">In Progress</option>
-        <option value="COMPLETED">Completed</option>
-        <option value="HALTED">Halted</option>
-      </select>
-      <Button 
-        variant="secondary"
-        size="small"
-        onClick={fetchAssemblyOrders} 
-        disabled={loading}
-      >
-        {loading ? "Refreshing..." : "Refresh"}
-      </Button>
-    </div>
+  // Render functions for StandardDashboardLayout
+  const renderActivity = () => (
+    <ActivityLog notifications={notifications} onClear={clearNotifications} />
   );
 
-  // Assembly orders display
-  const renderAssemblyOrders = () => {
-    if (loading && assemblyOrders.length === 0) {
-      return <div className="dashboard-empty-state">Loading assembly tasks...</div>;
-    }
-
-    if (filteredOrders.length === 0) {
-      return (
-        <div className="dashboard-empty-state">
-          <p className="dashboard-empty-state-title">No assembly tasks</p>
-          <p className="dashboard-empty-state-text">
-            {filterStatus !== "ALL" 
-              ? `No tasks with status: ${filterStatus}` 
-              : "Assembly tasks will appear here when assigned to your workstation"}
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
-        {filteredOrders.map((order) => (
-          <Card key={order.id} style={{ padding: "1rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.75rem" }}>
-              <div>
-                <h3 style={{ fontSize: "1.125rem", fontWeight: "600", margin: "0 0 0.25rem 0" }}>
-                  {order.controlOrderNumber || `Task #${order.id}`}
-                </h3>
-                <p style={{ fontSize: "0.875rem", color: "#6b7280", margin: 0 }}>
-                  Production Order #{order.sourceProductionOrderId}
-                </p>
-              </div>
-              <Badge 
-                variant={
-                  order.status === "COMPLETED" ? "success" :
-                  order.status === "IN_PROGRESS" ? "warning" :
-                  order.status === "HALTED" ? "danger" :
-                  "default"
-                }
-              >
-                {order.status}
-              </Badge>
-            </div>
-            
-            <div style={{ marginBottom: "0.75rem", fontSize: "0.875rem" }}>
-              <div style={{ marginBottom: "0.25rem" }}>
-                <span style={{ fontWeight: "500" }}>Priority:</span> {order.priority || "MEDIUM"}
-              </div>
-              {order.targetCompletionTime && (
-                <div style={{ marginBottom: "0.25rem" }}>
-                  <span style={{ fontWeight: "500" }}>Target:</span> {new Date(order.targetCompletionTime).toLocaleString()}
-                </div>
-              )}
-            </div>
-            
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              {order.status === "ASSIGNED" && (
-                <Button 
-                  variant="success" 
-                  size="small" 
-                  onClick={() => handleStartAssembly(order.id)}
-                  disabled={processingOrderId === order.id}
-                >
-                  {processingOrderId === order.id ? 'Starting...' : 'Start Task'}
-                </Button>
-              )}
-              {order.status === "IN_PROGRESS" && (
-                <>
-                  <Button 
-                    variant="success" 
-                    size="small"
-                    onClick={() => handleCompleteAssembly(order.id)}
-                    disabled={processingOrderId === order.id}
-                  >
-                    {processingOrderId === order.id ? 'Completing...' : 'Complete'}
-                  </Button>
-                  <Button 
-                    variant="warning" 
-                    size="small"
-                    onClick={() => handleHaltAssembly(order.id)}
-                    disabled={processingOrderId === order.id}
-                  >
-                    Halt
-                  </Button>
-                </>
-              )}
-              <Button variant="outline" size="small" onClick={() => handleViewDetails(order)}>
-                View Details
-              </Button>
-            </div>
-          </Card>
-        ))}
-      </div>
-    );
-  };
+  const renderAssemblyOrders = () => (
+    <OrdersSection
+      title="Assembly Tasks"
+      orders={assemblyOrders}
+      loading={loading}
+      filterOptions={[
+        { value: 'ALL', label: 'All Tasks' },
+        { value: 'ASSIGNED', label: 'Assigned' },
+        { value: 'IN_PROGRESS', label: 'In Progress' },
+        { value: 'COMPLETED', label: 'Completed' },
+        { value: 'HALTED', label: 'Halted' }
+      ]}
+      sortOptions={[
+        { value: 'controlOrderNumber', label: 'Task Number' },
+        { value: 'status', label: 'Status' },
+        { value: 'priority', label: 'Priority' }
+      ]}
+      searchKeys={['controlOrderNumber', 'assemblyInstructions']}
+      sortKey="controlOrderNumber"
+      emptyMessage="Assembly tasks will appear here when assigned to your workstation"
+      onRefresh={fetchAssemblyOrders}
+      renderCard={(order) => (
+        <AssemblyControlOrderCard
+          key={order.id}
+          order={order}
+          onStart={() => handleStartAssembly(order.id)}
+          onComplete={() => handleCompleteAssembly(order.id)}
+          onHalt={() => handleHaltAssembly(order.id)}
+          onViewDetails={() => handleViewDetails(order)}
+          processing={processingOrderId === order.id}
+        />
+      )}
+    />
+  );
 
   // Details modal
   const renderDetailsModal = () => {
@@ -339,30 +277,21 @@ function AssemblyWorkstationDashboard() {
   };
 
   return (
-    <>
-      <DashboardLayout
-        title={getStationTitle()}
-        subtitle={`Execute assembly tasks for ${session?.user?.workstation?.name || 'workstation'}`}
-        icon="🔩"
-        layout="compact"
-        statsCards={renderStatsCards()}
-        primaryContent={
-          <div className="dashboard-box">
-            <div className="dashboard-box-header dashboard-box-header-green">
-              <h2 className="dashboard-box-header-title">Assembly Tasks</h2>
-              {renderFilterControls()}
-            </div>
-            <div className="dashboard-box-content">
-              {renderAssemblyOrders()}
-            </div>
-          </div>
-        }
-        messages={{ error, success }}
-        onDismissError={() => setError(null)}
-        onDismissSuccess={() => setSuccess(null)}
-      />
+    <StandardDashboardLayout
+      title={getStationTitle()}
+      subtitle={`Execute assembly tasks for ${session?.user?.workstation?.name || 'workstation'}`}
+      icon="🔩"
+      activityContent={renderActivity()}
+      statsContent={<StatisticsGrid stats={statsData} />}
+      formContent={null}
+      contentGrid={renderAssemblyOrders()}
+      inventoryContent={null}
+      messages={{ error, success }}
+      onDismissError={() => setError(null)}
+      onDismissSuccess={() => setSuccess(null)}
+    >
       {renderDetailsModal()}
-    </>
+    </StandardDashboardLayout>
   );
 }
 

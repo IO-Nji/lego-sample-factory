@@ -13,6 +13,16 @@
   }
 }
 
+/* Standard Component Title Styling */
+.component-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-gray-700);
+  margin: 0 0 0.4rem 0;
+}
+
 /* Messages */
 .dashboard-message {
   margin-bottom: 1.5rem;

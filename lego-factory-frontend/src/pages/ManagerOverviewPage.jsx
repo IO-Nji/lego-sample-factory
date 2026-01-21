@@ -10,7 +10,8 @@ import {
   LoadingSpinner, 
   Alert, 
   Badge,
-  Button 
+  Button,
+  Footer
 } from '../components';
 import '../styles/OverviewPages.css';
 
@@ -361,6 +362,7 @@ function ManagerOverviewPage() {
       )}
 
       <Tabs tabs={tabs} variant="default" />
+      <Footer />
     </div>
   );
 }
