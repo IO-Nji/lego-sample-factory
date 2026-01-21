@@ -258,7 +258,7 @@ function AssemblyControlDashboard() {
         { value: "ABANDONED", label: "Abandoned" }
       ]}
       sortOptions={[
-        { value: "controlOrderNumber", label: "Order Number" },
+        { value: "orderNumber", label: "Order Number" },
         { value: "priority", label: "Priority" },
         { value: "status", label: "Status" }
       ]}

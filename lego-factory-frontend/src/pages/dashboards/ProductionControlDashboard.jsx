@@ -266,6 +266,8 @@ function ProductionControlDashboard() {
         { value: 'priority', label: 'Priority' },
         { value: 'status', label: 'Status' }
       ]}
+      searchKeys={['controlOrderNumber', 'assemblyInstructions']}
+      sortKey="controlOrderNumber"
       renderCard={(order) => (
         <ProductionControlOrderCard
           key={order.id}

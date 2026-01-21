@@ -50,7 +50,9 @@ function OrdersSection({
   ],
   renderCard,
   searchPlaceholder = 'Search...',
-  emptyMessage = 'No orders found'
+  emptyMessage = 'No orders found',
+  searchKeys = ['orderNumber', 'notes'], // Default search keys
+  sortKey = 'orderNumber' // Default sort key for order number sorting
 }) {
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [filterStatus, setFilterStatus] = useState('ALL');
@@ -65,11 +67,12 @@ function OrdersSection({
       result = result.filter(order => order.status === filterStatus);
     }
     
-    // Apply search
+    // Apply search using searchKeys
     if (searchTerm) {
       result = result.filter(order => 
-        order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+        searchKeys.some(key => 
+          order[key]?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        )
       );
     }
     
@@ -77,18 +80,25 @@ function OrdersSection({
     result = [...result].sort((a, b) => {
       switch(sortBy) {
         case 'orderDate':
-          return new Date(b.orderDate) - new Date(a.orderDate);
+          return new Date(b.orderDate || 0) - new Date(a.orderDate || 0);
         case 'orderNumber':
-          return a.orderNumber.localeCompare(b.orderNumber);
+          // Use sortKey prop for flexible field name (orderNumber or controlOrderNumber)
+          const aVal = a[sortKey] || '';
+          const bVal = b[sortKey] || '';
+          return aVal.toString().localeCompare(bVal.toString());
         case 'status':
-          return a.status.localeCompare(b.status);
+          return (a.status || '').localeCompare(b.status || '');
+        case 'priority':
+          // Priority sorting: URGENT > HIGH > MEDIUM > LOW
+          const priorityOrder = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+          return (priorityOrder[a.priority] || 999) - (priorityOrder[b.priority] || 999);
         default:
           return 0;
       }
     });
     
     setFilteredOrders(result);
-  }, [filterStatus, orders, searchTerm, sortBy]);
+  }, [filterStatus, orders, searchTerm, sortBy, searchKeys, sortKey]);
 
   return (
     <>
