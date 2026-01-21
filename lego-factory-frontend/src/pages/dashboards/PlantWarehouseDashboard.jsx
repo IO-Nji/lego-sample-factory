@@ -5,7 +5,6 @@ import api from "../../api/api";
 import { 
   StandardDashboardLayout, 
   StatisticsGrid, 
-  Notification, 
   OrdersSection,
   InventoryTable,
   FormCard,

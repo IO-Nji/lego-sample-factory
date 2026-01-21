@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
-import axios from 'axios';
 import { StandardDashboardLayout, StatisticsGrid, InventoryTable, ActivityLog, OrdersSection } from "../../components";
 import WarehouseOrderCard from "../../components/WarehouseOrderCard";
 import { getInventoryStatusColor, generateAcronym, getProductDisplayName } from "../../utils/dashboardHelpers";
@@ -167,7 +166,7 @@ function ModulesSupermarketDashboard() {
         triggerScenario: 'SCENARIO_3'
       };
 
-      const response = await axios.post('/api/production-orders/create', payload);
+      const response = await api.post('/production-orders/create', payload);
       
       // Exit priority selection mode
       setPrioritySelectionMode(prev => ({

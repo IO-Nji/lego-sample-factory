@@ -401,6 +401,62 @@
   padding: 1rem 0;
 }
 
+/* Service Group Containers */
+.service-group {
+  position: relative;
+  width: 100%;
+  padding: 1.5rem 1rem 1rem 1rem;
+  border-radius: 12px;
+  border: 2px solid;
+  background: white;
+  margin: 0.5rem 0;
+}
+
+.service-group.frontend-group {
+  border-color: #4a90e2;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e3f2fd 100%);
+}
+
+.service-group.backend-group {
+  border-color: #6a4c93;
+  background: linear-gradient(135deg, #f5f3f7 0%, #ede7f6 100%);
+}
+
+.group-label {
+  position: absolute;
+  top: -12px;
+  left: 1rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: white;
+  border: 2px solid;
+}
+
+.frontend-group .group-label {
+  color: #4a90e2;
+  border-color: #4a90e2;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+.backend-group .group-label {
+  color: #6a4c93;
+  border-color: #6a4c93;
+  background: linear-gradient(135deg, #ede7f6 0%, #d1c4e9 100%);
+}
+
+.group-features {
+  font-size: 0.7rem;
+  color: #666;
+  text-align: center;
+  margin-bottom: 0.75rem;
+  font-style: italic;
+  opacity: 0.8;
+}
+
 .arch-layer {
   display: flex;
   justify-content: center;
@@ -514,13 +570,14 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   padding: 0.5rem 1rem;
-  background: rgba(44, 90, 160, 0.05);
-  border-radius: 6px;
-  font-size: 0.8rem;
+  background: rgba(106, 76, 147, 0.08);
+  border-radius: 8px;
+  font-size: 0.75rem;
   color: #555;
   font-style: italic;
+  border: 1px dashed rgba(106, 76, 147, 0.3);
 }
 
 .db-icon {

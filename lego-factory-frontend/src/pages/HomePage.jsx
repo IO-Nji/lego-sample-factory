@@ -539,11 +539,15 @@ function HomePage() {
           <div className="home-architecture-column">
             <h3 className="section-title">🏗️ Microservices Architecture</h3>
             <div className="architecture-diagram">
-              {/* Frontend Layer */}
-              <div className="arch-layer">
-                <div className={`service-box frontend ${serviceHealth['frontend'] || 'unknown'}`}>
-                  <span className="service-name">React SPA</span>
-                  <span className="service-tech">(Vite + Nginx)</span>
+              {/* Frontend Layer - Grouped Box */}
+              <div className="service-group frontend-group">
+                <div className="group-label">Frontend Layer</div>
+                <div className="group-features">UI Workflow • Real-time Updates • Role-based Navigation</div>
+                <div className="arch-layer">
+                  <div className={`service-box frontend ${serviceHealth['frontend'] || 'unknown'}`}>
+                    <span className="service-name">React SPA</span>
+                    <span className="service-tech">(Vite + Nginx)</span>
+                  </div>
                 </div>
               </div>
               
@@ -560,41 +564,45 @@ function HomePage() {
               
               <div className="arch-arrow-down">↓</div>
               
-              {/* Backend Services Layer */}
-              <div className="arch-layer services-grid">
-                <div className={`service-box ${serviceHealth['user-service'] || 'unknown'}`}>
-                  <span className="service-name">User Service</span>
-                  <span className="service-tech">:8012</span>
-                  <span className={`health-indicator ${serviceHealth['user-service'] || 'unknown'}`}></span>
+              {/* Backend Services Layer - Grouped Box */}
+              <div className="service-group backend-group">
+                <div className="group-label">Backend Services</div>
+                <div className="group-features">User Management • Business Logic • Database Access • Order Processing</div>
+                <div className="arch-layer services-grid">
+                  <div className={`service-box ${serviceHealth['user-service'] || 'unknown'}`}>
+                    <span className="service-name">User Service</span>
+                    <span className="service-tech">:8012</span>
+                    <span className={`health-indicator ${serviceHealth['user-service'] || 'unknown'}`}></span>
+                  </div>
+                  
+                  <div className={`service-box ${serviceHealth['masterdata-service'] || 'unknown'}`}>
+                    <span className="service-name">Masterdata</span>
+                    <span className="service-tech">:8013</span>
+                    <span className={`health-indicator ${serviceHealth['masterdata-service'] || 'unknown'}`}></span>
+                  </div>
+                  
+                  <div className={`service-box ${serviceHealth['inventory-service'] || 'unknown'}`}>
+                    <span className="service-name">Inventory</span>
+                    <span className="service-tech">:8014</span>
+                    <span className={`health-indicator ${serviceHealth['inventory-service'] || 'unknown'}`}></span>
+                  </div>
+                  
+                  <div className={`service-box ${serviceHealth['order-processing-service'] || 'unknown'}`}>
+                    <span className="service-name">Order Processing</span>
+                    <span className="service-tech">:8015</span>
+                    <span className={`health-indicator ${serviceHealth['order-processing-service'] || 'unknown'}`}></span>
+                  </div>
+                  
+                  <div className={`service-box ${serviceHealth['simal-integration-service'] || 'unknown'}`}>
+                    <span className="service-name">SimAL Integration</span>
+                    <span className="service-tech">:8016</span>
+                    <span className={`health-indicator ${serviceHealth['simal-integration-service'] || 'unknown'}`}></span>
+                  </div>
                 </div>
                 
-                <div className={`service-box ${serviceHealth['masterdata-service'] || 'unknown'}`}>
-                  <span className="service-name">Masterdata</span>
-                  <span className="service-tech">:8013</span>
-                  <span className={`health-indicator ${serviceHealth['masterdata-service'] || 'unknown'}`}></span>
+                <div className="arch-note">
+                  <span className="db-icon">💾</span> H2 In-Memory Databases (Isolated per service)
                 </div>
-                
-                <div className={`service-box ${serviceHealth['inventory-service'] || 'unknown'}`}>
-                  <span className="service-name">Inventory</span>
-                  <span className="service-tech">:8014</span>
-                  <span className={`health-indicator ${serviceHealth['inventory-service'] || 'unknown'}`}></span>
-                </div>
-                
-                <div className={`service-box ${serviceHealth['order-processing-service'] || 'unknown'}`}>
-                  <span className="service-name">Order Processing</span>
-                  <span className="service-tech">:8015</span>
-                  <span className={`health-indicator ${serviceHealth['order-processing-service'] || 'unknown'}`}></span>
-                </div>
-                
-                <div className={`service-box ${serviceHealth['simal-integration-service'] || 'unknown'}`}>
-                  <span className="service-name">SimAL Integration</span>
-                  <span className="service-tech">:8016</span>
-                  <span className={`health-indicator ${serviceHealth['simal-integration-service'] || 'unknown'}`}></span>
-                </div>
-              </div>
-              
-              <div className="arch-note">
-                <span className="db-icon">💾</span> H2 In-Memory Databases (Isolated per service)
               </div>
             </div>
             

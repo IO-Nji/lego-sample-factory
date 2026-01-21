@@ -100,49 +100,6 @@ function AdminDashboard() {
     }
   }, []);
 
-  // Function to detect and log order status changes (DEPRECATED - now using backend audit logs)
-  /* DEPRECATED: detectOrderChanges
-  const detectOrderChanges = (allOrders) => {
-    const currentOrdersMap = new Map();
-    
-    // Build current orders map
-    allOrders.forEach(order => {
-      const key = `${order.orderNumber || order.id}`;
-      currentOrdersMap.set(key, order);
-    });
-
-    // Compare with previous orders to detect changes
-    if (previousOrdersRef.current.size > 0) {
-      currentOrdersMap.forEach((currentOrder, key) => {
-        const previousOrder = previousOrdersRef.current.get(key);
-        
-        if (!previousOrder) {
-          // New order created
-          const orderType = getOrderType(currentOrder.orderNumber);
-          addNotification(
-            `New ${orderType} order created: ${currentOrder.orderNumber || \`#${currentOrder.id}\`}`,
-            'info'
-          );
-        } else if (previousOrder.status !== currentOrder.status) {
-          // Status changed
-          const orderType = getOrderType(currentOrder.orderNumber);
-          const statusType = currentOrder.status === 'COMPLETED' ? 'success' : 
-                           currentOrder.status === 'CANCELLED' ? 'error' :
-                           currentOrder.status === 'PROCESSING' ? 'info' : 'warning';
-          
-          addNotification(
-            \`${orderType} order ${currentOrder.orderNumber || \`#${currentOrder.id}\`}: ${previousOrder.status} → ${currentOrder.status}\`,
-            statusType
-          );
-        }
-      });
-    }
-
-    // Update previous orders reference
-    previousOrdersRef.current = currentOrdersMap;
-  };
-  */
-
   // Map role names to acronyms for compact display
   const getRoleAcronym = (role) => {
     const roleMap = {

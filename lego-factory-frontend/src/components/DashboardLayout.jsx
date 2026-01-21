@@ -4,7 +4,13 @@ import Footer from './Footer';
 import '../styles/DashboardLayout.css';
 
 /**
+ * @deprecated This component is OBSOLETE - Use StandardDashboardLayout instead!
+ * 
  * StandardizedDashboardLayout - Reusable layout component for all station dashboards
+ * 
+ * ⚠️ MIGRATION STATUS: This old layout is deprecated.
+ * All dashboards have been migrated to StandardDashboardLayout.
+ * This component remains only for legacy route compatibility.
  * 
  * Layout Structure Options:
  * 1. Default Layout (layout="default"):

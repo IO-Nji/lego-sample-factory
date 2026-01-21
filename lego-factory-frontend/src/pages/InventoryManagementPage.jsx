@@ -4,10 +4,12 @@ import { useAuth } from "../context/AuthContext";
 import ErrorNotification from "../components/ErrorNotification";
 import PageHeader from "../components/PageHeader";
 import { StatisticsGrid } from "../components";
-import { getErrorMessage } from "../utils/errorHandler";
 import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 import "../styles/AdminDashboard.css";
+
+// Helper function for extracting error messages
+const getErrorMessage = (err) => err.response?.data?.message || err.message || 'An error occurred';
 
 function InventoryManagementPage() {
   const { session } = useAuth();
