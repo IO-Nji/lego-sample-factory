@@ -34,7 +34,16 @@ function ManufacturingDashboard() {
     setNotifications([]);
   };
 
-  // Fetch production control orders for this manufacturing workstation
+  // Determine workstation-specific order endpoint
+  const getOrderEndpoint = () => {
+    const workstationId = session?.user?.workstation?.id;
+    if (workstationId === 1) return '/injection-molding-orders';
+    if (workstationId === 2) return '/part-preproduction-orders';
+    if (workstationId === 3) return '/part-finishing-orders';
+    return '/production-control-orders'; // Fallback to generic
+  };
+
+  // Fetch workstation-specific manufacturing orders
   const fetchControlOrders = async () => {
     const workstationId = session?.user?.workstation?.id;
     if (!workstationId) {
@@ -47,15 +56,16 @@ function ManufacturingDashboard() {
     setError(null);
 
     try {
-      const response = await api.get(`/production-control-orders/workstation/${workstationId}`);
+      const endpoint = getOrderEndpoint();
+      const response = await api.get(`${endpoint}/workstation/${workstationId}`);
       const ordersList = Array.isArray(response.data) ? response.data : [];
       setControlOrders(ordersList);
       applyFilter(ordersList, filterStatus);
       if (ordersList.length > 0) {
-        addNotification(`Loaded ${ordersList.length} production orders`, 'success');
+        addNotification(`Loaded ${ordersList.length} manufacturing orders`, 'success');
       }
     } catch (err) {
-      const errorMsg = "Failed to load production orders: " + (err.response?.data?.message || err.message);
+      const errorMsg = "Failed to load manufacturing orders: " + (err.response?.data?.message || err.message);
       setError(errorMsg);
       addNotification(errorMsg, 'error');
     } finally {
@@ -85,21 +95,23 @@ function ManufacturingDashboard() {
 
   const handleStartProduction = async (orderId) => {
     try {
-      await api.post(`/production-control-orders/${orderId}/start`);
-      addNotification(`Production order started`, 'success');
+      const endpoint = getOrderEndpoint();
+      await api.post(`${endpoint}/${orderId}/start`);
+      addNotification(`Manufacturing order started`, 'success');
       fetchControlOrders();
     } catch (err) {
-      addNotification(`Failed to start production: ${err.response?.data?.message || err.message}`, 'error');
+      addNotification(`Failed to start manufacturing: ${err.response?.data?.message || err.message}`, 'error');
     }
   };
 
   const handleCompleteProduction = async (orderId) => {
     try {
-      await api.post(`/production-control-orders/${orderId}/complete`);
-      addNotification(`Production order completed`, 'success');
+      const endpoint = getOrderEndpoint();
+      await api.post(`${endpoint}/${orderId}/complete`);
+      addNotification(`Manufacturing order completed`, 'success');
       fetchControlOrders();
     } catch (err) {
-      addNotification(`Failed to complete production: ${err.response?.data?.message || err.message}`, 'error');
+      addNotification(`Failed to complete manufacturing: ${err.response?.data?.message || err.message}`, 'error');
     }
   };
 
@@ -118,24 +130,25 @@ function ManufacturingDashboard() {
     />
   );
 
-  // Production orders rendering using OrdersSection
+  // Manufacturing orders rendering using OrdersSection
   const renderProductionOrders = () => (
     <OrdersSection
-      title="Production Orders"
+      title="Manufacturing Orders"
       icon="🔧"
       orders={controlOrders}
       filterOptions={[
         { value: 'ALL', label: 'All Orders' },
-        { value: 'ASSIGNED', label: 'Assigned' },
+        { value: 'PENDING', label: 'Pending' },
         { value: 'IN_PROGRESS', label: 'In Progress' },
-        { value: 'COMPLETED', label: 'Completed' }
+        { value: 'COMPLETED', label: 'Completed' },
+        { value: 'HALTED', label: 'Halted' }
       ]}
       sortOptions={[
         { value: 'orderNumber', label: 'Order Number' },
         { value: 'status', label: 'Status' }
       ]}
-      searchKeys={['controlOrderNumber']}
-      sortKey="controlOrderNumber"
+      searchKeys={['orderNumber']}
+      sortKey="orderNumber"
       renderCard={(order) => (
         <ProductionControlOrderCard
           key={order.id}
@@ -144,7 +157,7 @@ function ManufacturingDashboard() {
           onComplete={() => handleCompleteProduction(order.id)}
         />
       )}
-      emptyMessage="No production orders assigned to this workstation yet"
+      emptyMessage="No manufacturing orders assigned to this workstation yet"
       searchPlaceholder="Search by order number..."
     />
   );

@@ -1,6 +1,8 @@
 package io.life.order.controller;
 
 import io.life.order.dto.AssemblyControlOrderDTO;
+import io.life.order.dto.SupplyOrderDTO;
+import io.life.order.dto.SupplyOrderItemDTO;
 import io.life.order.service.AssemblyControlOrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -140,6 +142,50 @@ public class AssemblyControlOrderController {
     }
 
     /**
+     * Request parts for an assembly control order.
+     * Creates a supply order to Parts Supply Warehouse.
+     */
+    @PostMapping("/{id}/request-parts")
+    public ResponseEntity<SupplyOrderDTO> requestParts(
+            @PathVariable Long id,
+            @RequestBody RequestPartsRequest request) {
+        try {
+            SupplyOrderDTO supplyOrder = assemblyControlOrderService.requestSupplies(
+                    id,
+                    request.getRequiredParts(),
+                    request.getNeededBy(),
+                    request.getNotes()
+            );
+            return ResponseEntity.ok(supplyOrder);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    /**
+     * Dispatch assembly control order to workstation.
+     * Requires supply order to be fulfilled first (if one exists).
+     */
+    @PostMapping("/{id}/dispatch")
+    public ResponseEntity<AssemblyControlOrderDTO> dispatchToWorkstation(@PathVariable Long id) {
+        try {
+            AssemblyControlOrderDTO order = assemblyControlOrderService.dispatchToWorkstation(id);
+            return ResponseEntity.ok(order);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    /**
+     * Get supply orders for an assembly control order.
+     */
+    @GetMapping("/{id}/supply-orders")
+    public ResponseEntity<List<SupplyOrderDTO>> getSupplyOrders(@PathVariable Long id) {
+        List<SupplyOrderDTO> supplyOrders = assemblyControlOrderService.getSupplyOrders(id);
+        return ResponseEntity.ok(supplyOrders);
+    }
+
+    /**
      * Create an assembly control order from SimAL schedule data.
      * This endpoint is called by the SimAL integration service when a production
      * order has been scheduled and assigned to an assembly workstation.
@@ -218,5 +264,23 @@ public class AssemblyControlOrderController {
         public void setQualityCheckpoints(String qualityCheckpoints) {
             this.qualityCheckpoints = qualityCheckpoints;
         }
+    }
+
+    // Request DTO for requesting parts
+    public static class RequestPartsRequest {
+        private List<SupplyOrderItemDTO> requiredParts;
+        private LocalDateTime neededBy;
+        private String notes;
+
+        public List<SupplyOrderItemDTO> getRequiredParts() { return requiredParts; }
+        public void setRequiredParts(List<SupplyOrderItemDTO> requiredParts) {
+            this.requiredParts = requiredParts;
+        }
+
+        public LocalDateTime getNeededBy() { return neededBy; }
+        public void setNeededBy(LocalDateTime neededBy) { this.neededBy = neededBy; }
+
+        public String getNotes() { return notes; }
+        public void setNotes(String notes) { this.notes = notes; }
     }
 }
