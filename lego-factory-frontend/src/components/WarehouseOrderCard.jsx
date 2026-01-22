@@ -47,6 +47,7 @@ function WarehouseOrderCard({
     const statusMap = {
       PENDING: 'pending',
       PROCESSING: 'processing',
+      AWAITING_PRODUCTION: 'processing',  // Show as processing (blue) when waiting for production
       FULFILLED: 'fulfilled',
       REJECTED: 'rejected',
       CANCELLED: 'cancelled'
@@ -168,6 +169,11 @@ function WarehouseOrderCard({
             show: !!onCancel
           });
         }
+        break;
+      
+      case 'AWAITING_PRODUCTION':
+        // Production order has been created, waiting for production to complete
+        // No actions available - just display status
         break;
       
       case 'FULFILLED':

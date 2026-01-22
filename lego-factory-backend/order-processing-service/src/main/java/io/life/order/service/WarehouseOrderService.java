@@ -109,6 +109,8 @@ public class WarehouseOrderService {
      * Confirm a warehouse order
      * Changes status from PENDING to PROCESSING (acknowledges receipt and readiness to fulfill)
      * Similar to customer order confirmation at Plant Warehouse
+     * 
+     * ENHANCED: Analyzes module availability and sets triggerScenario for frontend
      */
     public WarehouseOrderDTO confirmWarehouseOrder(Long warehouseOrderId) {
         @SuppressWarnings("null")
@@ -127,6 +129,49 @@ public class WarehouseOrderService {
         // Update status to PROCESSING
         order.setStatus("PROCESSING");
         order.setUpdatedAt(LocalDateTime.now());
+        
+        // ANALYZE MODULE AVAILABILITY to set triggerScenario for frontend button logic
+        try {
+            logger.info("Analyzing module availability for warehouse order {}", order.getWarehouseOrderNumber());
+            
+            // Get module requirements for all products in this warehouse order
+            Map<Long, Integer> aggregatedModuleRequirements = new HashMap<>();
+            
+            for (WarehouseOrderItem item : order.getWarehouseOrderItems()) {
+                if ("PRODUCT".equals(item.getItemType())) {
+                    logger.info("  Product item: {} (ID: {}) qty {}", item.getItemName(), item.getItemId(), item.getRequestedQuantity());
+                    
+                    Map<Long, Integer> moduleReqs = masterdataService.getModuleRequirementsForProduct(
+                        item.getItemId(), 
+                        item.getRequestedQuantity()
+                    );
+                    
+                    logger.info("    Requires {} different modules", moduleReqs.size());
+                    for (Map.Entry<Long, Integer> entry : moduleReqs.entrySet()) {
+                        aggregatedModuleRequirements.merge(entry.getKey(), entry.getValue(), Integer::sum);
+                        logger.info("      Module ID {} qty {}", entry.getKey(), entry.getValue());
+                    }
+                }
+            }
+            
+            logger.info("Total aggregated module requirements: {} different modules", aggregatedModuleRequirements.size());
+            
+            // Check if all modules are available
+            boolean allModulesAvailable = inventoryService.checkModulesAvailability(aggregatedModuleRequirements);
+            
+            if (allModulesAvailable) {
+                order.setTriggerScenario("DIRECT_FULFILLMENT");
+                logger.info("✓ Warehouse order {} - All modules available → Trigger Scenario: DIRECT_FULFILLMENT", order.getWarehouseOrderNumber());
+            } else {
+                order.setTriggerScenario("PRODUCTION_REQUIRED");
+                logger.info("✗ Warehouse order {} - Insufficient modules → Trigger Scenario: PRODUCTION_REQUIRED", order.getWarehouseOrderNumber());
+            }
+        } catch (Exception e) {
+            logger.error("Failed to analyze module availability for warehouse order {}: {}", 
+                order.getWarehouseOrderNumber(), e.getMessage(), e);
+            order.setTriggerScenario("UNKNOWN");
+        }
+        
         warehouseOrderRepository.save(order);
 
         logger.info("Warehouse order {} confirmed and moved to PROCESSING", order.getWarehouseOrderNumber());
