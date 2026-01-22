@@ -135,37 +135,7 @@
   margin-bottom: 2rem;
 }
 
-/* Stats Cards */
-.stat-card {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  text-align: center;
-  transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-  border-color: #0b5394;
-  box-shadow: 0 4px 6px rgba(11, 83, 148, 0.1);
-  transform: translateY(-2px);
-}
-
-.stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #0b5394;
-  margin: 0 0 0.5rem 0;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: #6b7280;
-  text-transform: uppercase;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  margin: 0;
-}
+/* STAT CARD SECTION REMOVED - Use StatCard component with StatCard.module.css instead */
 
 /* Tables */
 .dashboard-table {
