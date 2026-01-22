@@ -34,88 +34,7 @@
   font-size: 0.875rem;
 }
 
-/* ============================================
-   STAT CARD
-   ============================================ */
-.stat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.32rem;
-  padding: 0.6rem;
-  background: white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border);
-  border-top: 3px solid var(--color-primary);
-  transition: transform 0.2s, box-shadow 0.2s;
-  aspect-ratio: 1;
-  min-height: 77px;
-  max-width: 128px;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.stat-card-primary { border-top-color: var(--color-primary); }
-.stat-card-success { border-top-color: var(--color-success); }
-.stat-card-warning { border-top-color: var(--color-warning); }
-.stat-card-danger { border-top-color: var(--color-danger); }
-.stat-card-info { border-top-color: var(--color-info); }
-
-.stat-icon {
-  font-size: 1.28rem;
-  width: auto;
-  height: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-value {
-  font-size: 1.28rem;
-  font-weight: 700;
-  color: var(--color-text);
-  line-height: 1;
-  text-align: center;
-}
-
-.stat-value-danger {
-  color: var(--color-danger);
-  animation: pulse-warning 2s ease-in-out infinite;
-}
-
-.stat-value-warning {
-  color: var(--color-warning);
-  font-weight: 800;
-}
-
-@keyframes pulse-warning {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-.stat-title {
-  font-size: 0.56rem;
-  color: var(--color-text-secondary);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  text-align: center;
-}
-
-.stat-trend {
-  font-size: 0.56rem;
-  font-weight: 600;
-  margin-top: 0.2rem;
-}
-
-.trend-up { color: var(--color-success); }
-.trend-down { color: var(--color-danger); }
+/* STAT CARD SECTION REMOVED - Use StatCard.module.css component instead */
 
 /* ============================================
    PIE CHART
@@ -409,17 +328,4 @@
     font-size: 0.75rem;
   }
   
-  .stat-card {
-    padding: 1rem;
-  }
-  
-  .stat-icon {
-    font-size: 1.5rem;
-    width: 2.5rem;
-    height: 2.5rem;
-  }
-  
-  .stat-value {
-    font-size: 1.5rem;
-  }
-}
+  /* stat-card responsive styles removed - handled by StatCard.module.css */}
