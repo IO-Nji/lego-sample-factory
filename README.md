@@ -230,7 +230,7 @@ ProductionOrder: PENDING → PLANNED → IN_PRODUCTION → COMPLETED
 
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/IO-Nji/lego-sample-factory.git
 cd lego-sample-factory
 
 # Start all services (Linux/Mac)
@@ -268,7 +268,7 @@ docker-compose up -d
 git config --global --unset filter.lfs.required
 
 # Option 2: Clone without LFS filters
-GIT_LFS_SKIP_SMUDGE=1 git clone <repository-url>
+GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/IO-Nji/lego-sample-factory.git
 ```
 
 **Note**: This repository includes a `.gitattributes` file that ensures proper line endings and explicitly handles file types, preventing LFS-related issues for most users.
