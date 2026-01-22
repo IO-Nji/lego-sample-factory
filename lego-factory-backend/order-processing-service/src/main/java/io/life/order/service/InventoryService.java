@@ -110,7 +110,7 @@ public class InventoryService {
             // Determine item type based on workstation
             // Parts Supply Warehouse (ID 9) deals with PARTS
             // Modules Supermarket (ID 8) deals with MODULES
-            // Plant Warehouse (ID 7) deals with PRODUCTS
+            // Plant Warehouse (ID 7) deals with PRODUCT
             String itemType;
             if (workstationId == 9L) {
                 itemType = "PART";

@@ -4,12 +4,19 @@ import api from "../../api/api";
 import { StandardDashboardLayout, StatisticsGrid, InventoryTable, ActivityLog, OrdersSection } from "../../components";
 import WarehouseOrderCard from "../../components/WarehouseOrderCard";
 import { getInventoryStatusColor, generateAcronym, getProductDisplayName } from "../../utils/dashboardHelpers";
+import { useInventoryDisplay } from "../../hooks/useInventoryDisplay";
 
 function ModulesSupermarketDashboard() {
   const { session } = useAuth();
   const [warehouseOrders, setWarehouseOrders] = useState([]);
-  const [inventory, setInventory] = useState([]);
-  const [modules, setModules] = useState([]);
+  
+  // Use centralized inventory hook for modules management (hardcoded WS-8 for Modules Supermarket)
+  const { 
+    inventory, 
+    masterdata: modules,
+    getItemName: getModuleName,
+    fetchInventory 
+  } = useInventoryDisplay('MODULE', 8);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [fulfillmentInProgress, setFulfillmentInProgress] = useState({});
@@ -44,19 +51,19 @@ function ModulesSupermarketDashboard() {
   };
 
   useEffect(() => {
-    fetchModules(); // Fetch modules master data on mount
     if (session?.user?.workstation?.id) {
       fetchWarehouseOrders();
-      fetchInventory();
+      // fetchInventory is called automatically by useInventoryDisplay hook when workstation ID changes
     }
     const interval = setInterval(() => {
       if (session?.user?.workstation?.id) {
         fetchWarehouseOrders();
-        fetchInventory();
+        fetchInventory(); // Manual refresh for periodic updates
       }
     }, 30000); // Increased to 30s to reduce page jump
     return () => clearInterval(interval);
-  }, [session?.user?.workstation?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.workstation?.id]); // fetchInventory is stable from hook
 
   const fetchWarehouseOrders = async () => {
     try {
@@ -80,26 +87,7 @@ function ModulesSupermarketDashboard() {
     }
   };
 
-  const fetchInventory = async () => {
-    if (!session?.user?.workstation?.id) return;
-    try {
-      const response = await api.get(`/stock/workstation/${session.user.workstation.id}`);
-      setInventory(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      console.error("Failed to fetch inventory:", err);
-      setInventory([]);
-    }
-  };
-
-  const fetchModules = async () => {
-    try {
-      const response = await api.get("/masterdata/modules");
-      setModules(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      console.error("Failed to fetch modules:", err);
-      setModules([]);
-    }
-  };
+  // fetchInventory is now provided by useInventoryDisplay hook
 
   const handleConfirmOrder = async (orderId, orderNumber) => {
     setConfirmationInProgress(prev => ({ ...prev, [orderId]: true }));
