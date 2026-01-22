@@ -51,12 +51,26 @@ function InventoryTable({
     // Support both itemId (number) and item (object) for flexibility
     const itemId = typeof itemIdOrItem === 'object' ? itemIdOrItem.itemId : itemIdOrItem;
     
+    // Priority 1: Use getItemName if provided (expects item object)
     if (getItemName && typeof itemIdOrItem === 'object') {
       return getItemName(itemIdOrItem);
     }
+    
+    // Priority 2: Use getItemDisplayName (can handle both object and id)
     if (getItemDisplayName) {
+      // If it's an object and getItemDisplayName is from useInventoryDisplay hook, pass the object
+      if (typeof itemIdOrItem === 'object') {
+        // Check if getItemDisplayName can handle objects (from useInventoryDisplay)
+        const result = getItemDisplayName(itemIdOrItem);
+        if (result && result !== `Item ${itemId}`) {
+          return result;
+        }
+        // Fallback to itemId if object wasn't handled
+        return getItemDisplayName(itemId);
+      }
       return getItemDisplayName(itemId);
     }
+    
     // Fallback to legacy items array lookup
     const matchedItem = items.find(i => i.id === itemId);
     return matchedItem?.name || `Item #${itemId}`;

@@ -133,7 +133,7 @@
   padding: 0.0625rem 0.25rem; /* Top/bottom padding reduced to half for tighter layout */
   font-size: 0.6rem;
   height: auto;
-  min-height: auto;
+  min-height: 0;
   width: auto;
   white-space: nowrap;
 }
@@ -374,5 +374,5 @@
 .order-card-fixed {
   min-width: 320px;
   max-width: 320px;
-  min-height: auto;
+  min-height: 0;
 }
