@@ -255,6 +255,24 @@ docker-compose up -d
 | `production_control` | `password` | PRODUCTION_CONTROL | Injection Molding (WS-1) | Manufacturing oversight |
 | `assembly_control` | `password` | ASSEMBLY_CONTROL | Gear Assembly (WS-4) | Assembly coordination |
 
+### Troubleshooting
+
+#### Cannot Clone/Pull Repository
+
+**Symptom**: Git operations fail with LFS-related errors, even though this repository doesn't use Git LFS.
+
+**Solution**: If you have Git LFS globally configured with `filter.lfs.required=true`, it can interfere with cloning repositories that don't use LFS. To fix:
+
+```bash
+# Option 1: Disable LFS requirement globally (recommended)
+git config --global --unset filter.lfs.required
+
+# Option 2: Clone without LFS filters
+GIT_LFS_SKIP_SMUDGE=1 git clone <repository-url>
+```
+
+**Note**: This repository includes a `.gitattributes` file that ensures proper line endings and explicitly handles file types, preventing LFS-related issues for most users.
+
 ---
 
 ## 📚 Comprehensive Documentation
