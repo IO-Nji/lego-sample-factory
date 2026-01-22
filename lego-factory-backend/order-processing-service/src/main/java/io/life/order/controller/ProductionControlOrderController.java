@@ -1,6 +1,8 @@
 package io.life.order.controller;
 
 import io.life.order.dto.ProductionControlOrderDTO;
+import io.life.order.dto.SupplyOrderDTO;
+import io.life.order.dto.SupplyOrderItemDTO;
 import io.life.order.service.ProductionControlOrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -143,6 +145,50 @@ public class ProductionControlOrderController {
     }
 
     /**
+     * Request parts for a production control order.
+     * Creates a supply order to Parts Supply Warehouse.
+     */
+    @PostMapping("/{id}/request-parts")
+    public ResponseEntity<SupplyOrderDTO> requestParts(
+            @PathVariable Long id,
+            @RequestBody RequestPartsRequest request) {
+        try {
+            SupplyOrderDTO supplyOrder = productionControlOrderService.requestSupplies(
+                    id,
+                    request.getRequiredParts(),
+                    request.getNeededBy(),
+                    request.getNotes()
+            );
+            return ResponseEntity.ok(supplyOrder);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    /**
+     * Dispatch production control order to workstation.
+     * Requires supply order to be fulfilled first (if one exists).
+     */
+    @PostMapping("/{id}/dispatch")
+    public ResponseEntity<ProductionControlOrderDTO> dispatchToWorkstation(@PathVariable Long id) {
+        try {
+            ProductionControlOrderDTO order = productionControlOrderService.dispatchToWorkstation(id);
+            return ResponseEntity.ok(order);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    /**
+     * Get supply orders for a production control order.
+     */
+    @GetMapping("/{id}/supply-orders")
+    public ResponseEntity<List<SupplyOrderDTO>> getSupplyOrders(@PathVariable Long id) {
+        List<SupplyOrderDTO> supplyOrders = productionControlOrderService.getSupplyOrders(id);
+        return ResponseEntity.ok(supplyOrders);
+    }
+
+    /**
      * Update defect information
      */
     @PatchMapping("/{id}/defects")
@@ -278,5 +324,23 @@ public class ProductionControlOrderController {
         public void setQualityCheckpoints(String qualityCheckpoints) {
             this.qualityCheckpoints = qualityCheckpoints;
         }
+    }
+
+    // Request DTO for requesting parts
+    public static class RequestPartsRequest {
+        private List<SupplyOrderItemDTO> requiredParts;
+        private LocalDateTime neededBy;
+        private String notes;
+
+        public List<SupplyOrderItemDTO> getRequiredParts() { return requiredParts; }
+        public void setRequiredParts(List<SupplyOrderItemDTO> requiredParts) {
+            this.requiredParts = requiredParts;
+        }
+
+        public LocalDateTime getNeededBy() { return neededBy; }
+        public void setNeededBy(LocalDateTime neededBy) { this.neededBy = neededBy; }
+
+        public String getNotes() { return notes; }
+        public void setNotes(String notes) { this.notes = notes; }
     }
 }

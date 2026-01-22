@@ -114,39 +114,15 @@ function SupplyOrderCard({
     switch(status) {
       case 'PENDING':
         actions.push({
-          label: 'Start',
-          variant: 'primary',
-          size: 'small',
-          onClick: () => onStart(order.id),
-          show: !!onStart
-        });
-        actions.push({
-          label: 'Reject',
-          variant: 'warning',
-          size: 'small',
-          onClick: () => onReject(order.id),
-          show: !!onReject
-        });
-        actions.push({
-          label: 'Cancel',
-          variant: 'danger',
-          size: 'small',
-          onClick: () => onCancel(order.id),
-          show: !!onCancel
-        });
-        break;
-      
-      case 'IN_PROGRESS':
-        actions.push({
-          label: 'Fulfill',
+          label: '✅ Fulfill Order',
           variant: 'success',
           size: 'small',
           onClick: () => onFulfill(order.id),
           show: !!onFulfill
         });
         actions.push({
-          label: 'Reject',
-          variant: 'warning',
+          label: '❌ Reject',
+          variant: 'danger',
           size: 'small',
           onClick: () => onReject(order.id),
           show: !!onReject
@@ -156,17 +132,11 @@ function SupplyOrderCard({
       case 'FULFILLED':
       case 'REJECTED':
       case 'CANCELLED':
-        // No actions available
+        // No actions for completed orders
         break;
       
       default:
-        actions.push({
-          label: 'Cancel',
-          variant: 'danger',
-          size: 'small',
-          onClick: () => onCancel(order.id),
-          show: !!onCancel
-        });
+        break;
     }
     
     return actions;
