@@ -275,8 +275,7 @@ function PlantWarehouseDashboard() {
       title="Product Inventory"
       icon="📦"
       inventory={inventory}
-      itemType="PRODUCT"
-      getItemDisplayName={getProductName}
+      getItemName={getProductName}
       getStatusColor={getInventoryStatusColor}
       emptyMessage="No inventory items"
       columnHeaders={{ item: 'Product', quantity: 'Qty' }}
@@ -363,6 +362,10 @@ function PlantWarehouseDashboard() {
                         min="0"
                         value={selectedProducts[product.id] || 0}
                         onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                        aria-label={`Order quantity for ${product.name}`}
+                        title={`Order quantity for ${product.name}`}
+                        placeholder="0"
+                        autoComplete="off"
                         style={{
                           padding: '0.5rem 0.75rem',
                           border: '1px solid #d1d5db',
