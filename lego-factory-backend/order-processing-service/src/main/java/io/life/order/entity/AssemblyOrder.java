@@ -70,7 +70,7 @@ public class AssemblyOrder {
     private String priority; // LOW, NORMAL, HIGH, URGENT
 
     @Column(name = "item_type", nullable = false)
-    private String itemType; // MODULE, PRODUCT_VARIANT
+    private String itemType; // MODULE, PRODUCT
 
     @Column(name = "item_id", nullable = false)
     private Long itemId;

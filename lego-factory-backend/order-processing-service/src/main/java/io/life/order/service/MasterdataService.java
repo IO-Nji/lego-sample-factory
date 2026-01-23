@@ -29,7 +29,7 @@ public class MasterdataService {
     /**
      * Fetch item name from masterdata-service based on item type and ID.
      * 
-     * @param itemType "PRODUCT_VARIANT", "MODULE", or "PART"
+     * @param itemType "PRODUCT", "MODULE", or "PART"
      * @param itemId The item's ID
      * @return The item's name, or a fallback string if not found
      */
@@ -57,7 +57,7 @@ public class MasterdataService {
 
     private String getEndpointForType(String itemType) {
         return switch (itemType.toUpperCase()) {
-            case "PRODUCT", "PRODUCT_VARIANT" -> "/products";
+            case "PRODUCT" -> "/product-variants";
             case "MODULE" -> "/modules";
             case "PART" -> "/parts";
             default -> null;

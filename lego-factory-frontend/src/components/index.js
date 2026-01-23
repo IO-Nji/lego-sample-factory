@@ -52,6 +52,7 @@ export { default as BaseOrderCard } from './BaseOrderCard';
 export { default as CustomerOrderCard } from './CustomerOrderCard';
 export { default as WarehouseOrderCard } from './WarehouseOrderCard';
 export { default as ProductionOrderCard } from './ProductionOrderCard';
+export { default as FinalAssemblyOrderCard } from './FinalAssemblyOrderCard';
 export { default as ProductionControlOrderCard } from './ProductionControlOrderCard';
 export { default as AssemblyControlOrderCard } from './AssemblyControlOrderCard';
 export { default as SupplyOrderCard } from './SupplyOrderCard';

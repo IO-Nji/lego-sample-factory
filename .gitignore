@@ -177,3 +177,12 @@ BROWSER_CACHE_FIX.md
 SCENARIO2_TEST_GUIDE.md
 test-scenario-2.sh
 DOCUMENTATION_INDEX.md
+SCENARIO2_FIX_VERIFICATION.md
+ASSEMBLY_CONTROL_FIX.md
+test-final-assembly-workflow.sh
+verify-scenarios-1-2.sh
+test-warehouse-fulfillment.sh
+test-final-assembly-complete.sh
+test-warehouse-order-with-stock.sh
+⚠️_READ_ME_FIRST_DOCUMENTATION_UPDATE.md
+test-module-availability.sh

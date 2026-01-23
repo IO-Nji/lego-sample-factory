@@ -39,7 +39,7 @@ public class AssemblyControlOrder {
     @Column(nullable = false)
     private String status; // ASSIGNED, IN_PROGRESS, COMPLETED, HALTED, ABANDONED
 
-    // Item being assembled (MODULE or PRODUCT_VARIANT)
+    // Item being assembled (MODULE or PRODUCT)
     @Column(nullable = false)
     private Long itemId;
 
