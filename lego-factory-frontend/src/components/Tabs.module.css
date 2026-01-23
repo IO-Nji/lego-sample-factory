@@ -140,8 +140,7 @@
   .tabList {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
   }
   
   .tabList::-webkit-scrollbar {
