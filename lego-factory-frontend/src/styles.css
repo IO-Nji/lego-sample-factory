@@ -64,6 +64,7 @@ body {
 
 /* Import component-specific stylesheets */
 @import './styles/StandardPage.css';
+@import './styles/Button.css';
 @import './styles/LoginForm.css';
 @import './styles/AddNewUserForm.css';
 @import './styles/CustomerOrderCard.css';
@@ -298,9 +299,8 @@ section {
 
 .form-helper {
   margin: 0.25rem 0 0;
-  color: #8892a3;
+  color: #546174;
   font-size: 0.9rem;
-  opacity: 0.8;
 }
 
 .form-error {
