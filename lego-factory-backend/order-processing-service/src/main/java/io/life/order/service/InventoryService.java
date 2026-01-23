@@ -101,6 +101,44 @@ public class InventoryService {
     }
 
     /**
+     * Credit stock (add to inventory).
+     * Used when Final Assembly completes and credits Plant Warehouse with finished products.
+     *
+     * @param workstationId The workstation ID
+     * @param itemId        The product/item ID
+     * @param quantity      The quantity to add (positive number)
+     * @return true if update was successful, false otherwise
+     */
+    public boolean creditStock(Long workstationId, Long itemId, Integer quantity) {
+        try {
+            String url = inventoryServiceUrl + "/api/stock/adjust";
+            
+            // Determine item type based on workstation
+            // Modules Supermarket (ID 8) deals with MODULES
+            // Plant Warehouse (ID 7) deals with PRODUCTS
+            String itemType = (workstationId == 8L) ? "MODULE" : "PRODUCT";
+            
+            Map<String, Object> request = new HashMap<>();
+            request.put("workstationId", workstationId);
+            request.put("itemType", itemType);
+            request.put("itemId", itemId);
+            request.put("delta", Math.abs(quantity)); // Positive to credit stock
+            request.put("reason", "PRODUCTION_COMPLETION");
+            request.put("notes", String.format("Stock credit for %s completion (workstation %d)", 
+                    itemType.toLowerCase(), workstationId));
+
+            restTemplate.postForObject(url, request, Map.class);
+            logger.info("Stock credited for workstation {} item {} ({}) delta +{}", 
+                    workstationId, itemId, itemType, Math.abs(quantity));
+            return true;
+        } catch (RestClientException e) {
+            logger.error("Failed to credit stock with inventory-service for workstation {} item {}: {}", 
+                    workstationId, itemId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Get available stock for an item at a workstation.
      *
      * @param workstationId The workstation ID

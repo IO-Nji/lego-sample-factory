@@ -34,20 +34,23 @@ public class WarehouseOrderService {
     private final ProductionOrderService productionOrderService;
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderAuditService orderAuditService;
-    private final AssemblyControlOrderService assemblyControlOrderService;
+    private final FinalAssemblyOrderService finalAssemblyOrderService;
+    private final MasterdataService masterdataService;
 
     public WarehouseOrderService(WarehouseOrderRepository warehouseOrderRepository,
                                  InventoryService inventoryService,
                                  ProductionOrderService productionOrderService,
                                  CustomerOrderRepository customerOrderRepository,
                                  OrderAuditService orderAuditService,
-                                 AssemblyControlOrderService assemblyControlOrderService) {
+                                 FinalAssemblyOrderService finalAssemblyOrderService,
+                                 MasterdataService masterdataService) {
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.inventoryService = inventoryService;
         this.productionOrderService = productionOrderService;
         this.customerOrderRepository = customerOrderRepository;
         this.orderAuditService = orderAuditService;
-        this.assemblyControlOrderService = assemblyControlOrderService;
+        this.finalAssemblyOrderService = finalAssemblyOrderService;
+        this.masterdataService = masterdataService;
     }
 
     /**
@@ -358,53 +361,35 @@ public class WarehouseOrderService {
      * 2. Credit Plant Warehouse with finished products  
      * 3. Allow customer order to be fulfilled at Plant Warehouse
      */
+    /**
+     * Create FinalAssemblyOrders from WarehouseOrder (Scenario 2)
+     * Called after modules are debited from Modules Supermarket
+     * Creates one FinalAssemblyOrder per warehouse order item
+     */
     private void createFinalAssemblyOrdersFromWarehouseOrder(WarehouseOrder order) {
         try {
-            logger.info("Creating Final Assembly orders for warehouse order {}", order.getWarehouseOrderNumber());
+            logger.info("Creating Final Assembly orders for warehouse order {}", order.getOrderNumber());
             
-            for (WarehouseOrderItem item : order.getWarehouseOrderItems()) {
+            for (WarehouseOrderItem item : order.getOrderItems()) {
                 if (item.getFulfilledQuantity() > 0) {
                     try {
                         Long productId = item.getItemId();
                         Integer quantity = item.getFulfilledQuantity();
                         
-                        // Calculate target times (30 minutes prep time, 1 hour assembly time)
-                        LocalDateTime targetStart = LocalDateTime.now().plusMinutes(30);
-                        LocalDateTime targetCompletion = targetStart.plusHours(1);
-                        
-                        // Calculate estimated duration in minutes
-                        Integer estimatedDuration = 60; // 1 hour for final assembly
-                        
-                        // Create assembly control order using the existing service method
-                        assemblyControlOrderService.createControlOrder(
-                                order.getSourceCustomerOrderId(), // Use customer order ID as source
-                                FINAL_ASSEMBLY_WORKSTATION_ID,    // Assign to Final Assembly (WS-6)
-                                "WO-" + order.getWarehouseOrderNumber(), // Use warehouse order as schedule ID
-                                "MEDIUM",                          // Priority
-                                targetStart,
-                                targetCompletion,
-                                String.format("Assemble %s (Product #%d) - Qty: %d from warehouse order %s", 
-                                        item.getItemName(), productId, quantity, order.getWarehouseOrderNumber()),
-                                "Check product quality and specifications",
-                                "Perform final product testing",
-                                "Package for Plant Warehouse delivery",
-                                estimatedDuration
-                        );
+                        // Create Final Assembly order using new service (Scenario 2)
+                        finalAssemblyOrderService.createFromWarehouseOrder(order, productId, quantity);
                         
                         logger.info("✓ Final Assembly order created for Product #{} ({}) qty {}", 
                                 productId, item.getItemName(), quantity);
                         
-                        orderAuditService.recordOrderEvent("FINAL_ASSEMBLY", order.getId(), "ASSEMBLY_ORDER_CREATED",
-                                String.format("Final Assembly order created for Product #%d (%s) qty %d from warehouse order %s",
-                                        productId, item.getItemName(), quantity, order.getWarehouseOrderNumber()));
                     } catch (Exception e) {
-                        logger.error("✗ Failed to create assembly order for item {}: {}", item.getItemId(), e.getMessage());
+                        logger.error("✗ Failed to create Final Assembly order for item {}: {}", item.getItemId(), e.getMessage());
                         // Continue with other items even if one fails
                     }
                 }
             }
             
-            logger.info("✓ All Final Assembly orders created for warehouse order {}", order.getWarehouseOrderNumber());
+            logger.info("✓ All Final Assembly orders created for warehouse order {}", order.getOrderNumber());
             
         } catch (Exception e) {
             logger.error("✗ Failed to create Final Assembly orders: {}", e.getMessage());
