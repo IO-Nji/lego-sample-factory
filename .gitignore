@@ -168,3 +168,14 @@ test-control-order-cards.sh
 .github/frontend-design-system-docs/StandardizedDashboardPattern.md
 .github/.gitlab-ci.yml
 .github/README.devops.md
+⚠️_READ_ME_FIRST_DOCUMENTATION_UPDATE.md
+DOCUMENTATION_INDEX.md
+SCENARIO2_FIX_VERIFICATION.md
+test-final-assembly-complete.sh
+test-final-assembly-workflow.sh
+test-module-availability.sh
+test-warehouse-fulfillment.sh
+test-warehouse-order-with-stock.sh
+verify-scenario-2-behavior.sh
+verify-scenarios-1-2.sh
+create-github-project-tasks.sh
