@@ -117,24 +117,10 @@ function ModulesSupermarketDashboard() {
 
     try {
       const response = await api.put(`/warehouse-orders/${orderId}/fulfill-modules`);
-      console.log('[Fulfillment] Response:', response.data);
-      
-      if (response.data.status === 'FULFILLED') {
-        addNotification(`Order ${orderNumber} fulfilled - Final Assembly orders created`, 'success');
-        // Clear any notification messages for this order
-        setOrderMessages(prev => {
-          const updated = { ...prev };
-          delete updated[orderId];
-          return updated;
-        });
-      } else {
-        addNotification(`Order ${orderNumber} updated - Status: ${response.data.status}`, 'info');
-      }
-      
+      addNotification(`Order ${orderNumber} fulfilled`, 'success');
       await fetchWarehouseOrders();
       await fetchInventory();
     } catch (err) {
-      console.error('[Fulfillment] Error:', err);
       setError("Failed to fulfill order: " + (err.response?.data?.message || err.message));
       addNotification("Failed to fulfill order", 'error');
     } finally {
@@ -175,13 +161,10 @@ function ModulesSupermarketDashboard() {
         priority: priority,
         dueDate: null,
         notes: `Production order for warehouse order ${warehouseOrder.warehouseOrderNumber}`,
-        createdByWorkstationId: session?.user?.workstation?.id,
+        createdByWorkstationId: session?.user?.workstationId,
         assignedWorkstationId: null,
         triggerScenario: 'SCENARIO_3'
       };
-
-      console.log('[Production Order Creation] Payload:', payload);
-      console.log('[Production Order Creation] Session:', session);
 
       const response = await api.post('/production-orders/create', payload);
       
@@ -283,14 +266,15 @@ function ModulesSupermarketDashboard() {
   ];
 
   // Check if production order is needed for a warehouse order
-  // CRITICAL ARCHITECTURE:
-  // - Warehouse Orders request PRODUCTS but are fulfilled using MODULES
-  // - Modules Supermarket has MODULE inventory
-  // - Backend resolves PRODUCT → MODULES mapping via ProductModule table
-  // - This function checks if fulfillment will succeed or needs production
+  // ARCHITECTURE:
+  // - Plant Warehouse stores PRODUCTS (finished goods)
+  // - Modules Supermarket stores MODULES (sub-assemblies)
+  // - Warehouse Orders contain PRODUCTS (what Plant Warehouse needs)
+  // - This function checks if Modules Supermarket has enough MODULES to assemble those PRODUCTS
   const checkIfProductionNeeded = (warehouseOrder) => {
     console.log(`[ProductionCheck] ==== CHECKING ORDER ${warehouseOrder.warehouseOrderNumber} ====`);
     console.log(`[ProductionCheck] Order Status: ${warehouseOrder.status}`);
+    console.log(`[ProductionCheck] Architecture: WH Order contains PRODUCTS, Supermarket stocks MODULES`);
     
     if (warehouseOrder.status !== 'PROCESSING') {
       console.log(`[ProductionCheck] ❌ Order not PROCESSING (status: ${warehouseOrder.status}) - returning false`);
@@ -303,30 +287,55 @@ function ModulesSupermarketDashboard() {
       return false;
     }
     
-    // Check trigger scenario from backend analysis
-    if (warehouseOrder.triggerScenario) {
-      const scenarioNeedsProduction = warehouseOrder.triggerScenario.includes('PRODUCTION');
-      console.log(`[ProductionCheck] Trigger Scenario: ${warehouseOrder.triggerScenario}`);
-      console.log(`[ProductionCheck] Needs Production (from scenario): ${scenarioNeedsProduction}`);
-      return scenarioNeedsProduction;
-    }
+    // Warehouse orders contain PRODUCTS requested by Plant Warehouse
+    const productItems = warehouseOrder.warehouseOrderItems.filter(item => item.itemType === 'PRODUCT');
     
-    // Fallback: Check if any item is unfulfilled (fulfilledQuantity < requestedQuantity)
-    const hasUnfulfilledItems = warehouseOrder.warehouseOrderItems.some(item => {
-      const fulfilled = item.fulfilledQuantity || 0;
-      const requested = item.requestedQuantity || 0;
-      const unfulfilled = fulfilled < requested;
-      
-      console.log(`[ProductionCheck] Item: ${item.itemName} - Fulfilled: ${fulfilled}/${requested} - Unfulfilled: ${unfulfilled}`);
-      return unfulfilled;
+    console.log(`[ProductionCheck] Warehouse order has ${productItems.length} PRODUCT items:`);
+    productItems.forEach(item => {
+      console.log(`[ProductionCheck]   - ${item.itemName} (ID: ${item.itemId}) x${item.requestedQuantity}`);
     });
     
-    console.log(`[ProductionCheck] ✅ Has Unfulfilled Items: ${hasUnfulfilledItems}`);
-    console.log(`[ProductionCheck] ==== END CHECK ====\n`);
+    if (productItems.length === 0) {
+      console.log(`[ProductionCheck] ⚠️ No PRODUCT items in warehouse order`);
+      return false;
+    }
     
-    // If all items are fulfilled, no production needed (can use Fulfill button)
-    // If some items unfulfilled, assume modules not available (need Production button)
-    return hasUnfulfilledItems;
+    console.log(`[ProductionCheck] Supermarket Inventory (${inventory.length} items):`);
+    inventory.forEach(inv => {
+      console.log(`[ProductionCheck]   - ${inv.itemName} (${inv.itemType}) x${inv.quantity}`);
+    });
+    
+    // CRITICAL LOGIC:
+    // We need to check if Modules Supermarket has enough MODULES to assemble the requested PRODUCTS
+    // This requires a BOM (Bill of Materials) mapping: PRODUCT → required MODULES
+    // 
+    // TEMPORARY SOLUTION: For now, check if the SAME ITEM exists in supermarket inventory
+    // This works if the backend is mapping products to their required modules correctly
+    const needsProduction = productItems.some(productItem => {
+      // Check if we have this product's modules in inventory
+      // NOTE: This assumes productItem.itemId corresponds to a module or the item exists in inventory
+      const stockItem = inventory.find(inv => inv.itemId === productItem.itemId);
+      const currentStock = stockItem ? stockItem.quantity : 0;
+      const needed = productItem.requestedQuantity;
+      const insufficient = !stockItem || currentStock < needed;
+      
+      console.log(`[ProductionCheck] Checking PRODUCT "${productItem.itemName}" (ID: ${productItem.itemId})`);
+      console.log(`[ProductionCheck]   → Looking for matching stock item...`);
+      
+      if (stockItem) {
+        console.log(`[ProductionCheck]   → Found: ${stockItem.itemName} (${stockItem.itemType})`);
+        console.log(`[ProductionCheck]   → Stock: ${currentStock}, Needed: ${needed}, Insufficient: ${insufficient}`);
+      } else {
+        console.log(`[ProductionCheck]   → NOT FOUND in inventory - Production needed!`);
+      }
+      
+      return insufficient;
+    });
+    
+    console.log(`[ProductionCheck] ✅ Final Result - Needs Production: ${needsProduction}`);
+    console.log(`[ProductionCheck] ${needsProduction ? '🔴 INSUFFICIENT MODULES → Show "Production Order" button' : '🟢 SUFFICIENT MODULES → Show "Fulfill" button'}`);
+    console.log(`[ProductionCheck] ==== END CHECK ====\n`);
+    return needsProduction;
   };
 
   // Render Module Inventory (Primary Content)

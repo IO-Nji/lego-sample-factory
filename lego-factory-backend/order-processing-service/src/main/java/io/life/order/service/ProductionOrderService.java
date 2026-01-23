@@ -116,15 +116,6 @@ public class ProductionOrderService {
                 productionOrderNumber, sourceWarehouseOrderId, 
                 saved.getProductionOrderItems() != null ? saved.getProductionOrderItems().size() : 0);
 
-        // Update warehouse order status to AWAITING_PRODUCTION and triggerScenario to PRODUCTION_CREATED
-        if (warehouseOrder != null) {
-            warehouseOrder.setStatus("AWAITING_PRODUCTION");
-            warehouseOrder.setTriggerScenario("PRODUCTION_CREATED");
-            warehouseOrderRepository.save(warehouseOrder);
-            logger.info("Updated warehouse order {} status to AWAITING_PRODUCTION with triggerScenario PRODUCTION_CREATED", 
-                    sourceWarehouseOrderId);
-        }
-
         return mapToDTO(saved);
     }
 
