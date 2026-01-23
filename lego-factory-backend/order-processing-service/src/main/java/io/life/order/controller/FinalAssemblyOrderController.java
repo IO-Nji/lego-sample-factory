@@ -82,29 +82,15 @@ public class FinalAssemblyOrderController {
     }
 
     @PostMapping("/{id}/complete")
-    public ResponseEntity<FinalAssemblyOrder> completeAssembly(@PathVariable Long id) {
+    public ResponseEntity<FinalAssemblyOrder> completeOrder(@PathVariable Long id) {
         try {
-            FinalAssemblyOrder order = finalAssemblyOrderService.completeAssembly(id);
+            FinalAssemblyOrder order = finalAssemblyOrderService.completeOrder(id);
             return ResponseEntity.ok(order);
         } catch (IllegalStateException e) {
-            log.error("Failed to complete assembly work for order {}: {}", id, e.getMessage());
+            log.error("Failed to complete final assembly order {}: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         } catch (RuntimeException e) {
-            log.error("Error completing assembly work for order {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
-
-    @PostMapping("/{id}/submit")
-    public ResponseEntity<FinalAssemblyOrder> submitOrder(@PathVariable Long id) {
-        try {
-            FinalAssemblyOrder order = finalAssemblyOrderService.submitOrder(id);
-            return ResponseEntity.ok(order);
-        } catch (IllegalStateException e) {
-            log.error("Failed to submit final assembly order {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        } catch (RuntimeException e) {
-            log.error("Error submitting final assembly order {}: {}", id, e.getMessage());
+            log.error("Error completing final assembly order {}: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }

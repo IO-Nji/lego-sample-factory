@@ -192,8 +192,8 @@ public class FulfillmentService {
         Map<Long, Integer> aggregatedModuleRequirements = new HashMap<>();
         
         for (OrderItem item : order.getOrderItems()) {
-            if (!"PRODUCT".equals(item.getItemType())) {
-                logger.warn("Order item is not a PRODUCT: {} - skipping module resolution", item.getItemType());
+            if (!"PRODUCT_VARIANT".equals(item.getItemType())) {
+                logger.warn("Order item is not a PRODUCT_VARIANT: {} - skipping module resolution", item.getItemType());
                 continue;
             }
             
@@ -215,27 +215,43 @@ public class FulfillmentService {
         logger.info("Total aggregated module requirements: {} different modules", 
             aggregatedModuleRequirements.size());
 
-        // CRITICAL FIX (Jan 23, 2026): Do NOT auto-trigger production order creation
-        // Warehouse order MUST remain in PENDING status for manual confirmation by Modules Supermarket user
-        // 
-        // CORRECT WORKFLOW:
-        // 1. Customer Order "Process" → Create Warehouse Order (status: PENDING)
-        // 2. Modules Supermarket user manually "Confirms" warehouse order
-        // 3. Backend analyzes module availability during confirmation and sets triggerScenario field
-        // 4. Frontend shows "Fulfill" button (if modules available) OR "Order Production" button (if not)
-        // 5. User manually clicks appropriate button
-        //
-        // The confirmWarehouseOrder() method in WarehouseOrderService handles the module availability check
-        // and sets triggerScenario to either "DIRECT_FULFILLMENT" or "PRODUCTION_REQUIRED"
-        
-        logger.info("Warehouse order {} created in PENDING status - awaiting Modules Supermarket confirmation", 
-            warehouseOrder.getWarehouseOrderNumber());
-        
-        order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + 
-            "Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created - pending MS confirmation");
-        
-        orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "STATUS_PROCESSING", 
-            "Warehouse order created - awaiting Modules Supermarket confirmation");
+        boolean modulesSupermarketHasStock = inventoryService.checkModulesAvailability(aggregatedModuleRequirements);
+
+        if (modulesSupermarketHasStock) {
+            // Pure Scenario 2: Modules available, wait for manual MS fulfillment
+            logger.info("Modules Supermarket has all modules - warehouse order remains PENDING for manual fulfillment");
+            order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + 
+                "Scenario 2: Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created (modules available in MS)");
+            orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "STATUS_PROCESSING", 
+                "Scenario 2 processing (waiting on Modules Supermarket manual fulfillment)");
+        } else {
+            // Scenario 3: Modules missing, auto-trigger production
+            logger.info("Modules Supermarket lacks some modules - auto-triggering production order (Scenario 3 path)");
+            try {
+                ProductionOrderDTO productionOrder = productionOrderService.createProductionOrderFromWarehouse(
+                    order.getId(),                              // sourceCustomerOrderId
+                    warehouseOrder.getId(),                     // sourceWarehouseOrderId
+                    "NORMAL",                                   // priority (default)
+                    LocalDateTime.now().plusDays(7),             // dueDate (7 days from now)
+                    "Auto-created for warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " (insufficient MS stock)",
+                    order.getWorkstationId(),                    // createdByWorkstationId
+                    MODULES_SUPERMARKET_WORKSTATION_ID           // assignedWorkstationId (Modules Supermarket)
+                );
+                logger.info("Production order {} auto-created due to insufficient MS stock", productionOrder.getProductionOrderNumber());
+                orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "PRODUCTION_ORDER_CREATED",
+                    "Production order auto-created (insufficient stock in Modules Supermarket)");
+                
+                order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + 
+                    "Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created + Production order " + 
+                    productionOrder.getProductionOrderNumber() + " auto-triggered (Scenario 3)");
+            } catch (Exception e) {
+                logger.error("Failed to auto-create production order for missing modules", e);
+                order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + 
+                    "Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created (production order creation failed)");
+            }
+            orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "STATUS_PROCESSING", 
+                "Processing with production (insufficient MS stock)");
+        }
 
         // Update customer order status
         order.setStatus(PROCESSING);

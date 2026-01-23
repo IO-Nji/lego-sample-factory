@@ -57,13 +57,7 @@ public class FinalAssemblyOrder {
     @Column(nullable = false)
     private Integer quantity;
 
-    // Status workflow: PENDING → CONFIRMED → IN_PROGRESS → COMPLETED_ASSEMBLY → COMPLETED
-    // PENDING: Order created, awaiting confirmation
-    // CONFIRMED: Modules verified, ready to start
-    // IN_PROGRESS: Assembly work in progress
-    // COMPLETED_ASSEMBLY: Assembly work finished, awaiting submission
-    // COMPLETED: Submitted - Products credited to Plant Warehouse, CustomerOrder activated
-    // Also: HALTED, ABANDONED for exceptions
+    // Status: PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, HALTED, ABANDONED
     @Column(nullable = false)
     private String status = "PENDING";
 

@@ -48,7 +48,7 @@ public class MasterdataClient {
 
     private String getEndpointForType(String itemType) {
         return switch (itemType.toUpperCase()) {
-            case "PRODUCT" -> "/products";
+            case "PRODUCT", "PRODUCT_VARIANT" -> "/products";
             case "MODULE" -> "/modules";
             case "PART" -> "/parts";
             default -> null;

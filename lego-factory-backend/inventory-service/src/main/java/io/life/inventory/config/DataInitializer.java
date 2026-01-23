@@ -71,13 +71,13 @@ public class DataInitializer implements CommandLineRunner {
 		Long plantWarehouseId = 7L;
 
 		// Product variant stock levels (itemType = "PRODUCT")
-		// Seed with initial quantities to support Scenario 1 (direct fulfillment) testing
-		createStockRecord(plantWarehouseId, "PRODUCT", 1L, 15);  // Technic Truck Yellow - 15 units
-		createStockRecord(plantWarehouseId, "PRODUCT", 2L, 12);  // Technic Truck Red - 12 units
-		createStockRecord(plantWarehouseId, "PRODUCT", 3L, 8);   // Creator House - 8 units
-		createStockRecord(plantWarehouseId, "PRODUCT", 4L, 6);   // Friends Cafe - 6 units
-		
-		log.info("Seeded Plant Warehouse (WS-7) with product variants: Truck Yellow (15), Truck Red (12), House (8), Cafe (6)");
+		// Quantities set to reasonable defaults for testing fulfillment scenarios
+		createStockRecord(plantWarehouseId, "PRODUCT", 1L, 15);  // Technic Truck Yellow
+		createStockRecord(plantWarehouseId, "PRODUCT", 2L, 12);  // Technic Truck Red
+		createStockRecord(plantWarehouseId, "PRODUCT", 3L, 8);   // Creator House
+		createStockRecord(plantWarehouseId, "PRODUCT", 4L, 6);   // Friends Cafe
+
+		log.info("Seeded Plant Warehouse (WS-7) with product variant inventory");
 	}
 
 	/**
@@ -87,27 +87,13 @@ public class DataInitializer implements CommandLineRunner {
 	private void seedModulesSupermarketStock() {
 		Long modulesSupermarketId = 8L;
 
-		// Technic Truck modules (Product #1, #2) - IDs 1-6
+		// Module inventory - All 6 modules required for Product #1 assembly
 		createStockRecord(modulesSupermarketId, "MODULE", 1L, 50);  // Module #1 (Truck Chassis)
 		createStockRecord(modulesSupermarketId, "MODULE", 2L, 40);  // Module #2 (Truck Drive System)
 		createStockRecord(modulesSupermarketId, "MODULE", 3L, 45);  // Module #3 (Truck Wheel Assembly)
 		createStockRecord(modulesSupermarketId, "MODULE", 4L, 30);  // Module #4 (Truck Steering Unit)
 		createStockRecord(modulesSupermarketId, "MODULE", 5L, 35);  // Module #5 (Truck Light System)
 		createStockRecord(modulesSupermarketId, "MODULE", 6L, 25);  // Module #6 (Truck Cab Unit)
-
-		// Creator House modules (Product #3) - IDs 7-11
-		createStockRecord(modulesSupermarketId, "MODULE", 7L, 40);  // Module #7 (House Frame)
-		createStockRecord(modulesSupermarketId, "MODULE", 8L, 35);  // Module #8 (House Roof)
-		createStockRecord(modulesSupermarketId, "MODULE", 9L, 45);  // Module #9 (House Door Assembly)
-		createStockRecord(modulesSupermarketId, "MODULE", 10L, 50); // Module #10 (House Window Assembly)
-		createStockRecord(modulesSupermarketId, "MODULE", 11L, 60); // Module #11 (House Floor Base)
-
-		// Castle Set modules (Product #4) - IDs 12-16
-		createStockRecord(modulesSupermarketId, "MODULE", 12L, 30); // Module #12 (Castle Tower Section)
-		createStockRecord(modulesSupermarketId, "MODULE", 13L, 35); // Module #13 (Castle Wall Section)
-		createStockRecord(modulesSupermarketId, "MODULE", 14L, 25); // Module #14 (Castle Gate Assembly)
-		createStockRecord(modulesSupermarketId, "MODULE", 15L, 40); // Module #15 (Castle Flag Post)
-		createStockRecord(modulesSupermarketId, "MODULE", 16L, 28); // Module #16 (Castle Throne Room)
 
 		log.info("Seeded Modules Supermarket (WS-8) with module inventory");
 	}

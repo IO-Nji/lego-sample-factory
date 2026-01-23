@@ -109,7 +109,7 @@ function AssemblyControlDashboard() {
 
   const handleStartAssembly = async (orderId) => {
     try {
-      await api.put(`/assembly-control-orders/${orderId}/start`);
+      await api.post(`/assembly-control-orders/${orderId}/start`);
       setSuccess("Assembly started successfully");
       addNotification("Assembly started", "success");
       fetchControlOrders();
@@ -121,7 +121,7 @@ function AssemblyControlDashboard() {
 
   const handleCompleteAssembly = async (orderId) => {
     try {
-      await api.put(`/assembly-control-orders/${orderId}/complete`);
+      await api.post(`/assembly-control-orders/${orderId}/complete`);
       setSuccess("Assembly completed successfully");
       addNotification("Assembly completed", "success");
       fetchControlOrders();
@@ -453,7 +453,7 @@ function AssemblyControlDashboard() {
     <>
       <StandardDashboardLayout
         title="Assembly Control"
-        subtitle="Manage production assembly control orders across all assembly workstations"
+        subtitle={`Manage assembly operations for ${session?.user?.workstation?.name || 'Assembly Control'}`}
         icon="⚙️"
         activityContent={renderActivity()}
         statsContent={<StatisticsGrid stats={statsData} />}
