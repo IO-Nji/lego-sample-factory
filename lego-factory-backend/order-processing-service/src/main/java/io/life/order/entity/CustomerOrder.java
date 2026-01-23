@@ -34,6 +34,8 @@ public class CustomerOrder {
     @Column(nullable = false)
     private Long workstationId;
 
+    private String triggerScenario; // DIRECT_FULFILLMENT, WAREHOUSE_ORDER_NEEDED
+
     private String notes;
 
     @Column(name = "created_at", nullable = false, updatable = false)

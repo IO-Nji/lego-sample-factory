@@ -115,6 +115,3 @@ public class CustomerOrderController {
         return ResponseEntity.ok(customerOrderService.createWarehouseOrderFromCustomerOrder(id));
     }
 }
-        return ResponseEntity.ok(customerOrderService.cancelOrder(id));
-    }
-}

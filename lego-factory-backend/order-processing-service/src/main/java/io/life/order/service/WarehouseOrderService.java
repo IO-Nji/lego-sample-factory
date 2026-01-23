@@ -348,18 +348,6 @@ public class WarehouseOrderService {
             logger.error("✗ Failed to create Final Assembly orders: {}", e.getMessage());
         }
     }
-                        logger.error("✗ Failed to create assembly order for item {}: {}", item.getItemId(), e.getMessage());
-                        // Continue with other items even if one fails
-                    }
-                }
-            }
-            
-            logger.info("✓ All Final Assembly orders created for warehouse order {}", order.getWarehouseOrderNumber());
-            
-        } catch (Exception e) {
-            logger.error("✗ Failed to create Final Assembly orders: {}", e.getMessage());
-        }
-    }
 
     /**
      * Update warehouse order status
