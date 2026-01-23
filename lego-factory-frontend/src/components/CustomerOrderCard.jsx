@@ -45,21 +45,12 @@ function CustomerOrderCard({
   
   // Check if all items have sufficient stock
   const hasAllStock = () => {
-    if (!order.orderItems || order.orderItems.length === 0) {
-      console.log('[CustomerOrderCard] No order items to check');
-      return false;
-    }
-    
-    console.log('[CustomerOrderCard] Checking stock for order', order.orderNumber, 'Inventory items:', inventory.length);
+    if (!order.orderItems || order.orderItems.length === 0) return false;
     
     return order.orderItems.every(item => {
-      // Handle both PRODUCT and PRODUCT_VARIANT as synonyms
-      const inventoryItem = inventory.find((inv) => {
-        const itemTypeMatch = inv.itemType === item.itemType ||
-          ((inv.itemType === 'PRODUCT' || inv.itemType === 'PRODUCT_VARIANT') && 
-           (item.itemType === 'PRODUCT' || item.itemType === 'PRODUCT_VARIANT'));
-        return itemTypeMatch && inv.itemId === item.itemId;
-      });
+      const inventoryItem = inventory.find(
+        (inv) => inv.itemType === item.itemType && inv.itemId === item.itemId
+      );
       const stockQuantity = inventoryItem?.quantity || 0;
       
       console.log(`[CustomerOrderCard] Stock check for item ${item.itemId}:`, {
@@ -68,7 +59,7 @@ function CustomerOrderCard({
         requestedQty: item.quantity,
         availableStock: stockQuantity,
         hasStock: stockQuantity >= item.quantity,
-        inventoryItem: inventoryItem ? `Found: ${inventoryItem.itemType}` : 'Not found'
+        inventoryItem
       });
       
       return stockQuantity >= item.quantity;
@@ -140,13 +131,9 @@ function CustomerOrderCard({
 
   // Transform order items to BaseOrderCard format
   const transformedItems = order.orderItems?.map(item => {
-    // Handle both PRODUCT and PRODUCT_VARIANT as synonyms
-    const inventoryItem = inventory.find((inv) => {
-      const itemTypeMatch = inv.itemType === item.itemType ||
-        ((inv.itemType === 'PRODUCT' || inv.itemType === 'PRODUCT_VARIANT') && 
-         (item.itemType === 'PRODUCT' || item.itemType === 'PRODUCT_VARIANT'));
-      return itemTypeMatch && inv.itemId === item.itemId;
-    });
+    const inventoryItem = inventory.find(
+      (inv) => inv.itemType === item.itemType && inv.itemId === item.itemId
+    );
     const stockQuantity = inventoryItem?.quantity || 0;
     const statusColor = getInventoryStatusColor ? 
       getInventoryStatusColor(stockQuantity) : 

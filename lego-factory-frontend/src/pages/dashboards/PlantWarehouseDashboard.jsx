@@ -12,63 +12,75 @@ import {
 } from "../../components";
 import CustomerOrderCard from "../../components/CustomerOrderCard";
 import { getProductDisplayName, getInventoryStatusColor } from "../../utils/dashboardHelpers";
-import { useInventoryDisplay } from "../../hooks/useInventoryDisplay";
-import { useActivityLog } from "../../hooks/useActivityLog";
 import styles from "../../components/StandardDashboardLayout.module.css";
 
 function PlantWarehouseDashboard() {
   const { session } = useAuth();
+  const [products, setProducts] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState({});
   const [orders, setOrders] = useState([]);
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("orderDate");
-  
-  // Use centralized inventory hook for products management
-  const { 
-    inventory, 
-    masterdata: products,
-    getItemName: getProductName,
-    fetchInventory 
-  } = useInventoryDisplay('PRODUCT', 7);
-  
-  // Use enhanced activity log hook with auto-login tracking
-  const { notifications, addNotification, clearNotifications } = useActivityLog(session, 'PLANT-WH');
-  
+  const [inventory, setInventory] = useState([]);
   const [workstations, setWorkstations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fulfillingOrderId, setFulfillingOrderId] = useState(null);
   const [error, setError] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+
+  // Add notification to state
+  const addNotification = (message, type = 'info') => {
+    const newNotification = {
+      id: Date.now() + Math.random(),
+      message,
+      type,
+      timestamp: new Date().toISOString(),
+      station: session?.user?.workstation?.name || 'PLANT-WH'
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
 
   useEffect(() => {
     console.log('[PlantWarehouse] Component mounted, session:', session?.user);
-    const workstationId = session?.user?.workstation?.id || session?.user?.workstationId;
-    console.log('[PlantWarehouse] Detected workstationId:', workstationId);
-    
+    fetchProducts();
     fetchWorkstations();
-    if (workstationId) {
+    if (session?.user?.workstation?.id) {
       fetchOrders();
-      // fetchInventory is handled by useInventoryDisplay hook
+      fetchInventory();
     } else {
       console.warn('[PlantWarehouse] No workstationId in session, skipping orders/inventory fetch');
     }
 
     const inventoryInterval = setInterval(() => {
-      const wsId = session?.user?.workstation?.id || session?.user?.workstationId;
-      if (wsId) {
-        fetchInventory(); // Provided by useInventoryDisplay hook
+      if (session?.user?.workstation?.id) {
+        fetchInventory();
       }
     }, 30000); // Increased to 30s to reduce page jump
 
     return () => clearInterval(inventoryInterval);
-  }, [session?.user?.workstation?.id, session?.user?.workstationId, fetchInventory]);
+  }, [session?.user?.workstation?.id]);
 
   const applyFilter = (ordersList, status) => {
     // Kept for backward compatibility - OrdersSection handles filtering now
     return ordersList;
   };
 
-  // fetchProducts is now handled by useInventoryDisplay hook (products = masterdata)
+  const fetchProducts = async () => {
+    console.log('[PlantWarehouse] Fetching products...');
+    try {
+      const response = await api.get("/masterdata/product-variants");
+      console.log('[PlantWarehouse] Products received:', response.data);
+      setProducts(response.data);
+    } catch (err) {
+      console.error('[PlantWarehouse] Failed to fetch products:', err);
+      setError("Failed to load products: " + (err.response?.data?.message || err.message));
+    }
+  };
 
   const fetchWorkstations = async () => {
     try {
@@ -80,7 +92,7 @@ function PlantWarehouseDashboard() {
   };
 
   const fetchOrders = async () => {
-    const workstationId = session?.user?.workstation?.id || session?.user?.workstationId || 7;
+    const workstationId = session?.user?.workstation?.id;
     if (!workstationId) {
       setOrders([]);
       setFilteredOrders([]);
@@ -98,7 +110,19 @@ function PlantWarehouseDashboard() {
     }
   };
 
-  // fetchInventory is provided by useInventoryDisplay hook
+  const fetchInventory = async () => {
+    const workstationId = session?.user?.workstation?.id;
+    if (!workstationId) return;
+    console.log('[PlantWarehouse] Fetching inventory for workstation:', workstationId);
+    try {
+      const response = await api.get(`/stock/workstation/${workstationId}`);
+      console.log('[PlantWarehouse] Inventory received:', response.data);
+      setInventory(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error('[PlantWarehouse] Failed to fetch inventory:', err);
+      setInventory([]);
+    }
+  };
 
   const handleQuantityChange = (productId, quantity) => {
     setSelectedProducts({
@@ -109,7 +133,7 @@ function PlantWarehouseDashboard() {
 
   const { refresh } = useDashboardRefresh();
   const handleCreateOrder = async () => {
-    const workstationId = session?.user?.workstation?.id || session?.user?.workstationId || 7;
+    const workstationId = session?.user?.workstation?.id;
     if (!workstationId) {
       setError("Cannot create order: workstation ID not found in session");
       return;
@@ -140,7 +164,7 @@ function PlantWarehouseDashboard() {
       });
 
       const orderNum = response.data.orderNumber;
-      addNotification(`Created ${orderNum}`, 'success', { orderNumber: orderNum });
+      addNotification(`Order created: ${orderNum}`, 'success');
       setSelectedProducts({});
       fetchOrders();
       refresh(); // Trigger global dashboard refresh
@@ -156,23 +180,17 @@ function PlantWarehouseDashboard() {
     setError(null);
 
     try {
-      console.log('[PlantWarehouse] Fulfilling order', orderId);
       const response = await api.put(`/customer-orders/${orderId}/fulfill`);
       // Backend auto-determines scenario: Scenario 1 (COMPLETED) or Scenario 2/3 (PROCESSING)
       const isCompleted = response.data.status === 'COMPLETED';
-      const orderNum = response.data.orderNumber;
       addNotification(
         isCompleted 
-          ? `${orderNum} fulfilled` 
-          : `${orderNum} processing`, 
-        'success',
-        { orderNumber: orderNum }
+          ? `Order ${response.data.orderNumber} fulfilled` 
+          : `Order ${response.data.orderNumber} processing`, 
+        'success'
       );
-      console.log('[PlantWarehouse] Order fulfilled, refreshing data...');
       await fetchOrders();
-      console.log('[PlantWarehouse] Orders refreshed, now refreshing inventory...');
       await fetchInventory(); // Refresh inventory to show updated quantities
-      console.log('[PlantWarehouse] Inventory refresh complete');
     } catch (err) {
       setError("Failed to fulfill order: " + (err.response?.data?.message || err.message));
       addNotification("Failed to fulfill order", 'error');
@@ -224,8 +242,8 @@ function PlantWarehouseDashboard() {
     { value: orders.filter(o => o.status === "PENDING").length, label: 'Pending', variant: 'pending', icon: '⏳' },
     { value: orders.filter(o => o.status === "PROCESSING").length, label: 'Processing', variant: 'processing', icon: '⚙️' },
     { value: orders.filter(o => o.status === "COMPLETED").length, label: 'Completed', variant: 'success', icon: '✅' },
-    { value: inventory.filter(item => item.itemType === "PRODUCT_VARIANT" || item.itemType === "PRODUCT").length, label: 'Product Types', variant: 'info', icon: '🏷️' },
-    { value: inventory.filter(item => item.itemType === "PRODUCT_VARIANT" || item.itemType === "PRODUCT").reduce((sum, item) => sum + (item.quantity || 0), 0), label: 'Total Stock', variant: 'default', icon: '📊' },
+    { value: inventory.filter(item => item.itemType === "PRODUCT").length, label: 'Product Types', variant: 'info', icon: '🏷️' },
+    { value: inventory.filter(item => item.itemType === "PRODUCT").reduce((sum, item) => sum + (item.quantity || 0), 0), label: 'Total Stock', variant: 'default', icon: '📊' },
     { value: inventory.filter(item => item.quantity < 5).length, label: 'Low Stock', variant: 'warning', icon: '⚠️' },
     { value: inventory.filter(item => item.quantity === 0).length, label: 'Out of Stock', variant: 'danger', icon: '🚫' },
   ];
@@ -276,7 +294,7 @@ function PlantWarehouseDashboard() {
       icon="📦"
       inventory={inventory}
       itemType="PRODUCT"
-      getItemDisplayName={getProductName}
+      getItemDisplayName={getProductDisplayName}
       getStatusColor={getInventoryStatusColor}
       emptyMessage="No inventory items"
       columnHeaders={{ item: 'Product', quantity: 'Qty' }}

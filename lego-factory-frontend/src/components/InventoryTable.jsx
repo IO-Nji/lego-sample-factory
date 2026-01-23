@@ -82,7 +82,7 @@ function InventoryTable({
               filteredInventory.map((item) => (
                 <tr key={item.id}>
                   <td style={{ fontSize: '0.75rem', padding: '0.375rem 0.5rem' }}>
-                    {displayNameFunction(item)}
+                    {displayNameFunction(item.itemId)}
                   </td>
                   <td style={{ 
                     fontSize: '0.75rem', 

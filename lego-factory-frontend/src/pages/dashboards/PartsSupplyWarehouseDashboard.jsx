@@ -11,20 +11,13 @@ import {
   Card, 
   Badge 
 } from "../../components";
-import { useInventoryDisplay } from "../../hooks/useInventoryDisplay";
 import "../../styles/DashboardLayout.css";
 
 function PartsSupplyWarehouseDashboard() {
   const { session } = useAuth();
   const [supplyOrders, setSupplyOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
-  
-  // Use centralized inventory hook for parts management
-  const { 
-    inventory: partsStock, 
-    getItemName,
-    fetchInventory: fetchPartsStock 
-  } = useInventoryDisplay('PART', 9);
+  const [partsStock, setPartsStock] = useState([]);
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterType, setFilterType] = useState("ALL"); // PRODUCTION, ASSEMBLY
   const [loading, setLoading] = useState(false);
@@ -73,12 +66,25 @@ function PartsSupplyWarehouseDashboard() {
     }
   };
 
+  // Fetch parts stock for Parts Supply Warehouse (workstation 9)
+  const fetchPartsStock = async () => {
+    try {
+      const response = await api.get("/stock/workstation/9");
+      const stockList = Array.isArray(response.data) ? response.data : [];
+      // Filter for parts only (itemType = PART)
+      const partsOnly = stockList.filter(item => item.itemType === "PART");
+      setPartsStock(partsOnly);
+    } catch (err) {
+      console.error("Failed to fetch parts stock:", err);
+    }
+  };
+
   useEffect(() => {
     fetchSupplyOrders();
+    fetchPartsStock();
     const interval = setInterval(() => {
       fetchSupplyOrders();
       fetchPartsStock();
-      // Parts masterdata doesn't change frequently, no need to refetch
     }, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -303,7 +309,7 @@ function PartsSupplyWarehouseDashboard() {
       title="Parts Inventory"
       icon="🔧"
       showAdjustButton={true}
-      getItemName={getItemName}
+      itemNameKey="itemName"
       itemIdKey="itemId"
       emptyMessage="No parts in inventory"
     />
