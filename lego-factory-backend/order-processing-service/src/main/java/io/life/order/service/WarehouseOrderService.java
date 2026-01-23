@@ -35,19 +35,75 @@ public class WarehouseOrderService {
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderAuditService orderAuditService;
     private final AssemblyControlOrderService assemblyControlOrderService;
+    private final MasterdataService masterdataService;
 
     public WarehouseOrderService(WarehouseOrderRepository warehouseOrderRepository,
                                  InventoryService inventoryService,
                                  ProductionOrderService productionOrderService,
                                  CustomerOrderRepository customerOrderRepository,
                                  OrderAuditService orderAuditService,
-                                 AssemblyControlOrderService assemblyControlOrderService) {
+                                 AssemblyControlOrderService assemblyControlOrderService,
+                                 MasterdataService masterdataService) {
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.inventoryService = inventoryService;
         this.productionOrderService = productionOrderService;
         this.customerOrderRepository = customerOrderRepository;
         this.orderAuditService = orderAuditService;
         this.assemblyControlOrderService = assemblyControlOrderService;
+        this.masterdataService = masterdataService;
+    }
+
+    /**
+     * Create warehouse order from customer order (Scenario 2)
+     * Called when CustomerOrder has triggerScenario = WAREHOUSE_ORDER_NEEDED
+     * Creates a PENDING warehouse order targeting Modules Supermarket (WS-8)
+     */
+    public WarehouseOrderDTO createWarehouseOrderFromCustomerOrder(CustomerOrder customerOrder) {
+        logger.info("Creating warehouse order from customer order {} ({})", 
+                customerOrder.getId(), customerOrder.getOrderNumber());
+
+        // Create new warehouse order
+        WarehouseOrder warehouseOrder = new WarehouseOrder();
+        warehouseOrder.setOrderNumber("WO-" + generateOrderNumber());
+        warehouseOrder.setCustomerOrderId(customerOrder.getId());
+        warehouseOrder.setWorkstationId(8L); // Modules Supermarket
+        warehouseOrder.setOrderDate(LocalDateTime.now());
+        warehouseOrder.setStatus("PENDING");
+        warehouseOrder.setNotes("Auto-generated from customer order " + customerOrder.getOrderNumber());
+
+        // Convert customer order items to warehouse order items
+        List<WarehouseOrderItem> warehouseOrderItems = new ArrayList<>();
+        for (var orderItem : customerOrder.getOrderItems()) {
+            WarehouseOrderItem woItem = new WarehouseOrderItem();
+            woItem.setWarehouseOrder(warehouseOrder);
+            woItem.setItemId(orderItem.getItemId());
+            
+            // Fetch item name from masterdata
+            String itemName = masterdataService.getItemName(orderItem.getItemType(), orderItem.getItemId());
+            woItem.setItemName(itemName);
+            woItem.setRequestedQuantity(orderItem.getQuantity());
+            woItem.setFulfilledQuantity(0);
+            woItem.setItemType(orderItem.getItemType());
+            
+            warehouseOrderItems.add(woItem);
+            logger.info("  - Added item: {} (ID: {}) qty {}", itemName, orderItem.getItemId(), orderItem.getQuantity());
+        }
+        
+        warehouseOrder.setOrderItems(warehouseOrderItems);
+
+        // Save warehouse order
+        WarehouseOrder saved = warehouseOrderRepository.save(warehouseOrder);
+        logger.info("✓ Warehouse order {} created for customer order {}", 
+                saved.getOrderNumber(), customerOrder.getOrderNumber());
+        
+        orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, saved.getId(), "CREATED",
+                "Warehouse order created from customer order " + customerOrder.getOrderNumber());
+
+        return mapToDTO(saved);
+    }
+
+    private String generateOrderNumber() {
+        return java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
     /**

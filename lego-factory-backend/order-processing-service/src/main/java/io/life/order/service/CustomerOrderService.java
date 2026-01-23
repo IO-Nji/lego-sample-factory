@@ -26,10 +26,17 @@ public class CustomerOrderService {
     private static final String ORDER_TYPE_CUSTOMER = "CUSTOMER";
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderAuditService orderAuditService;
+    private final InventoryService inventoryService;
+    private final WarehouseOrderService warehouseOrderService;
 
-    public CustomerOrderService(CustomerOrderRepository customerOrderRepository, OrderAuditService orderAuditService) {
+    public CustomerOrderService(CustomerOrderRepository customerOrderRepository, 
+                               OrderAuditService orderAuditService, 
+                               InventoryService inventoryService,
+                               WarehouseOrderService warehouseOrderService) {
         this.customerOrderRepository = customerOrderRepository;
         this.orderAuditService = orderAuditService;
+        this.inventoryService = inventoryService;
+        this.warehouseOrderService = warehouseOrderService;
         // Custom exception for mapping errors is now a static nested class below
     }
 
@@ -142,15 +149,41 @@ public class CustomerOrderService {
     }
 
     // --- Explicit transitions with basic validation ---
+    /**
+     * Confirm customer order (Scenario 1 & 2 critical logic)
+     * DURING confirmation, checks PRODUCT stock at Plant Warehouse (WS-7) and sets triggerScenario:
+     * - DIRECT_FULFILLMENT: All products available → can fulfill immediately
+     * - WAREHOUSE_ORDER_NEEDED: Insufficient products → need to request from Modules Supermarket
+     * Status changes from PENDING to CONFIRMED
+     */
     @Transactional
     public CustomerOrderDTO confirmOrder(Long id) {
         CustomerOrder order = getOrThrow(id);
         if (!STATUS_PENDING.equals(order.getStatus())) {
             throw new IllegalStateException("Only PENDING orders can be confirmed");
         }
+
+        // CRITICAL: Check PRODUCT stock at Plant Warehouse (WS-7) DURING confirmation
+        boolean allProductsAvailable = order.getOrderItems().stream()
+                .allMatch(item -> inventoryService.checkStock(
+                        order.getWorkstationId(), // Should be 7L for Plant Warehouse
+                        item.getItemId(),
+                        item.getQuantity()
+                ));
+
+        // Set triggerScenario based on stock check result
+        if (allProductsAvailable) {
+            order.setTriggerScenario("DIRECT_FULFILLMENT");
+            logger.info("Customer order {} confirmed - All products available (DIRECT_FULFILLMENT)", order.getOrderNumber());
+        } else {
+            order.setTriggerScenario("WAREHOUSE_ORDER_NEEDED");
+            logger.info("Customer order {} confirmed - Products unavailable (WAREHOUSE_ORDER_NEEDED)", order.getOrderNumber());
+        }
+
         order.setStatus(STATUS_CONFIRMED);
         CustomerOrder saved = customerOrderRepository.save(order);
-        orderAuditService.recordOrderEvent(ORDER_TYPE_CUSTOMER, saved.getId(), STATUS_CONFIRMED, "Order confirmed");
+        orderAuditService.recordOrderEvent(ORDER_TYPE_CUSTOMER, saved.getId(), STATUS_CONFIRMED, 
+                "Order confirmed - triggerScenario: " + saved.getTriggerScenario());
         return mapToDTO(saved);
     }
 
@@ -190,6 +223,39 @@ public class CustomerOrderService {
         return mapToDTO(saved);
     }
 
+    /**
+     * Create warehouse order from customer order (Scenario 2 integration point)
+     * Spawns a WarehouseOrder when customer order has triggerScenario = WAREHOUSE_ORDER_NEEDED
+     * Updates customer order status to PROCESSING (waiting for warehouse)
+     */
+    @Transactional
+    public CustomerOrderDTO createWarehouseOrderFromCustomerOrder(Long customerOrderId) {
+        CustomerOrder order = getOrThrow(customerOrderId);
+        
+        // Validate triggerScenario
+        if (!"WAREHOUSE_ORDER_NEEDED".equals(order.getTriggerScenario())) {
+            throw new IllegalStateException("Cannot create warehouse order - triggerScenario is " + order.getTriggerScenario());
+        }
+        
+        // Validate status
+        if (!STATUS_CONFIRMED.equals(order.getStatus())) {
+            throw new IllegalStateException("Only CONFIRMED orders can spawn warehouse orders. Current status: " + order.getStatus());
+        }
+
+        // Create warehouse order via service
+        logger.info("Creating warehouse order for customer order {} ({})", order.getId(), order.getOrderNumber());
+        warehouseOrderService.createWarehouseOrderFromCustomerOrder(order);
+
+        // Update customer order status to PROCESSING
+        order.setStatus("PROCESSING");
+        CustomerOrder saved = customerOrderRepository.save(order);
+        
+        orderAuditService.recordOrderEvent(ORDER_TYPE_CUSTOMER, saved.getId(), "WAREHOUSE_ORDER_CREATED",
+                "Warehouse order created for customer order " + order.getOrderNumber());
+        
+        return mapToDTO(saved);
+    }
+
     @SuppressWarnings("null")
     private CustomerOrder getOrThrow(Long id) {
         return customerOrderRepository.findById(id)
@@ -204,6 +270,7 @@ public class CustomerOrderService {
             dto.setOrderDate(order.getOrderDate());
             dto.setStatus(order.getStatus());
             dto.setWorkstationId(order.getWorkstationId());
+            dto.setTriggerScenario(order.getTriggerScenario());
             dto.setNotes(order.getNotes());
             dto.setCreatedAt(order.getCreatedAt());
             dto.setUpdatedAt(order.getUpdatedAt());

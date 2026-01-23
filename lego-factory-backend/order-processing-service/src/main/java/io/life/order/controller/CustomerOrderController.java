@@ -100,4 +100,21 @@ public class CustomerOrderController {
     public ResponseEntity<CustomerOrderDTO> cancel(@PathVariable Long id) {
         return ResponseEntity.ok(customerOrderService.cancelOrder(id));
     }
+
+    /**
+     * POST /api/customer-orders/{id}/create-warehouse-order
+     * Create warehouse order from customer order (Scenario 2 integration point)
+     * Prerequisites:
+     * - Order must be CONFIRMED with triggerScenario = WAREHOUSE_ORDER_NEEDED
+     * Actions:
+     * - Creates WarehouseOrder at Modules Supermarket (WS-8)
+     * - Updates customer order status to PROCESSING
+     */
+    @PostMapping("/{id}/create-warehouse-order")
+    public ResponseEntity<CustomerOrderDTO> createWarehouseOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(customerOrderService.createWarehouseOrderFromCustomerOrder(id));
+    }
+}
+        return ResponseEntity.ok(customerOrderService.cancelOrder(id));
+    }
 }
