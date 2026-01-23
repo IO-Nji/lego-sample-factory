@@ -20,29 +20,26 @@ public class WarehouseOrder {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String warehouseOrderNumber;
+    private String orderNumber;
 
-    @Column(nullable = false)
-    private Long sourceCustomerOrderId; // Link to the customer order that triggered this
-
-    @Column(nullable = false)
-    private Long requestingWorkstationId; // Plant Warehouse (workstation 7)
-
-    @Column(nullable = false)
-    private Long fulfillingWorkstationId; // Modules Supermarket (workstation 8)
+    @Column(name = "customer_order_id")
+    private Long customerOrderId; // Link to the customer order that triggered this
 
     @Column(nullable = false)
     private LocalDateTime orderDate;
 
     @Column(nullable = false)
-    private String status; // PENDING, PROCESSING, FULFILLED, REJECTED, CANCELLED
+    private String status; // PENDING, CONFIRMED, PROCESSING, COMPLETED, CANCELLED
 
-    // Items needed for this warehouse order (modules or parts)
+    @Column(name = "trigger_scenario")
+    private String triggerScenario; // DIRECT_FULFILLMENT, PRODUCTION_REQUIRED
+
+    // Items needed for this warehouse order (modules)
     @OneToMany(mappedBy = "warehouseOrder", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<WarehouseOrderItem> warehouseOrderItems;
+    private List<WarehouseOrderItem> orderItems;
 
-    // Fulfillment scenario that triggered this order
-    private String triggerScenario; // "SCENARIO_2", "SCENARIO_3", etc.
+    @Column(nullable = false)
+    private Long workstationId; // WS-8 (Modules Supermarket)
 
     private String notes;
 
@@ -56,6 +53,9 @@ public class WarehouseOrder {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (workstationId == null) {
+            workstationId = 8L; // Default to WS-8 Modules Supermarket
+        }
     }
 
     @PreUpdate

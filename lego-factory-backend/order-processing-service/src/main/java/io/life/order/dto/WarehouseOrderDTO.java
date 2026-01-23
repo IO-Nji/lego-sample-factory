@@ -12,13 +12,12 @@ import java.util.List;
 @AllArgsConstructor
 public class WarehouseOrderDTO {
     private Long id;
-    private String warehouseOrderNumber;
-    private Long sourceCustomerOrderId;
-    private Long requestingWorkstationId;
-    private Long fulfillingWorkstationId;
+    private String orderNumber;
+    private Long customerOrderId;
+    private Long workstationId;
     private LocalDateTime orderDate;
     private String status;
-    private List<WarehouseOrderItemDTO> warehouseOrderItems;
+    private List<WarehouseOrderItemDTO> orderItems;
     private String triggerScenario;
     private String notes;
     private LocalDateTime createdAt;

@@ -42,11 +42,21 @@ public class WarehouseOrderController {
     /**
      * GET /api/warehouse-orders/workstation/{workstationId}
      * Retrieve warehouse orders for a specific workstation
-     * Modules Supermarket (8) can retrieve orders that need to be fulfilled
+     * Modules Supermarket (WS-8) can retrieve orders that need to be fulfilled
      */
     @GetMapping("/workstation/{workstationId}")
     public ResponseEntity<List<WarehouseOrderDTO>> getWarehouseOrdersByWorkstationId(@PathVariable Long workstationId) {
-        List<WarehouseOrderDTO> orders = warehouseOrderService.getWarehouseOrdersByFulfillingWorkstationId(workstationId);
+        List<WarehouseOrderDTO> orders = warehouseOrderService.getWarehouseOrdersByWorkstationId(workstationId);
+        return ResponseEntity.ok(orders);
+    }
+
+    /**
+     * GET /api/warehouse-orders/customer-order/{customerOrderId}
+     * Retrieve warehouse orders spawned from a specific customer order
+     */
+    @GetMapping("/customer-order/{customerOrderId}")
+    public ResponseEntity<List<WarehouseOrderDTO>> getWarehouseOrdersByCustomerOrderId(@PathVariable Long customerOrderId) {
+        List<WarehouseOrderDTO> orders = warehouseOrderService.getWarehouseOrdersByCustomerOrderId(customerOrderId);
         return ResponseEntity.ok(orders);
     }
 
@@ -62,8 +72,11 @@ public class WarehouseOrderController {
 
     /**
      * PUT /api/warehouse-orders/{id}/confirm
-     * Confirm a warehouse order (Modules Supermarket confirms receipt and readiness to fulfill)
-     * Changes status from PENDING to PROCESSING
+     * Confirm a warehouse order (Scenario 2 critical endpoint)
+     * DURING confirmation:
+     * - Checks MODULE stock at Modules Supermarket (WS-8)
+     * - Sets triggerScenario: DIRECT_FULFILLMENT or PRODUCTION_REQUIRED
+     * - Changes status from PENDING to CONFIRMED
      */
     @PutMapping("/{id}/confirm")
     public ResponseEntity<WarehouseOrderDTO> confirmWarehouseOrder(@PathVariable Long id) {
@@ -72,11 +85,16 @@ public class WarehouseOrderController {
     }
 
     /**
-     * PUT /api/warehouse-orders/{id}/fulfill-modules
-     * Fulfill a warehouse order at Modules Supermarket
-     * Updates warehouse order and related inventory
+     * POST /api/warehouse-orders/{id}/fulfill
+     * Fulfill a warehouse order (Scenario 2 DIRECT_FULFILLMENT path)
+     * Prerequisites:
+     * - Order must be CONFIRMED with triggerScenario = DIRECT_FULFILLMENT
+     * Actions:
+     * - Debits module stock from Modules Supermarket (WS-8)
+     * - Creates Final Assembly orders at WS-6
+     * - Updates status to PROCESSING (awaiting assembly completion)
      */
-    @PutMapping("/{id}/fulfill-modules")
+    @PostMapping("/{id}/fulfill")
     public ResponseEntity<WarehouseOrderDTO> fulfillWarehouseOrder(@PathVariable Long id) {
         WarehouseOrderDTO fulfilledOrder = warehouseOrderService.fulfillWarehouseOrder(id);
         return ResponseEntity.ok(fulfilledOrder);
