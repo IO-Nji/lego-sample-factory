@@ -5,7 +5,6 @@ import io.life.order.dto.SupplyOrderDTO;
 import io.life.order.dto.SupplyOrderItemDTO;
 import io.life.order.entity.ProductionControlOrder;
 import io.life.order.repository.ProductionControlOrderRepository;
-import io.life.order.entity.SupplyOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -364,63 +363,6 @@ public class ProductionControlOrderService {
                 requiredParts,
                 notes
         );
-    }
-
-    /**
-     * Check if control order has a fulfilled supply order.
-     */
-    public boolean hasFulfilledSupplyOrder(Long controlOrderId) {
-        List<SupplyOrderDTO> supplyOrders = supplyOrderService.getSupplyOrdersForControlOrder(controlOrderId, "PRODUCTION");
-        return supplyOrders.stream()
-                .anyMatch(so -> "FULFILLED".equals(so.getStatus()));
-    }
-
-    /**
-     * Check if control order has an active (pending) supply order.
-     */
-    public boolean hasActiveSupplyOrder(Long controlOrderId) {
-        List<SupplyOrderDTO> supplyOrders = supplyOrderService.getSupplyOrdersForControlOrder(controlOrderId, "PRODUCTION");
-        return supplyOrders.stream()
-                .anyMatch(so -> "PENDING".equals(so.getStatus()) || "IN_PROGRESS".equals(so.getStatus()));
-    }
-
-    /**
-     * Get supply orders for this control order.
-     */
-    public List<SupplyOrderDTO> getSupplyOrders(Long controlOrderId) {
-        return supplyOrderService.getSupplyOrdersForControlOrder(controlOrderId, "PRODUCTION");
-    }
-
-    /**
-     * Dispatch control order to workstation.
-     * Validates that supply order is fulfilled before dispatching.
-     * Changes status from ASSIGNED to IN_PROGRESS.
-     */
-    public ProductionControlOrderDTO dispatchToWorkstation(Long controlOrderId) {
-        @SuppressWarnings("null")
-        ProductionControlOrder order = repository.findById(controlOrderId)
-                .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + controlOrderId));
-        
-        // Validate supply order is fulfilled (if one exists)
-        List<SupplyOrderDTO> supplyOrders = getSupplyOrders(controlOrderId);
-        if (!supplyOrders.isEmpty() && !hasFulfilledSupplyOrder(controlOrderId)) {
-            throw new RuntimeException("Cannot dispatch order - supply order not fulfilled");
-        }
-        
-        // Validate current status
-        if (!STATUS_ASSIGNED.equals(order.getStatus())) {
-            throw new RuntimeException("Cannot dispatch order with status: " + order.getStatus());
-        }
-        
-        // Update status to IN_PROGRESS
-        order.setStatus(STATUS_IN_PROGRESS);
-        order.setUpdatedAt(LocalDateTime.now());
-        
-        ProductionControlOrder saved = repository.save(order);
-        logger.info("Dispatched production control order {} to workstation {}", 
-                    order.getControlOrderNumber(), order.getAssignedWorkstationId());
-        
-        return mapToDTO(saved);
     }
 
     /**

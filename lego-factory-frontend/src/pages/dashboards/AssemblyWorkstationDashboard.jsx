@@ -48,17 +48,8 @@ function AssemblyWorkstationDashboard() {
     return "final-assembly"; // default
   };
 
-  // Get workstation-specific order endpoint
-  const getOrderEndpoint = () => {
-    const workstationId = session?.user?.workstation?.id;
-    if (workstationId === 4) return '/gear-assembly-orders';
-    if (workstationId === 5) return '/motor-assembly-orders';
-    if (workstationId === 6) return '/final-assembly-orders';
-    return `/api/assembly/${getAssemblyType()}`; // Fallback to old generic endpoint
-  };
-
   const assemblyType = getAssemblyType();
-  const apiEndpoint = getOrderEndpoint();
+  const apiEndpoint = `/api/assembly/${assemblyType}`;
 
   useEffect(() => {
     if (session?.user?.workstationId) {
@@ -96,8 +87,7 @@ function AssemblyWorkstationDashboard() {
     setError(null);
 
     try {
-      const endpoint = getOrderEndpoint();
-      await api.post(`${endpoint}/${orderId}/start`);
+      await api.put(`${apiEndpoint}/${orderId}/start`);
       const message = `Assembly task started successfully!`;
       setSuccess(message);
       addNotification({ message, type: 'success' });
@@ -119,8 +109,7 @@ function AssemblyWorkstationDashboard() {
 
     try {
       const isFinalAssembly = assemblyType === "final-assembly";
-      const endpoint = getOrderEndpoint();
-      await api.post(`${endpoint}/${orderId}/complete`);
+      await api.put(`${apiEndpoint}/${orderId}/complete`);
       
       const message = isFinalAssembly 
         ? "Assembly completed! Product credited to Plant Warehouse." 
@@ -145,8 +134,7 @@ function AssemblyWorkstationDashboard() {
     setError(null);
 
     try {
-      const endpoint = getOrderEndpoint();
-      await api.post(`${endpoint}/${orderId}/halt`, { reason });
+      await api.post(`${apiEndpoint}/${orderId}/halt`, { reason });
       setSuccess("Assembly task halted and logged");
       fetchAssemblyOrders();
     } catch (err) {

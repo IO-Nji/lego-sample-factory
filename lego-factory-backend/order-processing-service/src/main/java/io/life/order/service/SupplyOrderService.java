@@ -127,14 +127,6 @@ public class SupplyOrderService {
     }
 
     /**
-     * Get supply orders for a specific control order.
-     */
-    public List<SupplyOrderDTO> getSupplyOrdersForControlOrder(Long controlOrderId, String controlOrderType) {
-        List<SupplyOrder> orders = repository.findBySourceControlOrderIdAndSourceControlOrderType(controlOrderId, controlOrderType);
-        return orders.stream().map(this::mapToDTO).collect(Collectors.toList());
-    }
-
-    /**
      * Fulfill a supply order.
      * Updates the status to FULFILLED and debits from inventory-service.
      * Only fulfills items that are in stock (partial fulfillment if necessary).

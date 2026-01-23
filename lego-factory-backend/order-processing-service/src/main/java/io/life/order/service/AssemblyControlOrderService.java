@@ -431,63 +431,6 @@ public class AssemblyControlOrderService {
     }
 
     /**
-     * Check if control order has a fulfilled supply order.
-     */
-    public boolean hasFulfilledSupplyOrder(Long controlOrderId) {
-        List<SupplyOrderDTO> supplyOrders = supplyOrderService.getSupplyOrdersForControlOrder(controlOrderId, "ASSEMBLY");
-        return supplyOrders.stream()
-                .anyMatch(so -> "FULFILLED".equals(so.getStatus()));
-    }
-
-    /**
-     * Check if control order has an active (pending) supply order.
-     */
-    public boolean hasActiveSupplyOrder(Long controlOrderId) {
-        List<SupplyOrderDTO> supplyOrders = supplyOrderService.getSupplyOrdersForControlOrder(controlOrderId, "ASSEMBLY");
-        return supplyOrders.stream()
-                .anyMatch(so -> "PENDING".equals(so.getStatus()) || "IN_PROGRESS".equals(so.getStatus()));
-    }
-
-    /**
-     * Get supply orders for this control order.
-     */
-    public List<SupplyOrderDTO> getSupplyOrders(Long controlOrderId) {
-        return supplyOrderService.getSupplyOrdersForControlOrder(controlOrderId, "ASSEMBLY");
-    }
-
-    /**
-     * Dispatch control order to workstation.
-     * Validates that supply order is fulfilled before dispatching.
-     * Changes status from ASSIGNED to IN_PROGRESS.
-     */
-    public AssemblyControlOrderDTO dispatchToWorkstation(Long controlOrderId) {
-        @SuppressWarnings("null")
-        AssemblyControlOrder order = repository.findById(controlOrderId)
-                .orElseThrow(() -> new RuntimeException("Control order not found: " + controlOrderId));
-        
-        // Validate supply order is fulfilled (if one exists)
-        List<SupplyOrderDTO> supplyOrders = getSupplyOrders(controlOrderId);
-        if (!supplyOrders.isEmpty() && !hasFulfilledSupplyOrder(controlOrderId)) {
-            throw new RuntimeException("Cannot dispatch order - supply order not fulfilled");
-        }
-        
-        // Validate current status
-        if (!"ASSIGNED".equals(order.getStatus())) {
-            throw new RuntimeException("Cannot dispatch order with status: " + order.getStatus());
-        }
-        
-        // Update status to IN_PROGRESS
-        order.setStatus("IN_PROGRESS");
-        order.setUpdatedAt(LocalDateTime.now());
-        
-        AssemblyControlOrder saved = repository.save(order);
-        logger.info("Dispatched assembly control order {} to workstation {}", 
-                    order.getControlOrderNumber(), order.getAssignedWorkstationId());
-        
-        return mapToDTO(saved);
-    }
-
-    /**
      * Generate unique control order number.
      */
     private String generateControlOrderNumber() {

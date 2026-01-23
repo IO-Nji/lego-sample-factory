@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import BaseOrderCard from './BaseOrderCard';
-import api from '../api/api';
 import '../styles/CustomerOrderCard.css';
 
 /**
@@ -15,22 +13,13 @@ import '../styles/CustomerOrderCard.css';
  * - Item and quantity display
  * - Target and actual timing (TS, TC, AS, AF)
  * - Workstation information
- * - Supply order status checking (auto-fetch on mount)
- * - Status-aware actions (Request Parts, Dispatch, Start, Complete)
- * 
- * Button Logic:
- * - PENDING status:
- *   - If no supply order: Show "Request Parts"
- *   - If supply order PENDING/IN_PROGRESS: Show disabled "Waiting for Parts..."
- *   - If supply order FULFILLED: Show "Dispatch to Workstation"
- * - IN_PROGRESS status: Show "Start Production" → "Complete Production"
+ * - Status-aware actions (Start, Complete, Halt, Request Parts)
  * 
  * @param {Object} order - Production control order object
  * @param {Function} onStart - Handler for starting production
  * @param {Function} onComplete - Handler for completing production
  * @param {Function} onHalt - Handler for halting production
  * @param {Function} onRequestParts - Handler for requesting parts supply
- * @param {Function} onDispatch - Handler for dispatching to workstation
  * @param {Function} onViewDetails - Handler for viewing order details
  */
 function ProductionControlOrderCard({ 
@@ -39,36 +28,8 @@ function ProductionControlOrderCard({
   onComplete,
   onHalt,
   onRequestParts,
-  onDispatch,
   onViewDetails
 }) {
-  const [supplyOrders, setSupplyOrders] = useState([]);
-  const [loadingSupply, setLoadingSupply] = useState(false);
-
-  // Fetch supply orders when component mounts or order changes
-  useEffect(() => {
-    if (order.id && (order.status === 'PENDING' || order.status === 'ASSIGNED')) {
-      fetchSupplyOrders();
-    }
-  }, [order.id, order.status]);
-
-  const fetchSupplyOrders = async () => {
-    try {
-      setLoadingSupply(true);
-      const response = await api.get(`/production-control-orders/${order.id}/supply-orders`);
-      setSupplyOrders(response.data || []);
-    } catch (error) {
-      console.error('Error fetching supply orders:', error);
-      setSupplyOrders([]);
-    } finally {
-      setLoadingSupply(false);
-    }
-  };
-
-  // Determine supply order status
-  const hasSupplyOrder = supplyOrders.length > 0;
-  const hasFulfilledSupply = supplyOrders.some(so => so.status === 'FULFILLED');
-  const hasActiveSupply = supplyOrders.some(so => so.status === 'PENDING' || so.status === 'IN_PROGRESS');
   
   // Get status CSS class
   const getStatusClass = (status) => {
@@ -138,63 +99,26 @@ function ProductionControlOrderCard({
     infoSections.push({ rows: actualTimeRows });
   }
 
-  // Determine which actions to show based on order status and supply order state
+  // Determine which actions to show based on order status
   const getActions = () => {
     const status = order.status;
     const actions = [];
     
     switch(status) {
-      case 'PENDING':
-        // Check supply order status to determine button
-        if (loadingSupply) {
-          actions.push({
-            label: 'Loading...',
-            variant: 'outline',
-            size: 'small',
-            disabled: true,
-            show: true
-          });
-        } else if (hasFulfilledSupply) {
-          actions.push({
-            label: '🚀 Dispatch to Workstation',
-            variant: 'success',
-            size: 'small',
-            onClick: () => onDispatch(order.id),
-            show: !!onDispatch
-          });
-        } else if (hasActiveSupply) {
-          actions.push({
-            label: '⏳ Waiting for Parts...',
-            variant: 'outline',
-            size: 'small',
-            disabled: true,
-            show: true
-          });
-        } else {
-          actions.push({
-            label: '📦 Request Parts',
-            variant: 'primary',
-            size: 'small',
-            onClick: () => onRequestParts(order),
-            show: !!onRequestParts
-          });
-        }
-        actions.push({
-          label: 'Details',
-          variant: 'ghost',
-          size: 'small',
-          onClick: () => onViewDetails(order),
-          show: !!onViewDetails
-        });
-        break;
-
       case 'ASSIGNED':
         actions.push({
-          label: '▶️ Start Production',
+          label: 'Start Production',
           variant: 'success',
           size: 'small',
           onClick: () => onStart(order.id),
           show: !!onStart
+        });
+        actions.push({
+          label: 'Request Parts',
+          variant: 'outline',
+          size: 'small',
+          onClick: () => onRequestParts(order),
+          show: !!onRequestParts
         });
         actions.push({
           label: 'Details',
@@ -207,14 +131,14 @@ function ProductionControlOrderCard({
       
       case 'IN_PROGRESS':
         actions.push({
-          label: '✅ Complete Production',
+          label: 'Complete',
           variant: 'primary',
           size: 'small',
           onClick: () => onComplete(order.id),
           show: !!onComplete
         });
         actions.push({
-          label: '⏸️ Halt',
+          label: 'Halt',
           variant: 'warning',
           size: 'small',
           onClick: () => onHalt(order.id),
@@ -306,7 +230,6 @@ ProductionControlOrderCard.propTypes = {
   onComplete: PropTypes.func,
   onHalt: PropTypes.func,
   onRequestParts: PropTypes.func,
-  onDispatch: PropTypes.func,
   onViewDetails: PropTypes.func
 };
 
@@ -315,7 +238,6 @@ ProductionControlOrderCard.defaultProps = {
   onComplete: () => {},
   onHalt: () => {},
   onRequestParts: () => {},
-  onDispatch: () => {},
   onViewDetails: () => {}
 };
 

@@ -59,8 +59,6 @@ public class AssemblyControlOrder {
 
     private LocalDateTime actualCompletionTime;
 
-    private LocalDateTime actualFinishTime;
-
     @Column(length = 50)
     private String priority; // LOW, MEDIUM, HIGH, URGENT
 
