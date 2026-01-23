@@ -71,8 +71,7 @@
 .main-navigation .submenu {
   position: absolute;
   top: 100%;
-  left: auto;
-  right: 0;
+  left: 0;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-top: none;
@@ -83,13 +82,6 @@
   min-width: 200px;
   z-index: 1000;
   display: none;
-}
-
-/* First submenu aligns left, others align right to prevent overflow */
-.main-navigation .nav-list > li:first-child .submenu,
-.main-navigation .nav-list > li:nth-child(2) .submenu {
-  left: 0;
-  right: auto;
 }
 
 .main-navigation .has-submenu:hover .submenu {
