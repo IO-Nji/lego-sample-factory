@@ -1,0 +1,101 @@
+.card {
+  margin-bottom: var(--spacing-md);
+  background: var(--surface-primary);
+  border-left: 4px solid var(--accent-purple);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.orderInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.orderNumber {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.productInfo {
+  padding: var(--spacing-sm);
+  background: var(--surface-secondary);
+  border-radius: var(--border-radius-sm);
+  line-height: 1.6;
+}
+
+.moduleInfo {
+  padding: var(--spacing-sm);
+  background: var(--surface-tertiary);
+  border-radius: var(--border-radius-sm);
+}
+
+.moduleList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+}
+
+.moduleItem {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--accent-blue);
+  color: white;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.timing {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.instructions {
+  padding: var(--spacing-sm);
+  background: var(--warning-bg);
+  border-left: 3px solid var(--warning);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-light);
+}
+
+.error {
+  padding: var(--spacing-sm);
+  background: var(--error-bg);
+  color: var(--error);
+  border-radius: var(--border-radius-sm);
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.completedInfo {
+  padding: var(--spacing-sm);
+  background: var(--success-bg);
+  color: var(--success);
+  border-radius: var(--border-radius-sm);
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}

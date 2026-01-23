@@ -287,46 +287,34 @@ function ModulesSupermarketDashboard() {
   // - Warehouse Orders request PRODUCTS but are fulfilled using MODULES
   // - Modules Supermarket has MODULE inventory
   // - Backend resolves PRODUCT → MODULES mapping via ProductModule table
-  // - This function checks if fulfillment will succeed or needs production
+  // - Backend sets triggerScenario during confirmation based on module availability
+  // - DIRECT_FULFILLMENT = modules available → show "Fulfill" button
+  // - PRODUCTION_REQUIRED = modules NOT available → show "Order Production" button
   const checkIfProductionNeeded = (warehouseOrder) => {
     console.log(`[ProductionCheck] ==== CHECKING ORDER ${warehouseOrder.warehouseOrderNumber} ====`);
     console.log(`[ProductionCheck] Order Status: ${warehouseOrder.status}`);
     
+    // Only check orders in PROCESSING status (after confirmation)
     if (warehouseOrder.status !== 'PROCESSING') {
       console.log(`[ProductionCheck] ❌ Order not PROCESSING (status: ${warehouseOrder.status}) - returning false`);
       return false;
     }
     
-    // Check if warehouseOrderItems exists and has data
-    if (!warehouseOrder.warehouseOrderItems || warehouseOrder.warehouseOrderItems.length === 0) {
-      console.log(`[ProductionCheck] ❌ CRITICAL: Warehouse order has NO ITEMS!`);
-      return false;
-    }
-    
-    // Check trigger scenario from backend analysis
+    // CRITICAL: Rely ONLY on backend's triggerScenario analysis
+    // The backend checks actual inventory during confirmation and sets this field
     if (warehouseOrder.triggerScenario) {
       const scenarioNeedsProduction = warehouseOrder.triggerScenario.includes('PRODUCTION');
-      console.log(`[ProductionCheck] Trigger Scenario: ${warehouseOrder.triggerScenario}`);
-      console.log(`[ProductionCheck] Needs Production (from scenario): ${scenarioNeedsProduction}`);
+      console.log(`[ProductionCheck] ✅ Trigger Scenario: ${warehouseOrder.triggerScenario}`);
+      console.log(`[ProductionCheck] ✅ Needs Production: ${scenarioNeedsProduction}`);
+      console.log(`[ProductionCheck] ==== END CHECK ====\n`);
       return scenarioNeedsProduction;
     }
     
-    // Fallback: Check if any item is unfulfilled (fulfilledQuantity < requestedQuantity)
-    const hasUnfulfilledItems = warehouseOrder.warehouseOrderItems.some(item => {
-      const fulfilled = item.fulfilledQuantity || 0;
-      const requested = item.requestedQuantity || 0;
-      const unfulfilled = fulfilled < requested;
-      
-      console.log(`[ProductionCheck] Item: ${item.itemName} - Fulfilled: ${fulfilled}/${requested} - Unfulfilled: ${unfulfilled}`);
-      return unfulfilled;
-    });
-    
-    console.log(`[ProductionCheck] ✅ Has Unfulfilled Items: ${hasUnfulfilledItems}`);
+    // If no trigger scenario is set, something went wrong during confirmation
+    // Default to safe option: allow fulfillment attempt (backend will reject if insufficient)
+    console.log(`[ProductionCheck] ⚠️ WARNING: No triggerScenario set - defaulting to false (allow fulfillment)`);
     console.log(`[ProductionCheck] ==== END CHECK ====\n`);
-    
-    // If all items are fulfilled, no production needed (can use Fulfill button)
-    // If some items unfulfilled, assume modules not available (need Production button)
-    return hasUnfulfilledItems;
+    return false;
   };
 
   // Render Module Inventory (Primary Content)

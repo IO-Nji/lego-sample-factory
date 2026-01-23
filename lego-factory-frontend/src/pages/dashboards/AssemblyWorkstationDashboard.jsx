@@ -7,6 +7,7 @@ import {
   ActivityLog,
   StatisticsGrid,
   AssemblyControlOrderCard,
+  FinalAssemblyOrderCard,
   Button, 
   Card, 
   Badge 
@@ -197,40 +198,58 @@ function AssemblyWorkstationDashboard() {
     <ActivityLog notifications={notifications} onClear={clearNotifications} />
   );
 
-  const renderAssemblyOrders = () => (
-    <OrdersSection
-      title="Assembly Tasks"
-      orders={assemblyOrders}
-      loading={loading}
-      filterOptions={[
-        { value: 'ALL', label: 'All Tasks' },
-        { value: 'ASSIGNED', label: 'Assigned' },
-        { value: 'IN_PROGRESS', label: 'In Progress' },
-        { value: 'COMPLETED', label: 'Completed' },
-        { value: 'HALTED', label: 'Halted' }
-      ]}
-      sortOptions={[
-        { value: 'controlOrderNumber', label: 'Task Number' },
-        { value: 'status', label: 'Status' },
-        { value: 'priority', label: 'Priority' }
-      ]}
-      searchKeys={['controlOrderNumber', 'assemblyInstructions']}
-      sortKey="controlOrderNumber"
-      emptyMessage="Assembly tasks will appear here when assigned to your workstation"
-      onRefresh={fetchAssemblyOrders}
-      renderCard={(order) => (
-        <AssemblyControlOrderCard
-          key={order.id}
-          order={order}
-          onStart={() => handleStartAssembly(order.id)}
-          onComplete={() => handleCompleteAssembly(order.id)}
-          onHalt={() => handleHaltAssembly(order.id)}
-          onViewDetails={() => handleViewDetails(order)}
-          processing={processingOrderId === order.id}
-        />
-      )}
-    />
-  );
+  const renderAssemblyOrders = () => {
+    const isFinalAssembly = assemblyType === 'final-assembly';
+    
+    return (
+      <OrdersSection
+        title={isFinalAssembly ? "Final Assembly Orders" : "Assembly Tasks"}
+        orders={assemblyOrders}
+        loading={loading}
+        filterOptions={[
+          { value: 'ALL', label: 'All Tasks' },
+          { value: 'PENDING', label: 'Pending' },
+          { value: 'CONFIRMED', label: 'Confirmed' },
+          { value: 'IN_PROGRESS', label: 'In Progress' },
+          { value: 'COMPLETED_ASSEMBLY', label: 'Completed Assembly' },
+          { value: 'COMPLETED', label: 'Completed' },
+          { value: 'HALTED', label: 'Halted' }
+        ]}
+        sortOptions={[
+          { value: 'orderNumber', label: 'Order Number' },
+          { value: 'status', label: 'Status' },
+          { value: 'priority', label: 'Priority' }
+        ]}
+        searchKeys={isFinalAssembly ? ['orderNumber', 'outputProductVariantName'] : ['controlOrderNumber', 'assemblyInstructions']}
+        sortKey={isFinalAssembly ? 'orderNumber' : 'controlOrderNumber'}
+        emptyMessage="Assembly tasks will appear here when assigned to your workstation"
+        onRefresh={fetchAssemblyOrders}
+        renderCard={(order) => {
+          if (isFinalAssembly) {
+            return (
+              <FinalAssemblyOrderCard
+                key={order.id}
+                order={order}
+                onRefresh={fetchAssemblyOrders}
+              />
+            );
+          }
+          
+          return (
+            <AssemblyControlOrderCard
+              key={order.id}
+              order={order}
+              onStart={() => handleStartAssembly(order.id)}
+              onComplete={() => handleCompleteAssembly(order.id)}
+              onHalt={() => handleHaltAssembly(order.id)}
+              onViewDetails={() => handleViewDetails(order)}
+              processing={processingOrderId === order.id}
+            />
+          );
+        }}
+      />
+    );
+  };
 
   // Details modal
   const renderDetailsModal = () => {

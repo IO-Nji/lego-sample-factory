@@ -71,6 +71,45 @@ public class FinalAssemblyOrderService {
     }
 
     /**
+     * Create final assembly order from warehouse order (Scenario 2)
+     * Called when Modules Supermarket fulfills a warehouse order
+     */
+    @Transactional
+    public FinalAssemblyOrder createFromWarehouseOrder(
+            Long warehouseOrderId,
+            Long productVariantId,
+            String productVariantName,
+            Integer quantity,
+            String requiredModuleIds,
+            String requiredModuleDetails) {
+        
+        String orderNumber = "FA-" + System.currentTimeMillis();
+        
+        FinalAssemblyOrder order = FinalAssemblyOrder.builder()
+                .orderNumber(orderNumber)
+                .warehouseOrderId(warehouseOrderId)
+                .workstationId(6L) // Final Assembly WS-6
+                .outputProductVariantId(productVariantId)
+                .outputProductVariantName(productVariantName)
+                .quantity(quantity)
+                .requiredModuleIds(requiredModuleIds)
+                .requiredModuleDetails(requiredModuleDetails)
+                .status("PENDING")
+                .priority("NORMAL")
+                .modulesReceived(false)
+                .targetStartTime(LocalDateTime.now().plusMinutes(30))
+                .targetCompletionTime(LocalDateTime.now().plusHours(2))
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        FinalAssemblyOrder saved = finalAssemblyOrderRepository.save(order);
+        log.info("Created final assembly order {} for Product Variant {} ({}) qty {} from WarehouseOrder {}",
+                orderNumber, productVariantId, productVariantName, quantity, warehouseOrderId);
+        
+        return saved;
+    }
+
+    /**
      * Confirm final assembly order
      * Operator confirms receipt of modules from Modules Supermarket
      */
@@ -119,27 +158,50 @@ public class FinalAssemblyOrderService {
     }
 
     /**
-     * Complete final assembly order
-     * Credits Product Variants to Plant Warehouse (WS-7)
-     * Propagates status to parent warehouse order or assembly control order
+     * Complete assembly work (Step 3 of 4)
+     * Marks assembly work as finished, awaiting submission
+     * Does NOT credit warehouse yet - that happens on submit
      */
     @Transactional
-    public FinalAssemblyOrder completeOrder(Long orderId) {
+    public FinalAssemblyOrder completeAssembly(Long orderId) {
         FinalAssemblyOrder order = getOrderById(orderId);
         
         if (!"IN_PROGRESS".equals(order.getStatus())) {
             throw new IllegalStateException("Can only complete IN_PROGRESS orders. Current status: " + order.getStatus());
         }
 
-        // Credit Product Variants to Plant Warehouse
-        creditPlantWarehouse(order);
-
-        // Update order status
-        order.setStatus("COMPLETED");
+        // Mark assembly work as complete
+        order.setStatus("COMPLETED_ASSEMBLY");
         order.setActualFinishTime(LocalDateTime.now());
         FinalAssemblyOrder saved = finalAssemblyOrderRepository.save(order);
 
-        log.info("Completed final assembly order: {} - {} {} produced and credited to Plant Warehouse", 
+        log.info("Completed assembly work for order: {} - {} {} assembled, awaiting submission", 
+                order.getOrderNumber(), order.getQuantity(), order.getOutputProductVariantName());
+
+        return saved;
+    }
+
+    /**
+     * Submit final assembly order (Step 4 of 4)
+     * Credits Product Variants to Plant Warehouse (WS-7)
+     * Propagates status to parent warehouse order (activates CustomerOrder fulfill button)
+     */
+    @Transactional
+    public FinalAssemblyOrder submitOrder(Long orderId) {
+        FinalAssemblyOrder order = getOrderById(orderId);
+        
+        if (!"COMPLETED_ASSEMBLY".equals(order.getStatus())) {
+            throw new IllegalStateException("Can only submit COMPLETED_ASSEMBLY orders. Current status: " + order.getStatus());
+        }
+
+        // Credit Product Variants to Plant Warehouse
+        creditPlantWarehouse(order);
+
+        // Update order status to final COMPLETED
+        order.setStatus("COMPLETED");
+        FinalAssemblyOrder saved = finalAssemblyOrderRepository.save(order);
+
+        log.info("Submitted final assembly order: {} - {} {} credited to Plant Warehouse", 
                 order.getOrderNumber(), order.getQuantity(), order.getOutputProductVariantName());
 
         // Propagate status to parent orders
@@ -212,17 +274,29 @@ public class FinalAssemblyOrderService {
      */
     private void creditPlantWarehouse(FinalAssemblyOrder order) {
         try {
-            String url = INVENTORY_SERVICE_URL + "/api/stock/credit";
-            Map<String, Object> request = Map.of(
-                    "workstationId", PLANT_WAREHOUSE_ID,
-                    "itemType", "PRODUCT_VARIANT",
-                    "itemId", order.getOutputProductVariantId(),
-                    "quantity", order.getQuantity()
-            );
+            // First, get current stock to calculate new quantity
+String getUrl = String.format("%s/api/stock/workstation/%d/item?itemType=PRODUCT&itemId=%d",
+                    INVENTORY_SERVICE_URL, PLANT_WAREHOUSE_ID, order.getOutputProductVariantId());
+            
+            Integer currentQuantity = 0;
+            try {
+                Map<String, Object> currentStock = restTemplate.getForObject(getUrl, Map.class);
+                if (currentStock != null && currentStock.get("quantity") != null) {
+                    currentQuantity = (Integer) currentStock.get("quantity");
+                }
+            } catch (Exception e) {
+                log.warn("Could not get current stock, assuming 0: {}", e.getMessage());
+            }
+            
+            Integer newQuantity = currentQuantity + order.getQuantity();
+            
+            // Update stock using the correct endpoint with query parameters
+String url = String.format("%s/api/stock/update?workstationId=%d&itemType=PRODUCT&itemId=%d&quantity=%d",
+                    INVENTORY_SERVICE_URL, PLANT_WAREHOUSE_ID, order.getOutputProductVariantId(), newQuantity);
 
-            restTemplate.postForObject(url, request, Void.class);
-            log.info("Credited {} Product Variant {} ({}) to Plant Warehouse", 
-                    order.getQuantity(), order.getOutputProductVariantId(), order.getOutputProductVariantName());
+            restTemplate.postForObject(url, null, Map.class);
+            log.info("Credited {} Product Variant {} ({}) to Plant Warehouse (total now: {})", 
+                    order.getQuantity(), order.getOutputProductVariantId(), order.getOutputProductVariantName(), newQuantity);
 
         } catch (Exception e) {
             log.error("Failed to credit Plant Warehouse for order {}: {}", 
