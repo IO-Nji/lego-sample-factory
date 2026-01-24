@@ -229,6 +229,14 @@ function App() {
           }
         />
         <Route
+          path="final-assembly"
+          element={
+            <AuthGuard>
+              <DashboardPage />
+            </AuthGuard>
+          }
+        />
+        <Route
           path="production-planning"
           element={
             <AuthGuard requiredRole="PRODUCTION_PLANNING">

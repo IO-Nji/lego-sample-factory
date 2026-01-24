@@ -1,0 +1,273 @@
+/* Final Assembly Order Card Styles */
+.final-assembly-order-card {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.final-assembly-order-card:hover {
+  border-color: #7c3aed;
+  box-shadow: 0 4px 6px rgba(124, 58, 237, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Status-based border colors */
+.final-assembly-order-card.status-pending {
+  border-left: 4px solid #f59e0b;
+}
+
+.final-assembly-order-card.status-in-progress {
+  border-left: 4px solid #3b82f6;
+}
+
+.final-assembly-order-card.status-completed {
+  border-left: 4px solid #10b981;
+}
+
+.final-assembly-order-card.status-cancelled {
+  border-left: 4px solid #ef4444;
+}
+
+/* Header */
+.final-assembly-order-card .order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.final-assembly-order-card .order-number {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  font-family: 'Courier New', monospace;
+}
+
+.final-assembly-order-card .order-status-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.final-assembly-order-card .order-status-badge.pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.final-assembly-order-card .order-status-badge.in-progress {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.final-assembly-order-card .order-status-badge.completed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.final-assembly-order-card .order-status-badge.cancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Body */
+.final-assembly-order-card .order-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Order Lineage */
+.final-assembly-order-card .order-lineage {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+  padding: 0.875rem;
+  border-radius: 0.5rem;
+  border: 1px solid #c4b5fd;
+}
+
+.final-assembly-order-card .lineage-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #5b21b6;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+.final-assembly-order-card .lineage-chain {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.final-assembly-order-card .lineage-item {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+}
+
+.final-assembly-order-card .lineage-item.customer {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.final-assembly-order-card .lineage-item.warehouse {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.final-assembly-order-card .lineage-item.final {
+  background-color: #ddd6fe;
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
+}
+
+.final-assembly-order-card .lineage-item.final.active {
+  background-color: #7c3aed;
+  color: white;
+  border: 1px solid #6d28d9;
+  box-shadow: 0 2px 4px rgba(124, 58, 237, 0.3);
+}
+
+.final-assembly-order-card .lineage-arrow {
+  color: #9ca3af;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+/* Output Section */
+.final-assembly-order-card .output-section {
+  background-color: #f9fafb;
+  padding: 0.875rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.final-assembly-order-card .output-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+.final-assembly-order-card .output-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.final-assembly-order-card .output-product {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.final-assembly-order-card .output-quantity {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #7c3aed;
+  font-family: 'Courier New', monospace;
+}
+
+/* Workstation Info */
+.final-assembly-order-card .workstation-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: #fef3c7;
+  border-radius: 0.375rem;
+  border: 1px solid #fde68a;
+}
+
+.final-assembly-order-card .workstation-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #78350f;
+}
+
+.final-assembly-order-card .workstation-value {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #92400e;
+  font-family: 'Courier New', monospace;
+}
+
+/* Timestamps */
+.final-assembly-order-card .timestamps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.final-assembly-order-card .timestamp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.final-assembly-order-card .timestamp-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.final-assembly-order-card .timestamp-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+  font-family: 'Courier New', monospace;
+}
+
+/* Footer */
+.final-assembly-order-card .order-card-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.final-assembly-order-card .action-buttons {
+  display: flex;
+  gap: 0.625rem;
+  justify-content: flex-end;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .final-assembly-order-card {
+    padding: 1rem;
+  }
+
+  .final-assembly-order-card .lineage-chain {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .final-assembly-order-card .lineage-arrow {
+    transform: rotate(90deg);
+  }
+
+  .final-assembly-order-card .action-buttons {
+    flex-direction: column;
+  }
+
+  .final-assembly-order-card .action-buttons button {
+    width: 100%;
+  }
+}
