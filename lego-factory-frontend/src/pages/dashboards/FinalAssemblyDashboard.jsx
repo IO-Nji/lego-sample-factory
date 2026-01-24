@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
-import { DashboardLayout, StatsCard, Notification } from "../../components";
+import { DashboardLayout, StatCard, Notification } from "../../components";
 import FinalAssemblyOrderCard from "../../components/FinalAssemblyOrderCard";
 import { getProductDisplayName } from "../../utils/dashboardHelpers";
 
@@ -116,22 +116,22 @@ function FinalAssemblyDashboard() {
   // Render Stats Cards
   const renderStatsCards = () => (
     <>
-      <StatsCard 
+      <StatCard 
         value={finalAssemblyOrders.length} 
         label="Total Orders" 
         variant="default"
       />
-      <StatsCard 
+      <StatCard 
         value={finalAssemblyOrders.filter(o => o.status === "PENDING").length} 
         label="Pending" 
         variant="pending"
       />
-      <StatsCard 
+      <StatCard 
         value={finalAssemblyOrders.filter(o => o.status === "IN_PROGRESS").length} 
         label="In Progress" 
         variant="processing"
       />
-      <StatsCard 
+      <StatCard 
         value={finalAssemblyOrders.filter(o => o.status === "COMPLETED").length} 
         label="Completed" 
         variant="completed"
