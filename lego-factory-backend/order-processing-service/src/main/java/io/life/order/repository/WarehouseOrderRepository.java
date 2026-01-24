@@ -9,9 +9,8 @@ import java.util.Optional;
 
 @Repository
 public interface WarehouseOrderRepository extends JpaRepository<WarehouseOrder, Long> {
-    Optional<WarehouseOrder> findByWarehouseOrderNumber(String warehouseOrderNumber);
-    List<WarehouseOrder> findByFulfillingWorkstationId(Long fulfillingWorkstationId);
-    List<WarehouseOrder> findByRequestingWorkstationId(Long requestingWorkstationId);
+    Optional<WarehouseOrder> findByOrderNumber(String orderNumber);
+    List<WarehouseOrder> findByWorkstationId(Long workstationId);
     List<WarehouseOrder> findByStatus(String status);
-    List<WarehouseOrder> findBySourceCustomerOrderId(Long sourceCustomerOrderId);
+    List<WarehouseOrder> findByCustomerOrderId(Long customerOrderId);
 }

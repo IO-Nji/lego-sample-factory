@@ -66,7 +66,7 @@ public class WarehouseOrderService {
      * Used to retrieve orders that need to be fulfilled (e.g., Modules Supermarket)
      */
     public List<WarehouseOrderDTO> getWarehouseOrdersByFulfillingWorkstationId(Long fulfillingWorkstationId) {
-        List<WarehouseOrder> orders = warehouseOrderRepository.findByFulfillingWorkstationId(fulfillingWorkstationId);
+        List<WarehouseOrder> orders = warehouseOrderRepository.findByWorkstationId(fulfillingWorkstationId);
         logger.info("Fetching warehouse orders for workstation {} - found {} orders", fulfillingWorkstationId, orders.size());
         return orders.stream()
                 .map(this::mapToDTO)
@@ -78,7 +78,7 @@ public class WarehouseOrderService {
      * Used to retrieve orders that were created by a workstation (e.g., Plant Warehouse)
      */
     public List<WarehouseOrderDTO> getWarehouseOrdersByRequestingWorkstationId(Long requestingWorkstationId) {
-        return warehouseOrderRepository.findByRequestingWorkstationId(requestingWorkstationId).stream()
+        return warehouseOrderRepository.findByWorkstationId(requestingWorkstationId).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }

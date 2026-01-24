@@ -32,6 +32,7 @@ export { default as Notification } from './Notification';
 
 // Layout Components
 export { default as DashboardLayout } from './DashboardLayout';
+export { default as StandardDashboardLayout } from './StandardDashboardLayout';
 export { default as PageHeader } from './PageHeader';
 export { default as InventoryTable } from './InventoryTable';
 
