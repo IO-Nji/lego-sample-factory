@@ -151,38 +151,67 @@ public class FulfillmentService {
 
         // Create a new WarehouseOrder
         WarehouseOrder warehouseOrder = new WarehouseOrder();
-        warehouseOrder.setWarehouseOrderNumber("WO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        warehouseOrder.setSourceCustomerOrderId(order.getId());
-        warehouseOrder.setRequestingWorkstationId(order.getWorkstationId()); // Plant Warehouse (7)
-        warehouseOrder.setFulfillingWorkstationId(MODULES_SUPERMARKET_WORKSTATION_ID); // Modules Supermarket (8)
+        warehouseOrder.setOrderNumber("WO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        warehouseOrder.setCustomerOrderId(order.getId());
+        warehouseOrder.setWorkstationId(MODULES_SUPERMARKET_WORKSTATION_ID); // Modules Supermarket (8)
         warehouseOrder.setOrderDate(LocalDateTime.now());
         warehouseOrder.setStatus("PENDING");
         warehouseOrder.setTriggerScenario("SCENARIO_2");
         warehouseOrder.setNotes("Auto-generated from customer order " + order.getOrderNumber());
 
-        // Add items to warehouse order
+        // BOM INTEGRATION: Convert products to modules using Bill of Materials
         List<WarehouseOrderItem> warehouseOrderItems = new ArrayList<>();
+        java.util.Map<Long, Integer> moduleRequirements = new java.util.HashMap<>();
+        
         for (OrderItem item : order.getOrderItems()) {
+            if ("PRODUCT".equalsIgnoreCase(item.getItemType())) {
+                // Use BOM to get module requirements for this product
+                logger.info("BOM Lookup: Converting product {} (qty {}) to modules", item.getItemId(), item.getQuantity());
+                java.util.Map<Long, Integer> productModules = masterdataService.getModuleRequirementsForProduct(
+                    item.getItemId(), 
+                    item.getQuantity()
+                );
+                
+                // Aggregate module requirements
+                for (java.util.Map.Entry<Long, Integer> entry : productModules.entrySet()) {
+                    Long moduleId = entry.getKey();
+                    Integer requiredQty = entry.getValue();
+                    moduleRequirements.merge(moduleId, requiredQty, Integer::sum);
+                    logger.info("  - Product {} requires Module {} qty {}", item.getItemId(), moduleId, requiredQty);
+                }
+            } else {
+                // For non-products, add directly (fallback for legacy data)
+                moduleRequirements.merge(item.getItemId(), item.getQuantity(), Integer::sum);
+            }
+        }
+        
+        // Create warehouse order items from aggregated module requirements
+        for (java.util.Map.Entry<Long, Integer> entry : moduleRequirements.entrySet()) {
+            Long moduleId = entry.getKey();
+            Integer totalQty = entry.getValue();
+            
             WarehouseOrderItem woItem = new WarehouseOrderItem();
             woItem.setWarehouseOrder(warehouseOrder);
-            woItem.setItemId(item.getItemId());
-            // Fetch actual item name from masterdata-service
-            String itemName = masterdataService.getItemName(item.getItemType(), item.getItemId());
-            woItem.setItemName(itemName);
-            woItem.setRequestedQuantity(item.getQuantity());
+            woItem.setItemId(moduleId);
+            
+            // Fetch module name from masterdata-service
+            String moduleName = masterdataService.getItemName("MODULE", moduleId);
+            woItem.setItemName(moduleName);
+            woItem.setRequestedQuantity(totalQty);
             woItem.setFulfilledQuantity(0);
-            woItem.setItemType(item.getItemType()); // Use the same type from OrderItem
+            woItem.setItemType("MODULE"); // Warehouse orders always deal with MODULEs
             warehouseOrderItems.add(woItem);
             
-            logger.info("  - Warehouse order item: {} (ID: {}) qty {}", itemName, item.getItemId(), item.getQuantity());
+            logger.info("  - Warehouse order item: Module {} ({}) qty {}", moduleId, moduleName, totalQty);
         }
-        warehouseOrder.setWarehouseOrderItems(warehouseOrderItems);
+        
+        warehouseOrder.setOrderItems(warehouseOrderItems);
 
         // Persist warehouse order
         warehouseOrderRepository.save(warehouseOrder);
-        logger.info("Created warehouse order {} for customer order {}", warehouseOrder.getWarehouseOrderNumber(), order.getOrderNumber());
+        logger.info("Created warehouse order {} for customer order {}", warehouseOrder.getOrderNumber(), order.getOrderNumber());
         orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "WAREHOUSE_ORDER_CREATED",
-            "Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created (Scenario 2)");
+            "Warehouse order " + warehouseOrder.getOrderNumber() + " created (Scenario 2)");
 
         // AUTO-TRIGGER: Create production order for shortfall (all items not available locally)
         logger.info("Auto-triggering production order for Scenario 2 shortfall");
@@ -192,20 +221,20 @@ public class FulfillmentService {
                     warehouseOrder.getId(),                     // sourceWarehouseOrderId
                     "NORMAL",                                   // priority (default)
                     LocalDateTime.now().plusDays(7),             // dueDate (7 days from now)
-                    "Auto-created for warehouse order " + warehouseOrder.getWarehouseOrderNumber(),
+                    "Auto-created for warehouse order " + warehouseOrder.getOrderNumber(),
                     order.getWorkstationId(),                    // createdByWorkstationId
                     MODULES_SUPERMARKET_WORKSTATION_ID           // assignedWorkstationId (Modules Supermarket)
             );
             logger.info("Production order {} auto-created for Scenario 2 shortfall", productionOrder.getProductionOrderNumber());
                 orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "PRODUCTION_ORDER_CREATED",
-                    "Production order auto-created for warehouse order " + warehouseOrder.getWarehouseOrderNumber());
+                    "Production order auto-created for warehouse order " + warehouseOrder.getOrderNumber());
         } catch (Exception e) {
             logger.error("Failed to auto-create production order for Scenario 2", e);
         }
 
         // Update customer order status
         order.setStatus(PROCESSING);
-        order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + "Scenario 2: Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created + Production order auto-triggered");
+        order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + "Scenario 2: Warehouse order " + warehouseOrder.getOrderNumber() + " created + Production order auto-triggered");
         orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "STATUS_PROCESSING", "Scenario 2 processing (waiting on warehouse)");
 
         return mapToDTO(customerOrderRepository.save(order));
@@ -222,47 +251,82 @@ public class FulfillmentService {
 
         // Create warehouse order for unavailable items
         WarehouseOrder warehouseOrder = new WarehouseOrder();
-        warehouseOrder.setWarehouseOrderNumber("WO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        warehouseOrder.setSourceCustomerOrderId(order.getId());
-        warehouseOrder.setRequestingWorkstationId(order.getWorkstationId()); // Plant Warehouse (7)
-        warehouseOrder.setFulfillingWorkstationId(MODULES_SUPERMARKET_WORKSTATION_ID); // Modules Supermarket (8)
+        warehouseOrder.setOrderNumber("WO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        warehouseOrder.setCustomerOrderId(order.getId());
+        warehouseOrder.setWorkstationId(MODULES_SUPERMARKET_WORKSTATION_ID); // Modules Supermarket (8)
         warehouseOrder.setOrderDate(LocalDateTime.now());
         warehouseOrder.setStatus("PENDING");
         warehouseOrder.setTriggerScenario("SCENARIO_3");
         warehouseOrder.setNotes("Auto-generated from customer order " + order.getOrderNumber() + " (partial fulfillment)");
 
-        List<WarehouseOrderItem> warehouseOrderItems = new ArrayList<>();
-
-        // Fulfill available items and track unavailable ones
+        // BOM INTEGRATION: Convert unavailable products to module requirements
+        java.util.Map<Long, Integer> moduleRequirements = new java.util.HashMap<>();
+        
+        // Fulfill available items and collect BOM requirements for unavailable ones
         for (OrderItem item : order.getOrderItems()) {
-            if (inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity())) {
-                inventoryService.updateStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
-                item.setFulfilledQuantity((item.getFulfilledQuantity() == null ? 0 : item.getFulfilledQuantity()) + item.getQuantity());
-                logger.info("  - Item {} fulfilled from local stock", item.getItemId());
+            if ("PRODUCT".equalsIgnoreCase(item.getItemType())) {
+                // Check if product is available at Plant Warehouse
+                if (inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity())) {
+                    // Fulfill from local stock
+                    inventoryService.updateStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
+                    item.setFulfilledQuantity((item.getFulfilledQuantity() == null ? 0 : item.getFulfilledQuantity()) + item.getQuantity());
+                    logger.info("  - Product {} fulfilled from local stock", item.getItemId());
+                } else {
+                    // Product not available - use BOM to convert to module requirements
+                    logger.info("BOM Lookup: Converting unavailable product {} (qty {}) to modules", item.getItemId(), item.getQuantity());
+                    java.util.Map<Long, Integer> productModules = masterdataService.getModuleRequirementsForProduct(
+                        item.getItemId(), 
+                        item.getQuantity()
+                    );
+                    
+                    // Aggregate module requirements
+                    for (java.util.Map.Entry<Long, Integer> entry : productModules.entrySet()) {
+                        Long moduleId = entry.getKey();
+                        Integer requiredQty = entry.getValue();
+                        moduleRequirements.merge(moduleId, requiredQty, Integer::sum);
+                        logger.info("  - Product {} requires Module {} qty {}", item.getItemId(), moduleId, requiredQty);
+                    }
+                }
             } else {
-                // Add to warehouse order for unavailable items
-                WarehouseOrderItem woItem = new WarehouseOrderItem();
-                woItem.setWarehouseOrder(warehouseOrder);
-                woItem.setItemId(item.getItemId());
-                // Fetch actual item name from masterdata-service
-                String itemName = masterdataService.getItemName(item.getItemType(), item.getItemId());
-                woItem.setItemName(itemName);
-                woItem.setRequestedQuantity(item.getQuantity());
-                woItem.setFulfilledQuantity(0);
-                woItem.setItemType(item.getItemType());
-                warehouseOrderItems.add(woItem);
-                
-                logger.info("  - Item {} ({}) requested from Modules Supermarket", itemName, item.getItemId());
+                // For non-products, check availability and add to warehouse order if missing
+                if (inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity())) {
+                    inventoryService.updateStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
+                    item.setFulfilledQuantity((item.getFulfilledQuantity() == null ? 0 : item.getFulfilledQuantity()) + item.getQuantity());
+                    logger.info("  - Item {} fulfilled from local stock", item.getItemId());
+                } else {
+                    moduleRequirements.merge(item.getItemId(), item.getQuantity(), Integer::sum);
+                }
             }
+        }
+        
+        // Create warehouse order items from aggregated module requirements
+        List<WarehouseOrderItem> warehouseOrderItems = new ArrayList<>();
+        for (java.util.Map.Entry<Long, Integer> entry : moduleRequirements.entrySet()) {
+            Long moduleId = entry.getKey();
+            Integer totalQty = entry.getValue();
+            
+            WarehouseOrderItem woItem = new WarehouseOrderItem();
+            woItem.setWarehouseOrder(warehouseOrder);
+            woItem.setItemId(moduleId);
+            
+            // Fetch module name from masterdata-service
+            String moduleName = masterdataService.getItemName("MODULE", moduleId);
+            woItem.setItemName(moduleName);
+            woItem.setRequestedQuantity(totalQty);
+            woItem.setFulfilledQuantity(0);
+            woItem.setItemType("MODULE"); // Warehouse orders always deal with MODULEs
+            warehouseOrderItems.add(woItem);
+            
+            logger.info("  - Module {} ({}) requested from Modules Supermarket qty {}", moduleId, moduleName, totalQty);
         }
 
         // Only save warehouse order if there are items to request
         if (!warehouseOrderItems.isEmpty()) {
-            warehouseOrder.setWarehouseOrderItems(warehouseOrderItems);
+            warehouseOrder.setOrderItems(warehouseOrderItems);
             warehouseOrderRepository.save(warehouseOrder);
-                logger.info("Created warehouse order {} for customer order {}", warehouseOrder.getWarehouseOrderNumber(), order.getOrderNumber());
+                logger.info("Created warehouse order {} for customer order {}", warehouseOrder.getOrderNumber(), order.getOrderNumber());
                 orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "WAREHOUSE_ORDER_CREATED",
-                    "Warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " created (Scenario 3)");
+                    "Warehouse order " + warehouseOrder.getOrderNumber() + " created (Scenario 3)");
 
             // AUTO-TRIGGER: Create production order for items not available in warehouse/modules supermarket
             logger.info("Auto-triggering production order for Scenario 3 shortfall items");
@@ -272,13 +336,13 @@ public class FulfillmentService {
                         warehouseOrder.getId(),                     // sourceWarehouseOrderId
                         "NORMAL",                                   // priority (default)
                         LocalDateTime.now().plusDays(7),             // dueDate (7 days from now)
-                        "Auto-created for warehouse order " + warehouseOrder.getWarehouseOrderNumber() + " (Scenario 3 shortfall)",
+                        "Auto-created for warehouse order " + warehouseOrder.getOrderNumber() + " (Scenario 3 shortfall)",
                         order.getWorkstationId(),                    // createdByWorkstationId
                         MODULES_SUPERMARKET_WORKSTATION_ID           // assignedWorkstationId (Modules Supermarket)
                 );
                 logger.info("Production order {} auto-created for Scenario 3 shortfall items", productionOrder.getProductionOrderNumber());
                 orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "PRODUCTION_ORDER_CREATED",
-                        "Production order auto-created for warehouse order " + warehouseOrder.getWarehouseOrderNumber());
+                        "Production order auto-created for warehouse order " + warehouseOrder.getOrderNumber());
             } catch (Exception e) {
                 logger.error("Failed to auto-create production order for Scenario 3", e);
             }
@@ -287,7 +351,7 @@ public class FulfillmentService {
         order.setStatus(PROCESSING);
         String notes = "Scenario 3: Partial fulfillment from local + Modules Supermarket";
         if (!warehouseOrderItems.isEmpty()) {
-            notes += " (warehouse order: " + warehouseOrder.getWarehouseOrderNumber() + " + Production order auto-triggered)";
+            notes += " (warehouse order: " + warehouseOrder.getOrderNumber() + " + Production order auto-triggered)";
         }
         order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + notes);
         orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "STATUS_PROCESSING", "Scenario 3 processing (partial local fulfillment)");
