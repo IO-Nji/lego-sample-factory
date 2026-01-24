@@ -156,17 +156,6 @@ function AdminDashboard() {
       const customerData = Array.isArray(customerResponse?.data) ? customerResponse.data : [];
       const productsData = Array.isArray(productsRes?.data) ? productsRes.data : [];
 
-      console.log("Dashboard Data Fetched:", {
-        workstations: wsData.length,
-        users: usersData.length,
-        productionOrders: prodData.length,
-        assemblyOrders: asmData.length,
-        supplyOrders: supData.length,
-        customerOrders: customerData.length,
-        products: productsData.length,
-        lowStockAlerts: Array.isArray(lowAlertsRes?.data) ? lowAlertsRes.data.length : 0
-      });
-
       // Combine all orders
       const allOrders = [...customerData, ...prodData, ...asmData, ...supData];
       const pendingOrders = allOrders.filter((o) => o.status === "PENDING").length;
@@ -241,11 +230,8 @@ function AdminDashboard() {
       const hasChanged = !lastDataRef.current || lastDataRef.current !== newDataString;
 
       if (hasChanged) {
-        console.log('Dashboard data changed - updating UI');
         setDashboardData(newData);
         lastDataRef.current = newDataString;
-      } else {
-        console.log('Dashboard data unchanged - skipping render');
       }
     } catch (err) {
       setError("Failed to load dashboard data: " + (err.message || "Unknown error"));
@@ -454,7 +440,7 @@ function AdminDashboard() {
                       name={ws.name}
                       tooltip={`${ws.details || 'Workstation details'} | Status: ${ws.status || 'ACTIVE'}`}
                       status={status}
-                      onClick={() => console.log('Workstation clicked:', ws)}
+                      onClick={() => {}}
                     />
                   );
                 })}

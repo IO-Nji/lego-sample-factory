@@ -62,17 +62,14 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
   // Fetch inventory for a specific workstation
   const fetchInventory = useCallback(async (wsId = workstationId) => {
     if (!wsId) {
-      console.warn('[useInventoryDisplay] No workstation ID provided');
       return [];
     }
 
-    console.log(`[useInventoryDisplay] Fetching fresh inventory for WS-${wsId}, itemType: ${itemType}`);
     setLoading(true);
     setError(null);
     try {
       const response = await api.get(`/stock/workstation/${wsId}`);
       const inventoryData = response.data || [];
-      console.log(`[useInventoryDisplay] Received ${inventoryData.length} inventory items from API`);
       
       // Filter by itemType if needed - handle both PRODUCT and PRODUCT_VARIANT as synonyms
       const filteredInventory = inventoryData.filter(item => {
@@ -85,7 +82,6 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
         return false;
       });
       
-      console.log(`[useInventoryDisplay] Filtered to ${filteredInventory.length} items for type ${itemType}`, filteredInventory);
       setInventory(filteredInventory);
       return filteredInventory;
     } catch (err) {
@@ -150,10 +146,7 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
   // This will trigger when workstationId becomes available (e.g., after session loads)
   useEffect(() => {
     if (workstationId) {
-      console.log(`[useInventoryDisplay v2] Fetching inventory for WS-${workstationId}, itemType: ${itemType}`);
       fetchInventory(workstationId);
-    } else {
-      console.log(`[useInventoryDisplay v2] No workstationId provided yet. Value:`, workstationId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workstationId]); // Only re-fetch if workstationId changes

@@ -82,7 +82,6 @@ function ModulesSupermarketDashboard() {
       const workstationId = session?.user?.workstationId || 8;
       const response = await api.get(`/warehouse-orders/workstation/${workstationId}`);
       const data = response.data;
-      console.log('[WarehouseOrders] Fetched data:', JSON.stringify(data, null, 2));
       if (Array.isArray(data)) {
         setWarehouseOrders(data);
         setError(null);
@@ -129,7 +128,6 @@ function ModulesSupermarketDashboard() {
 
     try {
       const response = await api.put(`/warehouse-orders/${orderId}/fulfill-modules`);
-      console.log('[Fulfillment] Response:', response.data);
       
       if (response.data.status === 'FULFILLED') {
         addNotification(`Order ${orderNumber} fulfilled - Final Assembly orders created`, 'success');
@@ -177,16 +175,12 @@ function ModulesSupermarketDashboard() {
   };
 
   const handleSelectPriority = async (warehouseOrder, priority) => {
-    console.log('[handleSelectPriority] Called with:', { warehouseOrder, priority });
     setCreatingProductionOrder(true);
     setError(null);
 
     try {
       const orderNum = warehouseOrder.orderNumber || warehouseOrder.warehouseOrderNumber || `ID-${warehouseOrder.id}`;
       const workstationId = session?.user?.workstationId;
-      
-      console.log('[handleSelectPriority] Session workstation ID:', workstationId);
-      console.log('[handleSelectPriority] Warehouse Order ID:', warehouseOrder.id);
       
       const payload = {
         sourceCustomerOrderId: null,
@@ -199,12 +193,7 @@ function ModulesSupermarketDashboard() {
         triggerScenario: 'SCENARIO_3'
       };
 
-      console.log('[Production Order Creation] Payload:', JSON.stringify(payload, null, 2));
-      console.log('[Production Order Creation] Sending POST to /production-orders/create');
-
       const response = await api.post('/production-orders/create', payload);
-      
-      console.log('[Production Order Creation] Success! Response:', response.data);
       
       // Exit priority selection mode
       setPrioritySelectionMode(prev => ({
@@ -318,44 +307,33 @@ function ModulesSupermarketDashboard() {
   // - PRODUCTION_REQUIRED = modules NOT available → show "Order Production" button
   // - PRODUCTION_CREATED = production already ordered → show "Awaiting Production" (disabled)
   const checkIfProductionNeeded = (warehouseOrder) => {
-    const orderNum = warehouseOrder.orderNumber || warehouseOrder.warehouseOrderNumber || 'Unknown';
-    console.log(`[ProductionCheck] ==== CHECKING ORDER ${orderNum} ====`);
-    console.log(`[ProductionCheck] Order Status: ${warehouseOrder.status}`);
-    console.log(`[ProductionCheck] Trigger Scenario: ${warehouseOrder.triggerScenario}`);
-    
     // If status is AWAITING_PRODUCTION, production order already exists - no need to order again
     if (warehouseOrder.status === 'AWAITING_PRODUCTION') {
-      console.log(`[ProductionCheck] ✅ Status is AWAITING_PRODUCTION - production already ordered`);
       return false;
     }
     
     // If triggerScenario indicates production was already created, return false
     if (warehouseOrder.triggerScenario === 'PRODUCTION_CREATED') {
-      console.log(`[ProductionCheck] ✅ Trigger scenario is PRODUCTION_CREATED - production already ordered`);
       return false;
     }
     
     // Only check orders in CONFIRMED status (after confirmation, ready for action)
     if (warehouseOrder.status !== 'CONFIRMED') {
-      console.log(`[ProductionCheck] ❌ Order not CONFIRMED (status: ${warehouseOrder.status}) - returning false`);
       return false;
     }
     
     // CRITICAL: Check specifically for PRODUCTION_REQUIRED
     // This indicates production is needed and NOT yet created
     if (warehouseOrder.triggerScenario === 'PRODUCTION_REQUIRED') {
-      console.log(`[ProductionCheck] ✅ Trigger Scenario is PRODUCTION_REQUIRED - production needed`);
       return true;
     }
     
     // DIRECT_FULFILLMENT means modules are available, no production needed
     if (warehouseOrder.triggerScenario === 'DIRECT_FULFILLMENT') {
-      console.log(`[ProductionCheck] ✅ Trigger Scenario is DIRECT_FULFILLMENT - no production needed`);
       return false;
     }
     
     // If no trigger scenario is set or unrecognized, default to false
-    console.log(`[ProductionCheck] ⚠️ WARNING: Unrecognized triggerScenario - defaulting to false`);
     return false;
   };
 

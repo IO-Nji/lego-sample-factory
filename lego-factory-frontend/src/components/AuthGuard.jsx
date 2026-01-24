@@ -17,7 +17,6 @@ export function AuthGuard({ children, requiredRole = null }) {
       const now = Date.now();
       
       if (now >= expiresAt) {
-        console.log('Token expired - clearing session');
         logout();
       }
     }
@@ -25,7 +24,6 @@ export function AuthGuard({ children, requiredRole = null }) {
 
   // Check if user is authenticated
   if (!isAuthenticated || !session) {
-    console.log('Not authenticated - redirecting to login');
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -35,14 +33,12 @@ export function AuthGuard({ children, requiredRole = null }) {
     const now = Date.now();
     
     if (now >= expiresAt) {
-      console.log('Token expired during render - redirecting to login');
       return <Navigate to="/login" state={{ from: location, expired: true }} replace />;
     }
   }
 
   // Check if specific role is required
   if (requiredRole && session?.user?.role !== requiredRole) {
-    console.log(`Role check failed. Required: ${requiredRole}, Got: ${session?.user?.role}`);
     return <Navigate to="/dashboard" state={{ from: location, reason: 'unauthorized' }} replace />;
   }
 

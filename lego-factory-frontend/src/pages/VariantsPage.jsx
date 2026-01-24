@@ -31,7 +31,6 @@ function VariantsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Creating variant:", formData);
     setShowAddForm(false);
     setFormData({ name: "", code: "", description: "", baseProductId: "" });
     fetchVariants();
@@ -39,7 +38,6 @@ function VariantsPage() {
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this variant?")) {
-      console.log("Deleting variant:", id);
       fetchVariants();
     }
   };

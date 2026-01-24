@@ -24,15 +24,6 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [tooltipContent, setTooltipContent] = useState(null);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🎯 CompactScheduleTimeline received tasks:', scheduledTasks.length);
-    if (scheduledTasks.length > 0) {
-      console.log('🎯 First task:', scheduledTasks[0]);
-      console.log('🎯 Task fields:', Object.keys(scheduledTasks[0]));
-    }
-  }, [scheduledTasks]);
-
   // Initialize view range based on tasks
   useEffect(() => {
     if (scheduledTasks.length > 0) {

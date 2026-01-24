@@ -55,9 +55,6 @@ function HomePage() {
         setProducts(productsRes.data);
         setModules(modulesRes.data);
         setParts(partsRes.data);
-        console.log('Loaded products:', productsRes.data.length);
-        console.log('Loaded modules:', modulesRes.data.length);
-        console.log('Loaded parts:', partsRes.data.length);
       } catch (err) {
         console.error('Error fetching data:', err);
       } finally {
@@ -80,13 +77,9 @@ function HomePage() {
     const fetchProductModules = async () => {
       setLoadingModules(true);
       try {
-        console.log('Fetching modules for product:', selectedProduct.id, selectedProduct.name);
-        
         // Fetch product modules
         const modulesResponse = await api.get(`/masterdata/product-variants/${selectedProduct.id}/modules`);
         const productModules = modulesResponse.data;
-        
-        console.log('Product modules:', productModules);
         
         // For each module, fetch its parts
         const modulesWithParts = await Promise.all(
@@ -118,7 +111,7 @@ function HomePage() {
           })
         );
         
-        console.log('Modules with parts:', modulesWithParts);
+
         setProductModules(modulesWithParts);
       } catch (error) {
         console.error('Error fetching product composition:', error);

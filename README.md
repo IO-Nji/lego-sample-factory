@@ -217,16 +217,6 @@ ProductionOrder: PENDING → PLANNED → IN_PRODUCTION → COMPLETED
 
 ---
 
-## ✅ Recent Verifications (January 23, 2026)
-
-- **✅ Final Assembly Orders Creation**: Verified that orders ARE correctly created when warehouse orders are fulfilled
-  - 3 orders confirmed at WS-6 with correct data fields (`outputProductVariantId`, `outputProductVariantName`)
-  - Code paths verified: `WarehouseOrderService.fulfillWarehouseOrder()` → `createFinalAssemblyOrdersFromWarehouseOrder()`
-  - No bugs found - system working as designed
-- **✅ Scenario 2 Workflow**: Complete end-to-end verified from customer order to final assembly
-
----
-
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -243,11 +233,8 @@ ProductionOrder: PENDING → PLANNED → IN_PRODUCTION → COMPLETED
 git clone <repository-url>
 cd lego-sample-factory
 
-# Start all services (Linux/Mac)
+# Start all services
 docker-compose up -d
-
-# Start all services (Windows PowerShell - includes health checks)
-.\start-factory.ps1
 ```
 
 **Access Application:**
@@ -267,17 +254,15 @@ docker-compose up -d
 
 ---
 
-## 📚 Comprehensive Documentation
+## 📚 Documentation
 
 | Document | Purpose |
 |----------|---------|
-| [PROJECT_TECHNICAL_OVERVIEW.md](PROJECT_TECHNICAL_OVERVIEW.md) | Academic research context, thesis background, PhD proposal material |
-| [README.architecture.md](README.architecture.md) | System architecture diagrams, data models, API specifications |
-| [README.devops.md](README.devops.md) | Deployment, configuration, troubleshooting, operations guide |
-| [BusinessScenarios.md](BusinessScenarios.md) | 4 order fulfillment scenarios with step-by-step workflows |
-| [TESTING_GUIDE.md](TESTING_GUIDE.md) | End-to-end testing procedures with test accounts |
-| [IMPLEMENTATION_ROADMAP.md](_dev-docs/ai-helper-documents/IMPLEMENTATION_ROADMAP.md) | Feature development plan (3 stages) |
-| [.github/copilot-instructions.md](.github/copilot-instructions.md) | Comprehensive AI agent onboarding (550+ lines) |
+| [PROJECT_TECHNICAL_OVERVIEW.md](_dev-docs/PROJECT_TECHNICAL_OVERVIEW.md) | Academic research context, thesis background, PhD proposal material |
+| [README.architecture.md](_dev-docs/README.architecture.md) | System architecture diagrams, data models, API specifications |
+| [BusinessScenarios.md](_dev-docs/BusinessScenarios.md) | 4 order fulfillment scenarios with step-by-step workflows |
+| [SCENARIO_IMPLEMENTATION_ROADMAP.md](_dev-docs/SCENARIO_IMPLEMENTATION_ROADMAP.md) | Feature development plan and implementation guide |
+| [copilot-instructions.md](.github/copilot-instructions.md) | AI agent onboarding for development assistance |
 
 ---
 

@@ -47,11 +47,8 @@ function CustomerOrderCard({
   // Check if all items have sufficient stock
   const hasAllStock = () => {
     if (!order.orderItems || order.orderItems.length === 0) {
-      console.log('[CustomerOrderCard] No order items to check');
       return false;
     }
-    
-    console.log('[CustomerOrderCard] Checking stock for order', order.orderNumber, 'Inventory items:', inventory.length);
     
     return order.orderItems.every(item => {
       // Handle both PRODUCT and PRODUCT_VARIANT as synonyms
@@ -62,15 +59,6 @@ function CustomerOrderCard({
         return itemTypeMatch && inv.itemId === item.itemId;
       });
       const stockQuantity = inventoryItem?.quantity || 0;
-      
-      console.log(`[CustomerOrderCard] Stock check for item ${item.itemId}:`, {
-        itemType: item.itemType,
-        itemId: item.itemId,
-        requestedQty: item.quantity,
-        availableStock: stockQuantity,
-        hasStock: stockQuantity >= item.quantity,
-        inventoryItem: inventoryItem ? `Found: ${inventoryItem.itemType}` : 'Not found'
-      });
       
       return stockQuantity >= item.quantity;
     });

@@ -60,9 +60,7 @@ function PlantWarehouseDashboard() {
   };
 
   useEffect(() => {
-    console.log('[PlantWarehouse] Component mounted, session:', session?.user);
     const workstationId = session?.user?.workstationId;
-    console.log('[PlantWarehouse] Detected workstationId:', workstationId);
     
     fetchWorkstations();
     if (workstationId) {
@@ -178,7 +176,6 @@ function PlantWarehouseDashboard() {
     setError(null);
 
     try {
-      console.log('[PlantWarehouse] Fulfilling order', orderId);
       const response = await api.put(`/customer-orders/${orderId}/fulfill`);
       // Backend auto-determines scenario: Scenario 1 (COMPLETED) or Scenario 2/3 (PROCESSING)
       const isCompleted = response.data.status === 'COMPLETED';
@@ -190,11 +187,8 @@ function PlantWarehouseDashboard() {
         'success',
         { orderNumber: orderNum }
       );
-      console.log('[PlantWarehouse] Order fulfilled, refreshing data...');
       await fetchOrders();
-      console.log('[PlantWarehouse] Orders refreshed, now refreshing inventory...');
-      await fetchInventory(); // Refresh inventory to show updated quantities
-      console.log('[PlantWarehouse] Inventory refresh complete');
+      await fetchInventory();
     } catch (err) {
       setError("Failed to fulfill order: " + (err.response?.data?.message || err.message));
       addNotification("Failed to fulfill order", 'error');

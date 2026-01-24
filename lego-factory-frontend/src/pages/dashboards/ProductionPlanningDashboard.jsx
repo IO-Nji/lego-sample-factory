@@ -119,9 +119,6 @@ function ProductionPlanningDashboard() {
           });
         }
       });
-      console.log('📊 Scheduled Tasks for Timeline:', allTasks.length, 'tasks');
-      console.log('📊 Sample task:', allTasks[0]);
-      console.log('📊 All tasks:', allTasks);
       setScheduledTasks(allTasks);
     } catch (err) {
       console.error("Failed to load scheduled orders:", err);
