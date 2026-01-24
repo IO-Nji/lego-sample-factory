@@ -23,7 +23,7 @@ function ModulesSupermarketDashboard() {
     priority: 'NORMAL',
     notes: '',
     missingModules: [],
-    warehouseOrderNumber: ''
+    orderNumber: ''
   });
   const [creatingProductionOrder, setCreatingProductionOrder] = useState(false);
   const [prioritySelectionMode, setPrioritySelectionMode] = useState({}); // Track which orders are in priority selection mode
@@ -177,7 +177,7 @@ function ModulesSupermarketDashboard() {
         sourceWarehouseOrderId: warehouseOrder.id,
         priority: priority,
         dueDate: null,
-        notes: `Production order for warehouse order ${warehouseOrder.warehouseOrderNumber}`,
+        notes: `Production order for warehouse order ${warehouseOrder.orderNumber}`,
         createdByWorkstationId: session?.user?.workstationId,
         assignedWorkstationId: null,
         triggerScenario: 'SCENARIO_3'
@@ -252,7 +252,7 @@ function ModulesSupermarketDashboard() {
         priority: 'NORMAL',
         notes: '',
         missingModules: [],
-        warehouseOrderNumber: ''
+        orderNumber: ''
       });
       await fetchWarehouseOrders();
     } catch (err) {
@@ -303,7 +303,7 @@ function ModulesSupermarketDashboard() {
   // - Warehouse Orders contain PRODUCTS (what Plant Warehouse needs)
   // - This function checks if Modules Supermarket has enough MODULES to assemble those PRODUCTS
   const checkIfProductionNeeded = (warehouseOrder) => {
-    console.log(`[ProductionCheck] ==== CHECKING ORDER ${warehouseOrder.warehouseOrderNumber} ====`);
+    console.log(`[ProductionCheck] ==== CHECKING ORDER ${warehouseOrder.orderNumber} ====`);
     console.log(`[ProductionCheck] Order Status: ${warehouseOrder.status}`);
     console.log(`[ProductionCheck] Architecture: WH Order contains PRODUCTS, Supermarket stocks MODULES`);
     
@@ -312,14 +312,14 @@ function ModulesSupermarketDashboard() {
       return false;
     }
     
-    // Check if warehouseOrderItems exists and has data
-    if (!warehouseOrder.warehouseOrderItems || warehouseOrder.warehouseOrderItems.length === 0) {
+    // Check if orderItems exists and has data
+    if (!warehouseOrder.orderItems || warehouseOrder.orderItems.length === 0) {
       console.log(`[ProductionCheck] ❌ CRITICAL: Warehouse order has NO ITEMS!`);
       return false;
     }
     
     // Warehouse orders contain PRODUCTS requested by Plant Warehouse
-    const productItems = warehouseOrder.warehouseOrderItems.filter(item => item.itemType === 'PRODUCT');
+    const productItems = warehouseOrder.orderItems.filter(item => item.itemType === 'PRODUCT');
     
     console.log(`[ProductionCheck] Warehouse order has ${productItems.length} PRODUCT items:`);
     productItems.forEach(item => {
@@ -508,7 +508,7 @@ function ModulesSupermarketDashboard() {
               
               <div className="px-6 py-4 space-y-4">
                 <p className="text-sm text-gray-600">
-                  Production order will be automatically created for missing modules from warehouse order <strong>{productionOrderForm.warehouseOrderNumber}</strong>.
+                  Production order will be automatically created for missing modules from warehouse order <strong>{productionOrderForm.orderNumber}</strong>.
                 </p>
 
                 {/* Display auto-loaded missing modules */}

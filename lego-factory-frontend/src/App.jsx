@@ -221,6 +221,14 @@ function App() {
           }
         />
         <Route
+          path="modules-supermarket"
+          element={
+            <AuthGuard requiredRole="MODULES_SUPERMARKET">
+              <DashboardPage />
+            </AuthGuard>
+          }
+        />
+        <Route
           path="production-planning"
           element={
             <AuthGuard requiredRole="PRODUCTION_PLANNING">

@@ -95,7 +95,7 @@ function WarehouseOrderCard({
     <div className={`warehouse-order-card status-${getStatusClass(order.status)}`}>
       {/* Header with Order Number and Status Badge */}
       <div className="order-card-header">
-        <span className="order-number">#{order.warehouseOrderNumber}</span>
+        <span className="order-number">#{order.orderNumber}</span>
         <span className={`order-status-badge ${getStatusClass(order.status)}`}>
           {order.status}
         </span>
@@ -106,7 +106,7 @@ function WarehouseOrderCard({
         {/* Source Order Info */}
         <div className="order-meta">
           <span className="meta-label">Source:</span>
-          <span className="meta-value">CO-{order.sourceCustomerOrderId}</span>
+          <span className="meta-value">CO-{order.customerOrderId}</span>
         </div>
 
         {/* Scenario Badge */}
@@ -117,9 +117,9 @@ function WarehouseOrderCard({
         )}
 
         {/* Order Items - Limited to 4 items (2 rows) */}
-        {order.warehouseOrderItems && order.warehouseOrderItems.length > 0 ? (
+        {order.orderItems && order.orderItems.length > 0 ? (
           <div className="order-items-list">
-            {order.warehouseOrderItems.slice(0, 4).map((item) => {
+            {order.orderItems.slice(0, 4).map((item) => {
               const itemName = getProductDisplayName ? 
                 getProductDisplayName(item.itemId, item.itemType) : 
                 (item.itemName || `Item ${item.itemId}`);
@@ -165,7 +165,7 @@ function WarehouseOrderCard({
               <Button 
                 variant="primary" 
                 size="small" 
-                onClick={() => onConfirm(order.id, order.warehouseOrderNumber)}
+                onClick={() => onConfirm(order.id, order.orderNumber)}
                 disabled={isConfirming || isProcessing}
                 loading={isConfirming}
               >
@@ -177,7 +177,7 @@ function WarehouseOrderCard({
               <Button 
                 variant="success" 
                 size="small" 
-                onClick={() => onFulfill(order.id, order.warehouseOrderNumber)}
+                onClick={() => onFulfill(order.id, order.orderNumber)}
                 disabled={isProcessing || isConfirming}
                 loading={isProcessing}
               >
@@ -259,11 +259,11 @@ function WarehouseOrderCard({
 WarehouseOrderCard.propTypes = {
   order: PropTypes.shape({
     id: PropTypes.number.isRequired,
-    warehouseOrderNumber: PropTypes.string.isRequired,
+    orderNumber: PropTypes.string.isRequired,
     status: PropTypes.string.isRequired,
-    sourceCustomerOrderId: PropTypes.number,
+    customerOrderId: PropTypes.number,
     triggerScenario: PropTypes.string,
-    warehouseOrderItems: PropTypes.arrayOf(
+    orderItems: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.number,
         itemId: PropTypes.number,
