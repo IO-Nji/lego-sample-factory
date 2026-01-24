@@ -59,7 +59,7 @@ public class ProductionOrderService {
             warehouseOrder = warehouseOrderRepository.findById(sourceWarehouseOrderId)
                     .orElseThrow(() -> new RuntimeException("Warehouse order not found: " + sourceWarehouseOrderId));
             if (customerOrderId == null) {
-                customerOrderId = warehouseOrder.getSourceCustomerOrderId();
+                customerOrderId = warehouseOrder.getCustomerOrderId();
                 logger.info("Fetched customer order ID {} from warehouse order {}", 
                         customerOrderId, sourceWarehouseOrderId);
             }
