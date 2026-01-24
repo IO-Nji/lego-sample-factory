@@ -15,6 +15,7 @@ public class CustomerOrderDTO {
     private String orderNumber;
     private LocalDateTime orderDate;
     private String status;
+    private String triggerScenario;
     private List<OrderItemDTO> orderItems;
     private Long workstationId;
     private String notes;

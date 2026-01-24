@@ -2,10 +2,8 @@ package io.life.order.service;
 
 import io.life.order.dto.WarehouseOrderDTO;
 import io.life.order.dto.WarehouseOrderItemDTO;
-import io.life.order.entity.CustomerOrder;
 import io.life.order.entity.WarehouseOrder;
 import io.life.order.entity.WarehouseOrderItem;
-import io.life.order.repository.CustomerOrderRepository;
 import io.life.order.repository.WarehouseOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,9 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -25,32 +21,24 @@ import java.util.stream.Collectors;
 public class WarehouseOrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(WarehouseOrderService.class);
-    private static final Long PLANT_WAREHOUSE_WORKSTATION_ID = 7L;
-    private static final Long FINAL_ASSEMBLY_WORKSTATION_ID = 6L;
     private static final String WAREHOUSE_AUDIT_SOURCE = "WAREHOUSE";
 
     private final WarehouseOrderRepository warehouseOrderRepository;
     private final InventoryService inventoryService;
     private final ProductionOrderService productionOrderService;
-    private final CustomerOrderRepository customerOrderRepository;
     private final OrderAuditService orderAuditService;
     private final FinalAssemblyOrderService finalAssemblyOrderService;
-    private final MasterdataService masterdataService;
 
     public WarehouseOrderService(WarehouseOrderRepository warehouseOrderRepository,
                                  InventoryService inventoryService,
                                  ProductionOrderService productionOrderService,
-                                 CustomerOrderRepository customerOrderRepository,
                                  OrderAuditService orderAuditService,
-                                 FinalAssemblyOrderService finalAssemblyOrderService,
-                                 MasterdataService masterdataService) {
+                                 FinalAssemblyOrderService finalAssemblyOrderService) {
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.inventoryService = inventoryService;
         this.productionOrderService = productionOrderService;
-        this.customerOrderRepository = customerOrderRepository;
         this.orderAuditService = orderAuditService;
         this.finalAssemblyOrderService = finalAssemblyOrderService;
-        this.masterdataService = masterdataService;
     }
 
     /**
@@ -106,8 +94,9 @@ public class WarehouseOrderService {
 
     /**
      * Confirm a warehouse order
-     * Changes status from PENDING to PROCESSING (acknowledges receipt and readiness to fulfill)
-     * Similar to customer order confirmation at Plant Warehouse
+     * STOCK CHECK REFINEMENT: Check MODULE stock at Modules Supermarket (WS-8) DURING confirmation
+     * Sets triggerScenario: DIRECT_FULFILLMENT or PRODUCTION_REQUIRED
+     * Changes status from PENDING to CONFIRMED
      */
     public WarehouseOrderDTO confirmWarehouseOrder(Long warehouseOrderId) {
         @SuppressWarnings("null")
@@ -123,14 +112,35 @@ public class WarehouseOrderService {
             throw new IllegalStateException("Only PENDING warehouse orders can be confirmed. Current status: " + order.getStatus());
         }
 
-        // Update status to PROCESSING
-        order.setStatus("PROCESSING");
+        // STOCK CHECK REFINEMENT: Check MODULE stock at Modules Supermarket (WS-8) DURING confirmation
+        // This determines the scenario path: direct fulfillment or production required
+        boolean hasAllModules = order.getOrderItems().stream()
+            .allMatch(item -> {
+                // Modules Supermarket (WS-8) checks MODULE stock
+                return inventoryService.checkStock(
+                    order.getWorkstationId(), // Modules Supermarket workstation ID (8)
+                    item.getItemId(),
+                    item.getRequestedQuantity()
+                );
+            });
+        
+        // Set triggerScenario based on MODULE stock check
+        if (hasAllModules) {
+            order.setTriggerScenario("DIRECT_FULFILLMENT");
+            logger.info("Warehouse order {} confirmed - DIRECT_FULFILLMENT (sufficient MODULE stock)", order.getOrderNumber());
+        } else {
+            order.setTriggerScenario("PRODUCTION_REQUIRED");
+            logger.info("Warehouse order {} confirmed - PRODUCTION_REQUIRED (insufficient MODULE stock)", order.getOrderNumber());
+        }
+
+        // Update status to CONFIRMED
+        order.setStatus("CONFIRMED");
         order.setUpdatedAt(LocalDateTime.now());
         warehouseOrderRepository.save(order);
 
-        logger.info("Warehouse order {} confirmed and moved to PROCESSING", order.getWarehouseOrderNumber());
+        logger.info("Warehouse order {} confirmed - Scenario: {}", order.getOrderNumber(), order.getTriggerScenario());
         orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "CONFIRMED",
-                "Warehouse order confirmed by Modules Supermarket - Status: PROCESSING");
+                "Warehouse order confirmed - Scenario: " + order.getTriggerScenario());
 
         return mapToDTO(order);
     }
@@ -153,19 +163,19 @@ public class WarehouseOrderService {
 
         WarehouseOrder order = orderOpt.get();
         
-        // Validate order can be fulfilled (must be PROCESSING)
-        if (!"PROCESSING".equals(order.getStatus())) {
-            throw new IllegalStateException("Only PROCESSING warehouse orders can be fulfilled. Current status: " + order.getStatus() + ". Please confirm the order first.");
+        // Validate order can be fulfilled (must be CONFIRMED)
+        if (!"CONFIRMED".equals(order.getStatus())) {
+            throw new IllegalStateException("Only CONFIRMED warehouse orders can be fulfilled. Current status: " + order.getStatus() + ". Please confirm the order first.");
         }
 
-        logger.info("Processing warehouse order {} from Modules Supermarket (WS-8)", order.getWarehouseOrderNumber());
+        logger.info("Processing warehouse order {} from Modules Supermarket (WS-8)", order.getOrderNumber());
         orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLMENT_STARTED",
-            "Warehouse order fulfillment started: " + order.getWarehouseOrderNumber());
+            "Warehouse order fulfillment started: " + order.getOrderNumber());
 
         // STEP 1: Check which items are available at Modules Supermarket (workstation 8)
-        boolean allItemsAvailable = order.getWarehouseOrderItems().stream()
+        boolean allItemsAvailable = order.getOrderItems().stream()
                 .allMatch(item -> inventoryService.checkStock(
-                        order.getFulfillingWorkstationId(),
+                        order.getWorkstationId(),
                         item.getItemId(),
                         item.getRequestedQuantity()
                 ));
@@ -176,9 +186,9 @@ public class WarehouseOrderService {
             return fulfillAllItems(order);
         } else {
             // Check if ANY items are available
-            boolean anyItemsAvailable = order.getWarehouseOrderItems().stream()
+            boolean anyItemsAvailable = order.getOrderItems().stream()
                     .anyMatch(item -> inventoryService.checkStock(
-                            order.getFulfillingWorkstationId(),
+                            order.getWorkstationId(),
                             item.getItemId(),
                             item.getRequestedQuantity()
                     ));
@@ -201,14 +211,14 @@ public class WarehouseOrderService {
      * Final Assembly will credit Plant Warehouse when they complete their work
      */
     private WarehouseOrderDTO fulfillAllItems(WarehouseOrder order) {
-        logger.info("Fulfilling all items for warehouse order {}", order.getWarehouseOrderNumber());
+        logger.info("Fulfilling all items for warehouse order {}", order.getOrderNumber());
 
         boolean allItemsFulfilled = true;
-        for (WarehouseOrderItem item : order.getWarehouseOrderItems()) {
+        for (WarehouseOrderItem item : order.getOrderItems()) {
             try {
                 // Deduct from Modules Supermarket stock
                 boolean deducted = inventoryService.updateStock(
-                        order.getFulfillingWorkstationId(),
+                        order.getWorkstationId(),
                         item.getItemId(),
                         item.getRequestedQuantity()
                 );
@@ -229,7 +239,7 @@ public class WarehouseOrderService {
         if (allItemsFulfilled) {
             // Mark as FULFILLED
             order.setStatus("FULFILLED");
-            logger.info("Warehouse order {} fulfilled - creating Final Assembly orders", order.getWarehouseOrderNumber());
+            logger.info("Warehouse order {} fulfilled - creating Final Assembly orders", order.getOrderNumber());
             
             // CREATE FINAL ASSEMBLY ORDERS (Proper Scenario 2 workflow)
             // Modules Supermarket debited, now Final Assembly needs to assemble products
@@ -240,7 +250,7 @@ public class WarehouseOrderService {
                     "Modules fulfilled, Final Assembly orders created - awaiting assembly completion");
         } else {
             order.setStatus("PARTIALLY_FULFILLED");
-            logger.warn("Warehouse order {} partially fulfilled due to inventory errors", order.getWarehouseOrderNumber());
+            logger.warn("Warehouse order {} partially fulfilled due to inventory errors", order.getOrderNumber());
             orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "PARTIALLY_FULFILLED",
                     "Partial fulfillment due to inventory errors");
         }
@@ -253,19 +263,19 @@ public class WarehouseOrderService {
      * Scenario B: Partial items available - Fulfill available items + Auto-trigger production for missing
      */
     private WarehouseOrderDTO fulfillPartialAndTriggerProduction(WarehouseOrder order) {
-        logger.info("Fulfilling partial items for warehouse order {}", order.getWarehouseOrderNumber());
+        logger.info("Fulfilling partial items for warehouse order {}", order.getOrderNumber());
         orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "PARTIAL_FULFILLMENT",
-            "Partial items fulfilled for warehouse order " + order.getWarehouseOrderNumber());
+            "Partial items fulfilled for warehouse order " + order.getOrderNumber());
 
         List<WarehouseOrderItem> itemsToProduceLater = new ArrayList<>();
 
         // Fulfill available items only
-        for (WarehouseOrderItem item : order.getWarehouseOrderItems()) {
-            if (inventoryService.checkStock(order.getFulfillingWorkstationId(), item.getItemId(), item.getRequestedQuantity())) {
+        for (WarehouseOrderItem item : order.getOrderItems()) {
+            if (inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getRequestedQuantity())) {
                 try {
                     // Deduct from Modules Supermarket stock
                     boolean deducted = inventoryService.updateStock(
-                            order.getFulfillingWorkstationId(),
+                            order.getWorkstationId(),
                             item.getItemId(),
                             item.getRequestedQuantity()
                     );
@@ -311,7 +321,7 @@ public class WarehouseOrderService {
                 "No stock available - production order auto-triggered");
 
         // AUTO-TRIGGER: Create production order for ALL items
-        triggerProductionOrderForShortfall(order, order.getWarehouseOrderItems());
+        triggerProductionOrderForShortfall(order, order.getOrderItems());
 
         order.setUpdatedAt(LocalDateTime.now());
         return mapToDTO(warehouseOrderRepository.save(order));
@@ -326,18 +336,18 @@ public class WarehouseOrderService {
             
             // Create production order linked to this warehouse order
             productionOrderService.createProductionOrderFromWarehouse(
-                    order.getSourceCustomerOrderId(),
+                    order.getCustomerOrderId(),
                     order.getId(),
                     priority,
                     order.getOrderDate().plusDays(7), // Due 7 days from order date
-                    "Auto-created from warehouse order " + order.getWarehouseOrderNumber() + 
+                    "Auto-created from warehouse order " + order.getOrderNumber() + 
                     " - Modules Supermarket shortfall (" + shortfallItems.size() + " item(s))",
-                    order.getRequestingWorkstationId(),
-                    order.getFulfillingWorkstationId()  // Assign back to Modules Supermarket for completion
+                    order.getWorkstationId(),
+                    order.getWorkstationId()  // Assign back to Modules Supermarket for completion
             );
             
                 logger.info("✓ Production order AUTO-CREATED for warehouse order {} with {} shortfall item(s)", 
-                    order.getWarehouseOrderNumber(), shortfallItems.size());
+                    order.getOrderNumber(), shortfallItems.size());
                 orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "PRODUCTION_ORDER_CREATED",
                     "Production order auto-created for shortfall items");
             
@@ -347,7 +357,7 @@ public class WarehouseOrderService {
             
         } catch (Exception e) {
             logger.error("✗ Failed to auto-create production order for warehouse order {}: {}", 
-                    order.getWarehouseOrderNumber(), e.getMessage());
+                    order.getOrderNumber(), e.getMessage());
         }
     }
 
@@ -425,7 +435,7 @@ public class WarehouseOrderService {
         WarehouseOrder order = orderOpt.get();
         order.setStatus(status);
         order.setUpdatedAt(LocalDateTime.now());
-        logger.info("Updated warehouse order {} status to {}", order.getWarehouseOrderNumber(), status);
+        logger.info("Updated warehouse order {} status to {}", order.getOrderNumber(), status);
 
         return mapToDTO(warehouseOrderRepository.save(order));
     }
@@ -436,10 +446,9 @@ public class WarehouseOrderService {
     private WarehouseOrderDTO mapToDTO(WarehouseOrder order) {
         WarehouseOrderDTO dto = new WarehouseOrderDTO();
         dto.setId(order.getId());
-        dto.setWarehouseOrderNumber(order.getWarehouseOrderNumber());
-        dto.setSourceCustomerOrderId(order.getSourceCustomerOrderId());
-        dto.setRequestingWorkstationId(order.getRequestingWorkstationId());
-        dto.setFulfillingWorkstationId(order.getFulfillingWorkstationId());
+        dto.setOrderNumber(order.getOrderNumber());
+        dto.setCustomerOrderId(order.getCustomerOrderId());
+        dto.setWorkstationId(order.getWorkstationId());
         dto.setOrderDate(order.getOrderDate());
         dto.setStatus(order.getStatus());
         dto.setTriggerScenario(order.getTriggerScenario());
@@ -448,14 +457,14 @@ public class WarehouseOrderService {
         dto.setUpdatedAt(order.getUpdatedAt());
 
         // Map warehouse order items
-        if (order.getWarehouseOrderItems() != null) {
+        if (order.getOrderItems() != null) {
             logger.info("Mapping warehouse order {} - Found {} items", 
-                order.getWarehouseOrderNumber(), order.getWarehouseOrderItems().size());
-            dto.setWarehouseOrderItems(order.getWarehouseOrderItems().stream()
+                order.getOrderNumber(), order.getOrderItems().size());
+            dto.setOrderItems(order.getOrderItems().stream()
                     .map(this::mapItemToDTO)
                     .collect(Collectors.toList()));
         } else {
-            logger.warn("Mapping warehouse order {} - Items are NULL", order.getWarehouseOrderNumber());
+            logger.warn("Mapping warehouse order {} - Items are NULL", order.getOrderNumber());
         }
 
         return dto;

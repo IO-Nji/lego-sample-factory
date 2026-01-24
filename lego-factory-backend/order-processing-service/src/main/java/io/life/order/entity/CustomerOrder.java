@@ -28,6 +28,9 @@ public class CustomerOrder {
     @Column(nullable = false)
     private String status; // PENDING, CONFIRMED, PROCESSING, COMPLETED, CANCELLED
 
+    @Column(name = "trigger_scenario")
+    private String triggerScenario; // DIRECT_FULFILLMENT, WAREHOUSE_ORDER_NEEDED
+
     @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<OrderItem> orderItems;
 
