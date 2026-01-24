@@ -38,6 +38,7 @@ export { default as InventoryTable } from './InventoryTable';
 // Order Cards
 export { default as ProductionControlOrderCard } from './ProductionControlOrderCard';
 export { default as AssemblyControlOrderCard } from './AssemblyControlOrderCard';
+export { default as FinalAssemblyOrderCard } from './FinalAssemblyOrderCard';
 
 // Legacy/Alternative Components
 export { default as StatsCard } from './StatsCard';

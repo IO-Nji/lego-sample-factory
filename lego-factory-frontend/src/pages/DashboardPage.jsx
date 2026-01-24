@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import AdminDashboard from "./dashboards/AdminDashboard";
 import PlantWarehouseDashboard from "./dashboards/PlantWarehouseDashboard";
 import ModulesSupermarketDashboard from "./dashboards/ModulesSupermarketDashboard";
+import FinalAssemblyDashboard from "./dashboards/FinalAssemblyDashboard";
 import ProductionPlanningDashboard from "./dashboards/ProductionPlanningDashboard";
 import ProductionControlDashboard from "./dashboards/ProductionControlDashboard";
 import AssemblyControlDashboard from "./dashboards/AssemblyControlDashboard";
@@ -28,6 +29,7 @@ function DashboardPage() {
   }, []);
 
   const userRole = session?.user?.role;
+  const workstationId = session?.user?.workstationId;
 
   if (isLoading) {
     return (
@@ -49,6 +51,11 @@ function DashboardPage() {
 
   if (userRole === "MODULES_SUPERMARKET") {
     return <ModulesSupermarketDashboard />;
+  }
+
+  // Final Assembly Dashboard for WS-6
+  if (workstationId === 6) {
+    return <FinalAssemblyDashboard />;
   }
 
   if (userRole === "PRODUCTION_PLANNING") {
