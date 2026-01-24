@@ -335,93 +335,146 @@ function HomePage() {
 
           {/* Flow Diagram Column */}
           <div className="home-flow-diagram-section">
-            <h3 className="section-title">Order Fulfillment Process Flow</h3>
+            <h3 className="section-title">Order Fulfillment Process</h3>
             
-            {/* Flow Diagram */}
-            <div className="flow-diagram">
-              {/* Row 1: Customer Order Entry */}
-              <div className="flow-row">
+            {/* Redesigned Flow Diagram - Accurate Business Process */}
+            <div className="flow-diagram-v2">
+              
+              {/* TOP ROW: Customer Entry & Exit */}
+              <div className="flow-row-top">
                 <WorkstationCard 
                   icon="🛒" 
-                  name="Customer Order" 
-                  tooltip="Customer places order for product variants"
+                  name="Customer" 
+                  tooltip="Customer places order for products | Entry point for all orders"
+                  layout="horizontal"
                 />
-                <div className="flow-arrow">→</div>
+                <div className="flow-connector green right-arrow">
+                  <div className="connector-line"></div>
+                  <span className="connector-label">order</span>
+                </div>
                 <WorkstationCard 
                   icon="🏭" 
-                  name="Plant Warehouse" 
-                  tooltip="Final product storage and order fulfillment | Username: warehouse_operator"
+                  name={<>Plant<br/>Warehouse</>} 
+                  tooltip="WS-7: Final product storage | Checks stock → fulfills or triggers production"
+                  status="highlight"
+                  layout="horizontal"
                 />
-                <div className="flow-arrow">→</div>
-                <WorkstationCard 
-                  icon="✅" 
-                  name="Stock Check" 
-                  tooltip="Check stock availability"
-                />
-                <div className="flow-arrow">→</div>
+                <div className="flow-connector green right-arrow">
+                  <div className="connector-line"></div>
+                  <span className="connector-label">ship</span>
+                </div>
                 <WorkstationCard 
                   icon="📦" 
                   name="Delivery" 
-                  tooltip="Order delivered to customer"
+                  tooltip="Order shipped to customer | Scenario 1: Direct Fulfillment complete"
+                  layout="horizontal"
                 />
               </div>
-              
-              {/* Row 2: Downward arrow */}
-              <div className="flow-row">
-                <div className="flow-spacer"></div>
-                <div className="flow-arrow-down">↓</div>
-                <div className="flow-note">If stock unavailable</div>
-                <div className="flow-spacer"></div>
+
+              {/* VERTICAL CONNECTORS */}
+              <div className="flow-vertical-section">
+                <div className="flow-down-branch">
+                  <div className="branch-label">if stock unavailable</div>
+                  <div className="branch-arrow orange">↓</div>
+                </div>
+                <div className="flow-up-return">
+                  <div className="return-arrow blue">↑</div>
+                  <div className="return-label">products credited</div>
+                </div>
               </div>
-              
-              {/* Row 3: Production Flow */}
-              <div className="flow-row">
+
+              {/* MIDDLE ROW: Warehouse & Assembly */}
+              <div className="flow-row-middle">
                 <WorkstationCard 
                   icon="🏢" 
-                  name="Modules Supermarket" 
-                  tooltip="Intermediate module storage and management | Username: modules_supermarket"
+                  name={<>Modules<br/>Supermarket</>} 
+                  tooltip="WS-8: Module storage | Supplies modules for final assembly"
+                  layout="horizontal"
                 />
-                <div className="flow-arrow">→</div>
+                <div className="flow-connector purple left-arrow">
+                  <span className="connector-label">modules</span>
+                  <div className="connector-line"></div>
+                </div>
                 <WorkstationCard 
                   icon="🔨" 
-                  name="Final Assembly" 
-                  tooltip="Final assembly of product variants | Username: assembly_control"
-                />
-                <div className="flow-arrow">→</div>
-                <WorkstationCard 
-                  icon="📋" 
-                  name="Production Planning" 
-                  tooltip="Strategic production scheduling and resource planning | Username: production_planning"
+                  name={<>Final<br/>Assembly</>} 
+                  tooltip="WS-6: Assembles finished products | Credits Plant Warehouse on completion"
+                  layout="horizontal"
                 />
               </div>
-              
-              {/* Row 4: Downward arrow */}
-              <div className="flow-row">
-                <div className="flow-spacer"></div>
-                <div className="flow-arrow-down">↓</div>
-                <div className="flow-note">If modules unavailable</div>
-                <div className="flow-spacer"></div>
+
+              {/* VERTICAL CONNECTORS - MIDDLE */}
+              <div className="flow-vertical-section">
+                <div className="flow-down-branch">
+                  <div className="branch-label">if modules unavailable</div>
+                  <div className="branch-arrow orange">↓</div>
+                </div>
+                <div className="flow-up-return">
+                  <div className="return-arrow purple">↑</div>
+                  <div className="return-label">assembled modules</div>
+                </div>
               </div>
-              
-              {/* Row 5: Manufacturing Flow */}
-              <div className="flow-row">
-                <WorkstationCard 
-                  icon="📦" 
-                  name="Parts Supply" 
-                  tooltip="Raw materials storage and distribution | Username: parts_supply_warehouse"
-                />
-                <div className="flow-arrow">→</div>
-                <WorkstationCard 
-                  icon="🔧" 
-                  name="Manufacturing" 
-                  tooltip="Injection molding and part production | Username: injection_molding"
-                />
-                <div className="flow-arrow">→</div>
-                <WorkstationCard 
-                  icon="⚙️" 
-                  name="Assembly" 
-                  tooltip="Component assembly into modules | Username: assembly_control"
-                />
+
+              {/* BOTTOM ROW: Planning & Production */}
+              <div className="flow-row-bottom">
+                <div className="flow-station-stack">
+                  <WorkstationCard 
+                    icon="📋" 
+                    name={<>Production<br/>Planning</>} 
+                    tooltip="Schedules production orders | Dispatches to workstations"
+                    layout="horizontal"
+                  />
+                  <div className="stack-arrow purple">↓</div>
+                  <WorkstationCard 
+                    icon="🎛️" 
+                    name="Control" 
+                    tooltip="Production & Assembly Control | Coordinates manufacturing sequence"
+                    layout="horizontal"
+                  />
+                </div>
+                
+                <div className="flow-connector-vertical orange">
+                  <div className="connector-line-v"></div>
+                  <span className="connector-label-v">dispatch<br/>orders</span>
+                </div>
+
+                <div className="flow-station-stack">
+                  <WorkstationCard 
+                    icon="📦" 
+                    name={<>Parts<br/>Supply</>} 
+                    tooltip="WS-9: Raw materials warehouse | Stages materials at workstations"
+                    layout="horizontal"
+                  />
+                  <div className="stack-arrow green">↓</div>
+                  <WorkstationCard 
+                    icon="⚙️" 
+                    name="Manufacturing" 
+                    tooltip="WS-1,2,3: Injection Molding → Pre-Production → Finishing"
+                    layout="horizontal"
+                  />
+                </div>
+
+                <div className="flow-connector-vertical blue">
+                  <div className="connector-line-v"></div>
+                  <span className="connector-label-v">parts</span>
+                </div>
+
+                <div className="flow-station-stack single">
+                  <WorkstationCard 
+                    icon="🔧" 
+                    name="Assembly" 
+                    tooltip="WS-4,5: Gear Assembly → Motor Assembly | Creates modules"
+                    layout="horizontal"
+                  />
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="flow-legend">
+                <span className="legend-item"><span className="legend-dot green"></span>Order/Material</span>
+                <span className="legend-item"><span className="legend-dot blue"></span>Product Return</span>
+                <span className="legend-item"><span className="legend-dot orange"></span>Trigger/Dispatch</span>
+                <span className="legend-item"><span className="legend-dot purple"></span>Module Flow</span>
               </div>
             </div>
           </div>

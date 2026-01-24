@@ -474,7 +474,7 @@ function PartsSupplyWarehouseDashboard() {
     <>
       <StandardDashboardLayout
         title="Parts Supply Warehouse"
-        subtitle={`Parts Supply & Inventory Management${session?.user?.workstation ? ` | ${session.user.workstation.name}` : ''}`}
+        subtitle={`Parts Supply & Inventory Management${session?.user?.workstationName ? ` | ${session.user.workstationName}` : ''}`}
         icon="📦"
         activityContent={renderActivity()}
         statsContent={<StatisticsGrid stats={statsData} />}

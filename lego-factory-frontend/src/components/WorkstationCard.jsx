@@ -18,13 +18,15 @@ import styles from './WorkstationCard.module.css';
  * @param {function} onClick - Optional click handler
  * @param {string} className - Additional CSS classes
  * @param {object} style - Inline styles
+ * @param {string} layout - 'vertical' (default) or 'horizontal' (icon left, text right)
  */
-function WorkstationCard({ icon, name, tooltip, status = 'idle', onClick, className = '', style = {} }) {
+function WorkstationCard({ icon, name, tooltip, status = 'idle', onClick, className = '', style = {}, layout = 'vertical' }) {
   const statusClass = status === 'active' ? styles.statusActive : styles.statusIdle;
+  const layoutClass = layout === 'horizontal' ? styles.horizontalLayout : '';
   
   return (
     <div 
-      className={`${styles.stationCard} ${statusClass} ${className}`}
+      className={`${styles.stationCard} ${statusClass} ${layoutClass} ${className}`}
       data-tooltip={tooltip}
       onClick={onClick}
       style={style}
@@ -45,12 +47,14 @@ function WorkstationCard({ icon, name, tooltip, status = 'idle', onClick, classN
 
 WorkstationCard.propTypes = {
   icon: PropTypes.string.isRequired,
-  name: PropTypes.string.isRequired,
+  name: PropTypes.oneOfType([PropTypes.string, PropTypes.node]).isRequired,
   tooltip: PropTypes.string.isRequired,
   status: PropTypes.oneOf(['idle', 'active']),
   onClick: PropTypes.func,
   className: PropTypes.string,
   style: PropTypes.object,
+  layout: PropTypes.oneOf(['vertical', 'horizontal']),
 };
 
 export default WorkstationCard;
+

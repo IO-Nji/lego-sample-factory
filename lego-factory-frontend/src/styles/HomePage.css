@@ -27,15 +27,17 @@
 /* === ROW 1: Products + Flow Diagram + Login (3 Columns) === */
 .home-top-row {
   display: flex;
-  gap: 1rem;
-  align-items: stretch;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: center;
   max-width: 1800px;
   margin: 0 auto;
   padding: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .home-products-column {
-  flex: 0 0 350px;
+  flex: 0 0 320px;
   background: transparent;
   border-radius: 12px;
   padding: 1rem;
@@ -47,6 +49,7 @@
 .home-flow-diagram-section {
   flex: 1 1 auto;
   min-width: 0;
+  max-width: 850px;
   background: transparent;
   border-radius: 12px;
   padding: 1rem 1.5rem;
@@ -77,6 +80,474 @@
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.5rem 0;
+}
+
+/* NEW Compact Flow Diagram */
+.flow-diagram-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+}
+
+/* Main Order Path (horizontal) */
+.flow-main-path {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0;
+  background: linear-gradient(90deg, rgba(76, 175, 80, 0.05) 0%, rgba(76, 175, 80, 0.1) 50%, rgba(76, 175, 80, 0.05) 100%);
+  border-radius: 8px;
+}
+
+/* Styled Arrows */
+.flow-arrow-styled {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  position: relative;
+}
+
+.flow-arrow-styled .arrow-line {
+  width: 20px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 2px;
+}
+
+.flow-arrow-styled .arrow-head {
+  font-size: 0.8rem;
+}
+
+.flow-arrow-styled .arrow-label {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  opacity: 0.9;
+}
+
+.flow-arrow-styled.green { color: #4caf50; }
+.flow-arrow-styled.blue { color: #2196f3; }
+.flow-arrow-styled.orange { color: #ff9800; }
+.flow-arrow-styled.purple { color: #9c27b0; }
+
+.flow-arrow-styled.vertical {
+  flex-direction: column;
+  gap: 0;
+}
+
+.flow-arrow-styled.vertical .arrow-line {
+  width: 3px;
+  height: 12px;
+}
+
+.flow-arrow-styled.vertical .arrow-label {
+  position: static;
+  transform: none;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  margin-left: 2px;
+}
+
+.flow-arrow-styled.horizontal .arrow-line {
+  width: 16px;
+}
+
+/* Branch Container */
+.flow-branch-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.15rem 0;
+}
+
+.flow-branch-line {
+  flex: 1;
+  height: 2px;
+  max-width: 80px;
+  background: linear-gradient(90deg, transparent, #ff5722, transparent);
+}
+
+.flow-branch-line.left {
+  background: linear-gradient(90deg, transparent, #ff5722);
+}
+
+.flow-branch-line.right {
+  background: linear-gradient(90deg, #ff5722, transparent);
+}
+
+.flow-branch-note {
+  font-size: 0.6rem;
+  color: #ff5722;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  padding: 0.15rem 0.5rem;
+  background: rgba(255, 87, 34, 0.1);
+  border-radius: 4px;
+}
+
+/* Secondary Path Container */
+.flow-secondary-path {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.4rem;
+  background: linear-gradient(180deg, rgba(33, 150, 243, 0.03) 0%, rgba(33, 150, 243, 0.08) 100%);
+  border-radius: 8px;
+  padding: 0.4rem;
+}
+
+/* Path Groups */
+.flow-path-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.25rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px dashed rgba(44, 90, 160, 0.2);
+}
+
+.flow-group-label {
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+  margin-bottom: 0.2rem;
+  padding: 0.1rem 0.3rem;
+  background: rgba(44, 90, 160, 0.1);
+  border-radius: 3px;
+}
+
+.flow-group-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+/* Bidirectional Arrow */
+.flow-bidirectional {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.6rem;
+  color: #9c27b0;
+  line-height: 0.9;
+}
+
+.flow-bidirectional .bidir-up,
+.flow-bidirectional .bidir-down {
+  font-size: 0.5rem;
+}
+
+.flow-bidirectional .bidir-label {
+  font-size: 0.45rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Legend */
+.flow-legend {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.3rem;
+  padding: 0.3rem 0.5rem;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.5rem;
+  font-weight: 500;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legend-dot.green { background: #4caf50; }
+.legend-dot.blue { background: #2196f3; }
+.legend-dot.orange { background: #ff9800; }
+.legend-dot.purple { background: #9c27b0; }
+
+/* ========================================
+   FLOW DIAGRAM V2 - Redesigned Layout
+   ======================================== */
+.flow-diagram-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  background: linear-gradient(135deg, rgba(44, 90, 160, 0.02) 0%, rgba(33, 150, 243, 0.04) 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(44, 90, 160, 0.1);
+}
+
+/* Top Row: Customer → Plant Warehouse → Delivery */
+.flow-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.4rem;
+  background: linear-gradient(90deg, rgba(76, 175, 80, 0.08) 0%, rgba(76, 175, 80, 0.15) 50%, rgba(76, 175, 80, 0.08) 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+/* Middle Row: Modules Supermarket ← Final Assembly */
+.flow-row-middle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.3rem;
+}
+
+/* Bottom Row: Planning → Parts Supply → Manufacturing → Assembly */
+.flow-row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.4rem;
+  background: linear-gradient(90deg, rgba(156, 39, 176, 0.05) 0%, rgba(255, 152, 0, 0.08) 50%, rgba(33, 150, 243, 0.05) 100%);
+  border-radius: 8px;
+  border: 1px dashed rgba(156, 39, 176, 0.2);
+}
+
+/* Vertical Section with Down/Up arrows */
+.flow-vertical-section {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0.15rem 2rem;
+}
+
+.flow-down-branch,
+.flow-up-return {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.branch-label,
+.return-label {
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.branch-label {
+  color: #ff5722;
+  background: rgba(255, 87, 34, 0.1);
+}
+
+.return-label {
+  color: #2196f3;
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.branch-arrow,
+.return-arrow {
+  font-size: 1rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.branch-arrow.orange { color: #ff9800; }
+.return-arrow.blue { color: #2196f3; }
+.return-arrow.purple { color: #9c27b0; }
+
+/* Flow Connectors - Horizontal Arrows */
+.flow-connector {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  position: relative;
+}
+
+.flow-connector .connector-line {
+  width: 25px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 2px;
+  position: relative;
+}
+
+.flow-connector .connector-line::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left-color: currentColor;
+}
+
+.flow-connector.left-arrow .connector-line::after {
+  right: auto;
+  left: -6px;
+  border-left-color: transparent;
+  border-right-color: currentColor;
+}
+
+.flow-connector .connector-label {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.45rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  color: currentColor;
+  opacity: 0.9;
+}
+
+.flow-connector.long .connector-line {
+  width: 40px;
+}
+
+.flow-connector.green { color: #4caf50; }
+.flow-connector.blue { color: #2196f3; }
+.flow-connector.orange { color: #ff9800; }
+.flow-connector.purple { color: #9c27b0; }
+
+/* Vertical-Centered Connectors for bottom row */
+.flow-connector-vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  gap: 0.15rem;
+  padding: 0 0.2rem;
+}
+
+.flow-connector-vertical .connector-line-v {
+  width: 30px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 2px;
+  position: relative;
+}
+
+.flow-connector-vertical .connector-line-v::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left-color: currentColor;
+}
+
+.flow-connector-vertical .connector-label-v {
+  font-size: 0.4rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  text-align: center;
+  line-height: 1.2;
+  color: currentColor;
+  opacity: 0.9;
+}
+
+.flow-connector-vertical.green { color: #4caf50; }
+.flow-connector-vertical.blue { color: #2196f3; }
+.flow-connector-vertical.orange { color: #ff9800; }
+.flow-connector-vertical.purple { color: #9c27b0; }
+
+/* Station Stacks (vertical grouping) */
+.flow-station-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.flow-station-stack.single {
+  justify-content: center;
+  min-height: 100%;
+}
+
+.stack-arrow {
+  font-size: 0.7rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.stack-arrow.green { color: #4caf50; }
+.stack-arrow.purple { color: #9c27b0; }
+.stack-arrow.orange { color: #ff9800; }
+.stack-arrow.blue { color: #2196f3; }
+
+/* Highlight status for key workstation */
+.flow-diagram-v2 [data-tooltip*="WS-7"] {
+  border-color: #ff9800;
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+}
+
+/* Station stacks adjusted for horizontal cards */
+.flow-station-stack {
+  min-width: 110px;
+}
+
+/* Compact WorkstationCard overrides for flow diagram */
+.flow-diagram-compact .station-card,
+.flow-main-path .station-card,
+.flow-secondary-path .station-card {
+  width: 85px;
+  height: 52px;
+  padding: 0.2rem;
+}
+
+.flow-diagram-compact .station-icon,
+.flow-main-path .station-icon,
+.flow-secondary-path .station-icon {
+  font-size: 1.1rem;
+  margin-bottom: 0.1rem;
+}
+
+.flow-diagram-compact .station-name,
+.flow-main-path .station-name,
+.flow-secondary-path .station-name {
+  font-size: 0.5rem;
+  line-height: 1;
 }
 
 .flow-row {
@@ -406,7 +877,7 @@
   position: relative;
   width: fit-content;
   max-width: 100%;
-  padding: 1rem 0.75rem 0.6rem 0.75rem;
+  padding: 1.5rem 1rem 0.75rem 1rem;
   border-radius: 10px;
   border: 2px solid;
   background: white;
