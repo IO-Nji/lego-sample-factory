@@ -23,6 +23,7 @@ function PlantWarehouseDashboard() {
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("orderDate");
+  const [orderCanComplete, setOrderCanComplete] = useState({}); // Track which PROCESSING orders can be completed
   
   // Use centralized inventory hook for products management
   const { 
@@ -39,6 +40,24 @@ function PlantWarehouseDashboard() {
   const [loading, setLoading] = useState(false);
   const [fulfillingOrderId, setFulfillingOrderId] = useState(null);
   const [error, setError] = useState(null);
+
+  // Check if PROCESSING orders can be completed (all FA orders submitted)
+  const checkProcessingOrdersCompletion = async (ordersList) => {
+    const processingOrders = ordersList.filter(o => o.status === 'PROCESSING');
+    const canCompleteMap = {};
+    
+    for (const order of processingOrders) {
+      try {
+        const response = await api.get(`/customer-orders/${order.id}/can-complete`);
+        canCompleteMap[order.id] = response.data === true;
+      } catch (err) {
+        console.error(`Failed to check completion status for order ${order.id}:`, err);
+        canCompleteMap[order.id] = false;
+      }
+    }
+    
+    setOrderCanComplete(canCompleteMap);
+  };
 
   useEffect(() => {
     console.log('[PlantWarehouse] Component mounted, session:', session?.user);
@@ -91,6 +110,9 @@ function PlantWarehouseDashboard() {
       const ordersList = Array.isArray(response.data) ? response.data : [];
       setOrders(ordersList);
       applyFilter(ordersList, filterStatus);
+      
+      // Check completion status for PROCESSING orders
+      await checkProcessingOrdersCompletion(ordersList);
     } catch (err) {
       if (err.response?.status !== 404) {
         setError("Failed to load orders: " + (err.response?.data?.message || err.message));
@@ -313,6 +335,7 @@ function PlantWarehouseDashboard() {
           onComplete={handleComplete}
           onCancel={handleCancel}
           isProcessing={fulfillingOrderId === order.id}
+          canComplete={orderCanComplete[order.id] === true}
           getProductDisplayName={getProductDisplayName}
           getInventoryStatusColor={getInventoryStatusColor}
         />

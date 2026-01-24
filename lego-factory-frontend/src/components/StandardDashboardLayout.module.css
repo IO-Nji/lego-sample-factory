@@ -54,7 +54,7 @@
 .statsColumn {
   width: fit-content;
   min-width: 300px;
-  max-width: 450px;
+  max-width: none; /* Allow grid to expand to fit all stats in 4 rows */
   height: auto;
   display: flex;
   align-items: flex-start;
@@ -196,7 +196,6 @@
   .formColumn,
   .filterColumn {
     width: 100%;
-    max-width: 100%;
   }
   
   .activityColumn,

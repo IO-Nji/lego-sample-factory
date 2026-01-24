@@ -51,11 +51,13 @@ public class FinalAssemblyOrder {
     private LocalDateTime orderDate;
 
     @Column(nullable = false)
-    private String status; // PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
+    private String status; // PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, SUBMITTED, CANCELLED
 
     private LocalDateTime startTime; // When assembly started
     
     private LocalDateTime completionTime; // When assembly completed
+    
+    private LocalDateTime submitTime; // When product was submitted to Plant Warehouse
 
     private String notes;
 

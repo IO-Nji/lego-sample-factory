@@ -80,6 +80,20 @@ public class CustomerOrderController {
         return ResponseEntity.ok(fulfilledOrder);
     }
 
+    /**
+     * GET /api/customer-orders/{id}/can-complete
+     * Check if a customer order can be completed.
+     * 
+     * Returns true if:
+     * 1. Order is in PROCESSING status
+     * 2. All associated Final Assembly orders are SUBMITTED
+     */
+    @GetMapping("/{id}/can-complete")
+    public ResponseEntity<Boolean> canComplete(@PathVariable Long id) {
+        boolean canComplete = customerOrderService.canCompleteOrder(id);
+        return ResponseEntity.ok(canComplete);
+    }
+
     // --- Explicit status transition endpoints ---
     @PutMapping("/{id}/confirm")
     public ResponseEntity<CustomerOrderDTO> confirm(@PathVariable Long id) {

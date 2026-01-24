@@ -15,7 +15,12 @@ import "../../styles/DashboardLayout.css";
  * 
  * Handles final assembly orders for assembling finished products from modules.
  * Final step in the assembly workflow (WS-4 -> WS-5 -> WS-6).
- * Completed products are credited to Plant Warehouse (WS-7).
+ * 
+ * 4-Step Workflow:
+ * 1. Confirm - Acknowledge the order
+ * 2. Start - Begin assembly work (records startTime)
+ * 3. Complete - Finish assembly work (records completionTime)
+ * 4. Submit - Credit Plant Warehouse with finished products
  */
 function FinalAssemblyDashboard() {
   const {
@@ -24,8 +29,10 @@ function FinalAssemblyDashboard() {
     processingOrderId,
     notifications,
     statsData,
+    handleConfirmOrder,
     handleStartOrder,
     handleCompleteOrder,
+    handleSubmitOrder,
     clearNotifications,
     clearError,
     config,
@@ -51,8 +58,10 @@ function FinalAssemblyDashboard() {
         <FinalAssemblyOrderCard
           key={order.id}
           order={order}
+          onConfirm={handleConfirmOrder}
           onStart={handleStartOrder}
           onComplete={handleCompleteOrder}
+          onSubmit={handleSubmitOrder}
           isProcessing={processingOrderId === order.id}
           getProductDisplayName={getProductDisplayName}
         />

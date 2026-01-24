@@ -113,10 +113,10 @@ public class FinalAssemblyOrderService {
     }
 
     /**
-     * Start Final Assembly order
-     * Changes status from PENDING to IN_PROGRESS
+     * Confirm Final Assembly order (Step 1 of 4-step workflow)
+     * Changes status from PENDING to CONFIRMED
      */
-    public FinalAssemblyOrderDTO startOrder(Long orderId) {
+    public FinalAssemblyOrderDTO confirmOrder(Long orderId) {
         @SuppressWarnings("null")
         Optional<FinalAssemblyOrder> orderOpt = finalAssemblyOrderRepository.findById(orderId);
         if (orderOpt.isEmpty()) {
@@ -127,7 +127,37 @@ public class FinalAssemblyOrderService {
         
         // Validate current status
         if (!"PENDING".equals(order.getStatus())) {
-            throw new IllegalStateException("Only PENDING orders can be started. Current status: " + order.getStatus());
+            throw new IllegalStateException("Only PENDING orders can be confirmed. Current status: " + order.getStatus());
+        }
+
+        // Update status to CONFIRMED
+        order.setStatus("CONFIRMED");
+        order.setUpdatedAt(LocalDateTime.now());
+        finalAssemblyOrderRepository.save(order);
+
+        logger.info("Final Assembly order {} confirmed", order.getOrderNumber());
+        orderAuditService.recordOrderEvent(FINAL_ASSEMBLY_AUDIT_SOURCE, order.getId(), "CONFIRMED",
+                "Final Assembly order confirmed and ready to start");
+
+        return mapToDTO(order);
+    }
+
+    /**
+     * Start Final Assembly order (Step 2 of 4-step workflow)
+     * Changes status from CONFIRMED to IN_PROGRESS
+     */
+    public FinalAssemblyOrderDTO startOrder(Long orderId) {
+        @SuppressWarnings("null")
+        Optional<FinalAssemblyOrder> orderOpt = finalAssemblyOrderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            throw new IllegalArgumentException("Final Assembly order not found: " + orderId);
+        }
+
+        FinalAssemblyOrder order = orderOpt.get();
+        
+        // Validate current status - must be CONFIRMED to start
+        if (!"CONFIRMED".equals(order.getStatus())) {
+            throw new IllegalStateException("Only CONFIRMED orders can be started. Current status: " + order.getStatus());
         }
 
         // Update status to IN_PROGRESS
@@ -144,14 +174,14 @@ public class FinalAssemblyOrderService {
     }
 
     /**
-     * Complete Final Assembly order (Scenario 2 critical endpoint)
+     * Complete Final Assembly order (Step 3 of 4-step workflow)
      * 
      * Actions:
      * 1. Validate order status (must be IN_PROGRESS)
-     * 2. Credit Plant Warehouse (WS-7) with finished products
-     * 3. Update order status to COMPLETED
+     * 2. Update order status to COMPLETED
+     * 3. Record completion time
      * 
-     * Note: Module stock was already debited from Modules Supermarket during warehouse order fulfillment
+     * Note: Inventory credit happens on SUBMIT, not COMPLETE
      */
     public FinalAssemblyOrderDTO completeOrder(Long orderId) {
         @SuppressWarnings("null")
@@ -167,7 +197,48 @@ public class FinalAssemblyOrderService {
             throw new IllegalStateException("Only IN_PROGRESS orders can be completed. Current status: " + order.getStatus());
         }
 
-        logger.info("Completing Final Assembly order {} - crediting Plant Warehouse with product {} qty {}", 
+        logger.info("Completing Final Assembly order {} - product {} qty {}", 
+                order.getOrderNumber(), order.getOutputProductId(), order.getOutputQuantity());
+
+        // Update order status - inventory credit happens on submit
+        order.setStatus("COMPLETED");
+        order.setCompletionTime(LocalDateTime.now());
+        order.setUpdatedAt(LocalDateTime.now());
+        finalAssemblyOrderRepository.save(order);
+
+        logger.info("✓ Final Assembly order {} completed - awaiting submit", order.getOrderNumber());
+        orderAuditService.recordOrderEvent(FINAL_ASSEMBLY_AUDIT_SOURCE, order.getId(), "COMPLETED",
+                String.format("Final Assembly order completed - product %d qty %d ready for submission",
+                        order.getOutputProductId(), order.getOutputQuantity()));
+
+        return mapToDTO(order);
+    }
+
+    /**
+     * Submit Final Assembly order (Step 4 of 4-step workflow)
+     * 
+     * Actions:
+     * 1. Validate order status (must be COMPLETED)
+     * 2. Credit Plant Warehouse (WS-7) with finished products
+     * 3. Update order status to SUBMITTED
+     * 4. Check if all Final Assembly orders for parent Warehouse Order are submitted
+     * 5. If all submitted, enable customer order completion
+     */
+    public FinalAssemblyOrderDTO submitOrder(Long orderId) {
+        @SuppressWarnings("null")
+        Optional<FinalAssemblyOrder> orderOpt = finalAssemblyOrderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            throw new IllegalArgumentException("Final Assembly order not found: " + orderId);
+        }
+
+        FinalAssemblyOrder order = orderOpt.get();
+        
+        // Validate current status
+        if (!"COMPLETED".equals(order.getStatus())) {
+            throw new IllegalStateException("Only COMPLETED orders can be submitted. Current status: " + order.getStatus());
+        }
+
+        logger.info("Submitting Final Assembly order {} - crediting Plant Warehouse with product {} qty {}", 
                 order.getOrderNumber(), order.getOutputProductId(), order.getOutputQuantity());
 
         // Credit Plant Warehouse (WS-7) with finished products
@@ -184,18 +255,60 @@ public class FinalAssemblyOrderService {
         logger.info("✓ Plant Warehouse credited with product {} qty {}", 
                 order.getOutputProductId(), order.getOutputQuantity());
 
-        // Update order status
-        order.setStatus("COMPLETED");
-        order.setCompletionTime(LocalDateTime.now());
+        // Update order status to SUBMITTED
+        order.setStatus("SUBMITTED");
+        order.setSubmitTime(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
         finalAssemblyOrderRepository.save(order);
 
-        logger.info("✓ Final Assembly order {} completed", order.getOrderNumber());
-        orderAuditService.recordOrderEvent(FINAL_ASSEMBLY_AUDIT_SOURCE, order.getId(), "COMPLETED",
-                String.format("Final Assembly order completed - Plant Warehouse credited with product %d qty %d",
+        logger.info("✓ Final Assembly order {} submitted", order.getOrderNumber());
+        orderAuditService.recordOrderEvent(FINAL_ASSEMBLY_AUDIT_SOURCE, order.getId(), "SUBMITTED",
+                String.format("Final Assembly order submitted - Plant Warehouse credited with product %d qty %d",
                         order.getOutputProductId(), order.getOutputQuantity()));
 
+        // Check if all Final Assembly orders for this Warehouse Order are submitted
+        if (order.getWarehouseOrderId() != null) {
+            checkAndUpdateWarehouseOrderStatus(order.getWarehouseOrderId());
+        }
+
         return mapToDTO(order);
+    }
+
+    /**
+     * Check if all Final Assembly orders for a Warehouse Order are submitted
+     * If all submitted, update the Warehouse Order status to allow customer order completion
+     */
+    private void checkAndUpdateWarehouseOrderStatus(Long warehouseOrderId) {
+        List<FinalAssemblyOrder> relatedOrders = finalAssemblyOrderRepository.findByWarehouseOrderId(warehouseOrderId);
+        
+        boolean allSubmitted = relatedOrders.stream()
+                .allMatch(o -> "SUBMITTED".equals(o.getStatus()));
+        
+        if (allSubmitted) {
+            logger.info("✓ All Final Assembly orders for warehouse order {} are submitted - ready for customer order completion", 
+                    warehouseOrderId);
+            orderAuditService.recordOrderEvent("WAREHOUSE_ORDER", warehouseOrderId, "ASSEMBLY_COMPLETE",
+                    "All Final Assembly orders submitted - customer order can be completed");
+        } else {
+            long submitted = relatedOrders.stream().filter(o -> "SUBMITTED".equals(o.getStatus())).count();
+            logger.info("Warehouse order {} has {}/{} Final Assembly orders submitted", 
+                    warehouseOrderId, submitted, relatedOrders.size());
+        }
+    }
+
+    /**
+     * Check if all Final Assembly orders for a Warehouse Order are submitted
+     * Used by frontend to enable/disable customer order complete button
+     */
+    public boolean areAllOrdersSubmittedForWarehouseOrder(Long warehouseOrderId) {
+        List<FinalAssemblyOrder> relatedOrders = finalAssemblyOrderRepository.findByWarehouseOrderId(warehouseOrderId);
+        
+        if (relatedOrders.isEmpty()) {
+            return false;
+        }
+        
+        return relatedOrders.stream()
+                .allMatch(o -> "SUBMITTED".equals(o.getStatus()));
     }
 
     /**
@@ -232,6 +345,7 @@ public class FinalAssemblyOrderService {
         dto.setStatus(order.getStatus());
         dto.setStartTime(order.getStartTime());
         dto.setCompletionTime(order.getCompletionTime());
+        dto.setSubmitTime(order.getSubmitTime());
         dto.setNotes(order.getNotes());
         dto.setCreatedAt(order.getCreatedAt());
         dto.setUpdatedAt(order.getUpdatedAt());

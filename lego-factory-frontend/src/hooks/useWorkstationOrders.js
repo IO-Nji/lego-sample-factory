@@ -114,6 +114,44 @@ export function useWorkstationOrders(workstationId, options = {}) {
     }
   }, [apiEndpoint, config, addNotification, fetchOrders]);
 
+  // Confirm order handler (for Final Assembly 4-step workflow)
+  const handleConfirmOrder = useCallback(async (orderId, orderNumber) => {
+    setProcessingOrderId(orderId);
+    setError(null);
+
+    try {
+      await api.put(`${apiEndpoint}/${orderId}/confirm`);
+      addNotification(`Order ${orderNumber} confirmed - ready to start`, 'success');
+      await fetchOrders();
+    } catch (err) {
+      const errorMessage = `Failed to confirm order: ${err.response?.data?.message || err.message}`;
+      setError(errorMessage);
+      addNotification('Failed to confirm order', 'error');
+    } finally {
+      setProcessingOrderId(null);
+    }
+  }, [apiEndpoint, addNotification, fetchOrders]);
+
+  // Submit order handler (for Final Assembly 4-step workflow)
+  const handleSubmitOrder = useCallback(async (orderId, orderNumber) => {
+    if (!globalThis.confirm('Submit completed product to Plant Warehouse?')) return;
+    
+    setProcessingOrderId(orderId);
+    setError(null);
+
+    try {
+      await api.post(`${apiEndpoint}/${orderId}/submit`);
+      addNotification(`Order ${orderNumber} submitted - Plant Warehouse credited`, 'success');
+      await fetchOrders();
+    } catch (err) {
+      const errorMessage = `Failed to submit order: ${err.response?.data?.message || err.message}`;
+      setError(errorMessage);
+      addNotification('Failed to submit order', 'error');
+    } finally {
+      setProcessingOrderId(null);
+    }
+  }, [apiEndpoint, addNotification, fetchOrders]);
+
   // Clear error
   const clearError = useCallback(() => {
     setError(null);
@@ -139,8 +177,10 @@ export function useWorkstationOrders(workstationId, options = {}) {
     statsData,
     
     // Handlers
+    handleConfirmOrder,
     handleStartOrder,
     handleCompleteOrder,
+    handleSubmitOrder,
     fetchOrders,
     clearError,
     addNotification,

@@ -4,7 +4,9 @@ import io.life.order.dto.CustomerOrderDTO;
 import io.life.order.dto.OrderItemDTO;
 import io.life.order.entity.CustomerOrder;
 import io.life.order.entity.OrderItem;
+import io.life.order.entity.WarehouseOrder;
 import io.life.order.repository.CustomerOrderRepository;
+import io.life.order.repository.WarehouseOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,12 +25,20 @@ public class CustomerOrderService {
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_COMPLETED = "COMPLETED";
+    private static final String STATUS_PROCESSING = "PROCESSING";
     private static final String ORDER_TYPE_CUSTOMER = "CUSTOMER";
     private final CustomerOrderRepository customerOrderRepository;
+    private final WarehouseOrderRepository warehouseOrderRepository;
+    private final FinalAssemblyOrderService finalAssemblyOrderService;
     private final OrderAuditService orderAuditService;
 
-    public CustomerOrderService(CustomerOrderRepository customerOrderRepository, OrderAuditService orderAuditService) {
+    public CustomerOrderService(CustomerOrderRepository customerOrderRepository, 
+                                WarehouseOrderRepository warehouseOrderRepository,
+                                FinalAssemblyOrderService finalAssemblyOrderService,
+                                OrderAuditService orderAuditService) {
         this.customerOrderRepository = customerOrderRepository;
+        this.warehouseOrderRepository = warehouseOrderRepository;
+        this.finalAssemblyOrderService = finalAssemblyOrderService;
         this.orderAuditService = orderAuditService;
         // Custom exception for mapping errors is now a static nested class below
     }
@@ -197,6 +207,48 @@ public class CustomerOrderService {
         CustomerOrder saved = customerOrderRepository.save(order);
         orderAuditService.recordOrderEvent(ORDER_TYPE_CUSTOMER, saved.getId(), STATUS_COMPLETED, "Order completed");
         return mapToDTO(saved);
+    }
+
+    /**
+     * Check if a customer order can be completed.
+     * 
+     * A customer order can be completed when:
+     * 1. The order is in PROCESSING status
+     * 2. All associated warehouse orders exist
+     * 3. All Final Assembly orders for those warehouse orders are SUBMITTED
+     * 
+     * @param id Customer order ID
+     * @return true if the order can be completed, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean canCompleteOrder(Long id) {
+        CustomerOrder order = getOrThrow(id);
+        
+        // Only PROCESSING orders can potentially be completed
+        if (!STATUS_PROCESSING.equals(order.getStatus())) {
+            logger.debug("Order {} is not in PROCESSING status, cannot complete", id);
+            return false;
+        }
+        
+        // Find all warehouse orders for this customer order
+        List<WarehouseOrder> warehouseOrders = warehouseOrderRepository.findByCustomerOrderId(id);
+        
+        if (warehouseOrders.isEmpty()) {
+            logger.debug("No warehouse orders found for customer order {}", id);
+            return false;
+        }
+        
+        // Check if all Final Assembly orders for all warehouse orders are SUBMITTED
+        for (WarehouseOrder warehouseOrder : warehouseOrders) {
+            boolean allSubmitted = finalAssemblyOrderService.areAllOrdersSubmittedForWarehouseOrder(warehouseOrder.getId());
+            if (!allSubmitted) {
+                logger.debug("Warehouse order {} has unsubmitted Final Assembly orders", warehouseOrder.getId());
+                return false;
+            }
+        }
+        
+        logger.info("Customer order {} can be completed - all Final Assembly orders are SUBMITTED", id);
+        return true;
     }
 
     @Transactional

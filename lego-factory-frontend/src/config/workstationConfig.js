@@ -164,8 +164,10 @@ export const WORKSTATION_CONFIG = {
 export const STANDARD_FILTER_OPTIONS = [
   { value: 'ALL', label: 'All Orders' },
   { value: 'PENDING', label: 'Pending' },
+  { value: 'CONFIRMED', label: 'Confirmed' },
   { value: 'IN_PROGRESS', label: 'In Progress' },
   { value: 'COMPLETED', label: 'Completed' },
+  { value: 'SUBMITTED', label: 'Submitted' },
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
 
@@ -185,8 +187,10 @@ export const STANDARD_SORT_OPTIONS = [
 export const calculateOrderStats = (orders) => [
   { value: orders.length, label: 'Total Orders', variant: 'default', icon: '📦' },
   { value: orders.filter(o => o.status === 'PENDING').length, label: 'Pending', variant: 'warning', icon: '📝' },
+  { value: orders.filter(o => o.status === 'CONFIRMED').length, label: 'Confirmed', variant: 'info', icon: '✓' },
   { value: orders.filter(o => o.status === 'IN_PROGRESS').length, label: 'In Progress', variant: 'info', icon: '⚙️' },
   { value: orders.filter(o => o.status === 'COMPLETED').length, label: 'Completed', variant: 'success', icon: '✅' },
+  { value: orders.filter(o => o.status === 'SUBMITTED').length, label: 'Submitted', variant: 'success', icon: '📦' },
 ];
 
 /**

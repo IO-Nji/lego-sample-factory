@@ -8,24 +8,24 @@ import BaseOrderCard from './BaseOrderCard';
  * Implements smart button visibility logic (Scenario 1 & 2):
  * - PENDING: Only shows "Confirm" button
  * - CONFIRMED: Shows "Fulfill" (if enough stock) OR "Process" (if insufficient stock) + "Cancel"
- * - PROCESSING: No action buttons (waiting for Final Assembly to complete and update status)
+ * - PROCESSING: Shows "Complete" button when all Final Assembly orders are SUBMITTED
  * - COMPLETED: No action buttons
  * 
  * Scenario 1 (Enough Stock): PENDING → CONFIRMED → (Fulfill) → COMPLETED
- * Scenario 2 (Low Stock): PENDING → CONFIRMED → (Process) → PROCESSING → (Final Assembly completes) → CONFIRMED → (Fulfill) → COMPLETED
+ * Scenario 2 (Low Stock): PENDING → CONFIRMED → (Process) → PROCESSING → (FA completes & submits) → (Complete) → COMPLETED
  * 
  * Important: When order is PROCESSING, it means a warehouse order was created and Final Assembly
- * is working on it. Once Final Assembly completes, it updates the customer order status back to
- * CONFIRMED, at which point Plant Warehouse can fulfill it.
+ * is working on it. Once all Final Assembly orders are SUBMITTED, the Complete button is enabled.
  * 
  * @param {Object} order - Order object with id, orderNumber, status, orderDate, orderItems
  * @param {Array} inventory - Current warehouse inventory for stock checking
  * @param {Function} onConfirm - Handler for confirming order
  * @param {Function} onFulfill - Handler for fulfilling order (Scenario 1: enough stock, or after Final Assembly)
  * @param {Function} onProcess - Handler for processing order (Scenario 2: creates warehouse order)
- * @param {Function} onComplete - Handler for completing order (DEPRECATED - not used in current flow)
+ * @param {Function} onComplete - Handler for completing order (when all FA orders are submitted)
  * @param {Function} onCancel - Handler for cancelling order
  * @param {boolean} isProcessing - Whether any action is in progress
+ * @param {boolean} canComplete - Whether the order can be completed (all FA orders submitted)
  * @param {Function} getProductDisplayName - Function to format product names
  * @param {Function} getInventoryStatusColor - Function to get color based on stock level
  */
@@ -38,6 +38,7 @@ function CustomerOrderCard({
   onComplete,
   onCancel,
   isProcessing = false,
+  canComplete = false,
   getProductDisplayName,
   getInventoryStatusColor,
   notificationMessage = null
@@ -111,8 +112,19 @@ function CustomerOrderCard({
         }
       
       case 'PROCESSING':
-        // Order is being processed (warehouse order created, waiting for Final Assembly)
-        // No actions available - waiting for Final Assembly to complete and update status to CONFIRMED
+        // Order is being processed (warehouse order created, Final Assembly working)
+        // Complete button only available when all Final Assembly orders are SUBMITTED
+        if (canComplete && onComplete) {
+          return [
+            { 
+              label: isProcessing ? 'Completing...' : '✅ Complete Order', 
+              variant: 'success', 
+              onClick: () => onComplete(order.id), 
+              show: true 
+            }
+          ];
+        }
+        // No actions if FA orders not yet submitted
         return [];
       
       case 'COMPLETED':
@@ -208,6 +220,7 @@ CustomerOrderCard.propTypes = {
   onComplete: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
   isProcessing: PropTypes.bool,
+  canComplete: PropTypes.bool, // True when all FA orders are SUBMITTED
   getProductDisplayName: PropTypes.func,
   getInventoryStatusColor: PropTypes.func,
   notificationMessage: PropTypes.shape({

@@ -21,6 +21,7 @@ public class FinalAssemblyOrderDTO {
     private String status;
     private LocalDateTime startTime;
     private LocalDateTime completionTime;
+    private LocalDateTime submitTime;
     private String notes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
