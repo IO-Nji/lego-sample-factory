@@ -1,16 +1,22 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import axios from "axios";
-import { DashboardLayout, StatsCard, InventoryTable, Notification } from "../../components";
+import api from "../../api/api";
+import { StandardDashboardLayout, StatisticsGrid, InventoryTable, ActivityLog, OrdersSection } from "../../components";
 import WarehouseOrderCard from "../../components/WarehouseOrderCard";
 import { getInventoryStatusColor, generateAcronym, getProductDisplayName } from "../../utils/dashboardHelpers";
+import { useInventoryDisplay } from "../../hooks/useInventoryDisplay";
 
 function ModulesSupermarketDashboard() {
   const { session } = useAuth();
   const [warehouseOrders, setWarehouseOrders] = useState([]);
-  const [filteredOrders, setFilteredOrders] = useState([]);
-  const [filterStatus, setFilterStatus] = useState("ALL");
-  const [inventory, setInventory] = useState([]);
+  
+  // Use centralized inventory hook for modules management (hardcoded WS-8 for Modules Supermarket)
+  const { 
+    inventory, 
+    masterdata: modules,
+    getItemName: getModuleName,
+    fetchInventory 
+  } = useInventoryDisplay('MODULE', 8);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [fulfillmentInProgress, setFulfillmentInProgress] = useState({});
@@ -23,7 +29,7 @@ function ModulesSupermarketDashboard() {
     priority: 'NORMAL',
     notes: '',
     missingModules: [],
-    orderNumber: ''
+    warehouseOrderNumber: ''
   });
   const [creatingProductionOrder, setCreatingProductionOrder] = useState(false);
   const [prioritySelectionMode, setPrioritySelectionMode] = useState({}); // Track which orders are in priority selection mode
@@ -45,49 +51,35 @@ function ModulesSupermarketDashboard() {
   };
 
   useEffect(() => {
-    if (session?.user?.workstationId) {
+    if (session?.user?.workstation?.id) {
       fetchWarehouseOrders();
-      fetchInventory();
+      // fetchInventory is called automatically by useInventoryDisplay hook when workstation ID changes
     }
     const interval = setInterval(() => {
-      if (session?.user?.workstationId) {
+      if (session?.user?.workstation?.id) {
         fetchWarehouseOrders();
-        fetchInventory();
+        fetchInventory(); // Manual refresh for periodic updates
       }
     }, 30000); // Increased to 30s to reduce page jump
     return () => clearInterval(interval);
-  }, [session?.user?.workstationId]);
-
-  useEffect(() => {
-    applyFilter(warehouseOrders, filterStatus);
-  }, [filterStatus, warehouseOrders]);
-
-  const applyFilter = (ordersList, status) => {
-    if (status === "ALL") {
-      setFilteredOrders(ordersList);
-    } else {
-      setFilteredOrders(ordersList.filter(order => order.status === status));
-    }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.workstation?.id]); // fetchInventory is stable from hook
 
   const fetchWarehouseOrders = async () => {
     try {
-      const workstationId = session?.user?.workstationId || 8;
-      const response = await axios.get(`/api/warehouse-orders/workstation/${workstationId}`);
+      const workstationId = session?.user?.workstation?.id || 8;
+      const response = await api.get(`/warehouse-orders/workstation/${workstationId}`);
       const data = response.data;
       console.log('[WarehouseOrders] Fetched data:', JSON.stringify(data, null, 2));
       if (Array.isArray(data)) {
         setWarehouseOrders(data);
-        applyFilter(data, filterStatus);
         setError(null);
       } else {
         setWarehouseOrders([]);
-        setFilteredOrders([]);
       }
     } catch (err) {
       if (err.response?.status === 404) {
         setWarehouseOrders([]);
-        setFilteredOrders([]);
         setError(null);
       } else {
         setError("Failed to load warehouse orders: " + (err.response?.data?.message || err.message));
@@ -95,23 +87,14 @@ function ModulesSupermarketDashboard() {
     }
   };
 
-  const fetchInventory = async () => {
-    if (!session?.user?.workstationId) return;
-    try {
-      const response = await axios.get(`/api/stock/workstation/${session.user.workstationId}`);
-      setInventory(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      console.error("Failed to fetch inventory:", err);
-      setInventory([]);
-    }
-  };
+  // fetchInventory is now provided by useInventoryDisplay hook
 
   const handleConfirmOrder = async (orderId, orderNumber) => {
     setConfirmationInProgress(prev => ({ ...prev, [orderId]: true }));
     setError(null);
 
     try {
-      await axios.put(`/api/warehouse-orders/${orderId}/confirm`);
+      await api.put(`/warehouse-orders/${orderId}/confirm`);
       addNotification(`Order ${orderNumber} confirmed - checking stock availability...`, 'success');
       
       // Fetch updated orders and inventory to check stock automatically
@@ -133,11 +116,25 @@ function ModulesSupermarketDashboard() {
     setError(null);
 
     try {
-      const response = await axios.put(`/api/warehouse-orders/${orderId}/fulfill-modules`);
-      addNotification(`Order ${orderNumber} fulfilled`, 'success');
+      const response = await api.put(`/warehouse-orders/${orderId}/fulfill-modules`);
+      console.log('[Fulfillment] Response:', response.data);
+      
+      if (response.data.status === 'FULFILLED') {
+        addNotification(`Order ${orderNumber} fulfilled - Final Assembly orders created`, 'success');
+        // Clear any notification messages for this order
+        setOrderMessages(prev => {
+          const updated = { ...prev };
+          delete updated[orderId];
+          return updated;
+        });
+      } else {
+        addNotification(`Order ${orderNumber} updated - Status: ${response.data.status}`, 'info');
+      }
+      
       await fetchWarehouseOrders();
       await fetchInventory();
     } catch (err) {
+      console.error('[Fulfillment] Error:', err);
       setError("Failed to fulfill order: " + (err.response?.data?.message || err.message));
       addNotification("Failed to fulfill order", 'error');
     } finally {
@@ -150,7 +147,7 @@ function ModulesSupermarketDashboard() {
     setError(null);
     
     try {
-      await axios.patch(`/api/warehouse-orders/${orderId}/status?status=CANCELLED`);
+      await api.patch(`/warehouse-orders/${orderId}/status?status=CANCELLED`);
       addNotification("Warehouse order cancelled", 'warning');
       await fetchWarehouseOrders();
     } catch (err) {
@@ -177,13 +174,16 @@ function ModulesSupermarketDashboard() {
         sourceWarehouseOrderId: warehouseOrder.id,
         priority: priority,
         dueDate: null,
-        notes: `Production order for warehouse order ${warehouseOrder.orderNumber}`,
-        createdByWorkstationId: session?.user?.workstationId,
+        notes: `Production order for warehouse order ${warehouseOrder.warehouseOrderNumber}`,
+        createdByWorkstationId: session?.user?.workstation?.id,
         assignedWorkstationId: null,
         triggerScenario: 'SCENARIO_3'
       };
 
-      const response = await axios.post('/api/production-orders/create', payload);
+      console.log('[Production Order Creation] Payload:', payload);
+      console.log('[Production Order Creation] Session:', session);
+
+      const response = await api.post('/production-orders/create', payload);
       
       // Exit priority selection mode
       setPrioritySelectionMode(prev => ({
@@ -239,12 +239,12 @@ function ModulesSupermarketDashboard() {
         priority: productionOrderForm.priority,
         dueDate: null,
         notes: productionOrderForm.notes,
-        createdByWorkstationId: session?.user?.workstationId,
+        createdByWorkstationId: session?.user?.workstation?.id,
         assignedWorkstationId: null, // Will be assigned by production planning
         triggerScenario: 'SCENARIO_3'
       };
 
-      const response = await axios.post('/api/production-orders/create', payload);
+      const response = await api.post('/production-orders/create', payload);
       addNotification(`Production order ${response.data.productionOrderNumber} created`, 'success');
       setShowProductionOrderForm(false);
       setProductionOrderForm({
@@ -252,7 +252,7 @@ function ModulesSupermarketDashboard() {
         priority: 'NORMAL',
         notes: '',
         missingModules: [],
-        orderNumber: ''
+        warehouseOrderNumber: ''
       });
       await fetchWarehouseOrders();
     } catch (err) {
@@ -270,103 +270,51 @@ function ModulesSupermarketDashboard() {
     return '#10b981';
   };
 
-  // Render Stats Cards
-  const renderStatsCards = () => (
-    <>
-      <StatsCard 
-        value={warehouseOrders.length} 
-        label="Total Orders" 
-        variant="default"
-      />
-      <StatsCard 
-        value={warehouseOrders.filter(o => o.status === "PENDING").length} 
-        label="Pending" 
-        variant="pending"
-      />
-      <StatsCard 
-        value={warehouseOrders.filter(o => o.status === "PROCESSING").length} 
-        label="Processing" 
-        variant="processing"
-      />
-      <StatsCard 
-        value={warehouseOrders.filter(o => o.status === "FULFILLED").length} 
-        label="Fulfilled" 
-        variant="completed"
-      />
-    </>
-  );
+  // Stats data for StatisticsGrid
+  const statsData = [
+    { value: warehouseOrders.length, label: 'Total Orders', variant: 'default', icon: '📦' },
+    { value: warehouseOrders.filter(o => o.status === "PENDING").length, label: 'Pending', variant: 'pending', icon: '⏳' },
+    { value: warehouseOrders.filter(o => o.status === "PROCESSING").length, label: 'Processing', variant: 'processing', icon: '⚙️' },
+    { value: warehouseOrders.filter(o => o.status === "FULFILLED").length, label: 'Fulfilled', variant: 'success', icon: '✅' },
+    { value: inventory.length, label: 'Module Types', variant: 'info', icon: '🔧' },
+    { value: inventory.reduce((sum, item) => sum + item.quantity, 0), label: 'Total Stock', variant: 'default', icon: '📊' },
+    { value: inventory.filter(item => item.quantity < 10).length, label: 'Low Stock', variant: 'warning', icon: '⚠️' },
+    { value: inventory.filter(item => item.quantity === 0).length, label: 'Out of Stock', variant: 'danger', icon: '🚫' },
+  ];
 
   // Check if production order is needed for a warehouse order
-  // ARCHITECTURE:
-  // - Plant Warehouse stores PRODUCTS (finished goods)
-  // - Modules Supermarket stores MODULES (sub-assemblies)
-  // - Warehouse Orders contain PRODUCTS (what Plant Warehouse needs)
-  // - This function checks if Modules Supermarket has enough MODULES to assemble those PRODUCTS
+  // CRITICAL ARCHITECTURE:
+  // - Warehouse Orders request PRODUCTS but are fulfilled using MODULES
+  // - Modules Supermarket has MODULE inventory
+  // - Backend resolves PRODUCT → MODULES mapping via ProductModule table
+  // - Backend sets triggerScenario during confirmation based on module availability
+  // - DIRECT_FULFILLMENT = modules available → show "Fulfill" button
+  // - PRODUCTION_REQUIRED = modules NOT available → show "Order Production" button
   const checkIfProductionNeeded = (warehouseOrder) => {
-    console.log(`[ProductionCheck] ==== CHECKING ORDER ${warehouseOrder.orderNumber} ====`);
+    console.log(`[ProductionCheck] ==== CHECKING ORDER ${warehouseOrder.warehouseOrderNumber} ====`);
     console.log(`[ProductionCheck] Order Status: ${warehouseOrder.status}`);
-    console.log(`[ProductionCheck] Architecture: WH Order contains PRODUCTS, Supermarket stocks MODULES`);
     
+    // Only check orders in PROCESSING status (after confirmation)
     if (warehouseOrder.status !== 'PROCESSING') {
       console.log(`[ProductionCheck] ❌ Order not PROCESSING (status: ${warehouseOrder.status}) - returning false`);
       return false;
     }
     
-    // Check if orderItems exists and has data
-    if (!warehouseOrder.orderItems || warehouseOrder.orderItems.length === 0) {
-      console.log(`[ProductionCheck] ❌ CRITICAL: Warehouse order has NO ITEMS!`);
-      return false;
+    // CRITICAL: Rely ONLY on backend's triggerScenario analysis
+    // The backend checks actual inventory during confirmation and sets this field
+    if (warehouseOrder.triggerScenario) {
+      const scenarioNeedsProduction = warehouseOrder.triggerScenario.includes('PRODUCTION');
+      console.log(`[ProductionCheck] ✅ Trigger Scenario: ${warehouseOrder.triggerScenario}`);
+      console.log(`[ProductionCheck] ✅ Needs Production: ${scenarioNeedsProduction}`);
+      console.log(`[ProductionCheck] ==== END CHECK ====\n`);
+      return scenarioNeedsProduction;
     }
     
-    // Warehouse orders contain PRODUCTS requested by Plant Warehouse
-    const productItems = warehouseOrder.orderItems.filter(item => item.itemType === 'PRODUCT');
-    
-    console.log(`[ProductionCheck] Warehouse order has ${productItems.length} PRODUCT items:`);
-    productItems.forEach(item => {
-      console.log(`[ProductionCheck]   - ${item.itemName} (ID: ${item.itemId}) x${item.requestedQuantity}`);
-    });
-    
-    if (productItems.length === 0) {
-      console.log(`[ProductionCheck] ⚠️ No PRODUCT items in warehouse order`);
-      return false;
-    }
-    
-    console.log(`[ProductionCheck] Supermarket Inventory (${inventory.length} items):`);
-    inventory.forEach(inv => {
-      console.log(`[ProductionCheck]   - ${inv.itemName} (${inv.itemType}) x${inv.quantity}`);
-    });
-    
-    // CRITICAL LOGIC:
-    // We need to check if Modules Supermarket has enough MODULES to assemble the requested PRODUCTS
-    // This requires a BOM (Bill of Materials) mapping: PRODUCT → required MODULES
-    // 
-    // TEMPORARY SOLUTION: For now, check if the SAME ITEM exists in supermarket inventory
-    // This works if the backend is mapping products to their required modules correctly
-    const needsProduction = productItems.some(productItem => {
-      // Check if we have this product's modules in inventory
-      // NOTE: This assumes productItem.itemId corresponds to a module or the item exists in inventory
-      const stockItem = inventory.find(inv => inv.itemId === productItem.itemId);
-      const currentStock = stockItem ? stockItem.quantity : 0;
-      const needed = productItem.requestedQuantity;
-      const insufficient = !stockItem || currentStock < needed;
-      
-      console.log(`[ProductionCheck] Checking PRODUCT "${productItem.itemName}" (ID: ${productItem.itemId})`);
-      console.log(`[ProductionCheck]   → Looking for matching stock item...`);
-      
-      if (stockItem) {
-        console.log(`[ProductionCheck]   → Found: ${stockItem.itemName} (${stockItem.itemType})`);
-        console.log(`[ProductionCheck]   → Stock: ${currentStock}, Needed: ${needed}, Insufficient: ${insufficient}`);
-      } else {
-        console.log(`[ProductionCheck]   → NOT FOUND in inventory - Production needed!`);
-      }
-      
-      return insufficient;
-    });
-    
-    console.log(`[ProductionCheck] ✅ Final Result - Needs Production: ${needsProduction}`);
-    console.log(`[ProductionCheck] ${needsProduction ? '🔴 INSUFFICIENT MODULES → Show "Production Order" button' : '🟢 SUFFICIENT MODULES → Show "Fulfill" button'}`);
+    // If no trigger scenario is set, something went wrong during confirmation
+    // Default to safe option: allow fulfillment attempt (backend will reject if insufficient)
+    console.log(`[ProductionCheck] ⚠️ WARNING: No triggerScenario set - defaulting to false (allow fulfillment)`);
     console.log(`[ProductionCheck] ==== END CHECK ====\n`);
-    return needsProduction;
+    return false;
   };
 
   // Render Module Inventory (Primary Content)
@@ -380,120 +328,101 @@ function ModulesSupermarketDashboard() {
         items={[]}
         getStatusColor={getInventoryStatusColor}
         getItemName={(item) => {
-          if (item.itemName) {
-            const acronym = generateAcronym(item.itemName);
-            return `${acronym} (${item.itemName})`;
+          // Find module from fetched masterdata by itemId
+          const module = modules.find(m => m.id === item.itemId);
+          if (module?.name) {
+            const acronym = generateAcronym(module.name);
+            return `${acronym} (${module.name})`;
           }
-          return `${item.itemType} #${item.itemId}`;
+          return `MODULE #${item.itemId}`;
         }}
         headerColor="purple"
       />
     );
   };
 
-  // Render Warehouse Orders Section
+  // Render Warehouse Orders Section using standardized OrdersSection
   const renderWarehouseOrdersSection = () => (
-    <>
-      <div className="dashboard-box-header dashboard-box-header-orange">
-        <h2 className="dashboard-box-header-title">📋 Warehouse Orders</h2>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          <select 
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            style={{ 
-              padding: "0.5rem", 
-              borderRadius: "0.375rem", 
-              border: "1px solid #d1d5db",
-              fontSize: "0.875rem"
-            }}
-          >
-            <option value="ALL">All Orders</option>
-            <option value="PENDING">Pending</option>
-            <option value="CONFIRMED">Confirmed</option>
-            <option value="PROCESSING">Processing</option>
-            <option value="FULFILLED">Fulfilled</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
-          <button 
-            onClick={fetchWarehouseOrders} 
-            disabled={loading} 
-            className="dashboard-box-header-action"
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
-      </div>
-      <div className="dashboard-box-content">
-        {Array.isArray(filteredOrders) && filteredOrders.length > 0 ? (
-          <div className="dashboard-orders-grid">
-            {filteredOrders.map((order) => (
-              <WarehouseOrderCard
-                key={order.id}
-                order={order}
-                onConfirm={handleConfirmOrder}
-                onFulfill={handleFulfillOrder}
-                onCancel={handleCancel}
-                onCreateProductionOrder={handleCreateProductionOrder}
-                  onSelectPriority={handleSelectPriority}
-                  needsProduction={checkIfProductionNeeded(order)}
-                  isProcessing={fulfillmentInProgress[order.id]}
-                  isConfirming={confirmationInProgress[order.id]}
-                  showPrioritySelection={prioritySelectionMode[order.id]}
-                  creatingOrder={creatingProductionOrder}
-                  notificationMessage={orderMessages[order.id]}
-                  getProductDisplayName={getProductDisplayName}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="dashboard-empty-state">
-            <p className="dashboard-empty-state-title">No warehouse orders found</p>
-            <p className="dashboard-empty-state-text">
-              {filterStatus !== "ALL" 
-                ? `No orders with status: ${filterStatus}` 
-                : "Orders will appear here when created"}
-            </p>
-          </div>
-        )}
-      </div>
-    </>
+    <OrdersSection
+      title="Warehouse Orders"
+      icon="📋"
+      orders={warehouseOrders}
+      filterOptions={[
+        { value: 'ALL', label: 'All Orders' },
+        { value: 'PENDING', label: 'Pending' },
+        { value: 'CONFIRMED', label: 'Confirmed' },
+        { value: 'PROCESSING', label: 'Processing' },
+        { value: 'FULFILLED', label: 'Fulfilled' },
+        { value: 'CANCELLED', label: 'Cancelled' }
+      ]}
+      sortOptions={[
+        { value: 'warehouseOrderNumber', label: 'Order Number' },
+        { value: 'orderDate', label: 'Order Date' },
+        { value: 'status', label: 'Status' }
+      ]}
+      renderCard={(order) => (
+        <WarehouseOrderCard
+          key={order.id}
+          order={order}
+          onConfirm={handleConfirmOrder}
+          onFulfill={handleFulfillOrder}
+          onCancel={handleCancel}
+          onCreateProductionOrder={handleCreateProductionOrder}
+          onSelectPriority={handleSelectPriority}
+          needsProduction={checkIfProductionNeeded(order)}
+          isProcessing={fulfillmentInProgress[order.id]}
+          isConfirming={confirmationInProgress[order.id]}
+          showPrioritySelection={prioritySelectionMode[order.id]}
+          creatingOrder={creatingProductionOrder}
+          notificationMessage={orderMessages[order.id]}
+          getProductDisplayName={getProductDisplayName}
+        />
+      )}
+      searchPlaceholder="Search by order number..."
+      emptyMessage="No warehouse orders found"
+    />
   );
 
-  // Render Info Box
+  // Render Info Box - Compact version to fit row height
   const renderInfoBox = () => (
-    <div className="dashboard-info-box">
-      <h3 style={{ fontWeight: 'bold', fontSize: '1rem', marginBottom: '1rem', color: '#9a3412' }}>
-        About Warehouse Orders & Production
+    <div className="dashboard-info-box" style={{ padding: '0.75rem' }}>
+      <h3 style={{ fontWeight: 'bold', fontSize: '0.875rem', marginBottom: '0.5rem', color: '#9a3412' }}>
+        Operations Guide
       </h3>
-      <ul style={{ marginLeft: '1.5rem', fontSize: '0.875rem', lineHeight: '1.75', color: '#9a3412' }}>
-        <li><strong>SCENARIO 2:</strong> Plant Warehouse requests items from Modules Supermarket</li>
-        <li><strong>Fulfill Order:</strong> Complete warehouse orders if sufficient module stock available</li>
-        <li><strong>Create Production Order:</strong> If modules are out of stock, create production order</li>
-        <li><strong>Module Inventory:</strong> View current stock levels for all modules</li>
-        <li>Orders are automatically fetched every 15 seconds for real-time updates</li>
+      <ul style={{ marginLeft: '1rem', fontSize: '0.8125rem', lineHeight: '1.4', color: '#9a3412', marginBottom: '0' }}>
+        <li><strong>Fulfill:</strong> Complete orders with available modules</li>
+        <li><strong>Production:</strong> Create order if modules insufficient</li>
+        <li><strong>Priority:</strong> Select urgency level for production</li>
       </ul>
     </div>
   );
 
+  // Render Activity Log using standardized ActivityLog component
+  const renderActivity = () => (
+    <ActivityLog
+      title="Supermarket Activity"
+      icon="📢"
+      notifications={notifications}
+      onClear={clearNotifications}
+      maxVisible={50}
+      emptyMessage="No recent activity"
+    />
+  );
+
+  // Render Statistics
+  const renderStats = () => <StatisticsGrid stats={statsData} />;
+
   return (
     <>
-      <DashboardLayout
-        title="Modules Supermarket Dashboard"
-        subtitle={`Manage warehouse orders and module inventory${session?.user?.workstationId ? ` | Workstation ID: ${session.user.workstationId}` : ''}`}
+      <StandardDashboardLayout
+        title="Modules Supermarket"
+        subtitle="Module Warehouse Operations | WS-8"
         icon="🏭"
-        layout="compact"
-        statsCards={renderStatsCards()}
-        primaryContent={renderModuleInventory()}
-        notifications={
-          <Notification 
-            notifications={notifications}
-            title="Supermarket Activity"
-            maxVisible={5}
-            onClear={clearNotifications}
-          />
-        }
-        ordersSection={renderWarehouseOrdersSection()}
-        infoBox={renderInfoBox()}
+        activityContent={renderActivity()}
+        statsContent={renderStats()}
+        formContent={renderInfoBox()}
+        contentGrid={renderWarehouseOrdersSection()}
+        inventoryContent={renderModuleInventory()}
       />
 
       {/* Production Order Creation Modal */}
@@ -508,7 +437,7 @@ function ModulesSupermarketDashboard() {
               
               <div className="px-6 py-4 space-y-4">
                 <p className="text-sm text-gray-600">
-                  Production order will be automatically created for missing modules from warehouse order <strong>{productionOrderForm.orderNumber}</strong>.
+                  Production order will be automatically created for missing modules from warehouse order <strong>{productionOrderForm.warehouseOrderNumber}</strong>.
                 </p>
 
                 {/* Display auto-loaded missing modules */}

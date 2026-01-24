@@ -1,88 +1,123 @@
 import PropTypes from 'prop-types';
+import styles from './StandardDashboardLayout.module.css';
 
 /**
- * InventoryTable - Reusable inventory/stock display component
+ * InventoryTable - Generic component for displaying inventory items
  * 
- * Displays stock items with quantity and status indicators
- * Supports different item types (products, modules, parts)
+ * Features:
+ * - Compact table layout with custom styling
+ * - Color-coded quantity display based on stock levels
+ * - Configurable item type filtering
+ * - Custom display name function support
+ * - Empty state message
+ * - Standardized for use across all dashboard pages
  * 
- * @param {Object} props
- * @param {string} props.title - Table header title (e.g., "Module Inventory", "Parts Stock")
- * @param {Array} props.inventory - Array of inventory items with {id, itemId, itemType, quantity}
- * @param {Array} props.items - Array of item definitions (products, modules, parts) to map names
- * @param {Function} props.getStatusColor - Function to determine status color based on quantity
- * @param {Function} props.getItemName - Function to get display name for item
- * @param {string} props.headerColor - Header color variant: 'blue' | 'green' | 'orange' | 'purple'
+ * Usage:
+ * <InventoryTable
+ *   title="Inventory"
+ *   icon="📦"
+ *   inventory={inventoryItems}
+ *   itemType="PRODUCT"
+ *   getItemDisplayName={(itemId) => products.find(p => p.id === itemId)?.name}
+ *   getStatusColor={(quantity) => quantity < 5 ? 'red' : 'green'}
+ * />
  */
 function InventoryTable({
-  title = "Current Inventory",
+  title = 'Inventory',
+  icon = '📦',
   inventory = [],
+  itemType = null, // Filter by item type if specified
+  getItemDisplayName = (itemId) => `Item ${itemId}`,
+  getStatusColor = (quantity) => {
+    if (quantity === 0) return '#ef4444';
+    if (quantity < 5) return '#f59e0b';
+    if (quantity < 10) return '#eab308';
+    return '#10b981';
+  },
+  emptyMessage = 'No inventory items',
+  columnHeaders = { item: 'Product', quantity: 'Qty' },
+  // Legacy props for backward compatibility
   items = [],
-  getStatusColor,
   getItemName,
   headerColor = 'green'
 }) {
-  
-  const getItemDisplayName = (item) => {
-    if (getItemName) {
-      return getItemName(item);
+  // Filter inventory by item type if specified
+  const filteredInventory = itemType 
+    ? inventory.filter(item => item.itemType === itemType)
+    : inventory;
+
+  // Handle legacy getItemName prop
+  const displayNameFunction = (itemIdOrItem) => {
+    // Support both itemId (number) and item (object) for flexibility
+    const itemId = typeof itemIdOrItem === 'object' ? itemIdOrItem.itemId : itemIdOrItem;
+    
+    // Priority 1: Use getItemName if provided (expects item object)
+    if (getItemName && typeof itemIdOrItem === 'object') {
+      return getItemName(itemIdOrItem);
     }
     
-    // Default: try to find matching item by ID
-    const matchedItem = items.find(i => i.id === item.itemId);
-    return matchedItem?.name || `Item #${item.itemId}`;
-  };
-
-  const getItemStatus = (quantity) => {
-    if (quantity > 10) return 'In Stock';
-    if (quantity > 0) return 'Low Stock';
-    return 'Out of Stock';
-  };
-
-  const getDefaultStatusColor = (quantity) => {
-    if (getStatusColor) {
-      return getStatusColor(quantity);
+    // Priority 2: Use getItemDisplayName (can handle both object and id)
+    if (getItemDisplayName) {
+      // If it's an object and getItemDisplayName is from useInventoryDisplay hook, pass the object
+      if (typeof itemIdOrItem === 'object') {
+        // Check if getItemDisplayName can handle objects (from useInventoryDisplay)
+        const result = getItemDisplayName(itemIdOrItem);
+        if (result && result !== `Item ${itemId}`) {
+          return result;
+        }
+        // Fallback to itemId if object wasn't handled
+        return getItemDisplayName(itemId);
+      }
+      return getItemDisplayName(itemId);
     }
     
-    // Default color logic
-    if (quantity > 10) return '#16a34a'; // green
-    if (quantity > 0) return '#ea580c'; // orange
-    return '#dc2626'; // red
+    // Fallback to legacy items array lookup
+    const matchedItem = items.find(i => i.id === itemId);
+    return matchedItem?.name || `Item #${itemId}`;
   };
 
   return (
     <>
-      <div className={`dashboard-box-header dashboard-box-header-${headerColor}`}>
-        <h2 className="dashboard-box-header-title">📦 {title}</h2>
+      <div className={styles.cardHeader} style={{ marginBottom: 'var(--spacing-2)', paddingBottom: 'var(--spacing-2)' }}>
+        <h2 className={styles.cardTitle} style={{ fontSize: '1rem' }}>{icon} {title}</h2>
       </div>
-      <div style={{ overflowX: 'auto', maxHeight: '400px' }}>
-        <table className="dashboard-table">
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        <table className="dashboard-table" style={{ fontSize: '0.75rem' }}>
           <thead>
             <tr>
-              <th>Item</th>
-              <th>Quantity</th>
-              <th>Status</th>
+              <th style={{ padding: '0.375rem 0.5rem' }}>{columnHeaders.item}</th>
+              <th style={{ width: '60px', padding: '0.375rem 0.5rem', textAlign: 'center' }}>
+                {columnHeaders.quantity}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {inventory.length > 0 ? (
-              inventory.map((item) => {
-                const statusColor = getDefaultStatusColor(item.quantity || 0);
-                
-                return (
-                  <tr key={item.id}>
-                    <td>{getItemDisplayName(item)}</td>
-                    <td style={{ fontWeight: 'bold' }}>{item.quantity || 0}</td>
-                    <td style={{ color: statusColor, fontWeight: 'bold' }}>
-                      {getItemStatus(item.quantity || 0)}
-                    </td>
-                  </tr>
-                );
-              })
+            {filteredInventory.length > 0 ? (
+              filteredInventory.map((item) => (
+                <tr key={item.id}>
+                  <td style={{ fontSize: '0.75rem', padding: '0.375rem 0.5rem' }}>
+                    {displayNameFunction(item)}
+                  </td>
+                  <td style={{ 
+                    fontSize: '0.75rem', 
+                    padding: '0.375rem 0.5rem', 
+                    textAlign: 'center',
+                    color: getStatusColor(item.quantity),
+                    fontWeight: item.quantity < 5 ? '600' : 'normal'
+                  }}>
+                    {item.quantity}
+                  </td>
+                </tr>
+              ))
             ) : (
               <tr>
-                <td colSpan="3" style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
-                  No inventory data available
+                <td colSpan="2" style={{ 
+                  textAlign: 'center', 
+                  padding: '1rem', 
+                  color: 'var(--color-text-secondary)', 
+                  fontSize: '0.75rem' 
+                }}>
+                  {emptyMessage}
                 </td>
               </tr>
             )}
@@ -95,16 +130,25 @@ function InventoryTable({
 
 InventoryTable.propTypes = {
   title: PropTypes.string,
+  icon: PropTypes.string,
   inventory: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.number,
-    itemId: PropTypes.number,
-    itemType: PropTypes.string,
-    quantity: PropTypes.number
-  })),
-  items: PropTypes.array,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    itemId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    itemType: PropTypes.string.isRequired,
+    quantity: PropTypes.number.isRequired
+  })).isRequired,
+  itemType: PropTypes.string,
+  getItemDisplayName: PropTypes.func,
   getStatusColor: PropTypes.func,
+  emptyMessage: PropTypes.string,
+  columnHeaders: PropTypes.shape({
+    item: PropTypes.string,
+    quantity: PropTypes.string
+  }),
+  // Legacy props for backward compatibility
+  items: PropTypes.array,
   getItemName: PropTypes.func,
-  headerColor: PropTypes.oneOf(['blue', 'green', 'orange', 'purple'])
+  headerColor: PropTypes.string
 };
 
 export default InventoryTable;

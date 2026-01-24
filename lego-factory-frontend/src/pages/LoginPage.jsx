@@ -1,6 +1,7 @@
 import { Navigate, useLocation, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import LoginForm from "../components/LoginForm";
+import Footer from "../components/Footer";
 import { useEffect, useState } from "react";
 
 function LoginPage() {
@@ -78,6 +79,7 @@ function LoginPage() {
           ← Back to Home
         </Link>
       </div>
+      <Footer />
     </div>
   );
 }

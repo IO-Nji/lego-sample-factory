@@ -27,93 +27,49 @@ function Navigation() {
    */
   const getRoleTitle = () => {
     const role = session?.user?.role;
+    const workstationName = session?.user?.workstation?.name;
+    
+    // Use workstation name if available, otherwise use role-based titles
+    if (workstationName) {
+      return workstationName.toUpperCase();
+    }
+    
     const roleTitles = {
-      ADMIN: "ADMIN",
-      PLANT_WAREHOUSE: "WAREHOUSE",
-      MODULES_SUPERMARKET: "SUPERMARKET",
-      PRODUCTION_PLANNING: "PLANNING",
-      PRODUCTION_CONTROL: "PRODUCTION",
-      ASSEMBLY_CONTROL: "ASSEMBLY CTRL",
+      ADMIN: "ADMIN CONTROL",
+      PLANT_WAREHOUSE: "PLANT WAREHOUSE",
+      MODULES_SUPERMARKET: "MODULES SUPERMARKET",
+      PRODUCTION_PLANNING: "PRODUCTION PLANNING",
+      PRODUCTION_CONTROL: "PRODUCTION CONTROL",
+      ASSEMBLY_CONTROL: "ASSEMBLY CONTROL",
       MANUFACTURING: "MANUFACTURING",
-      ASSEMBLY_WORKSTATION: "ASSEMBLY WS",
-      PARTS_SUPPLY: "PARTS SUPPLY"
+      ASSEMBLY_WORKSTATION: "ASSEMBLY WORKSTATION",
+      PARTS_SUPPLY: "PARTS SUPPLY WAREHOUSE"
     };
     return roleTitles[role] || "DASHBOARD";
-  };
-
-  /**
-   * Role-based route mapping for operational pages
-   */
-  const getRoleRoute = () => {
-    const role = session?.user?.role;
-    const roleRoutes = {
-      ADMIN: "/control/masterdata",
-      PLANT_WAREHOUSE: "/warehouse",
-      MODULES_SUPERMARKET: "/modules-supermarket",
-      PRODUCTION_PLANNING: "/production-planning",
-      PRODUCTION_CONTROL: "/production-control",
-      ASSEMBLY_CONTROL: "/assembly-control",
-      MANUFACTURING: "/manufacturing",
-      ASSEMBLY_WORKSTATION: "/assembly-workstation",
-      PARTS_SUPPLY: "/parts-supply"
-    };
-    return roleRoutes[role] || "/dashboard";
   };
 
   return (
     <nav className="main-navigation">
       <ul className="nav-list">
-        {/* Dashboard - Routes to Dashboard (visual analytics) */}
+        {/* Role-based Dashboard - Routes to role-specific dashboard */}
         <li className={isActive("/dashboard") ? "active" : ""}>
-          <Link to="/dashboard">Dashboard</Link>
+          <Link to="/dashboard">{getRoleTitle()}</Link>
         </li>
 
-        {/* NEW: Overview Pages - Design System Components */}
-        <li className={isParentActive(["/overview"]) ? "has-submenu active" : "has-submenu"}>
-          <button 
-            type="button" 
-            className="menu-toggle"
-            onClick={() => toggleMenu("overview")}
-          >
-            Overview
-            <span className={`arrow ${expandedMenus.overview ? "expanded" : ""}`}>▼</span>
-          </button>
-          <ul className="submenu" style={{ display: expandedMenus.overview ? "block" : undefined }}>
-            {isAdmin && (
-              <li className={isActive("/overview/admin") ? "active" : ""}>
-                <Link to="/overview/admin">Admin Overview</Link>
-              </li>
-            )}
-            <li className={isActive("/overview/manager") ? "active" : ""}>
-              <Link to="/overview/manager">Manager Overview</Link>
-            </li>
-            {(session?.user?.role === "PLANT_WAREHOUSE" || isAdmin) && (
-              <li className={isActive("/overview/warehouse") ? "active" : ""}>
-                <Link to="/overview/warehouse">Warehouse Overview</Link>
-              </li>
-            )}
-            {(session?.user?.role === "MANUFACTURING_WORKSTATION" || isAdmin) && (
-              <li className={isActive("/overview/manufacturing") ? "active" : ""}>
-                <Link to="/overview/manufacturing">Manufacturing Overview</Link>
-              </li>
-            )}
-          </ul>
-        </li>
-
-        {/* Role-specific operational page with Admin submenu */}
-        {isAdmin ? (
+        {/* Admin Control Menu */}
+        {isAdmin && (
           <li className={isParentActive(["/control"]) ? "has-submenu active" : "has-submenu"}>
             <button 
               type="button" 
               className="menu-toggle"
               onClick={() => toggleMenu("admin")}
             >
-              {getRoleTitle()}
+              Control
               <span className={`arrow ${expandedMenus.admin ? "expanded" : ""}`}>▼</span>
             </button>
             <ul className="submenu" style={{ display: expandedMenus.admin ? "block" : undefined }}>
-              <li className={isActive("/control/products") ? "active" : ""}>
-                <Link to="/control/products">Products</Link>
+              <li className={isActive("/control/users") ? "active" : ""}>
+                <Link to="/control/users">Users</Link>
               </li>
               <li className={isActive("/control/masterdata") ? "active" : ""}>
                 <Link to="/control/masterdata">Masterdata</Link>
@@ -121,44 +77,18 @@ function Navigation() {
               <li className={isActive("/control/inventory") ? "active" : ""}>
                 <Link to="/control/inventory">Inventory</Link>
               </li>
-              <li className={isActive("/control/warehouses") ? "active" : ""}>
-                <Link to="/control/warehouses">Warehouses</Link>
-              </li>
-              <li className={isActive("/control/users") ? "active" : ""}>
-                <Link to="/control/users">Users</Link>
-              </li>
-              <li className={isActive("/control/variants") ? "active" : ""}>
-                <Link to="/control/variants">Variants</Link>
-              </li>
             </ul>
-          </li>
-        ) : session?.user?.role === "PRODUCTION_PLANNING" ? (
-          /* Production Planning with Manual Scheduler submenu */
-          <li className={isParentActive(["/production-planning"]) ? "has-submenu active" : "has-submenu"}>
-            <button 
-              type="button" 
-              className="menu-toggle"
-              onClick={() => toggleMenu("planning")}
-            >
-              {getRoleTitle()}
-              <span className={`arrow ${expandedMenus.planning ? "expanded" : ""}`}>▼</span>
-            </button>
-            <ul className="submenu" style={{ display: expandedMenus.planning ? "block" : undefined }}>
-              <li className={isActive("/production-planning") ? "active" : ""}>
-                <Link to="/production-planning">Dashboard</Link>
-              </li>
-              <li className={isActive("/production-planning/manual-scheduler") ? "active" : ""}>
-                <Link to="/production-planning/manual-scheduler">Manual Scheduler</Link>
-              </li>
-            </ul>
-          </li>
-        ) : (
-          <li className={isActive(getRoleRoute()) ? "active" : ""}>
-            <Link to={getRoleRoute()}>{getRoleTitle()}</Link>
           </li>
         )}
 
-        {/* Account Submenu */}
+        {/* Production Planning Manual Scheduler */}
+        {session?.user?.role === "PRODUCTION_PLANNING" && (
+          <li className={isActive("/production-planning/manual-scheduler") ? "active" : ""}>
+            <Link to="/production-planning/manual-scheduler">Manual Scheduler</Link>
+          </li>
+        )}
+
+        {/* Account Menu */}
         <li className={isParentActive(["/account"]) ? "has-submenu active" : "has-submenu"}>
           <button 
             type="button" 
@@ -170,10 +100,10 @@ function Navigation() {
           </button>
           <ul className="submenu" style={{ display: expandedMenus.account ? "block" : undefined }}>
             <li className={isActive("/account/user") ? "active" : ""}>
-              <Link to="/account/user">User Account</Link>
+              <Link to="/account/user">Profile</Link>
             </li>
             <li className={isActive("/account/workstation") ? "active" : ""}>
-              <Link to="/account/workstation">Workstation</Link>
+              <Link to="/account/workstation">Workstation Info</Link>
             </li>
           </ul>
         </li>

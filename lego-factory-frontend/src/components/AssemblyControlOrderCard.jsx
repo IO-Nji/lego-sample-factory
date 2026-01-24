@@ -1,20 +1,36 @@
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import Button from './Button';
-import Badge from './Badge';
-import Card from './Card';
-import '../styles/OrderCard.css';
+import BaseOrderCard from './BaseOrderCard';
+import api from '../api/api';
+import '../styles/CustomerOrderCard.css';
 
 /**
  * AssemblyControlOrderCard Component
  * 
  * Displays an assembly control order with context-aware action buttons.
- * Used by Assembly Control dashboard for assembly workstations (WS-4, WS-5, WS-6).
+ * Uses BaseOrderCard for consistent layout with assembly workstations (WS-4, WS-5, WS-6).
+ * 
+ * Features:
+ * - Priority badge display
+ * - Item and quantity display
+ * - Target and actual timing (TS, TC, AS, AF)
+ * - Workstation information
+ * - Supply order status checking (auto-fetch on mount)
+ * - Status-aware actions (Request Parts, Dispatch, Start, Complete)
+ * 
+ * Button Logic:
+ * - PENDING status:
+ *   - If no supply order: Show "Request Parts"
+ *   - If supply order PENDING/IN_PROGRESS: Show disabled "Waiting for Parts..."
+ *   - If supply order FULFILLED: Show "Dispatch to Workstation"
+ * - IN_PROGRESS status: Show "Start Assembly" → "Complete Assembly"
  * 
  * @param {Object} order - Assembly control order object
  * @param {Function} onStart - Handler for starting assembly
  * @param {Function} onComplete - Handler for completing assembly
  * @param {Function} onHalt - Handler for halting assembly
  * @param {Function} onRequestParts - Handler for requesting parts supply
+ * @param {Function} onDispatch - Handler for dispatching to workstation
  * @param {Function} onViewDetails - Handler for viewing order details
  */
 function AssemblyControlOrderCard({ 
@@ -23,24 +39,48 @@ function AssemblyControlOrderCard({
   onComplete,
   onHalt,
   onRequestParts,
+  onDispatch,
   onViewDetails
 }) {
-  
-  // Get status badge variant
-  const getStatusVariant = (status) => {
-    switch(status) {
-      case 'COMPLETED':
-        return 'success';
-      case 'IN_PROGRESS':
-        return 'warning';
-      case 'HALTED':
-      case 'ABANDONED':
-        return 'danger';
-      case 'ASSIGNED':
-        return 'info';
-      default:
-        return 'default';
+  const [supplyOrders, setSupplyOrders] = useState([]);
+  const [loadingSupply, setLoadingSupply] = useState(false);
+
+  // Fetch supply orders when component mounts or order changes
+  useEffect(() => {
+    if (order.id && (order.status === 'PENDING' || order.status === 'ASSIGNED')) {
+      fetchSupplyOrders();
     }
+  }, [order.id, order.status]);
+
+  const fetchSupplyOrders = async () => {
+    try {
+      setLoadingSupply(true);
+      const response = await api.get(`/assembly-control-orders/${order.id}/supply-orders`);
+      setSupplyOrders(response.data || []);
+    } catch (error) {
+      console.error('Error fetching supply orders:', error);
+      setSupplyOrders([]);
+    } finally {
+      setLoadingSupply(false);
+    }
+  };
+
+  // Determine supply order status
+  const hasSupplyOrder = supplyOrders.length > 0;
+  const hasFulfilledSupply = supplyOrders.some(so => so.status === 'FULFILLED');
+  const hasActiveSupply = supplyOrders.some(so => so.status === 'PENDING' || so.status === 'IN_PROGRESS');
+  
+  // Get status CSS class
+  const getStatusClass = (status) => {
+    const statusMap = {
+      'COMPLETED': 'completed',
+      'IN_PROGRESS': 'in-progress',
+      'HALTED': 'halted',
+      'ABANDONED': 'abandoned',
+      'ASSIGNED': 'assigned',
+      'PENDING': 'pending'
+    };
+    return statusMap[status] || 'default';
   };
 
   // Format date/time for display
@@ -55,176 +95,194 @@ function AssemblyControlOrderCard({
     });
   };
 
-  // Determine which buttons to show based on order status
-  const getAvailableActions = () => {
+  // Build subtitle with source order reference
+  const subtitle = order.sourceAssemblyOrderId ? 
+    `Assembly Order #${order.sourceAssemblyOrderId}` : null;
+
+  // Transform item to BaseOrderCard format
+  const items = order.itemName ? [{
+    name: order.itemName,
+    quantity: `${order.quantity} units`
+  }] : [];
+
+  // Build info sections for workstation and timing
+  const infoSections = [];
+  
+  // Workstation info
+  if (order.workstationName) {
+    infoSections.push({
+      rows: [{
+        label: 'WS',
+        value: order.workstationName
+      }]
+    });
+  }
+  
+  // Schedule information
+  infoSections.push({
+    rows: [
+      { label: 'TS', value: formatDateTime(order.targetStartTime) },
+      { label: 'TC', value: formatDateTime(order.targetCompletionTime) }
+    ]
+  });
+  
+  // Actual times (if available)
+  const actualTimeRows = [];
+  if (order.actualStartTime) {
+    actualTimeRows.push({ label: 'AS', value: formatDateTime(order.actualStartTime) });
+  }
+  if (order.actualFinishTime) {
+    actualTimeRows.push({ label: 'AF', value: formatDateTime(order.actualFinishTime) });
+  }
+  if (actualTimeRows.length > 0) {
+    infoSections.push({ rows: actualTimeRows });
+  }
+
+  // Determine which actions to show based on order status and supply order state
+  const getActions = () => {
     const status = order.status;
+    const actions = [];
     
     switch(status) {
+      case 'PENDING':
+        // Check supply order status to determine button
+        if (loadingSupply) {
+          actions.push({
+            label: 'Loading...',
+            variant: 'outline',
+            size: 'small',
+            disabled: true,
+            show: true
+          });
+        } else if (hasFulfilledSupply) {
+          actions.push({
+            label: '🚀 Dispatch to Workstation',
+            variant: 'success',
+            size: 'small',
+            onClick: () => onDispatch(order.id),
+            show: !!onDispatch
+          });
+        } else if (hasActiveSupply) {
+          actions.push({
+            label: '⏳ Waiting for Parts...',
+            variant: 'outline',
+            size: 'small',
+            disabled: true,
+            show: true
+          });
+        } else {
+          actions.push({
+            label: '📦 Request Parts',
+            variant: 'primary',
+            size: 'small',
+            onClick: () => onRequestParts(order),
+            show: !!onRequestParts
+          });
+        }
+        actions.push({
+          label: 'Details',
+          variant: 'ghost',
+          size: 'small',
+          onClick: () => onViewDetails(order),
+          show: !!onViewDetails
+        });
+        break;
+
       case 'ASSIGNED':
-        return { start: true, requestParts: true, viewDetails: true };
+        actions.push({
+          label: '▶️ Start Assembly',
+          variant: 'success',
+          size: 'small',
+          onClick: () => onStart(order.id),
+          show: !!onStart
+        });
+        actions.push({
+          label: 'Details',
+          variant: 'ghost',
+          size: 'small',
+          onClick: () => onViewDetails(order),
+          show: !!onViewDetails
+        });
+        break;
       
       case 'IN_PROGRESS':
-        return { complete: true, halt: true, viewDetails: true };
+        actions.push({
+          label: '✅ Complete Assembly',
+          variant: 'primary',
+          size: 'small',
+          onClick: () => onComplete(order.id),
+          show: !!onComplete
+        });
+        actions.push({
+          label: '⏸️ Halt',
+          variant: 'warning',
+          size: 'small',
+          onClick: () => onHalt(order.id),
+          show: !!onHalt
+        });
+        actions.push({
+          label: 'Details',
+          variant: 'ghost',
+          size: 'small',
+          onClick: () => onViewDetails(order),
+          show: !!onViewDetails
+        });
+        break;
       
       case 'HALTED':
-        return { start: true, viewDetails: true }; // Can resume halted orders
+        actions.push({
+          label: 'Resume',
+          variant: 'success',
+          size: 'small',
+          onClick: () => onStart(order.id),
+          show: !!onStart
+        });
+        actions.push({
+          label: 'Details',
+          variant: 'ghost',
+          size: 'small',
+          onClick: () => onViewDetails(order),
+          show: !!onViewDetails
+        });
+        break;
       
       case 'COMPLETED':
       case 'ABANDONED':
-        return { viewDetails: true }; // View only
+        actions.push({
+          label: 'Details',
+          variant: 'ghost',
+          size: 'small',
+          onClick: () => onViewDetails(order),
+          show: !!onViewDetails
+        });
+        break;
       
       default:
-        return { viewDetails: true };
+        actions.push({
+          label: 'Details',
+          variant: 'ghost',
+          size: 'small',
+          onClick: () => onViewDetails(order),
+          show: !!onViewDetails
+        });
     }
+    
+    return actions;
   };
 
-  const actions = getAvailableActions();
-
   return (
-    <Card className="order-card assembly-control-order-card">
-      {/* Header with Order Number and Status Badge */}
-      <div className="order-card-header">
-        <div className="order-card-title">
-          <h3 className="order-number">{order.controlOrderNumber}</h3>
-          <p className="order-subtitle">
-            Order #{order.sourceProductionOrderId}
-          </p>
-        </div>
-        <Badge variant={getStatusVariant(order.status)}>
-          {order.status}
-        </Badge>
-      </div>
-
-      {/* Body with Order Details */}
-      <div className="order-card-body">
-        {/* Item Information */}
-        {order.itemName && (
-          <div className="order-info-section">
-            <div className="info-row">
-              <span className="info-label">Item:</span>
-              <span className="info-value">{order.itemName}</span>
-            </div>
-            {order.quantity && (
-              <div className="info-row">
-                <span className="info-label">Quantity:</span>
-                <span className="info-value">{order.quantity} units</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Priority Badge */}
-        {order.priority && (
-          <div className="order-priority">
-            <span className={`priority-badge priority-${order.priority.toLowerCase()}`}>
-              {order.priority}
-            </span>
-          </div>
-        )}
-
-        {/* Workstation Information */}
-        {order.workstationName && (
-          <div className="order-info-section">
-            <div className="info-row">
-              <span className="info-label">Workstation:</span>
-              <span className="info-value">{order.workstationName}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Schedule Information */}
-        <div className="order-info-section">
-          <div className="info-row">
-            <span className="info-label">Target Start:</span>
-            <span className="info-value">{formatDateTime(order.targetStartTime)}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Target Completion:</span>
-            <span className="info-value">{formatDateTime(order.targetCompletionTime)}</span>
-          </div>
-        </div>
-
-        {/* Actual Times (if available) */}
-        {(order.actualStartTime || order.actualFinishTime) && (
-          <div className="order-info-section">
-            {order.actualStartTime && (
-              <div className="info-row">
-                <span className="info-label">Actual Start:</span>
-                <span className="info-value">{formatDateTime(order.actualStartTime)}</span>
-              </div>
-            )}
-            {order.actualFinishTime && (
-              <div className="info-row">
-                <span className="info-label">Actual Finish:</span>
-                <span className="info-value">{formatDateTime(order.actualFinishTime)}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Notes */}
-        {order.notes && (
-          <div className="order-notes">
-            <p>{order.notes}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Footer with Action Buttons */}
-      <div className="order-card-footer">
-        <div className="order-card-actions">
-          {actions.start && (
-            <Button 
-              variant="success" 
-              size="small" 
-              onClick={() => onStart(order.id)}
-            >
-              {order.status === 'HALTED' ? 'Resume' : 'Start Assembly'}
-            </Button>
-          )}
-          
-          {actions.complete && (
-            <Button 
-              variant="primary" 
-              size="small" 
-              onClick={() => onComplete(order.id)}
-            >
-              Complete
-            </Button>
-          )}
-          
-          {actions.halt && (
-            <Button 
-              variant="warning" 
-              size="small" 
-              onClick={() => onHalt(order.id)}
-            >
-              Halt
-            </Button>
-          )}
-          
-          {actions.requestParts && (
-            <Button 
-              variant="outline" 
-              size="small" 
-              onClick={() => onRequestParts(order)}
-            >
-              Request Parts
-            </Button>
-          )}
-          
-          {actions.viewDetails && (
-            <Button 
-              variant="ghost" 
-              size="small" 
-              onClick={() => onViewDetails(order)}
-            >
-              Details
-            </Button>
-          )}
-        </div>
-      </div>
-    </Card>
+    <BaseOrderCard
+      orderNumber={`#${order.controlOrderNumber}`}
+      status={order.status}
+      statusClass={getStatusClass(order.status)}
+      cardType="assembly-control-order-card"
+      subtitle={subtitle}
+      items={items}
+      infoSections={infoSections}
+      priority={order.priority}
+      notes={order.notes}
+      actions={getActions()}
+    />
   );
 }
 
@@ -232,7 +290,7 @@ AssemblyControlOrderCard.propTypes = {
   order: PropTypes.shape({
     id: PropTypes.number.isRequired,
     controlOrderNumber: PropTypes.string.isRequired,
-    sourceProductionOrderId: PropTypes.number,
+    sourceAssemblyOrderId: PropTypes.number,
     status: PropTypes.string.isRequired,
     priority: PropTypes.string,
     itemName: PropTypes.string,
@@ -248,6 +306,7 @@ AssemblyControlOrderCard.propTypes = {
   onComplete: PropTypes.func,
   onHalt: PropTypes.func,
   onRequestParts: PropTypes.func,
+  onDispatch: PropTypes.func,
   onViewDetails: PropTypes.func
 };
 
@@ -256,6 +315,7 @@ AssemblyControlOrderCard.defaultProps = {
   onComplete: () => {},
   onHalt: () => {},
   onRequestParts: () => {},
+  onDispatch: () => {},
   onViewDetails: () => {}
 };
 

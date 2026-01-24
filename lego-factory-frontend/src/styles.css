@@ -64,10 +64,8 @@ body {
 
 /* Import component-specific stylesheets */
 @import './styles/StandardPage.css';
-@import './styles/Button.css';
 @import './styles/LoginForm.css';
 @import './styles/AddNewUserForm.css';
-@import './styles/StatsCard.css';
 @import './styles/CustomerOrderCard.css';
 @import './styles/WarehouseOrderCard.css';
 
@@ -300,8 +298,9 @@ section {
 
 .form-helper {
   margin: 0.25rem 0 0;
-  color: #546174;
+  color: #8892a3;
   font-size: 0.9rem;
+  opacity: 0.8;
 }
 
 .form-error {
@@ -1266,11 +1265,9 @@ table td {
 
 /* ==========================================
    STANDARDIZED STATISTICS BOX STYLING
-   Use these classes for any stats/metrics displays
-   Consolidated in StatsCard.css
+   Use StatisticsGrid component with StatCard components
+   See AdminDashboard for reference implementation
    ========================================== */
-
-/* .stats-grid definition moved to StatsCard.css to avoid conflicts */
 
 /* Individual stat box - legacy support */
 .stat-box {

@@ -12,11 +12,15 @@ import io.life.masterdata.dto.ModuleDto;
 import io.life.masterdata.dto.PartDto;
 import io.life.masterdata.dto.WorkstationDto;
 import io.life.masterdata.entity.Module;
+import io.life.masterdata.entity.ModulePart;
 import io.life.masterdata.entity.Part;
+import io.life.masterdata.service.ModulePartService;
 import io.life.masterdata.service.ModuleService;
 import io.life.masterdata.service.PartService;
 import io.life.masterdata.service.WorkstationService;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/masterdata")
 public class MasterdataController {
@@ -24,12 +28,15 @@ public class MasterdataController {
     private final ModuleService moduleService;
     private final PartService partService;
     private final WorkstationService workstationService;
+    private final ModulePartService modulePartService;
 
     public MasterdataController(ModuleService moduleService,
-            PartService partService, WorkstationService workstationService) {
+            PartService partService, WorkstationService workstationService,
+            ModulePartService modulePartService) {
         this.moduleService = moduleService;
         this.partService = partService;
         this.workstationService = workstationService;
+        this.modulePartService = modulePartService;
     }
 
     @GetMapping("/modules")
@@ -44,6 +51,22 @@ public class MasterdataController {
         return moduleService.findById(id)
             .map(module -> ResponseEntity.ok(toModuleDto(module)))
             .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/modules/{id}/parts")
+    public ResponseEntity<List<ModulePart>> getModuleParts(@PathVariable Long id) {
+        log.debug("Fetching parts for module ID: {}", id);
+        // Verify module exists
+        return moduleService.findById(id)
+            .map(module -> {
+                List<ModulePart> moduleParts = modulePartService.findByModuleId(id);
+                log.debug("Found {} parts for module ID: {}", moduleParts.size(), id);
+                return ResponseEntity.ok(moduleParts);
+            })
+            .orElseGet(() -> {
+                log.warn("Module not found with ID: {}", id);
+                return ResponseEntity.notFound().build();
+            });
     }
 
     @GetMapping("/workstations")

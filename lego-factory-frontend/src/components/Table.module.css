@@ -24,7 +24,7 @@
 }
 
 .table th {
-  padding: var(--spacing-4);
+  padding: var(--spacing-5) var(--spacing-6); /* 20px vertical, 24px horizontal for better readability */
   text-align: left;
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
@@ -63,7 +63,7 @@
 }
 
 .table td {
-  padding: var(--spacing-4);
+  padding: var(--spacing-5) var(--spacing-6); /* 20px vertical, 24px horizontal - matches header padding */
   vertical-align: top;
 }
 

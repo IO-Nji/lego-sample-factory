@@ -1,0 +1,30 @@
+/* StatisticsGrid - Compact 4x2 Grid Layout (2 columns, 4 rows) */
+.statisticsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 0.35rem;
+  width: 100%;
+  min-width: 300px;
+  max-width: 350px;
+}
+
+.statCard {
+  min-height: 70px !important;
+  padding: 0.35rem !important;
+}
+
+/* Reduce StatCard internal spacing for compact view */
+.statCard :global(.value) {
+  font-size: 1.25rem !important;
+  margin-bottom: 0.15rem !important;
+}
+
+.statCard :global(.label) {
+  font-size: 0.65rem !important;
+  line-height: 1.1 !important;
+}
+
+.statCard :global(.icon) {
+  font-size: 1rem !important;
+}

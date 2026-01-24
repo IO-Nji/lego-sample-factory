@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
 import { 
-  DashboardLayout, 
-  StatCard, 
+  StandardDashboardLayout,
+  OrdersSection,
+  ActivityLog,
+  StatisticsGrid, 
   Button, 
   Card, 
   Badge,
@@ -20,6 +22,22 @@ function ProductionControlDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+
+  const addNotification = (message, type = 'info') => {
+    const newNotification = {
+      id: Date.now() + Math.random(),
+      message,
+      type,
+      timestamp: new Date().toISOString(),
+      station: 'PROD-CTRL'
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
   
   // Modal states
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -31,20 +49,13 @@ function ProductionControlDashboard() {
     notes: ""
   });
 
-  // Fetch control orders for the production control workstation
+  // Fetch all production control orders (Production Control manages all manufacturing orders)
   const fetchControlOrders = async () => {
-    const workstationId = session?.user?.workstation?.id;
-    if (!workstationId) {
-      setControlOrders([]);
-      setFilteredOrders([]);
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      const response = await api.get(`/api/production-control-orders/workstation/${workstationId}`);
+      const response = await api.get('/production-control-orders');
       const ordersList = Array.isArray(response.data) ? response.data : [];
       setControlOrders(ordersList);
       applyFilter(ordersList, filterStatus);
@@ -64,7 +75,7 @@ function ProductionControlDashboard() {
     }
 
     try {
-      const response = await api.get(`/api/supply-orders/workstation/${workstationId}`);
+      const response = await api.get(`/supply-orders/workstation/${workstationId}`);
       setSupplyOrders(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Failed to load supply orders:", err);
@@ -97,31 +108,37 @@ function ProductionControlDashboard() {
 
   const handleStartProduction = async (orderId) => {
     try {
-      await api.post(`/api/production-control-orders/${orderId}/start`);
+      await api.post(`/production-control-orders/${orderId}/start`);
       setSuccess("Production started successfully");
+      addNotification("Production started", "success");
       fetchControlOrders();
     } catch (err) {
       setError("Failed to start production: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to start production", "error");
     }
   };
 
   const handleCompleteProduction = async (orderId) => {
     try {
-      await api.post(`/api/production-control-orders/${orderId}/complete`);
+      await api.post(`/production-control-orders/${orderId}/complete`);
       setSuccess("Production completed successfully");
+      addNotification("Production completed", "success");
       fetchControlOrders();
     } catch (err) {
       setError("Failed to complete production: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to complete production", "error");
     }
   };
 
   const handleHaltProduction = async (orderId, reason) => {
     try {
-      await api.post(`/api/production-control-orders/${orderId}/halt`, { reason });
+      await api.post(`/production-control-orders/${orderId}/halt`, { reason });
       setSuccess("Production halted");
+      addNotification("Production halted", "warning");
       fetchControlOrders();
     } catch (err) {
       setError("Failed to halt production: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to halt production", "error");
     }
   };
 
@@ -185,7 +202,7 @@ function ProductionControlDashboard() {
         notes: supplyOrderForm.notes
       };
 
-      await api.post('/api/supply-orders', requestBody);
+      await api.post('/supply-orders', requestBody);
       
       setSuccess("Supply order created successfully");
       setShowSupplyOrderModal(false);
@@ -196,83 +213,76 @@ function ProductionControlDashboard() {
   };
 
   // Stats cards
-  const renderStatsCards = () => {
+  // Stats data for StatisticsGrid
+  const statsData = (() => {
     const total = controlOrders.length;
     const assigned = controlOrders.filter(o => o.status === "ASSIGNED").length;
     const inProgress = controlOrders.filter(o => o.status === "IN_PROGRESS").length;
     const completed = controlOrders.filter(o => o.status === "COMPLETED").length;
+    const pending = controlOrders.filter(o => o.status === "PENDING").length;
+    const rejected = controlOrders.filter(o => o.status === "REJECTED").length;
+    const halted = controlOrders.filter(o => o.status === "HALTED").length;
 
-    return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
-        <StatCard value={total} label="Total Orders" variant="primary" />
-        <StatCard value={assigned} label="Assigned" variant="info" />
-        <StatCard value={inProgress} label="In Progress" variant="warning" />
-        <StatCard value={completed} label="Completed" variant="success" />
-      </div>
-    );
-  };
+    return [
+      { value: total, label: 'Total Orders', variant: 'default', icon: '📦' },
+      { value: pending, label: 'Pending', variant: 'pending', icon: '⏳' },
+      { value: assigned, label: 'Assigned', variant: 'info', icon: '📝' },
+      { value: inProgress, label: 'In Progress', variant: 'warning', icon: '⚙️' },
+      { value: completed, label: 'Completed', variant: 'success', icon: '✅' },
+      { value: rejected, label: 'Rejected', variant: 'danger', icon: '❌' },
+      { value: halted, label: 'Halted', variant: 'warning', icon: '⏸️' },
+      { value: supplyOrders.length, label: 'Supply Orders', variant: 'info', icon: '🚚' },
+    ];
+  })();
 
-  // Filter controls
-  const renderFilterControls = () => (
-    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-      <select 
-        value={filterStatus}
-        onChange={(e) => setFilterStatus(e.target.value)}
-        style={{ padding: "0.5rem", borderRadius: "0.375rem", border: "1px solid #d1d5db", fontSize: "0.875rem" }}
-      >
-        <option value="ALL">All Orders</option>
-        <option value="ASSIGNED">Assigned</option>
-        <option value="IN_PROGRESS">In Progress</option>
-        <option value="COMPLETED">Completed</option>
-        <option value="HALTED">Halted</option>
-        <option value="ABANDONED">Abandoned</option>
-      </select>
-      <Button 
-        variant="secondary"
-        size="small"
-        onClick={fetchControlOrders} 
-        disabled={loading}
-      >
-        {loading ? "Refreshing..." : "Refresh"}
-      </Button>
-    </div>
+  // Render activity log using ActivityLog component
+  const renderActivity = () => (
+    <ActivityLog
+      title="Production Activity"
+      icon="📢"
+      notifications={notifications}
+      onClear={clearNotifications}
+      maxVisible={50}
+      emptyMessage="No recent activity"
+    />
   );
 
-  // Control orders display
-  const renderControlOrders = () => {
-    if (loading && controlOrders.length === 0) {
-      return <div className="dashboard-empty-state">Loading control orders...</div>;
-    }
-
-    if (filteredOrders.length === 0) {
-      return (
-        <div className="dashboard-empty-state">
-          <p className="dashboard-empty-state-title">No control orders</p>
-          <p className="dashboard-empty-state-text">
-            {filterStatus !== "ALL" 
-              ? `No orders with status: ${filterStatus}` 
-              : "Control orders will appear here when assigned by Production Planning"}
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
-        {filteredOrders.map((order) => (
-          <ProductionControlOrderCard
-            key={order.id}
-            order={order}
-            onStart={handleStartProduction}
-            onComplete={handleCompleteProduction}
-            onHalt={(orderId) => handleHaltProduction(orderId, "Operator initiated halt")}
-            onRequestParts={handleCreateSupplyOrder}
-            onViewDetails={handleViewDetails}
-          />
-        ))}
-      </div>
-    );
-  };
+  // Render control orders using OrdersSection
+  const renderControlOrders = () => (
+    <OrdersSection
+      title="Production Control Orders"
+      icon="🏭"
+      orders={controlOrders}
+      filterOptions={[
+        { value: 'ALL', label: 'All Orders' },
+        { value: 'ASSIGNED', label: 'Assigned' },
+        { value: 'IN_PROGRESS', label: 'In Progress' },
+        { value: 'COMPLETED', label: 'Completed' },
+        { value: 'HALTED', label: 'Halted' },
+        { value: 'ABANDONED', label: 'Abandoned' }
+      ]}
+      sortOptions={[
+        { value: 'orderNumber', label: 'Order Number' },
+        { value: 'priority', label: 'Priority' },
+        { value: 'status', label: 'Status' }
+      ]}
+      searchKeys={['controlOrderNumber', 'assemblyInstructions']}
+      sortKey="controlOrderNumber"
+      renderCard={(order) => (
+        <ProductionControlOrderCard
+          key={order.id}
+          order={order}
+          onStart={handleStartProduction}
+          onComplete={handleCompleteProduction}
+          onHalt={(orderId) => handleHaltProduction(orderId, "Operator initiated halt")}
+          onRequestParts={handleCreateSupplyOrder}
+          onViewDetails={handleViewDetails}
+        />
+      )}
+      searchPlaceholder="Search by order number..."
+      emptyMessage="Control orders will appear here when assigned by Production Planning"
+    />
+  );
 
   // Supply orders display
   const renderSupplyOrders = () => {
@@ -445,33 +455,15 @@ function ProductionControlDashboard() {
 
   return (
     <>
-      <DashboardLayout
+      <StandardDashboardLayout
         title="Production Control"
-        subtitle={`Manage manufacturing operations for ${session?.user?.workstation?.name || 'Production Control'}`}
+        subtitle={`Manufacturing Operations | ${session?.user?.workstation?.name || 'Production Control'}`}
         icon="🏭"
-        layout="default"
-        statsCards={renderStatsCards()}
-        primaryContent={
-          <div className="dashboard-box">
-            <div className="dashboard-box-header dashboard-box-header-blue">
-              <h2 className="dashboard-box-header-title">Control Orders</h2>
-              {renderFilterControls()}
-            </div>
-            <div className="dashboard-box-content">
-              {renderControlOrders()}
-            </div>
-          </div>
-        }
-        secondaryContent={
-          <div className="dashboard-box">
-            <div className="dashboard-box-header dashboard-box-header-orange">
-              <h2 className="dashboard-box-header-title">Supply Orders</h2>
-            </div>
-            <div className="dashboard-box-content">
-              {renderSupplyOrders()}
-            </div>
-          </div>
-        }
+        activityContent={renderActivity()}
+        statsContent={<StatisticsGrid stats={statsData} />}
+        formContent={renderSupplyOrders()}
+        contentGrid={renderControlOrders()}
+        inventoryContent={null}
         messages={{ error, success }}
         onDismissError={() => setError(null)}
         onDismissSuccess={() => setSuccess(null)}

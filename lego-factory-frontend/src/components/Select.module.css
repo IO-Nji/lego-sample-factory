@@ -46,9 +46,9 @@
   border-radius: var(--form-input-radius);
   transition: var(--transition-fast);
   cursor: pointer;
-  appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
+  appearance: none;
 }
 
 .select:hover:not(:disabled) {

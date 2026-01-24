@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import ErrorNotification from "../components/ErrorNotification";
-import PageHeader from "../components/PageHeader";
-import StatsCard from "../components/StatsCard";
-import { getErrorMessage } from "../utils/errorHandler";
+import { ControlPage } from "../components";
 import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 import "../styles/AdminDashboard.css";
+
+// Helper function for extracting error messages
+const getErrorMessage = (err) => err.response?.data?.message || err.message || 'An error occurred';
 
 function InventoryManagementPage() {
   const { session } = useAuth();
@@ -260,30 +261,15 @@ function InventoryManagementPage() {
     return allInventory[selectedWorkstationId] || [];
   };
 
-  const renderOverviewTab = () => (
-    <div className="overview-tab">
-      <h3>Inventory Statistics</h3>
-      <div className="stats-grid">
-        <StatsCard value={totalInventoryItems} label="Total Items" variant="default" />
-        <StatsCard value={workstations.length} label="Workstations" variant="default" />
-        <StatsCard 
-          value={lowStockItems.length} 
-          label="Low Stock Items" 
-          variant={lowStockItems.length > 0 ? "pending" : "completed"} 
-        />
-        <StatsCard 
-          value={Object.keys(allInventory).length} 
-          label="Active Locations" 
-          variant="default" 
-        />
-      </div>
-
-      {lowStockItems.length > 0 && (
-        <div className="dashboard-section" style={{ marginTop: '1.5rem' }}>
-          <h3>⚠️ Low Stock Alert</h3>
-          <table className="products-table">
-            <thead>
-              <tr>
+  const renderOverviewTab = () => {
+    return (
+      <div className="overview-tab">
+        {lowStockItems.length > 0 && (
+          <div className="dashboard-section" style={{ marginTop: '1.5rem' }}>
+            <h3>⚠️ Low Stock Alert</h3>
+            <table className="products-table">
+              <thead>
+                <tr>
                 <th>Workstation</th>
                 <th>Item Type</th>
                 <th>Item ID</th>
@@ -316,12 +302,12 @@ function InventoryManagementPage() {
             </tbody>
           </table>
         </div>
-      )}
+        )}
 
-      <div className="all-workstations-section" style={{ marginTop: '1.5rem' }}>
-        <h3>📦 All Workstations Inventory Summary</h3>
-        <div className="workstations-grid">
-          {workstations.map(ws => {
+        <div className="all-workstations-section" style={{ marginTop: '1.5rem' }}>
+          <h3>📦 All Workstations Inventory Summary</h3>
+          <div className="workstations-grid">
+            {workstations.map(ws => {
             const wsInventory = allInventory[ws.id] || [];
             const wsTotal = wsInventory.reduce((sum, item) => sum + (item.quantity || 0), 0);
             return (
@@ -347,9 +333,10 @@ function InventoryManagementPage() {
             );
           })}
         </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderLedgerTab = () => (
     <div className="ledger-tab">
@@ -557,24 +544,27 @@ function InventoryManagementPage() {
     </div>
   );
 
-  return (
-    <div className="standard-page-container">
-      <PageHeader
-        title="Inventory Management"
-        subtitle={`Manage and monitor inventory across all workstations. Total items: ${totalInventoryItems}`}
-        icon="📦"
-      />
-      
-      <section className="admin-dashboard">
-        {notification && (
-          <ErrorNotification
-            message={notification.message}
-            type={notification.type}
-            onClose={() => setNotification(null)}
-          />
-        )}
+  // Statistics for ControlPage
+  const statistics = [
+    { value: totalInventoryItems, label: 'Total Items', variant: 'primary', icon: '📊' },
+    { value: workstations.length, label: 'Workstations', variant: 'secondary', icon: '🏭' },
+    { value: lowStockItems.length, label: 'Low Stock Items', variant: lowStockItems.length > 0 ? 'warning' : 'success', icon: '⚠️' },
+    { value: Object.keys(allInventory).length, label: 'Active Locations', variant: 'info', icon: '📍' },
+    { value: recentLedger.length, label: 'Recent Transactions', variant: 'info', icon: '📋' },
+  ];
 
-        {error && <div className="error-message">{error}</div>}
+  // Table content - tabs with inventory views
+  const tableContent = (
+    <>
+      {notification && (
+        <ErrorNotification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
+      {error && <div className="error-message">{error}</div>}
 
       <div className="tabs">
         <button
@@ -603,8 +593,17 @@ function InventoryManagementPage() {
         {!loading && activeTab === 'manage' && renderManageTab()}
         {!loading && activeTab === 'ledger' && renderLedgerTab()}
       </div>
-      </section>
-    </div>
+    </>
+  );
+
+  return (
+    <ControlPage
+      title="Inventory Management"
+      subtitle={`Manage and monitor inventory across all workstations. Total items: ${totalInventoryItems}`}
+      icon="📦"
+      statistics={statistics}
+      tableContent={tableContent}
+    />
   );
 }
 

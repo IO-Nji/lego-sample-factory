@@ -4,17 +4,18 @@
 /* card types (Customer, Warehouse, etc.)      */
 /* ============================================ */
 
-/* Base dimensions - can be customized per card type */
+/* Base dimensions - FIXED WIDTH for consistent card sizing across all layouts */
 .order-card-base {
-  width: 100%;
-  min-width: 352px; /* 320px * 1.1 */
-  max-width: 440px; /* 400px * 1.1 */
-  height: 280px; /* Fixed height - no variable height */
+  width: 380px; /* Fixed width - matches CustomerOrderCard and WarehouseOrderCard standard */
+  min-width: 380px; /* Prevent shrinking in flex/grid layouts */
+  max-width: 380px; /* Prevent growing in flex/grid layouts */
+  height: 320px; /* Fixed height - increased from 280px to accommodate more fields */
+  min-height: 320px; /* Prevent shrinking */
   
   /* Common layout properties */
   display: flex;
   flex-direction: column;
-  border-radius: 0.75rem;
+  border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
@@ -47,10 +48,11 @@
   font-family: 'Courier New', 'Consolas', monospace;
   font-size: 0.5rem;
   font-weight: 500;
-  color: #2a2c2f;
+  color: #6b7280; /* Consistent gray color */
   text-align: right;
   flex-shrink: 0;
   margin-left: auto;
+  letter-spacing: 0.025em;
 }
 
 /* Notification message styling - aligned left, matches date font */
@@ -111,6 +113,9 @@
 .order-card-footer {
   padding: 0.25rem;
   border-top: 1px solid;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Action Buttons Container - Horizontal row for minimal footprint */
@@ -125,10 +130,10 @@
 /* Button Size Standards - Applied to ALL order cards */
 /* This ensures consistent button sizing across Customer, Warehouse, and Production cards */
 .order-card-base .action-buttons button {
-  padding: 0.125rem 0.25rem; /* Reduced to half for more margin */
+  padding: 0.0625rem 0.25rem; /* Top/bottom padding reduced to half for tighter layout */
   font-size: 0.6rem;
   height: auto;
-  min-height: auto;
+  min-height: 0;
   width: auto;
   white-space: nowrap;
 }
@@ -137,12 +142,51 @@
 /* SCENARIO/PRIORITY BADGE SECTION             */
 /* Common styling for badges shown after meta  */
 /* Used for scenario (warehouse) or priority   */
+/* NEW: Combined badges container for priority + scenario */
 /* ============================================ */
+.order-badges {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.125rem 0;
+}
+
 .order-scenario,
 .order-priority {
   display: flex;
   justify-content: center;
   padding: 0.125rem 0;
+}
+
+/* Scenario Badge Styles */
+.scenario-badge {
+  font-size: 0.5rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.scenario-badge.scenario-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.scenario-badge.scenario-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.scenario-badge.scenario-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.scenario-badge.scenario-danger {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .scenario-badge,
@@ -246,12 +290,71 @@
   font-weight: 400;
 }
 
+.quantity-label {
+  font-size: 0.5rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 0.125rem;
+}
+
 .no-items {
   text-align: center;
   color: #9ca3af;
   font-size: 0.875rem;
   font-style: italic;
   padding: 1rem 0;
+}
+
+/* ============================================ */
+/* ORDER INFO SECTIONS                         */
+/* Label-value pairs for metadata display      */
+/* Used for workstation, dates, times, etc.    */
+/* ============================================ */
+.order-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.125rem 0.25rem;
+  margin: 0.125rem 0;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.0625rem 0;
+}
+
+.info-label {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.info-value {
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 0.55rem;
+  font-weight: 500;
+  color: #1f2937;
+  text-align: right;
+  letter-spacing: 0.025em;
+}
+
+/* Subtitle styling for secondary order references */
+.order-subtitle {
+  padding: 0.125rem 0.25rem;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-align: center;
+  font-style: italic;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 /* Size variants - override base dimensions if needed */
@@ -271,5 +374,5 @@
 .order-card-fixed {
   min-width: 320px;
   max-width: 320px;
-  min-height: auto;
+  min-height: 0;
 }
