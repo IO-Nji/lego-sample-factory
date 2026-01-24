@@ -30,6 +30,8 @@ public class ProductionPlanningService {
     private static final String PRODUCTION_ORDER_NOT_FOUND = "Production order not found: ";
     
     // Production order status constants
+    private static final String STATUS_CREATED = "CREATED";
+    private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_SUBMITTED = "SUBMITTED";
     private static final String STATUS_SCHEDULED = "SCHEDULED";
     private static final String STATUS_DISPATCHED = "DISPATCHED";
@@ -62,15 +64,21 @@ public class ProductionPlanningService {
     /**
      * Submit a production order to SimAL for scheduling.
      * Sends order details and receives a schedule ID and estimated duration.
+     * Order must be in CONFIRMED status to be scheduled.
      */
     public ProductionOrderDTO submitProductionOrderToSimal(Long productionOrderId) {
         ProductionOrderDTO order = productionOrderService.getProductionOrderById(productionOrderId)
                 .orElseThrow(() -> new ProductionPlanningException(PRODUCTION_ORDER_NOT_FOUND + productionOrderId));
 
-        // Check if already submitted
+        // Check if already submitted or scheduled
         if (STATUS_SUBMITTED.equals(order.getStatus()) || STATUS_SCHEDULED.equals(order.getStatus())) {
             logger.warn("Production order {} already submitted or scheduled", order.getProductionOrderNumber());
             return order;
+        }
+
+        // Must be in CONFIRMED status to schedule
+        if (!STATUS_CONFIRMED.equals(order.getStatus())) {
+            throw new ProductionPlanningException("Production order must be CONFIRMED before scheduling. Current status: " + order.getStatus());
         }
 
         try {

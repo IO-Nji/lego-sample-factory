@@ -322,7 +322,7 @@ public class ControlOrderIntegrationService {
 
     /**
      * Schedule a production order by fetching it from order-processing-service
-     * and submitting to SimAL with warehouse order items.
+     * and submitting to SimAL with production order items (or warehouse order items as fallback).
      *
      * @param productionOrderId The production order ID
      * @param controller The SimalController instance to call submitProductionOrder
@@ -344,67 +344,102 @@ public class ControlOrderIntegrationService {
 
         log.info("Retrieved production order: {}", productionOrder.get("productionOrderNumber"));
 
-        // 2. Get warehouse order ID from production order
-        Object warehouseOrderIdObj = productionOrder.get("sourceWarehouseOrderId");
-        if (warehouseOrderIdObj == null) {
-            throw new IllegalArgumentException(
-                    "Production order has no associated warehouse order: " + productionOrderId);
-        }
-
-        Long warehouseOrderId = warehouseOrderIdObj instanceof Number ?
-                ((Number) warehouseOrderIdObj).longValue() : Long.parseLong(warehouseOrderIdObj.toString());
-
-        // 3. Fetch warehouse order with items
-        String warehouseOrderUrl = orderProcessingApiBaseUrl + "/warehouse-orders/" + warehouseOrderId;
-        Map<String, Object> warehouseOrder = restTemplate.getForObject(warehouseOrderUrl, Map.class);
-
-        if (warehouseOrder == null) {
-            throw new IllegalArgumentException("Warehouse order not found: " + warehouseOrderId);
-        }
-
-        // 4. Extract warehouse order items
+        // 2. Check if production order has its own items first
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> warehouseOrderItems =
-                (List<Map<String, Object>>) warehouseOrder.get("warehouseOrderItems");
+        List<Map<String, Object>> productionOrderItems =
+                (List<Map<String, Object>>) productionOrder.get("productionOrderItems");
 
-        if (warehouseOrderItems == null || warehouseOrderItems.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Warehouse order has no items: " + warehouseOrderId);
-        }
-
-        log.info("Found {} items in warehouse order", warehouseOrderItems.size());
-
-        // 5. Convert warehouse order items to SimAL line items
         List<io.life.simal_integration_service.dto.SimalProductionOrderRequest.OrderLineItem> lineItems =
                 new ArrayList<>();
 
-        for (Map<String, Object> item : warehouseOrderItems) {
-            io.life.simal_integration_service.dto.SimalProductionOrderRequest.OrderLineItem lineItem =
-                    new io.life.simal_integration_service.dto.SimalProductionOrderRequest.OrderLineItem();
+        if (productionOrderItems != null && !productionOrderItems.isEmpty()) {
+            // Use production order items directly
+            log.info("Using {} items from production order", productionOrderItems.size());
+            
+            for (Map<String, Object> item : productionOrderItems) {
+                io.life.simal_integration_service.dto.SimalProductionOrderRequest.OrderLineItem lineItem =
+                        new io.life.simal_integration_service.dto.SimalProductionOrderRequest.OrderLineItem();
 
-            Long itemId = getLongValue(item.get("itemId"));
-            String itemType = (String) item.get("itemType"); // MODULE, PART, or PRODUCT_VARIANT
-            
-            lineItem.setItemId(itemId != null ? itemId.toString() : null);
-            
-            // Fetch actual item name from masterdata-service
-            String actualItemName = null;
-            if (itemId != null && itemType != null && controller instanceof io.life.simal_integration_service.controller.SimalController) {
-                io.life.simal_integration_service.controller.SimalController simalController =
-                        (io.life.simal_integration_service.controller.SimalController) controller;
-                actualItemName = simalController.getItemName(itemId, itemType);
+                Long itemId = getLongValue(item.get("itemId"));
+                String itemType = (String) item.get("itemType");
+                String workstationType = (String) item.get("workstationType");
+                
+                lineItem.setItemId(itemId != null ? itemId.toString() : null);
+                
+                // Fetch actual item name from masterdata-service
+                String actualItemName = null;
+                if (itemId != null && itemType != null && controller instanceof io.life.simal_integration_service.controller.SimalController) {
+                    io.life.simal_integration_service.controller.SimalController simalController =
+                            (io.life.simal_integration_service.controller.SimalController) controller;
+                    actualItemName = simalController.getItemName(itemId, itemType);
+                }
+                
+                lineItem.setItemName(actualItemName != null ? actualItemName : (String) item.get("itemName"));
+                lineItem.setQuantity(getIntValue(item.get("quantity")));
+                lineItem.setEstimatedDuration(getIntValue(item.get("estimatedTimeMinutes")) != null ? 
+                        getIntValue(item.get("estimatedTimeMinutes")) : 30);
+                lineItem.setWorkstationType(workstationType != null ? workstationType : "MANUFACTURING");
+
+                lineItems.add(lineItem);
             }
-            
-            // Use actual name if fetched, otherwise fall back to warehouse order item name
-            lineItem.setItemName(actualItemName != null ? actualItemName : (String) item.get("itemName"));
-            lineItem.setQuantity(getIntValue(item.get("requestedQuantity")));
-            lineItem.setEstimatedDuration(30); // Default 30 minutes per item
-            lineItem.setWorkstationType("MANUFACTURING"); // Default type
+        } else {
+            // Fallback: Get items from warehouse order
+            Object warehouseOrderIdObj = productionOrder.get("sourceWarehouseOrderId");
+            if (warehouseOrderIdObj == null) {
+                throw new IllegalArgumentException(
+                        "Production order has no items and no associated warehouse order: " + productionOrderId);
+            }
 
-            lineItems.add(lineItem);
+            Long warehouseOrderId = warehouseOrderIdObj instanceof Number ?
+                    ((Number) warehouseOrderIdObj).longValue() : Long.parseLong(warehouseOrderIdObj.toString());
+
+            // Fetch warehouse order with items
+            String warehouseOrderUrl = orderProcessingApiBaseUrl + "/warehouse-orders/" + warehouseOrderId;
+            Map<String, Object> warehouseOrder = restTemplate.getForObject(warehouseOrderUrl, Map.class);
+
+            if (warehouseOrder == null) {
+                throw new IllegalArgumentException("Warehouse order not found: " + warehouseOrderId);
+            }
+
+            // Extract warehouse order items (field is "orderItems" in DTO)
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> warehouseOrderItems =
+                    (List<Map<String, Object>>) warehouseOrder.get("orderItems");
+
+            if (warehouseOrderItems == null || warehouseOrderItems.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Warehouse order has no items: " + warehouseOrderId);
+            }
+
+            log.info("Using {} items from warehouse order (fallback)", warehouseOrderItems.size());
+
+            for (Map<String, Object> item : warehouseOrderItems) {
+                io.life.simal_integration_service.dto.SimalProductionOrderRequest.OrderLineItem lineItem =
+                        new io.life.simal_integration_service.dto.SimalProductionOrderRequest.OrderLineItem();
+
+                Long itemId = getLongValue(item.get("itemId"));
+                String itemType = (String) item.get("itemType");
+                
+                lineItem.setItemId(itemId != null ? itemId.toString() : null);
+                
+                // Fetch actual item name from masterdata-service
+                String actualItemName = null;
+                if (itemId != null && itemType != null && controller instanceof io.life.simal_integration_service.controller.SimalController) {
+                    io.life.simal_integration_service.controller.SimalController simalController =
+                            (io.life.simal_integration_service.controller.SimalController) controller;
+                    actualItemName = simalController.getItemName(itemId, itemType);
+                }
+                
+                lineItem.setItemName(actualItemName != null ? actualItemName : (String) item.get("itemName"));
+                lineItem.setQuantity(getIntValue(item.get("requestedQuantity")));
+                lineItem.setEstimatedDuration(30);
+                lineItem.setWorkstationType("MANUFACTURING");
+
+                lineItems.add(lineItem);
+            }
         }
 
-        // 6. Build SimAL production order request
+        // Build SimAL production order request
         io.life.simal_integration_service.dto.SimalProductionOrderRequest request =
                 new io.life.simal_integration_service.dto.SimalProductionOrderRequest();
 
@@ -413,7 +448,7 @@ public class ControlOrderIntegrationService {
         request.setDueDate((String) productionOrder.get("dueDate"));
         request.setLineItems(lineItems);
 
-        // 7. Submit to SimAL via controller
+        // Submit to SimAL via controller
         try {
             io.life.simal_integration_service.controller.SimalController simalController =
                     (io.life.simal_integration_service.controller.SimalController) controller;

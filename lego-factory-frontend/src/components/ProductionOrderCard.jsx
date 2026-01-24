@@ -7,15 +7,22 @@ import BaseOrderCard from './BaseOrderCard';
  * Displays a production order with context-aware action buttons based on order status.
  * Uses BaseOrderCard for consistent layout with info sections for metadata.
  * 
+ * 4-Step Workflow:
+ * 1. CREATED → Confirm button → CONFIRMED
+ * 2. CONFIRMED → Schedule button → Shows schedule preview popup → User confirms → SCHEDULED
+ * 3. SCHEDULED → Submit button → Creates control orders → DISPATCHED
+ * 4. IN_PRODUCTION → Complete button → COMPLETED
+ * 
  * Features:
  * - Priority badge display (HIGH, NORMAL, LOW, URGENT)
  * - Source warehouse order reference
  * - Metadata display (Due date, Schedule ID, Duration)
- * - Status-aware actions (Schedule, Submit, Complete, Cancel)
+ * - Status-aware actions (Confirm, Schedule, Submit, Complete, Cancel)
  * 
  * @param {Object} order - Production order object
- * @param {Function} onSchedule - Handler for scheduling with SimAL
- * @param {Function} onStart - Handler for starting/submitting production
+ * @param {Function} onConfirm - Handler for confirming order (CREATED → CONFIRMED)
+ * @param {Function} onSchedule - Handler for scheduling with SimAL (shows preview popup)
+ * @param {Function} onStart - Handler for submitting/dispatching (creates control orders)
  * @param {Function} onComplete - Handler for completing production
  * @param {Function} onCancel - Handler for cancelling order
  * @param {boolean} isScheduling - Whether scheduling is in progress
@@ -23,6 +30,7 @@ import BaseOrderCard from './BaseOrderCard';
  */
 function ProductionOrderCard({ 
   order, 
+  onConfirm,
   onSchedule,
   onStart,
   onComplete,
@@ -35,6 +43,7 @@ function ProductionOrderCard({
   const getStatusClass = (status) => {
     const statusMap = {
       CREATED: 'created',
+      CONFIRMED: 'confirmed',
       SUBMITTED: 'submitted',
       SCHEDULED: 'scheduled',
       DISPATCHED: 'dispatched',
@@ -96,7 +105,43 @@ function ProductionOrderCard({
     
     switch(status) {
       case 'CREATED':
+        // Step 1: Confirm the order
+        actions.push({
+          label: '✓ Confirm',
+          variant: 'primary',
+          size: 'small',
+          onClick: () => onConfirm(order.id),
+          show: !!onConfirm
+        });
+        actions.push({
+          label: 'Cancel',
+          variant: 'danger',
+          size: 'small',
+          onClick: () => onCancel(order.id),
+          show: !!onCancel
+        });
+        break;
+      
+      case 'CONFIRMED':
+        // Step 2: Schedule with SimAL (shows preview popup before submitting)
+        actions.push({
+          label: isScheduling ? 'Scheduling...' : '📅 Schedule',
+          variant: 'primary',
+          size: 'small',
+          onClick: () => onSchedule(order),
+          show: !!onSchedule
+        });
+        actions.push({
+          label: 'Cancel',
+          variant: 'danger',
+          size: 'small',
+          onClick: () => onCancel(order.id),
+          show: !!onCancel
+        });
+        break;
+      
       case 'SUBMITTED':
+        // Legacy status - treat like CONFIRMED for backward compatibility
         actions.push({
           label: isScheduling ? 'Scheduling...' : '📅 Schedule',
           variant: 'primary',
@@ -114,7 +159,7 @@ function ProductionOrderCard({
         break;
       
       case 'SCHEDULED':
-        // Production Planning submits/dispatches (creates control orders)
+        // Step 3: Submit/Dispatch (creates control orders)
         actions.push({
           label: '📤 Submit',
           variant: 'success',
@@ -189,6 +234,7 @@ function ProductionOrderCard({
 
 ProductionOrderCard.propTypes = {
   order: PropTypes.object.isRequired,
+  onConfirm: PropTypes.func,
   onSchedule: PropTypes.func,
   onStart: PropTypes.func,
   onComplete: PropTypes.func,

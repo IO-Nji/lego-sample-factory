@@ -4,7 +4,7 @@
   background: var(--color-white);
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-md);
-  width: 75%;
+  width: 100%;
   max-width: 280px;
   margin: 0 auto;
 }
@@ -149,11 +149,16 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .login-form-container {
-    max-width: 75%;
-    border-radius: 0;
+    max-width: 100%;
+    width: 100%;
+    border-radius: var(--border-radius);
   }
 
   .login-form-standalone {
-    padding: var(--spacing-xs);
+    padding: var(--spacing-sm);
+  }
+  
+  .login-form-embedded {
+    padding: var(--spacing-sm);
   }
 }

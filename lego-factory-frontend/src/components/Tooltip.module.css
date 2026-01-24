@@ -1,0 +1,269 @@
+/* Tooltip Component Styles
+ * Standardized hover tooltip for consistent UX across the application
+ * Design matches WorkstationCard tooltip styling for visual consistency
+ */
+
+/* Tooltip Container - wraps the trigger element */
+.tooltipContainer {
+  position: relative;
+  display: inline-block;
+}
+
+/* Base Tooltip - appears on hover */
+.tooltip {
+  position: absolute;
+  z-index: 1000;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  
+  /* Landscape-oriented shape */
+  min-width: 200px;
+  max-width: 400px;
+  width: max-content;
+  
+  /* Styling matching WorkstationCard */
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d66 100%);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: left;
+  box-shadow: 0 6px 16px rgba(44, 90, 160, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Show tooltip on hover */
+.tooltipContainer:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Tooltip arrow */
+.tooltip::after {
+  content: '';
+  position: absolute;
+  border: 8px solid transparent;
+}
+
+/* Position: Top (default) */
+.positionTop {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  margin-bottom: 4px;
+}
+
+.positionTop::after {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top-color: #2c5aa0;
+}
+
+.tooltipContainer:hover .positionTop {
+  transform: translateX(-50%) translateY(-4px);
+}
+
+/* Position: Bottom */
+.positionBottom {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  margin-top: 4px;
+}
+
+.positionBottom::after {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom-color: #2c5aa0;
+}
+
+.tooltipContainer:hover .positionBottom {
+  transform: translateX(-50%) translateY(4px);
+}
+
+/* Position: Left */
+.positionLeft {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%) translateX(-8px);
+  margin-right: 4px;
+}
+
+.positionLeft::after {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-left-color: #2c5aa0;
+}
+
+.tooltipContainer:hover .positionLeft {
+  transform: translateY(-50%) translateX(-4px);
+}
+
+/* Position: Right */
+.positionRight {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%) translateX(8px);
+  margin-left: 4px;
+}
+
+.positionRight::after {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-right-color: #2c5aa0;
+}
+
+.tooltipContainer:hover .positionRight {
+  transform: translateY(-50%) translateX(4px);
+}
+
+/* Tooltip Header */
+.tooltipHeader {
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tooltipIcon {
+  font-size: 1rem;
+}
+
+/* Tooltip Content Grid - for key-value pairs */
+.tooltipGrid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.tooltipLabel {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.tooltipValue {
+  color: white;
+  font-weight: 600;
+}
+
+/* Tooltip Body - for plain text content */
+.tooltipBody {
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+/* Status Badge within Tooltip */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.statusPending {
+  background: rgba(245, 158, 11, 0.3);
+  color: #fcd34d;
+}
+
+.statusScheduled {
+  background: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+}
+
+.statusInProgress {
+  background: rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+
+.statusCompleted {
+  background: rgba(107, 114, 128, 0.3);
+  color: #d1d5db;
+}
+
+.statusCancelled {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+/* Variant: Warning/Active (matches WorkstationCard active state) */
+.variantWarning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.variantWarning::after {
+  border-top-color: #f59e0b;
+}
+
+.positionBottom.variantWarning::after {
+  border-top-color: transparent;
+  border-bottom-color: #f59e0b;
+}
+
+.positionLeft.variantWarning::after {
+  border-top-color: transparent;
+  border-left-color: #f59e0b;
+}
+
+.positionRight.variantWarning::after {
+  border-top-color: transparent;
+  border-right-color: #f59e0b;
+}
+
+/* Variant: Success */
+.variantSuccess {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.variantSuccess::after {
+  border-top-color: #10b981;
+}
+
+.positionBottom.variantSuccess::after {
+  border-top-color: transparent;
+  border-bottom-color: #10b981;
+}
+
+/* Variant: Info */
+.variantInfo {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.variantInfo::after {
+  border-top-color: #3b82f6;
+}
+
+.positionBottom.variantInfo::after {
+  border-top-color: transparent;
+  border-bottom-color: #3b82f6;
+}
+
+/* Variant: Danger */
+.variantDanger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.variantDanger::after {
+  border-top-color: #ef4444;
+}
+
+.positionBottom.variantDanger::after {
+  border-top-color: transparent;
+  border-bottom-color: #ef4444;
+}

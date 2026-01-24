@@ -1,6 +1,7 @@
 package io.life.order.controller;
 
 import io.life.order.dto.ProductionOrderDTO;
+import io.life.order.service.ProductionOrderService;
 import io.life.order.service.ProductionPlanningService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,9 +20,26 @@ import java.util.Map;
 public class ProductionPlanningController {
 
     private final ProductionPlanningService productionPlanningService;
+    private final ProductionOrderService productionOrderService;
 
-    public ProductionPlanningController(ProductionPlanningService productionPlanningService) {
+    public ProductionPlanningController(ProductionPlanningService productionPlanningService,
+                                        ProductionOrderService productionOrderService) {
         this.productionPlanningService = productionPlanningService;
+        this.productionOrderService = productionOrderService;
+    }
+
+    /**
+     * Confirm a production order (CREATED -> CONFIRMED).
+     * Must be done before scheduling.
+     */
+    @PutMapping("/{productionOrderId}/confirm")
+    public ResponseEntity<ProductionOrderDTO> confirmProductionOrder(@PathVariable Long productionOrderId) {
+        try {
+            ProductionOrderDTO order = productionOrderService.confirmProductionOrder(productionOrderId);
+            return ResponseEntity.ok(order);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
     }
 
     /**

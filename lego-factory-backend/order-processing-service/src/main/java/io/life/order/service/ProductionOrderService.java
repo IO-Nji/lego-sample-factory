@@ -310,6 +310,28 @@ public class ProductionOrderService {
     }
 
     /**
+     * Confirm production order (CREATED -> CONFIRMED).
+     * Confirms that the production planner has reviewed the order and it's ready for scheduling.
+     */
+    public ProductionOrderDTO confirmProductionOrder(Long id) {
+        @SuppressWarnings("null")
+        ProductionOrder productionOrder = productionOrderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException(PRODUCTION_ORDER_NOT_FOUND + id));
+
+        if (!"CREATED".equals(productionOrder.getStatus())) {
+            throw new RuntimeException("Production order must be in CREATED status to confirm. Current status: " 
+                    + productionOrder.getStatus());
+        }
+
+        productionOrder.setStatus("CONFIRMED");
+
+        ProductionOrder updated = productionOrderRepository.save(productionOrder);
+        logger.info("Confirmed production order {}", id);
+
+        return mapToDTO(updated);
+    }
+
+    /**
      * Generate unique production order number.
      */
     private String generateProductionOrderNumber() {

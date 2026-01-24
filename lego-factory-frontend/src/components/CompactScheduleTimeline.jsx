@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import '../styles/GanttChart.css';
 
@@ -20,6 +21,8 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
   const [viewStart, setViewStart] = useState(null);
   const [viewEnd, setViewEnd] = useState(null);
   const [hoveredTask, setHoveredTask] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [tooltipContent, setTooltipContent] = useState(null);
 
   // Debug logging
   useEffect(() => {
@@ -235,8 +238,8 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
         flex: 1,
         position: 'relative',
         overflowY: 'auto',
-        overflowX: 'hidden',
-        marginTop: '0.5rem'
+        overflowX: 'visible',
+        paddingTop: '0.5rem'
       }}>
         {/* Time markers - Compact */}
         <div style={{
@@ -328,6 +331,9 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
                     const position = calculateTaskPosition(task);
                     const colors = getStatusColor(task.status || 'PENDING');
                     const isHovered = hoveredTask === (task.id || idx);
+                    const taskName = task.taskType || task.operationType || task.itemName || 'Task';
+                    const status = task.status || 'PENDING';
+                    const statusClass = status.toLowerCase().replace('_', '-');
                     
                     return (
                       <div
@@ -352,14 +358,35 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
                           padding: '0.25rem',
                           display: 'flex',
                           alignItems: 'center',
-                          overflow: 'hidden',
+                          overflow: 'visible',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap'
                         }}
                         onClick={() => onTaskClick && onTaskClick(task)}
-                        onMouseEnter={() => setHoveredTask(task.id || idx)}
-                        onMouseLeave={() => setHoveredTask(null)}
-                        title={`${task.taskType || task.operationType || task.itemName || 'Task'} | Status: ${task.status || 'PENDING'} | ${task.duration}min | ${formatTime(new Date(task.startTime || task.scheduledStartTime))} - ${formatTime(new Date(task.endTime || task.scheduledEndTime))}`}
+                        onMouseEnter={(e) => {
+                          setHoveredTask(task.id || idx);
+                          setTooltipPosition({ x: e.clientX, y: e.clientY });
+                          setTooltipContent({
+                            taskName,
+                            status,
+                            statusClass,
+                            workstation: task.workstationName || task.workstationId || 'N/A',
+                            duration: task.duration,
+                            startTime: formatTime(new Date(task.startTime || task.scheduledStartTime)),
+                            endTime: formatTime(new Date(task.endTime || task.scheduledEndTime)),
+                            priority: task.priority,
+                            manuallyAdjusted: task.manuallyAdjusted
+                          });
+                        }}
+                        onMouseMove={(e) => {
+                          if (isHovered) {
+                            setTooltipPosition({ x: e.clientX, y: e.clientY });
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredTask(null);
+                          setTooltipContent(null);
+                        }}
                       >
                         {/* Status indicator dot */}
                         <span style={{
@@ -387,6 +414,55 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
           </div>
         )}
       </div>
+      
+      {/* Portal-rendered tooltip for proper z-index handling */}
+      {tooltipContent && createPortal(
+        <div 
+          className="gantt-tooltip visible"
+          style={{
+            position: 'fixed',
+            top: tooltipPosition.y + 15,
+            left: tooltipPosition.x + 10,
+            zIndex: 999999,
+            pointerEvents: 'none'
+          }}
+        >
+          <div className="gantt-tooltip-header">
+            <span className="gantt-tooltip-icon">📋</span>
+            <span className="gantt-tooltip-title">{tooltipContent.taskName}</span>
+            <span className={`gantt-tooltip-status ${tooltipContent.statusClass}`}>
+              {tooltipContent.status.replace('_', ' ')}
+            </span>
+          </div>
+          <div className="gantt-tooltip-content">
+            <span className="gantt-tooltip-label">Workstation</span>
+            <span className="gantt-tooltip-value">{tooltipContent.workstation}</span>
+            
+            <span className="gantt-tooltip-label">Duration</span>
+            <span className="gantt-tooltip-value">{tooltipContent.duration} min</span>
+            
+            <span className="gantt-tooltip-label">Start</span>
+            <span className="gantt-tooltip-value">{tooltipContent.startTime}</span>
+            
+            <span className="gantt-tooltip-label">End</span>
+            <span className="gantt-tooltip-value">{tooltipContent.endTime}</span>
+            
+            {tooltipContent.priority && (
+              <>
+                <span className="gantt-tooltip-label">Priority</span>
+                <span className="gantt-tooltip-value">{tooltipContent.priority}</span>
+              </>
+            )}
+            
+            {tooltipContent.manuallyAdjusted && (
+              <div className="tooltip-row manual-adjustment-info">
+                ✏️ Manually adjusted
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

@@ -57,5 +57,8 @@ export { default as ProductionControlOrderCard } from './ProductionControlOrderC
 export { default as AssemblyControlOrderCard } from './AssemblyControlOrderCard';
 export { default as SupplyOrderCard } from './SupplyOrderCard';
 
+// Feedback & Interaction
+export { default as Tooltip } from './Tooltip';
+
 // Workstation Components
 export { default as WorkstationCard } from './WorkstationCard';

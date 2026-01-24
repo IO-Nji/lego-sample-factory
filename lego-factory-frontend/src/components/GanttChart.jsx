@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import '../styles/GanttChart.css';
 
@@ -21,6 +22,8 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
   const [viewStart, setViewStart] = useState(null);
   const [viewEnd, setViewEnd] = useState(null);
   const [hoveredTask, setHoveredTask] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [tooltipContent, setTooltipContent] = useState(null);
   const [draggedTask, setDraggedTask] = useState(null);
   const [dragStartX, setDragStartX] = useState(0);
   const [dragCurrentX, setDragCurrentX] = useState(0);
@@ -270,8 +273,32 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
                           opacity: isBeingDragged ? 0.6 : 1
                         }}
                         onClick={() => onTaskClick && onTaskClick(task)}
-                        onMouseEnter={() => setHoveredTask(task.id)}
-                        onMouseLeave={() => setHoveredTask(null)}
+                        onMouseEnter={(e) => {
+                          setHoveredTask(task.id);
+                          setTooltipPosition({ x: e.clientX, y: e.clientY });
+                          setTooltipContent({
+                            taskName: task.taskType || task.operationType || task.itemName || 'Task',
+                            status: task.status || 'PENDING',
+                            statusClass: (task.status || 'PENDING').toLowerCase().replace('_', '-'),
+                            workstation: task.workstationName || task.workstationId || 'N/A',
+                            duration: task.duration,
+                            startTime: formatTime(new Date(task.startTime || task.scheduledStartTime)),
+                            endTime: formatTime(new Date(task.endTime || task.scheduledEndTime)),
+                            priority: task.priority,
+                            manuallyAdjusted: task.manuallyAdjusted,
+                            adjustedBy: task.adjustedBy,
+                            adjustmentReason: task.adjustmentReason
+                          });
+                        }}
+                        onMouseMove={(e) => {
+                          if (hoveredTask === task.id) {
+                            setTooltipPosition({ x: e.clientX, y: e.clientY });
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredTask(null);
+                          setTooltipContent(null);
+                        }}
                         draggable={editable}
                         onDragStart={(e) => handleDragStart(task, e)}
                         onDrag={handleDrag}
@@ -282,50 +309,6 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
                           {task.taskType || task.operationType || task.itemName || 'Task'} 
                           {task.duration && ` (${task.duration}min)`}
                         </span>
-                        
-                        {/* Tooltip on hover */}
-                        {hoveredTask === task.id && (
-                          <div className="gantt-tooltip">
-                            <div className="tooltip-row">
-                              <strong>Task:</strong> {task.taskType || task.operationType || task.itemName}
-                            </div>
-                            <div className="tooltip-row">
-                              <strong>Start:</strong> {formatTime(new Date(task.startTime || task.scheduledStartTime))}
-                            </div>
-                            <div className="tooltip-row">
-                              <strong>End:</strong> {formatTime(new Date(task.endTime || task.scheduledEndTime))}
-                            </div>
-                            <div className="tooltip-row">
-                              <strong>Duration:</strong> {task.duration} min
-                            </div>
-                            <div className="tooltip-row">
-                              <strong>Status:</strong> {task.status}
-                            </div>
-                            {task.manuallyAdjusted && (
-                              <>
-                                <div className="tooltip-divider" />
-                                <div className="tooltip-row manual-adjustment-info">
-                                  <strong>✏️ Manually Adjusted</strong>
-                                </div>
-                                {task.adjustedBy && (
-                                  <div className="tooltip-row">
-                                    <strong>By:</strong> {task.adjustedBy}
-                                  </div>
-                                )}
-                                {task.adjustedAt && (
-                                  <div className="tooltip-row">
-                                    <strong>At:</strong> {new Date(task.adjustedAt).toLocaleString()}
-                                  </div>
-                                )}
-                                {task.adjustmentReason && (
-                                  <div className="tooltip-row">
-                                    <strong>Reason:</strong> {task.adjustmentReason}
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -335,6 +318,57 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
           )}
         </div>
       </div>
+
+      {/* Portal-rendered tooltip for proper z-index handling */}
+      {tooltipContent && createPortal(
+        <div 
+          className="gantt-tooltip visible"
+          style={{
+            position: 'fixed',
+            top: tooltipPosition.y + 15,
+            left: tooltipPosition.x + 10,
+            zIndex: 999999,
+            pointerEvents: 'none'
+          }}
+        >
+          <div className="gantt-tooltip-header">
+            <span className="gantt-tooltip-icon">📋</span>
+            <span className="gantt-tooltip-title">{tooltipContent.taskName}</span>
+            <span className={`gantt-tooltip-status ${tooltipContent.statusClass}`}>
+              {tooltipContent.status.replace('_', ' ')}
+            </span>
+          </div>
+          <div className="gantt-tooltip-content">
+            <span className="gantt-tooltip-label">Workstation</span>
+            <span className="gantt-tooltip-value">{tooltipContent.workstation}</span>
+            
+            <span className="gantt-tooltip-label">Start</span>
+            <span className="gantt-tooltip-value">{tooltipContent.startTime}</span>
+            
+            <span className="gantt-tooltip-label">End</span>
+            <span className="gantt-tooltip-value">{tooltipContent.endTime}</span>
+            
+            <span className="gantt-tooltip-label">Duration</span>
+            <span className="gantt-tooltip-value">{tooltipContent.duration} min</span>
+            
+            {tooltipContent.priority && (
+              <>
+                <span className="gantt-tooltip-label">Priority</span>
+                <span className="gantt-tooltip-value">{tooltipContent.priority}</span>
+              </>
+            )}
+            
+            {tooltipContent.manuallyAdjusted && (
+              <div className="tooltip-row manual-adjustment-info">
+                ✏️ Manually adjusted
+                {tooltipContent.adjustedBy && ` by ${tooltipContent.adjustedBy}`}
+                {tooltipContent.adjustmentReason && ` - ${tooltipContent.adjustmentReason}`}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Legend */}
       <div className="gantt-legend">

@@ -27,37 +27,42 @@
 /* === ROW 1: Products + Flow Diagram + Login (3 Columns) === */
 .home-top-row {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
   align-items: center;
   justify-content: center;
   max-width: 1800px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1rem;
   margin-bottom: 1rem;
 }
 
 .home-products-column {
-  flex: 0 0 320px;
+  flex: 1 1 280px;
+  min-width: 250px;
+  max-width: 320px;
   background: transparent;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 0.75rem;
   box-shadow: none;
   display: flex;
   flex-direction: column;
 }
 
 .home-flow-diagram-section {
-  flex: 1 1 auto;
+  flex: 2 1 500px;
   min-width: 0;
   max-width: 850px;
   background: transparent;
   border-radius: 12px;
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
   box-shadow: none;
 }
 
 .home-login-section {
-  flex: 0 0 340px;
+  flex: 1 1 280px;
+  min-width: 250px;
+  max-width: 340px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -299,8 +304,8 @@
 .flow-diagram-v2 {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.5rem;
+  gap: 0.4rem;
+  padding: 0.6rem;
   background: linear-gradient(135deg, rgba(44, 90, 160, 0.02) 0%, rgba(33, 150, 243, 0.04) 100%);
   border-radius: 10px;
   border: 1px solid rgba(44, 90, 160, 0.1);
@@ -311,8 +316,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  padding: 0.4rem;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
   background: linear-gradient(90deg, rgba(76, 175, 80, 0.08) 0%, rgba(76, 175, 80, 0.15) 50%, rgba(76, 175, 80, 0.08) 100%);
   border-radius: 8px;
   border: 1px solid rgba(76, 175, 80, 0.2);
@@ -323,8 +328,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  padding: 0.3rem;
+  gap: 0.6rem;
+  padding: 0.4rem;
 }
 
 /* Bottom Row: Planning → Parts Supply → Manufacturing → Assembly */
@@ -332,8 +337,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  padding: 0.4rem;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
   background: linear-gradient(90deg, rgba(156, 39, 176, 0.05) 0%, rgba(255, 152, 0, 0.08) 50%, rgba(33, 150, 243, 0.05) 100%);
   border-radius: 8px;
   border: 1px dashed rgba(156, 39, 176, 0.2);
@@ -357,11 +362,11 @@
 
 .branch-label,
 .return-label {
-  font-size: 0.5rem;
+  font-size: 0.6rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  padding: 0.1rem 0.4rem;
+  padding: 0.15rem 0.5rem;
   border-radius: 3px;
   white-space: nowrap;
 }
@@ -378,14 +383,59 @@
 
 .branch-arrow,
 .return-arrow {
-  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 1.1rem;
   font-weight: bold;
   line-height: 1;
+  border-radius: 50%;
+  position: relative;
+}
+
+/* Styled thick arrow for downward flow (orders going to production) */
+.branch-arrow {
+  background: linear-gradient(180deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 152, 0, 0.3) 100%);
+  border: 3px solid currentColor;
+  box-shadow: 
+    0 2px 8px rgba(255, 152, 0, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Styled thick arrow for upward flow (modules returning) */
+.return-arrow {
+  background: linear-gradient(0deg, rgba(33, 150, 243, 0.15) 0%, rgba(33, 150, 243, 0.3) 100%);
+  border: 3px solid currentColor;
+  box-shadow: 
+    0 2px 8px rgba(33, 150, 243, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Add animated pulse effect for active flow indication */
+.branch-arrow::before,
+.return-arrow::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  border: 2px dashed currentColor;
+  opacity: 0.3;
 }
 
 .branch-arrow.orange { color: #ff9800; }
 .return-arrow.blue { color: #2196f3; }
-.return-arrow.purple { color: #9c27b0; }
+.return-arrow.purple { 
+  color: #9c27b0; 
+  background: linear-gradient(0deg, rgba(156, 39, 176, 0.15) 0%, rgba(156, 39, 176, 0.3) 100%);
+  box-shadow: 
+    0 2px 8px rgba(156, 39, 176, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
 
 /* Flow Connectors - Horizontal Arrows */
 .flow-connector {
@@ -396,7 +446,7 @@
 }
 
 .flow-connector .connector-line {
-  width: 25px;
+  width: 32px;
   height: 3px;
   background: currentColor;
   border-radius: 2px;
@@ -406,26 +456,26 @@
 .flow-connector .connector-line::after {
   content: '';
   position: absolute;
-  right: -6px;
+  right: -7px;
   top: 50%;
   transform: translateY(-50%);
-  border: 5px solid transparent;
+  border: 6px solid transparent;
   border-left-color: currentColor;
 }
 
 .flow-connector.left-arrow .connector-line::after {
   right: auto;
-  left: -6px;
+  left: -7px;
   border-left-color: transparent;
   border-right-color: currentColor;
 }
 
 .flow-connector .connector-label {
   position: absolute;
-  top: -10px;
+  top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 0.45rem;
+  font-size: 0.55rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -435,7 +485,7 @@
 }
 
 .flow-connector.long .connector-line {
-  width: 40px;
+  width: 48px;
 }
 
 .flow-connector.green { color: #4caf50; }
@@ -1804,18 +1854,33 @@
 
 /* Responsive Design */
 @media (max-width: 1200px) {
+  .home-top-row {
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+  
   .home-top-row,
   .home-bottom-row {
     flex-direction: column;
+    align-items: stretch;
   }
   
   .home-login-section {
-    flex: 1;
+    flex: 1 1 auto;
     max-width: 100%;
+    width: 100%;
   }
   
   .home-products-column {
-    flex: 1;
+    flex: 1 1 auto;
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .home-flow-diagram-section {
+    flex: 1 1 auto;
+    max-width: 100%;
+    width: 100%;
   }
   
   .flow-row {

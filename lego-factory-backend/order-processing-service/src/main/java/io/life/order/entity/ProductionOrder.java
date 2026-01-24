@@ -53,16 +53,16 @@ public class ProductionOrder {
 
     /**
      * Production order status:
-     * CREATED - Just created, not yet submitted to SimAL
-     * SUBMITTED - Submitted to SimAL for scheduling
+     * CREATED - Just created, not yet confirmed
+     * CONFIRMED - Confirmed by production planning, ready to schedule
      * SCHEDULED - SimAL has generated a schedule
-     * DISPATCHED - Control orders created and dispatched to Production/Assembly Control
+     * SUBMITTED - Control orders created and submitted to workstations
      * IN_PRODUCTION - Production has started at workstations
      * COMPLETED - Production completed
      * CANCELLED - Order cancelled
      */
     @Column(nullable = false)
-    private String status; // CREATED, SUBMITTED, SCHEDULED, DISPATCHED, IN_PRODUCTION, COMPLETED, CANCELLED
+    private String status; // CREATED, CONFIRMED, SCHEDULED, SUBMITTED, IN_PRODUCTION, COMPLETED, CANCELLED
 
     /**
      * Priority level for production.
