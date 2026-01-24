@@ -42,7 +42,7 @@ function PlantWarehouseDashboard() {
 
   useEffect(() => {
     console.log('[PlantWarehouse] Component mounted, session:', session?.user);
-    const workstationId = session?.user?.workstation?.id || session?.user?.workstationId;
+    const workstationId = session?.user?.workstationId;
     console.log('[PlantWarehouse] Detected workstationId:', workstationId);
     
     fetchWorkstations();
@@ -54,14 +54,14 @@ function PlantWarehouseDashboard() {
     }
 
     const inventoryInterval = setInterval(() => {
-      const wsId = session?.user?.workstation?.id || session?.user?.workstationId;
+      const wsId = session?.user?.workstationId;
       if (wsId) {
         fetchInventory(); // Provided by useInventoryDisplay hook
       }
     }, 30000); // Increased to 30s to reduce page jump
 
     return () => clearInterval(inventoryInterval);
-  }, [session?.user?.workstation?.id, session?.user?.workstationId, fetchInventory]);
+  }, [session?.user?.workstationId, fetchInventory]);
 
   const applyFilter = (ordersList, status) => {
     // Kept for backward compatibility - OrdersSection handles filtering now
@@ -80,7 +80,7 @@ function PlantWarehouseDashboard() {
   };
 
   const fetchOrders = async () => {
-    const workstationId = session?.user?.workstation?.id || session?.user?.workstationId || 7;
+    const workstationId = session?.user?.workstationId || 7;
     if (!workstationId) {
       setOrders([]);
       setFilteredOrders([]);
@@ -109,7 +109,7 @@ function PlantWarehouseDashboard() {
 
   const { refresh } = useDashboardRefresh();
   const handleCreateOrder = async () => {
-    const workstationId = session?.user?.workstation?.id || session?.user?.workstationId || 7;
+    const workstationId = session?.user?.workstationId || 7;
     if (!workstationId) {
       setError("Cannot create order: workstation ID not found in session");
       return;

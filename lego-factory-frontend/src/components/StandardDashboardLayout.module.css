@@ -53,11 +53,11 @@
 
 .statsColumn {
   width: fit-content;
-  min-width: 350px;
-  max-width: 350px;
+  min-width: 300px;
+  max-width: 450px;
   height: auto;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
 
@@ -185,6 +185,7 @@
 @media (max-width: 1400px) {
   .topRow {
     grid-template-columns: 1fr;
+    height: auto;
   }
   
   .bottomRow {
@@ -197,10 +198,30 @@
     width: 100%;
     max-width: 100%;
   }
+  
+  .activityColumn,
+  .formColumn {
+    height: auto;
+    min-height: 200px;
+  }
 }
 
 @media (max-width: 768px) {
+  .dashboardContainer {
+    padding: var(--spacing-2);
+    gap: var(--spacing-2);
+  }
+  
   .ordersGrid {
     grid-template-columns: 1fr;
+  }
+  
+  .topRow,
+  .bottomRow {
+    gap: var(--spacing-2);
+  }
+  
+  .statsColumn {
+    min-width: 100%;
   }
 }

@@ -3,7 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
 import { StandardDashboardLayout, StatisticsGrid, InventoryTable, ActivityLog, OrdersSection } from "../../components";
 import WarehouseOrderCard from "../../components/WarehouseOrderCard";
-import { getInventoryStatusColor, generateAcronym, getProductDisplayName } from "../../utils/dashboardHelpers";
+import { getInventoryStatusColor, generateAcronym } from "../../utils/dashboardHelpers";
 import { useInventoryDisplay } from "../../hooks/useInventoryDisplay";
 
 function ModulesSupermarketDashboard() {
@@ -35,6 +35,21 @@ function ModulesSupermarketDashboard() {
   const [prioritySelectionMode, setPrioritySelectionMode] = useState({}); // Track which orders are in priority selection mode
   const [orderMessages, setOrderMessages] = useState({}); // Store notification messages for each order
 
+  // Module-aware display name function for warehouse order items
+  // Uses modules masterdata from useInventoryDisplay hook to get proper names
+  const getModuleDisplayName = (itemId, itemType) => {
+    if (itemType === 'MODULE') {
+      // Find module in masterdata by ID
+      const moduleData = modules.find(m => m.id === itemId);
+      if (moduleData?.name) {
+        return generateAcronym(moduleData.name);
+      }
+      return `M${itemId}`; // Fallback if module not found in masterdata
+    }
+    // For other item types, just generate acronym from type
+    return generateAcronym(itemType);
+  };
+
   const addNotification = (message, type = 'info') => {
     const newNotification = {
       id: Date.now() + Math.random(),
@@ -51,23 +66,20 @@ function ModulesSupermarketDashboard() {
   };
 
   useEffect(() => {
-    if (session?.user?.workstation?.id) {
-      fetchWarehouseOrders();
-      // fetchInventory is called automatically by useInventoryDisplay hook when workstation ID changes
-    }
+    // Always fetch warehouse orders on mount (fallback to workstation 8 for Modules Supermarket)
+    fetchWarehouseOrders();
+    
     const interval = setInterval(() => {
-      if (session?.user?.workstation?.id) {
-        fetchWarehouseOrders();
-        fetchInventory(); // Manual refresh for periodic updates
-      }
+      fetchWarehouseOrders();
+      fetchInventory(); // Manual refresh for periodic updates
     }, 30000); // Increased to 30s to reduce page jump
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.workstation?.id]); // fetchInventory is stable from hook
+  }, [session?.user?.workstationId]); // fetchInventory is stable from hook
 
   const fetchWarehouseOrders = async () => {
     try {
-      const workstationId = session?.user?.workstation?.id || 8;
+      const workstationId = session?.user?.workstationId || 8;
       const response = await api.get(`/warehouse-orders/workstation/${workstationId}`);
       const data = response.data;
       console.log('[WarehouseOrders] Fetched data:', JSON.stringify(data, null, 2));
@@ -165,25 +177,34 @@ function ModulesSupermarketDashboard() {
   };
 
   const handleSelectPriority = async (warehouseOrder, priority) => {
+    console.log('[handleSelectPriority] Called with:', { warehouseOrder, priority });
     setCreatingProductionOrder(true);
     setError(null);
 
     try {
+      const orderNum = warehouseOrder.orderNumber || warehouseOrder.warehouseOrderNumber || `ID-${warehouseOrder.id}`;
+      const workstationId = session?.user?.workstationId;
+      
+      console.log('[handleSelectPriority] Session workstation ID:', workstationId);
+      console.log('[handleSelectPriority] Warehouse Order ID:', warehouseOrder.id);
+      
       const payload = {
         sourceCustomerOrderId: null,
         sourceWarehouseOrderId: warehouseOrder.id,
         priority: priority,
         dueDate: null,
-        notes: `Production order for warehouse order ${warehouseOrder.warehouseOrderNumber}`,
-        createdByWorkstationId: session?.user?.workstation?.id,
+        notes: `Production order for warehouse order ${orderNum}`,
+        createdByWorkstationId: workstationId,
         assignedWorkstationId: null,
         triggerScenario: 'SCENARIO_3'
       };
 
-      console.log('[Production Order Creation] Payload:', payload);
-      console.log('[Production Order Creation] Session:', session);
+      console.log('[Production Order Creation] Payload:', JSON.stringify(payload, null, 2));
+      console.log('[Production Order Creation] Sending POST to /production-orders/create');
 
       const response = await api.post('/production-orders/create', payload);
+      
+      console.log('[Production Order Creation] Success! Response:', response.data);
       
       // Exit priority selection mode
       setPrioritySelectionMode(prev => ({
@@ -213,6 +234,9 @@ function ModulesSupermarketDashboard() {
       }));
 
       addNotification(`Production order ${response.data.productionOrderNumber} created with priority ${priority}`, 'success');
+      
+      // Small delay to ensure backend transaction is committed before refresh
+      await new Promise(resolve => setTimeout(resolve, 500));
       await fetchWarehouseOrders();
     } catch (err) {
       setError("Failed to create production order: " + (err.response?.data?.message || err.message));
@@ -239,7 +263,7 @@ function ModulesSupermarketDashboard() {
         priority: productionOrderForm.priority,
         dueDate: null,
         notes: productionOrderForm.notes,
-        createdByWorkstationId: session?.user?.workstation?.id,
+        createdByWorkstationId: session?.user?.workstationId,
         assignedWorkstationId: null, // Will be assigned by production planning
         triggerScenario: 'SCENARIO_3'
       };
@@ -274,6 +298,8 @@ function ModulesSupermarketDashboard() {
   const statsData = [
     { value: warehouseOrders.length, label: 'Total Orders', variant: 'default', icon: '📦' },
     { value: warehouseOrders.filter(o => o.status === "PENDING").length, label: 'Pending', variant: 'pending', icon: '⏳' },
+    { value: warehouseOrders.filter(o => o.status === "CONFIRMED").length, label: 'Confirmed', variant: 'info', icon: '✓' },
+    { value: warehouseOrders.filter(o => o.status === "AWAITING_PRODUCTION").length, label: 'Production', variant: 'warning', icon: '🏭' },
     { value: warehouseOrders.filter(o => o.status === "PROCESSING").length, label: 'Processing', variant: 'processing', icon: '⚙️' },
     { value: warehouseOrders.filter(o => o.status === "FULFILLED").length, label: 'Fulfilled', variant: 'success', icon: '✅' },
     { value: inventory.length, label: 'Module Types', variant: 'info', icon: '🔧' },
@@ -290,30 +316,46 @@ function ModulesSupermarketDashboard() {
   // - Backend sets triggerScenario during confirmation based on module availability
   // - DIRECT_FULFILLMENT = modules available → show "Fulfill" button
   // - PRODUCTION_REQUIRED = modules NOT available → show "Order Production" button
+  // - PRODUCTION_CREATED = production already ordered → show "Awaiting Production" (disabled)
   const checkIfProductionNeeded = (warehouseOrder) => {
-    console.log(`[ProductionCheck] ==== CHECKING ORDER ${warehouseOrder.warehouseOrderNumber} ====`);
+    const orderNum = warehouseOrder.orderNumber || warehouseOrder.warehouseOrderNumber || 'Unknown';
+    console.log(`[ProductionCheck] ==== CHECKING ORDER ${orderNum} ====`);
     console.log(`[ProductionCheck] Order Status: ${warehouseOrder.status}`);
+    console.log(`[ProductionCheck] Trigger Scenario: ${warehouseOrder.triggerScenario}`);
     
-    // Only check orders in PROCESSING status (after confirmation)
-    if (warehouseOrder.status !== 'PROCESSING') {
-      console.log(`[ProductionCheck] ❌ Order not PROCESSING (status: ${warehouseOrder.status}) - returning false`);
+    // If status is AWAITING_PRODUCTION, production order already exists - no need to order again
+    if (warehouseOrder.status === 'AWAITING_PRODUCTION') {
+      console.log(`[ProductionCheck] ✅ Status is AWAITING_PRODUCTION - production already ordered`);
       return false;
     }
     
-    // CRITICAL: Rely ONLY on backend's triggerScenario analysis
-    // The backend checks actual inventory during confirmation and sets this field
-    if (warehouseOrder.triggerScenario) {
-      const scenarioNeedsProduction = warehouseOrder.triggerScenario.includes('PRODUCTION');
-      console.log(`[ProductionCheck] ✅ Trigger Scenario: ${warehouseOrder.triggerScenario}`);
-      console.log(`[ProductionCheck] ✅ Needs Production: ${scenarioNeedsProduction}`);
-      console.log(`[ProductionCheck] ==== END CHECK ====\n`);
-      return scenarioNeedsProduction;
+    // If triggerScenario indicates production was already created, return false
+    if (warehouseOrder.triggerScenario === 'PRODUCTION_CREATED') {
+      console.log(`[ProductionCheck] ✅ Trigger scenario is PRODUCTION_CREATED - production already ordered`);
+      return false;
     }
     
-    // If no trigger scenario is set, something went wrong during confirmation
-    // Default to safe option: allow fulfillment attempt (backend will reject if insufficient)
-    console.log(`[ProductionCheck] ⚠️ WARNING: No triggerScenario set - defaulting to false (allow fulfillment)`);
-    console.log(`[ProductionCheck] ==== END CHECK ====\n`);
+    // Only check orders in CONFIRMED status (after confirmation, ready for action)
+    if (warehouseOrder.status !== 'CONFIRMED') {
+      console.log(`[ProductionCheck] ❌ Order not CONFIRMED (status: ${warehouseOrder.status}) - returning false`);
+      return false;
+    }
+    
+    // CRITICAL: Check specifically for PRODUCTION_REQUIRED
+    // This indicates production is needed and NOT yet created
+    if (warehouseOrder.triggerScenario === 'PRODUCTION_REQUIRED') {
+      console.log(`[ProductionCheck] ✅ Trigger Scenario is PRODUCTION_REQUIRED - production needed`);
+      return true;
+    }
+    
+    // DIRECT_FULFILLMENT means modules are available, no production needed
+    if (warehouseOrder.triggerScenario === 'DIRECT_FULFILLMENT') {
+      console.log(`[ProductionCheck] ✅ Trigger Scenario is DIRECT_FULFILLMENT - no production needed`);
+      return false;
+    }
+    
+    // If no trigger scenario is set or unrecognized, default to false
+    console.log(`[ProductionCheck] ⚠️ WARNING: Unrecognized triggerScenario - defaulting to false`);
     return false;
   };
 
@@ -351,6 +393,7 @@ function ModulesSupermarketDashboard() {
         { value: 'ALL', label: 'All Orders' },
         { value: 'PENDING', label: 'Pending' },
         { value: 'CONFIRMED', label: 'Confirmed' },
+        { value: 'AWAITING_PRODUCTION', label: 'Production' },
         { value: 'PROCESSING', label: 'Processing' },
         { value: 'FULFILLED', label: 'Fulfilled' },
         { value: 'CANCELLED', label: 'Cancelled' }
@@ -375,7 +418,7 @@ function ModulesSupermarketDashboard() {
           showPrioritySelection={prioritySelectionMode[order.id]}
           creatingOrder={creatingProductionOrder}
           notificationMessage={orderMessages[order.id]}
-          getProductDisplayName={getProductDisplayName}
+          getProductDisplayName={getModuleDisplayName}
         />
       )}
       searchPlaceholder="Search by order number..."

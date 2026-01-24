@@ -68,7 +68,7 @@ function ProductionControlDashboard() {
 
   // Fetch supply orders for this workstation
   const fetchSupplyOrders = async () => {
-    const workstationId = session?.user?.workstation?.id;
+    const workstationId = session?.user?.workstationId;
     if (!workstationId) {
       setSupplyOrders([]);
       return;
@@ -83,7 +83,7 @@ function ProductionControlDashboard() {
   };
 
   useEffect(() => {
-    if (session?.user?.workstation?.id) {
+    if (session?.user?.workstationId) {
       fetchControlOrders();
       fetchSupplyOrders();
       const interval = setInterval(() => {
@@ -92,7 +92,7 @@ function ProductionControlDashboard() {
       }, 30000); // Refresh every 30 seconds
       return () => clearInterval(interval);
     }
-  }, [session?.user?.workstation?.id]);
+  }, [session?.user?.workstationId]);
 
   useEffect(() => {
     applyFilter(controlOrders, filterStatus);
@@ -190,7 +190,7 @@ function ProductionControlDashboard() {
       const requestBody = {
         sourceControlOrderId: selectedOrder.id,
         sourceControlOrderType: "PRODUCTION",
-        requestingWorkstationId: session?.user?.workstation?.id,
+        requestingWorkstationId: session?.user?.workstationId,
         priority: supplyOrderForm.priority,
         requestedByTime: selectedOrder.targetStartTime,
         requiredItems: supplyOrderForm.parts.map(p => ({

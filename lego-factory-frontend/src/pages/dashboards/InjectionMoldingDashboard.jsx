@@ -3,21 +3,19 @@ import {
   OrdersSection,
   ActivityLog,
   StatisticsGrid,
-  FinalAssemblyOrderCard
+  ProductionControlOrderCard
 } from "../../components";
 import { useWorkstationOrders } from "../../hooks/useWorkstationOrders";
-import { getProductDisplayName } from "../../utils/dashboardHelpers";
 import { STANDARD_FILTER_OPTIONS, STANDARD_SORT_OPTIONS } from "../../config/workstationConfig";
 import "../../styles/DashboardLayout.css";
 
 /**
- * FinalAssemblyDashboard - WS-6 Final Assembly Station
+ * InjectionMoldingDashboard - WS-1 Injection Molding Station
  * 
- * Handles final assembly orders for assembling finished products from modules.
- * Final step in the assembly workflow (WS-4 -> WS-5 -> WS-6).
- * Completed products are credited to Plant Warehouse (WS-7).
+ * Handles injection molding orders for plastic parts production.
+ * First step in the manufacturing workflow (WS-1 -> WS-2 -> WS-3).
  */
-function FinalAssemblyDashboard() {
+function InjectionMoldingDashboard() {
   const {
     orders,
     error,
@@ -29,7 +27,7 @@ function FinalAssemblyDashboard() {
     clearNotifications,
     clearError,
     config,
-  } = useWorkstationOrders(6);
+  } = useWorkstationOrders(1);
 
   const renderActivity = () => (
     <ActivityLog 
@@ -48,13 +46,12 @@ function FinalAssemblyDashboard() {
       searchKeys={['orderNumber']}
       sortKey="orderNumber"
       renderCard={(order) => (
-        <FinalAssemblyOrderCard
+        <ProductionControlOrderCard
           key={order.id}
           order={order}
           onStart={handleStartOrder}
           onComplete={handleCompleteOrder}
           isProcessing={processingOrderId === order.id}
-          getProductDisplayName={getProductDisplayName}
         />
       )}
       emptyMessage={config.emptyMessage}
@@ -79,4 +76,4 @@ function FinalAssemblyDashboard() {
   );
 }
 
-export default FinalAssemblyDashboard;
+export default InjectionMoldingDashboard;

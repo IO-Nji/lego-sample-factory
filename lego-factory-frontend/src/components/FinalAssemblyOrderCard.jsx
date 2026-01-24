@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Card, Button, Badge } from '../components';
+import api from '../api/api';
 import styles from './FinalAssemblyOrderCard.module.css';
 
 /**
@@ -22,23 +23,11 @@ const FinalAssemblyOrderCard = ({ order, onRefresh }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`/api/final-assembly-orders/${order.id}/confirm`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to confirm order');
-      }
-
+      await api.post(`/final-assembly-orders/${order.id}/confirm`);
       onRefresh();
     } catch (err) {
       console.error('Confirm failed:', err);
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -48,23 +37,11 @@ const FinalAssemblyOrderCard = ({ order, onRefresh }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`/api/final-assembly-orders/${order.id}/start`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to start order');
-      }
-
+      await api.post(`/final-assembly-orders/${order.id}/start`);
       onRefresh();
     } catch (err) {
       console.error('Start failed:', err);
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -74,23 +51,11 @@ const FinalAssemblyOrderCard = ({ order, onRefresh }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`/api/final-assembly-orders/${order.id}/complete`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to complete assembly');
-      }
-
+      await api.post(`/final-assembly-orders/${order.id}/complete`);
       onRefresh();
     } catch (err) {
       console.error('Complete failed:', err);
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -100,23 +65,11 @@ const FinalAssemblyOrderCard = ({ order, onRefresh }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`/api/final-assembly-orders/${order.id}/submit`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to submit order');
-      }
-
+      await api.post(`/final-assembly-orders/${order.id}/submit`);
       onRefresh();
     } catch (err) {
       console.error('Submit failed:', err);
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }

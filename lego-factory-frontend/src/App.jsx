@@ -2,7 +2,6 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import UserAccountPage from "./pages/UserAccountPage.jsx";
-import WorkstationPage from "./pages/WorkstationPage.jsx";
 import AdminDashboard from "./pages/dashboards/AdminDashboard.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
@@ -13,7 +12,6 @@ import MasterdataAdminPage from "./pages/MasterdataAdminPage.jsx";
 import ProductsPage from "./pages/ProductsPage.jsx";
 import VariantsPage from "./pages/VariantsPage.jsx";
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
-import ManufacturingWorkstationPage from "./pages/ManufacturingWorkstationPage.jsx";
 import WebhooksAdminPage from "./pages/WebhooksAdminPage.jsx";
 import ManualSchedulerPage from "./pages/ManualSchedulerPage.jsx";
 // Overview Pages using Design System Components
@@ -58,14 +56,6 @@ function App() {
           element={
             <AuthGuard>
               <UserAccountPage />
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="account/workstation"
-          element={
-            <AuthGuard>
-              <WorkstationPage />
             </AuthGuard>
           }
         />
@@ -160,24 +150,6 @@ function App() {
           element={
             <AuthGuard requiredRole="PRODUCTION_PLANNING">
               <ManualSchedulerPage />
-            </AuthGuard>
-          }
-        />
-        
-        {/* Manufacturing and Assembly Workstation Routes */}
-        <Route
-          path="manufacturing/:workstationType"
-          element={
-            <AuthGuard requiredRole="MANUFACTURING_WORKSTATION">
-              <ManufacturingWorkstationPage />
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="assembly/:workstationType"
-          element={
-            <AuthGuard requiredRole="ASSEMBLY_WORKSTATION">
-              <ManufacturingWorkstationPage />
             </AuthGuard>
           }
         />

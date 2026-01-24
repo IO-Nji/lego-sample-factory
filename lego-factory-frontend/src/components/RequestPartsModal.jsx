@@ -1,6 +1,7 @@
 import { useState } from 'prop-types';
 import PropTypes from 'prop-types';
 import Button from './Button';
+import api from '../api/api';
 import './Modal.css';
 import '../styles/Modal.css';
 
@@ -54,18 +55,7 @@ function RequestPartsModal({ show, onClose, controlOrder, controlOrderType, onSu
         notes: notes
       };
 
-      const response = await fetch(`/api${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to request parts');
-      }
+      await api.post(endpoint, payload);
 
       onSuccess?.();
       onClose();
@@ -74,7 +64,7 @@ function RequestPartsModal({ show, onClose, controlOrder, controlOrderType, onSu
       setNeededBy('');
       setNotes('');
     } catch (err) {
-      setError(err.message || 'Failed to request parts');
+      setError(err.response?.data?.message || err.message || 'Failed to request parts');
     } finally {
       setLoading(false);
     }

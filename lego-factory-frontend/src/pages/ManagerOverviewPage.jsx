@@ -68,7 +68,7 @@ function ManagerOverviewPage() {
         api.get('/production-orders').catch(() => ({ data: [] })),
         api.get('/warehouse-orders').catch(() => ({ data: [] })),
         api.get('/supply-orders').catch(() => ({ data: [] })),
-        api.get('/assembly-orders').catch(() => ({ data: [] })),
+        api.get('/assembly-control-orders').catch(() => ({ data: [] })),
         api.get('/inventory').catch(() => ({ data: [] })),
       ]);
 

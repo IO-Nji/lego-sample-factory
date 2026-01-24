@@ -3,22 +3,31 @@ import { useAuth } from "../context/AuthContext";
 import AdminDashboard from "./dashboards/AdminDashboard";
 import PlantWarehouseDashboard from "./dashboards/PlantWarehouseDashboard";
 import ModulesSupermarketDashboard from "./dashboards/ModulesSupermarketDashboard";
+import PartsSupplyWarehouseDashboard from "./dashboards/PartsSupplyWarehouseDashboard";
+import InjectionMoldingDashboard from "./dashboards/InjectionMoldingDashboard";
+import PartsPreProductionDashboard from "./dashboards/PartsPreProductionDashboard";
+import PartFinishingDashboard from "./dashboards/PartFinishingDashboard";
+import GearAssemblyDashboard from "./dashboards/GearAssemblyDashboard";
+import MotorAssemblyDashboard from "./dashboards/MotorAssemblyDashboard";
 import FinalAssemblyDashboard from "./dashboards/FinalAssemblyDashboard";
 import ProductionPlanningDashboard from "./dashboards/ProductionPlanningDashboard";
 import ProductionControlDashboard from "./dashboards/ProductionControlDashboard";
 import AssemblyControlDashboard from "./dashboards/AssemblyControlDashboard";
-import ManufacturingDashboard from "./dashboards/ManufacturingDashboard";
-import AssemblyWorkstationDashboard from "./dashboards/AssemblyWorkstationDashboard";
-import PartsSupplyWarehouseDashboard from "./dashboards/PartsSupplyWarehouseDashboard";
 
 /**
- * DashboardPage - Role-aware dashboard router
- * Routes users to their appropriate dashboard based on role
+ * DashboardPage - Workstation-aware dashboard router
+ * Routes users to their workstation-specific dashboard based on workstationId
  * 
- * Modular Architecture:
- * - Each dashboard is in its own file under pages/dashboards/
- * - Shared utilities in utils/dashboardHelpers.js
- * - Easier to maintain, test, and debug
+ * Workstation Mapping:
+ * - WS-1: Injection Molding (Manufacturing)
+ * - WS-2: Parts Pre-Production (Manufacturing)
+ * - WS-3: Part Finishing (Manufacturing)
+ * - WS-4: Gear Assembly (Assembly)
+ * - WS-5: Motor Assembly (Assembly)
+ * - WS-6: Final Assembly (Assembly)
+ * - WS-7: Plant Warehouse (Customer Fulfillment)
+ * - WS-8: Modules Supermarket (Internal Warehouse)
+ * - WS-9: Parts Supply Warehouse (Raw Materials)
  */
 function DashboardPage() {
   const { session, isAdmin } = useAuth();
@@ -40,50 +49,47 @@ function DashboardPage() {
     );
   }
 
-  // Route to appropriate dashboard based on role
+  // Admin gets admin dashboard
   if (isAdmin) {
     return <AdminDashboard />;
   }
 
-  if (userRole === "PLANT_WAREHOUSE") {
-    return <PlantWarehouseDashboard />;
+  // Route by workstation ID first (most specific)
+  switch (workstationId) {
+    case 1:
+      return <InjectionMoldingDashboard />;
+    case 2:
+      return <PartsPreProductionDashboard />;
+    case 3:
+      return <PartFinishingDashboard />;
+    case 4:
+      return <GearAssemblyDashboard />;
+    case 5:
+      return <MotorAssemblyDashboard />;
+    case 6:
+      return <FinalAssemblyDashboard />;
+    case 7:
+      return <PlantWarehouseDashboard />;
+    case 8:
+      return <ModulesSupermarketDashboard />;
+    case 9:
+      return <PartsSupplyWarehouseDashboard />;
   }
 
-  if (userRole === "MODULES_SUPERMARKET") {
-    return <ModulesSupermarketDashboard />;
-  }
-
-  // Final Assembly Dashboard for WS-6
-  if (workstationId === 6) {
-    return <FinalAssemblyDashboard />;
-  }
-
-  if (userRole === "PRODUCTION_PLANNING") {
-    return <ProductionPlanningDashboard />;
-  }
-
-  if (userRole === "PRODUCTION_CONTROL") {
-    return <ProductionControlDashboard />;
-  }
-
-  if (userRole === "ASSEMBLY_CONTROL") {
-    return <AssemblyControlDashboard />;
-  }
-
-  if (userRole === "MANUFACTURING") {
-    return <ManufacturingDashboard />;
-  }
-
-  if (userRole === "MANUFACTURING_WORKSTATION") {
-    return <ManufacturingDashboard />;
-  }
-
-  if (userRole === "ASSEMBLY_WORKSTATION") {
-    return <AssemblyWorkstationDashboard />;
-  }
-
-  if (userRole === "PARTS_SUPPLY") {
-    return <PartsSupplyWarehouseDashboard />;
+  // Fallback to role-based routing for users without workstation assignment
+  switch (userRole) {
+    case "PLANT_WAREHOUSE":
+      return <PlantWarehouseDashboard />;
+    case "MODULES_SUPERMARKET":
+      return <ModulesSupermarketDashboard />;
+    case "PARTS_SUPPLY":
+      return <PartsSupplyWarehouseDashboard />;
+    case "PRODUCTION_PLANNING":
+      return <ProductionPlanningDashboard />;
+    case "PRODUCTION_CONTROL":
+      return <ProductionControlDashboard />;
+    case "ASSEMBLY_CONTROL":
+      return <AssemblyControlDashboard />;
   }
 
   // Default fallback for unknown roles

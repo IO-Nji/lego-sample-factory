@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import ErrorNotification from "../components/ErrorNotification";
 import { ControlPage } from "../components";
@@ -43,7 +43,7 @@ function InventoryManagementPage() {
     setLedgerLoading(true);
     setLedgerError(null);
     try {
-      const resp = await axios.get("/api/stock/ledger/recent");
+      const resp = await api.get("/stock/ledger/recent");
       const entries = Array.isArray(resp.data) ? resp.data : [];
       setRecentLedger(entries);
       setLedgerMode('recent');
@@ -58,7 +58,7 @@ function InventoryManagementPage() {
     setLedgerLoading(true);
     setLedgerError(null);
     try {
-      const resp = await axios.get("/api/stock/ledger");
+      const resp = await api.get("/stock/ledger");
       const entries = Array.isArray(resp.data) ? resp.data : [];
       setRecentLedger(entries);
       setLedgerMode('full');
@@ -78,7 +78,7 @@ function InventoryManagementPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get("/api/masterdata/workstations");
+      const response = await api.get("/masterdata/workstations");
       const stations = Array.isArray(response.data) ? response.data : [];
       setWorkstations(stations);
       
@@ -129,7 +129,7 @@ function InventoryManagementPage() {
 
     for (const station of stations) {
       try {
-        const response = await axios.get(`/api/stock/workstation/${station.id}`);
+        const response = await api.get(`/stock/workstation/${station.id}`);
         let items = Array.isArray(response.data) ? response.data : [];
         
         if (items.length === 0) {
@@ -197,7 +197,7 @@ function InventoryManagementPage() {
 
     try {
       // Try to update via API
-      await axios.put(`/api/inventory/update`, {
+      await api.put(`/inventory/update`, {
         workstationId,
         itemId,
         newQuantity: newQty

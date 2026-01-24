@@ -553,7 +553,7 @@ function HomePage() {
                 </div>
               </div>
               
-              <div className="arch-arrow-down">↓</div>
+              <div className="arch-arrow-down">▼</div>
               
               {/* API Gateway Layer */}
               <div className="arch-layer">
@@ -567,7 +567,7 @@ function HomePage() {
                 </div>
               </div>
               
-              <div className="arch-arrow-down">↓</div>
+              <div className="arch-arrow-down">▼</div>
               
               {/* Backend Services Layer - Show Gateway Communication */}
               <div className="service-group backend-group">

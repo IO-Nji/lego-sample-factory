@@ -3,21 +3,20 @@ import {
   OrdersSection,
   ActivityLog,
   StatisticsGrid,
-  FinalAssemblyOrderCard
+  AssemblyControlOrderCard
 } from "../../components";
 import { useWorkstationOrders } from "../../hooks/useWorkstationOrders";
-import { getProductDisplayName } from "../../utils/dashboardHelpers";
 import { STANDARD_FILTER_OPTIONS, STANDARD_SORT_OPTIONS } from "../../config/workstationConfig";
 import "../../styles/DashboardLayout.css";
 
 /**
- * FinalAssemblyDashboard - WS-6 Final Assembly Station
+ * GearAssemblyDashboard - WS-4 Gear Assembly Station
  * 
- * Handles final assembly orders for assembling finished products from modules.
- * Final step in the assembly workflow (WS-4 -> WS-5 -> WS-6).
- * Completed products are credited to Plant Warehouse (WS-7).
+ * Handles gear assembly orders for assembling gear modules.
+ * First step in the assembly workflow (WS-4 -> WS-5 -> WS-6).
+ * Completed modules are credited to Modules Supermarket (WS-8).
  */
-function FinalAssemblyDashboard() {
+function GearAssemblyDashboard() {
   const {
     orders,
     error,
@@ -29,7 +28,7 @@ function FinalAssemblyDashboard() {
     clearNotifications,
     clearError,
     config,
-  } = useWorkstationOrders(6);
+  } = useWorkstationOrders(4);
 
   const renderActivity = () => (
     <ActivityLog 
@@ -48,13 +47,12 @@ function FinalAssemblyDashboard() {
       searchKeys={['orderNumber']}
       sortKey="orderNumber"
       renderCard={(order) => (
-        <FinalAssemblyOrderCard
+        <AssemblyControlOrderCard
           key={order.id}
           order={order}
           onStart={handleStartOrder}
           onComplete={handleCompleteOrder}
           isProcessing={processingOrderId === order.id}
-          getProductDisplayName={getProductDisplayName}
         />
       )}
       emptyMessage={config.emptyMessage}
@@ -79,4 +77,4 @@ function FinalAssemblyDashboard() {
   );
 }
 
-export default FinalAssemblyDashboard;
+export default GearAssemblyDashboard;

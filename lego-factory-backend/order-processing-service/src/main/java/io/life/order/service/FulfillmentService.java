@@ -213,28 +213,14 @@ public class FulfillmentService {
         orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "WAREHOUSE_ORDER_CREATED",
             "Warehouse order " + warehouseOrder.getOrderNumber() + " created (Scenario 2)");
 
-        // AUTO-TRIGGER: Create production order for shortfall (all items not available locally)
-        logger.info("Auto-triggering production order for Scenario 2 shortfall");
-        try {
-                ProductionOrderDTO productionOrder = productionOrderService.createProductionOrderFromWarehouse(
-                    order.getId(),                              // sourceCustomerOrderId
-                    warehouseOrder.getId(),                     // sourceWarehouseOrderId
-                    "NORMAL",                                   // priority (default)
-                    LocalDateTime.now().plusDays(7),             // dueDate (7 days from now)
-                    "Auto-created for warehouse order " + warehouseOrder.getOrderNumber(),
-                    order.getWorkstationId(),                    // createdByWorkstationId
-                    MODULES_SUPERMARKET_WORKSTATION_ID           // assignedWorkstationId (Modules Supermarket)
-            );
-            logger.info("Production order {} auto-created for Scenario 2 shortfall", productionOrder.getProductionOrderNumber());
-                orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "PRODUCTION_ORDER_CREATED",
-                    "Production order auto-created for warehouse order " + warehouseOrder.getOrderNumber());
-        } catch (Exception e) {
-            logger.error("Failed to auto-create production order for Scenario 2", e);
-        }
+        // NOTE: Production order is NOT auto-triggered.
+        // Modules Supermarket will confirm the order and manually decide:
+        // - Fulfill directly if modules are in stock
+        // - Request production if modules are not available
 
         // Update customer order status
         order.setStatus(PROCESSING);
-        order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + "Scenario 2: Warehouse order " + warehouseOrder.getOrderNumber() + " created + Production order auto-triggered");
+        order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + "Scenario 2: Warehouse order " + warehouseOrder.getOrderNumber() + " created (awaiting Modules Supermarket confirmation)");
         orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "STATUS_PROCESSING", "Scenario 2 processing (waiting on warehouse)");
 
         return mapToDTO(customerOrderRepository.save(order));
@@ -328,24 +314,10 @@ public class FulfillmentService {
                 orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "WAREHOUSE_ORDER_CREATED",
                     "Warehouse order " + warehouseOrder.getOrderNumber() + " created (Scenario 3)");
 
-            // AUTO-TRIGGER: Create production order for items not available in warehouse/modules supermarket
-            logger.info("Auto-triggering production order for Scenario 3 shortfall items");
-            try {
-                ProductionOrderDTO productionOrder = productionOrderService.createProductionOrderFromWarehouse(
-                        order.getId(),                              // sourceCustomerOrderId
-                        warehouseOrder.getId(),                     // sourceWarehouseOrderId
-                        "NORMAL",                                   // priority (default)
-                        LocalDateTime.now().plusDays(7),             // dueDate (7 days from now)
-                        "Auto-created for warehouse order " + warehouseOrder.getOrderNumber() + " (Scenario 3 shortfall)",
-                        order.getWorkstationId(),                    // createdByWorkstationId
-                        MODULES_SUPERMARKET_WORKSTATION_ID           // assignedWorkstationId (Modules Supermarket)
-                );
-                logger.info("Production order {} auto-created for Scenario 3 shortfall items", productionOrder.getProductionOrderNumber());
-                orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "PRODUCTION_ORDER_CREATED",
-                        "Production order auto-created for warehouse order " + warehouseOrder.getOrderNumber());
-            } catch (Exception e) {
-                logger.error("Failed to auto-create production order for Scenario 3", e);
-            }
+            // NOTE: Production order is NOT auto-triggered.
+            // Modules Supermarket will confirm the order and manually decide:
+            // - Fulfill directly if modules are in stock
+            // - Request production if modules are not available
         }
 
         order.setStatus(PROCESSING);

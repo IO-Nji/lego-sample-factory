@@ -46,6 +46,7 @@ function WarehouseOrderCard({
   const getStatusClass = (status) => {
     const statusMap = {
       PENDING: 'pending',
+      CONFIRMED: 'confirmed',
       PROCESSING: 'processing',
       AWAITING_PRODUCTION: 'processing',  // Show as processing (blue) when waiting for production
       FULFILLED: 'fulfilled',
@@ -55,8 +56,24 @@ function WarehouseOrderCard({
     return statusMap[status] || 'default';
   };
 
+  // Get display-friendly status label
+  const getStatusLabel = (status) => {
+    const labelMap = {
+      PENDING: 'PENDING',
+      CONFIRMED: 'CONFIRMED',
+      PROCESSING: 'PROCESSING',
+      AWAITING_PRODUCTION: 'PRODUCTION',  // Display as "PRODUCTION" instead of "AWAITING_PRODUCTION"
+      FULFILLED: 'FULFILLED',
+      REJECTED: 'REJECTED',
+      CANCELLED: 'CANCELLED'
+    };
+    return labelMap[status] || status;
+  };
+
   // Transform order items to BaseOrderCard format with dual quantity display
-  const transformedItems = order.warehouseOrderItems?.map(item => {
+  // Support both 'orderItems' (from API) and 'warehouseOrderItems' (legacy)
+  const items = order.orderItems || order.warehouseOrderItems || [];
+  const transformedItems = items.map(item => {
     const itemName = getProductDisplayName ? 
       getProductDisplayName(item.itemId, item.itemType) : 
       (item.itemName || `Item ${item.itemId}`);
@@ -78,8 +95,10 @@ function WarehouseOrderCard({
   } : null;
 
   // Build subtitle with source order reference
-  const subtitle = order.sourceCustomerOrderId ? 
-    `Source: CO-${order.sourceCustomerOrderId}` : null;
+  // Support both 'customerOrderId' (from API) and 'sourceCustomerOrderId' (legacy)
+  const customerOrderRef = order.customerOrderId || order.sourceCustomerOrderId;
+  const subtitle = customerOrderRef ? 
+    `Source: CO-${customerOrderRef}` : null;
 
   // Format date text
   const dateText = `OD: ${new Date(order.createdAt).toLocaleDateString('en-US', { 
@@ -99,7 +118,7 @@ function WarehouseOrderCard({
           label: isConfirming ? 'Confirming...' : 'Confirm',
           variant: 'primary',
           size: 'small',
-          onClick: () => onConfirm(order.id, order.warehouseOrderNumber),
+          onClick: () => onConfirm(order.id, order.orderNumber || order.warehouseOrderNumber),
           show: !!onConfirm
         });
         actions.push({
@@ -109,6 +128,67 @@ function WarehouseOrderCard({
           onClick: () => onCancel(order.id),
           show: !!onCancel
         });
+        break;
+      
+      case 'CONFIRMED':
+        // After confirmation, show actions based on triggerScenario
+        // Priority selection mode for production order creation
+        if (showPrioritySelection && onSelectPriority) {
+          actions.push({
+            label: creatingOrder ? '...' : '🟢 LOW',
+            variant: 'success',
+            size: 'small',
+            onClick: () => onSelectPriority(order, 'LOW'),
+            show: true
+          });
+          actions.push({
+            label: creatingOrder ? '...' : '🔵 NORMAL',
+            variant: 'primary',
+            size: 'small',
+            onClick: () => onSelectPriority(order, 'NORMAL'),
+            show: true
+          });
+          actions.push({
+            label: creatingOrder ? '...' : '🟠 HIGH',
+            variant: 'warning',
+            size: 'small',
+            onClick: () => onSelectPriority(order, 'HIGH'),
+            show: true
+          });
+          actions.push({
+            label: creatingOrder ? '...' : '🔴 URGENT',
+            variant: 'danger',
+            size: 'small',
+            onClick: () => onSelectPriority(order, 'URGENT'),
+            show: true
+          });
+        } else {
+          // Normal fulfillment or production mode based on needsProduction or triggerScenario
+          if (needsProduction && onCreateProductionOrder) {
+            actions.push({
+              label: '🏭 Order Production',
+              variant: 'warning',
+              size: 'small',
+              onClick: () => onCreateProductionOrder(order),
+              show: true
+            });
+          } else {
+            actions.push({
+              label: isProcessing ? 'Fulfilling...' : 'Fulfill',
+              variant: 'success',
+              size: 'small',
+              onClick: () => onFulfill(order.id, order.warehouseOrderNumber),
+              show: !!onFulfill
+            });
+          }
+          actions.push({
+            label: 'Cancel',
+            variant: 'danger',
+            size: 'small',
+            onClick: () => onCancel(order.id),
+            show: !!onCancel
+          });
+        }
         break;
       
       case 'PROCESSING':
@@ -173,7 +253,14 @@ function WarehouseOrderCard({
       
       case 'AWAITING_PRODUCTION':
         // Production order has been created, waiting for production to complete
-        // No actions available - just display status
+        // Show informational message - no actions available
+        actions.push({
+          label: '⏳ Awaiting Production',
+          variant: 'secondary',
+          size: 'small',
+          disabled: true,
+          show: true
+        });
         break;
       
       case 'FULFILLED':
@@ -197,8 +284,8 @@ function WarehouseOrderCard({
 
   return (
     <BaseOrderCard
-      orderNumber={`#${order.warehouseOrderNumber}`}
-      status={order.status}
+      orderNumber={`#${order.orderNumber || order.warehouseOrderNumber}`}
+      status={getStatusLabel(order.status)}
       statusClass={getStatusClass(order.status)}
       cardType="warehouse-order-card"
       subtitle={subtitle}
@@ -215,11 +302,23 @@ function WarehouseOrderCard({
 WarehouseOrderCard.propTypes = {
   order: PropTypes.shape({
     id: PropTypes.number.isRequired,
-    warehouseOrderNumber: PropTypes.string.isRequired,
+    orderNumber: PropTypes.string,  // From API
+    warehouseOrderNumber: PropTypes.string,  // Legacy field name
     status: PropTypes.string.isRequired,
-    sourceCustomerOrderId: PropTypes.number,
+    customerOrderId: PropTypes.number,  // From API
+    sourceCustomerOrderId: PropTypes.number,  // Legacy field name
     triggerScenario: PropTypes.string,
-    warehouseOrderItems: PropTypes.arrayOf(
+    orderItems: PropTypes.arrayOf(  // From API
+      PropTypes.shape({
+        id: PropTypes.number,
+        itemId: PropTypes.number,
+        itemName: PropTypes.string,
+        itemType: PropTypes.string,
+        requestedQuantity: PropTypes.number,
+        fulfilledQuantity: PropTypes.number
+      })
+    ),
+    warehouseOrderItems: PropTypes.arrayOf(  // Legacy field name
       PropTypes.shape({
         id: PropTypes.number,
         itemId: PropTypes.number,

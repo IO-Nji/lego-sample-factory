@@ -52,7 +52,7 @@ function ManufacturingOverviewPage() {
 
       const [productionOrders, assemblyOrders] = await Promise.all([
         api.get('/production-orders').catch(() => ({ data: [] })),
-        api.get('/assembly-orders').catch(() => ({ data: [] })),
+        api.get('/assembly-control-orders').catch(() => ({ data: [] })),
       ]);
 
       const productionData = Array.isArray(productionOrders.data) ? productionOrders.data : [];

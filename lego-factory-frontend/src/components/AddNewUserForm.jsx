@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import Button from './Button';
-import axios from 'axios';
+import api from '../api/api';
 import '../styles/AddNewUserForm.css';
 
 /**
@@ -41,7 +41,7 @@ function AddNewUserForm({ workstations = [], onSuccess, onError }) {
         workstationId: form.workstationId ? Number.parseInt(form.workstationId) : null
       };
 
-      const response = await axios.post('/api/users/create', payload);
+      const response = await api.post('/users/create', payload);
       
       setFeedback({
         type: 'success',
