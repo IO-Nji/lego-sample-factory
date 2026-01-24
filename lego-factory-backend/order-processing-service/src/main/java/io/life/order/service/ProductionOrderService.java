@@ -85,9 +85,9 @@ public class ProductionOrderService {
                 .build();
 
         // Create production order items from warehouse order items
-        if (warehouseOrder != null && warehouseOrder.getWarehouseOrderItems() != null) {
+        if (warehouseOrder != null && warehouseOrder.getOrderItems() != null) {
             List<ProductionOrderItem> productionOrderItems = new ArrayList<>();
-            for (WarehouseOrderItem woItem : warehouseOrder.getWarehouseOrderItems()) {
+            for (WarehouseOrderItem woItem : warehouseOrder.getOrderItems()) {
                 // Determine workstation type based on item type
                 // MODULE items require ASSEMBLY (workstations WS-4, WS-5, WS-6)
                 // PART items require MANUFACTURING (workstations WS-1, WS-2, WS-3)
