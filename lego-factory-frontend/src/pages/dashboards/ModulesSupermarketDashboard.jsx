@@ -94,15 +94,28 @@ function ModulesSupermarketDashboard() {
     setError(null);
 
     try {
-      await api.put(`/warehouse-orders/${orderId}/confirm`);
-      addNotification(`Order ${orderNumber} confirmed - checking stock availability...`, 'success');
+      const response = await api.put(`/warehouse-orders/${orderId}/confirm`);
+      const confirmedOrder = response.data;
+      
+      // Log the confirmed order to verify triggerScenario is set
+      console.log('[ModulesSupermarket] Confirmed order:', confirmedOrder);
+      console.log('[ModulesSupermarket] Trigger scenario:', confirmedOrder.triggerScenario);
+      
+      // Determine notification message based on trigger scenario
+      const scenarioMsg = confirmedOrder.triggerScenario === 'PRODUCTION_REQUIRED' 
+        ? 'Production required - click "Order Production"'
+        : confirmedOrder.triggerScenario === 'DIRECT_FULFILLMENT'
+        ? 'Stock available - click "Fulfill"'
+        : 'Status updated';
+      
+      addNotification(`Order ${orderNumber} confirmed - ${scenarioMsg}`, 'success');
       
       // Fetch updated orders and inventory to check stock automatically
       await fetchWarehouseOrders();
       await fetchInventory();
       
       // After fetching, the needsProduction check will automatically determine 
-      // whether to show Fulfill or Production Order button
+      // whether to show Fulfill or Production Order button based on triggerScenario
     } catch (err) {
       setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
       addNotification("Failed to confirm order", 'error');
