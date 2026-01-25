@@ -10,16 +10,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.life.masterdata.dto.ModuleDto;
 import io.life.masterdata.dto.PartDto;
-import io.life.masterdata.dto.ProductDto;
 import io.life.masterdata.dto.WorkstationDto;
 import io.life.masterdata.entity.Module;
 import io.life.masterdata.entity.ModulePart;
 import io.life.masterdata.entity.Part;
-import io.life.masterdata.entity.Product;
 import io.life.masterdata.service.ModulePartService;
 import io.life.masterdata.service.ModuleService;
 import io.life.masterdata.service.PartService;
-import io.life.masterdata.service.ProductService;
 import io.life.masterdata.service.WorkstationService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,16 +29,14 @@ public class MasterdataController {
     private final PartService partService;
     private final WorkstationService workstationService;
     private final ModulePartService modulePartService;
-    private final ProductService productService;
 
     public MasterdataController(ModuleService moduleService,
             PartService partService, WorkstationService workstationService,
-            ModulePartService modulePartService, ProductService productService) {
+            ModulePartService modulePartService) {
         this.moduleService = moduleService;
         this.partService = partService;
         this.workstationService = workstationService;
         this.modulePartService = modulePartService;
-        this.productService = productService;
     }
 
     @GetMapping("/modules")
@@ -72,25 +67,6 @@ public class MasterdataController {
                 log.warn("Module not found with ID: {}", id);
                 return ResponseEntity.notFound().build();
             });
-    }
-
-    // Products endpoint
-    @GetMapping("/products")
-    public ResponseEntity<List<ProductDto>> getProducts() {
-        log.debug("Fetching all products");
-        List<ProductDto> products = productService.findAll()
-                .stream()
-                .map(this::toProductDto)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(products);
-    }
-
-    @GetMapping("/products/{id}")
-    public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
-        log.debug("Fetching product with ID: {}", id);
-        return productService.findById(id)
-                .map(product -> ResponseEntity.ok(toProductDto(product)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/workstations")
@@ -220,17 +196,7 @@ public class MasterdataController {
 
     private ProductDto toProductDto(Product product) {
         return new ProductDto(
-            product.getId(),
-            product.getName(),
-            product.getDescription(),
-            product.getPrice(),
-            product.getEstimatedTimeMinutes()
-        );
-    }
-
-    private Module toModuleEntity(ModuleDto dto) {
-        Module m = new Module();
-        m.setId(dto.getId());
+            tId(dto.getId());
         m.setName(dto.getName());
         m.setDescription(dto.getDescription());
         m.setType(dto.getType());
