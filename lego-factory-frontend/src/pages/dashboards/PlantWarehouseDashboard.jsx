@@ -30,7 +30,8 @@ function PlantWarehouseDashboard() {
     inventory, 
     masterdata: products,
     getItemName: getProductName,
-    fetchInventory 
+    fetchInventory,
+    error: inventoryError
   } = useInventoryDisplay('PRODUCT', 7);
   
   // Use enhanced activity log hook with auto-login tracking
@@ -40,6 +41,20 @@ function PlantWarehouseDashboard() {
   const [loading, setLoading] = useState(false);
   const [fulfillingOrderId, setFulfillingOrderId] = useState(null);
   const [error, setError] = useState(null);
+  
+  // Log and notify when products fail to load
+  useEffect(() => {
+    if (inventoryError) {
+      console.error('[PlantWarehouse] Product loading error:', inventoryError);
+      addNotification(`⚠️ Failed to load products: ${inventoryError}`, 'error');
+    }
+    if (products.length === 0 && !inventoryError) {
+      console.warn('[PlantWarehouse] No products available - database may not be seeded');
+    }
+    if (products.length > 0) {
+      console.log(`[PlantWarehouse] Successfully loaded ${products.length} products`);
+    }
+  }, [inventoryError, products, addNotification]);
 
   // Check if PROCESSING orders can be completed (all FA orders submitted)
   const checkProcessingOrdersCompletion = async (ordersList) => {
@@ -263,26 +278,36 @@ function PlantWarehouseDashboard() {
   );
 
   // Render Create Order Form using FormCard component
-  const renderFormCompact = () => (
-    <FormCard
-      title="New Order"
-      icon="➕"
-      items={products}
-      selectedItems={selectedProducts}
-      onItemChange={(itemId, quantity) => {
-        setSelectedProducts({
-          ...selectedProducts,
-          [itemId]: quantity
-        });
-      }}
-      onSubmit={handleCreateOrder}
-      loading={loading}
-      buttonText={loading ? "Creating..." : "Create Order"}
-      getItemDisplayName={(item) => item.name}
-      emptyMessage="No products"
-      columnHeaders={{ item: 'Product', quantity: 'Qty' }}
-    />
-  );
+  const renderFormCompact = () => {
+    // Determine appropriate empty message based on loading state
+    let emptyMessage = "No products";
+    if (inventoryError) {
+      emptyMessage = "⚠️ Failed to load products - Check backend connection";
+    } else if (products.length === 0) {
+      emptyMessage = "⏳ Loading products... (or database not seeded)";
+    }
+    
+    return (
+      <FormCard
+        title="New Order"
+        icon="➕"
+        items={products}
+        selectedItems={selectedProducts}
+        onItemChange={(itemId, quantity) => {
+          setSelectedProducts({
+            ...selectedProducts,
+            [itemId]: quantity
+          });
+        }}
+        onSubmit={handleCreateOrder}
+        loading={loading}
+        buttonText={loading ? "Creating..." : "Create Order"}
+        getItemDisplayName={(item) => item.name}
+        emptyMessage={emptyMessage}
+        columnHeaders={{ item: 'Product', quantity: 'Qty' }}
+      />
+    );
+  };
 
   // Render Inventory Table using InventoryTable component
   const renderInventory = () => (

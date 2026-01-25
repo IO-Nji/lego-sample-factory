@@ -49,12 +49,28 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
   const fetchMasterdata = useCallback(async () => {
     try {
       const endpoint = getMasterdataEndpoint();
+      console.log(`[useInventoryDisplay] Fetching ${itemType} from ${endpoint}...`);
       const response = await api.get(endpoint);
-      setMasterdata(response.data);
-      return response.data;
+      console.log(`[useInventoryDisplay] Received ${response.data?.length || 0} ${itemType} items:`, response.data);
+      
+      if (!response.data || response.data.length === 0) {
+        console.warn(`[useInventoryDisplay] WARNING: No ${itemType} data received from ${endpoint}`);
+        console.warn('[useInventoryDisplay] Check if masterdata-service database is seeded properly');
+      }
+      
+      setMasterdata(response.data || []);
+      return response.data || [];
     } catch (err) {
-      console.error(`[useInventoryDisplay] Error fetching ${itemType} masterdata:`, err);
-      setError(err.response?.data?.message || `Failed to load ${itemType.toLowerCase()} data`);
+      console.error(`[useInventoryDisplay] ERROR fetching ${itemType} masterdata from ${getMasterdataEndpoint()}:`, err);
+      console.error('[useInventoryDisplay] Full error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        endpoint: getMasterdataEndpoint()
+      });
+      const errorMsg = err.response?.data?.message || err.message || `Failed to load ${itemType.toLowerCase()} data`;
+      setError(errorMsg);
+      setMasterdata([]); // Set empty array on error
       return [];
     }
   }, [itemType, getMasterdataEndpoint]);
