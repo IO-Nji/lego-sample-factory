@@ -20,8 +20,8 @@ public class ProductModuleService {
         return repository.findAll();
     }
 
-    public List<ProductModule> findByProductVariantId(Long productVariantId) {
-        return repository.findByProductVariantId(productVariantId);
+    public List<ProductModule> findByProductId(Long productId) {
+        return repository.findByProductId(productId);
     }
 
     public List<ProductModule> findByModuleId(Long moduleId) {

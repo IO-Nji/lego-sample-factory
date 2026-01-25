@@ -4,7 +4,7 @@ import api from '../api/api';
 /**
  * Custom hook for managing inventory display with masterdata lookup
  * 
- * @param {string} itemType - Type of items: 'PRODUCT_VARIANT', 'MODULE', or 'PART'
+ * @param {string} itemType - Type of items: 'PRODUCT', 'MODULE', or 'PART'
  * @param {number} workstationId - ID of the workstation (optional, for auto-fetching inventory)
  * @returns {object} - Inventory management state and functions
  * 
@@ -33,9 +33,8 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
   // Determine API endpoint based on item type
   const getMasterdataEndpoint = useCallback(() => {
     switch (itemType) {
-      case 'PRODUCT_VARIANT':
       case 'PRODUCT':
-        return '/masterdata/product-variants';
+        return '/masterdata/products';
       case 'MODULE':
         return '/masterdata/modules';
       case 'PART':
@@ -87,16 +86,8 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
       const response = await api.get(`/stock/workstation/${wsId}`);
       const inventoryData = response.data || [];
       
-      // Filter by itemType if needed - handle both PRODUCT and PRODUCT_VARIANT as synonyms
-      const filteredInventory = inventoryData.filter(item => {
-        if (item.itemType === itemType) return true;
-        // Handle PRODUCT/PRODUCT_VARIANT interchangeably
-        if ((itemType === 'PRODUCT' || itemType === 'PRODUCT_VARIANT') && 
-            (item.itemType === 'PRODUCT' || item.itemType === 'PRODUCT_VARIANT')) {
-          return true;
-        }
-        return false;
-      });
+      // Filter by itemType if needed
+      const filteredInventory = inventoryData.filter(item => item.itemType === itemType);
       
       setInventory(filteredInventory);
       return filteredInventory;
@@ -123,7 +114,6 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
 
     // Fallback display names
     switch (itemType) {
-      case 'PRODUCT_VARIANT':
       case 'PRODUCT':
         return `Product #${item.itemId}`;
       case 'MODULE':

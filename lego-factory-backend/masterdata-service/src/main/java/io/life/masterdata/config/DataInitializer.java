@@ -7,12 +7,12 @@ import io.life.masterdata.entity.Module;
 import io.life.masterdata.entity.ModulePart;
 import io.life.masterdata.entity.Part;
 import io.life.masterdata.entity.ProductModule;
-import io.life.masterdata.entity.ProductVariant;
+import io.life.masterdata.entity.Product;
 import io.life.masterdata.service.ModulePartService;
 import io.life.masterdata.service.ModuleService;
 import io.life.masterdata.service.PartService;
 import io.life.masterdata.service.ProductModuleService;
-import io.life.masterdata.service.ProductVariantService;
+import io.life.masterdata.service.ProductService;
 import io.life.masterdata.service.WorkstationService;
 
 @Component
@@ -28,17 +28,17 @@ public class DataInitializer implements CommandLineRunner {
     private static final String TYPE_ELECTRICAL = "ELECTRICAL";
     private static final String TYPE_DECORATIVE = "DECORATIVE";
 
-    private final ProductVariantService productVariantService;
+    private final ProductService productService;
     private final ModuleService moduleService;
     private final PartService partService;
     private final WorkstationService workstationService;
     private final ProductModuleService productModuleService;
     private final ModulePartService modulePartService;
 
-    public DataInitializer(ProductVariantService productVariantService, ModuleService moduleService,
+    public DataInitializer(ProductService productService, ModuleService moduleService,
             PartService partService, WorkstationService workstationService,
             ProductModuleService productModuleService, ModulePartService modulePartService) {
-        this.productVariantService = productVariantService;
+        this.productService = productService;
         this.moduleService = moduleService;
         this.partService = partService;
         this.workstationService = workstationService;
@@ -61,12 +61,12 @@ public class DataInitializer implements CommandLineRunner {
             workstationService.save(createWorkstationDto(null, "Parts Supply Warehouse", TYPE_WAREHOUSE, "Parts supply warehouse", true));
         }
 
-        // Seed product variants (Final Products)
-        if (productVariantService.findAll().isEmpty()) {
-            productVariantService.save(new ProductVariant(null, "Technic Truck Yellow", "Yellow motorized LEGO Technic truck with working steering", 149.99, 240));
-            productVariantService.save(new ProductVariant(null, "Technic Truck Red", "Red motorized LEGO Technic truck with working steering", 149.99, 240));
-            productVariantService.save(new ProductVariant(null, "Creator House", "Modular 3-story house with detailed interior", 99.99, 180));
-            productVariantService.save(new ProductVariant(null, "Castle Set", "Medieval castle with towers and drawbridge", 129.99, 200));
+        // Seed products (Final Products)
+        if (productService.findAll().isEmpty()) {
+            productService.save(new Product(null, "Technic Truck Yellow", "Yellow motorized LEGO Technic truck with working steering", 149.99, 240));
+            productService.save(new Product(null, "Technic Truck Red", "Red motorized LEGO Technic truck with working steering", 149.99, 240));
+            productService.save(new Product(null, "Creator House", "Modular 3-story house with detailed interior", 99.99, 180));
+            productService.save(new Product(null, "Castle Set", "Medieval castle with towers and drawbridge", 129.99, 200));
         }
 
         // Seed modules (Sub-assemblies made from parts)

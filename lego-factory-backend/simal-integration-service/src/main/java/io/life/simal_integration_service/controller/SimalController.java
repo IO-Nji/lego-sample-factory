@@ -350,7 +350,7 @@ public class SimalController {
      * Fetches the actual part/module name based on itemId and itemType.
      *
      * @param itemId The ID of the item
-     * @param itemType The type of item ("MODULE", "PART", or "PRODUCT_VARIANT")
+     * @param itemType The type of item ("MODULE", "PART", or "PRODUCT")
      * @return The actual item name or a fallback name
      */
     public String getItemName(Long itemId, String itemType) {
@@ -362,7 +362,7 @@ public class SimalController {
             String endpoint = switch (itemType.toUpperCase()) {
                 case "MODULE" -> "/masterdata/modules/" + itemId;
                 case "PART" -> "/masterdata/parts/" + itemId;
-                case "PRODUCT_VARIANT", "PRODUCT" -> "/masterdata/product-variants/" + itemId;
+                case "PRODUCT" -> "/masterdata/products/" + itemId;
                 default -> null;
             };
 

@@ -254,8 +254,8 @@ function PlantWarehouseDashboard() {
     { value: orders.filter(o => o.status === "PENDING").length, label: 'Pending', variant: 'pending', icon: '⏳' },
     { value: orders.filter(o => o.status === "PROCESSING").length, label: 'Processing', variant: 'processing', icon: '⚙️' },
     { value: orders.filter(o => o.status === "COMPLETED").length, label: 'Completed', variant: 'success', icon: '✅' },
-    { value: inventory.filter(item => item.itemType === "PRODUCT_VARIANT" || item.itemType === "PRODUCT").length, label: 'Product Types', variant: 'info', icon: '🏷️' },
-    { value: inventory.filter(item => item.itemType === "PRODUCT_VARIANT" || item.itemType === "PRODUCT").reduce((sum, item) => sum + (item.quantity || 0), 0), label: 'Total Stock', variant: 'default', icon: '📊' },
+    { value: inventory.filter(item => item.itemType === "PRODUCT").length, label: 'Product Types', variant: 'info', icon: '🏷️' },
+    { value: inventory.filter(item => item.itemType === "PRODUCT").reduce((sum, item) => sum + (item.quantity || 0), 0), label: 'Total Stock', variant: 'default', icon: '📊' },
     { value: inventory.filter(item => item.quantity < 5).length, label: 'Low Stock', variant: 'warning', icon: '⚠️' },
     { value: inventory.filter(item => item.quantity === 0).length, label: 'Out of Stock', variant: 'danger', icon: '🚫' },
   ];

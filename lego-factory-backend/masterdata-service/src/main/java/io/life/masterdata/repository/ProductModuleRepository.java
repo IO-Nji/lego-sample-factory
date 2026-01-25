@@ -8,6 +8,6 @@ import java.util.List;
 
 @Repository
 public interface ProductModuleRepository extends JpaRepository<ProductModule, Long> {
-    List<ProductModule> findByProductVariantId(Long productVariantId);
+    List<ProductModule> findByProductId(Long productId);
     List<ProductModule> findByModuleId(Long moduleId);
 }

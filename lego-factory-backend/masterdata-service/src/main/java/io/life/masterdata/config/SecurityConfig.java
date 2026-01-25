@@ -27,7 +27,7 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/error").permitAll()
-                .requestMatchers("/api/masterdata/product-variants/**").permitAll()
+                .requestMatchers("/api/masterdata/products/**").permitAll()
                 .requestMatchers("/api/masterdata/modules/**").permitAll()
                 .requestMatchers("/api/masterdata/parts/**").permitAll()
                 .requestMatchers("/api/masterdata/workstations/**").permitAll()

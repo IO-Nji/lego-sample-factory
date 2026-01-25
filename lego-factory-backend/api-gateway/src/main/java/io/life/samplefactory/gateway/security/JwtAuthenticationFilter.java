@@ -37,7 +37,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private final JwtParser jwtParser;
     private final List<String> publicPaths = List.of(
         "/api/auth/login",
-        "/api/masterdata/product-variants/**",
+        "/api/masterdata/products/**",
         "/api/masterdata/modules/**",
         "/api/masterdata/parts/**",
         "/api/production-control-orders",
