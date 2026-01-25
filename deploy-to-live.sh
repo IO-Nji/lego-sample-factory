@@ -54,10 +54,10 @@ git pull origin prod
 echo ""
 
 # Verify we have the critical commit
-EXPECTED_COMMIT="d9ad043"
+EXPECTED_COMMIT="75ddfb8"
 CURRENT_COMMIT=$(git rev-parse --short HEAD)
 echo "7️⃣  Verifying deployment commit..."
-echo "   Expected: $EXPECTED_COMMIT (Fix merge conflict in Product.java)"
+echo "   Expected: $EXPECTED_COMMIT (ProductVariant → Product refactoring)"
 echo "   Current:  $CURRENT_COMMIT"
 
 if git log --oneline -10 | grep -q "$EXPECTED_COMMIT"; then
