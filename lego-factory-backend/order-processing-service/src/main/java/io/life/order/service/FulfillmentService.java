@@ -87,23 +87,32 @@ public class FulfillmentService {
             "Fulfillment started for order " + order.getOrderNumber());
         logger.info("Starting fulfillment for order {} ({})", order.getId(), order.getOrderNumber());
 
-        // Check which items are available locally
+        // Re-check stock at fulfill time (may have changed since confirmation)
         boolean allItemsAvailable = order.getOrderItems().stream()
-                .allMatch(item -> inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity()));
+                .allMatch(item -> {
+                    boolean hasStock = inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
+                    logger.info("  Stock check at fulfill: item {} qty {} - available: {}", 
+                        item.getItemId(), item.getQuantity(), hasStock);
+                    return hasStock;
+                });
 
         if (allItemsAvailable) {
             // Scenario 1: Direct Fulfillment
+            logger.info("All items available - proceeding with direct fulfillment");
             return scenario1_DirectFulfillment(order);
         } else {
+            logger.info("Stock insufficient at fulfill time - stock changed since confirmation");
             // Check if any items are available
             boolean anyItemsAvailable = order.getOrderItems().stream()
                     .anyMatch(item -> inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity()));
 
             if (anyItemsAvailable) {
                 // Scenario 3: Modules Supermarket (partial availability)
+                logger.info("Partial stock available - routing to Scenario 3 (Modules Supermarket)");
                 return scenario3_ModulesSupermarket(order);
             } else {
                 // Scenario 2: Warehouse Order (nothing available locally)
+                logger.info("No stock available - routing to Scenario 2 (Warehouse Order)");
                 return scenario2_WarehouseOrder(order);
             }
         }
@@ -131,6 +140,9 @@ public class FulfillmentService {
             order.setStatus("COMPLETED");
             logger.info("Order {} fulfilled directly. Inventory updated.", order.getOrderNumber());
             orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "COMPLETED", "Order fulfilled directly (Scenario 1)");
+            
+            // Update triggerScenario for other CONFIRMED orders at this workstation
+            updateOtherConfirmedOrdersScenario(order.getWorkstationId(), order.getId());
         } else {
             order.setStatus("CANCELLED");
             logger.warn("Order {} fulfillment failed during inventory update.", order.getOrderNumber());
@@ -349,6 +361,58 @@ public class FulfillmentService {
         order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + "Scenario 4: Routed to Production Planning for custom items");
 
         return mapToDTO(customerOrderRepository.save(order));
+    }
+
+    /**
+     * Update triggerScenario for all other CONFIRMED orders at the same workstation.
+     * Call this after a successful fulfillment that changed stock levels.
+     * This ensures other orders show the correct buttons based on current stock.
+     */
+    private void updateOtherConfirmedOrdersScenario(Long workstationId, Long excludeOrderId) {
+        logger.info("Updating triggerScenario for other CONFIRMED orders at workstation {}", workstationId);
+        
+        // Find all CONFIRMED orders at this workstation (excluding the just-fulfilled order)
+        List<CustomerOrder> confirmedOrders = customerOrderRepository.findAll().stream()
+            .filter(o -> "CONFIRMED".equals(o.getStatus()))
+            .filter(o -> workstationId.equals(o.getWorkstationId()))
+            .filter(o -> !excludeOrderId.equals(o.getId()))
+            .toList();
+        
+        logger.info("Found {} other CONFIRMED orders to update", confirmedOrders.size());
+        
+        for (CustomerOrder otherOrder : confirmedOrders) {
+            // Re-check stock for this order
+            boolean allItemsAvailable = otherOrder.getOrderItems().stream()
+                .allMatch(item -> inventoryService.checkStock(
+                    otherOrder.getWorkstationId(), 
+                    item.getItemId(), 
+                    item.getQuantity()
+                ));
+            
+            String newScenario;
+            if (allItemsAvailable) {
+                newScenario = "DIRECT_FULFILLMENT";
+            } else {
+                // Check if any items available for partial fulfillment
+                boolean anyItemsAvailable = otherOrder.getOrderItems().stream()
+                    .anyMatch(item -> inventoryService.checkStock(
+                        otherOrder.getWorkstationId(), 
+                        item.getItemId(), 
+                        item.getQuantity()
+                    ));
+                newScenario = anyItemsAvailable ? "PARTIAL_FULFILLMENT" : "WAREHOUSE_ORDER_NEEDED";
+            }
+            
+            // Only update if scenario changed
+            if (!newScenario.equals(otherOrder.getTriggerScenario())) {
+                logger.info("Order {} triggerScenario updated: {} → {}", 
+                    otherOrder.getOrderNumber(), 
+                    otherOrder.getTriggerScenario(), 
+                    newScenario);
+                otherOrder.setTriggerScenario(newScenario);
+                customerOrderRepository.save(otherOrder);
+            }
+        }
     }
 
     private CustomerOrderDTO mapToDTO(CustomerOrder order) {
