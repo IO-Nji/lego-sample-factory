@@ -194,9 +194,9 @@ public class MasterdataController {
         );
     }
 
-    private ProductDto toProductDto(Product product) {
-        return new ProductDto(
-            tId(dto.getId());
+    private Module toModuleEntity(ModuleDto dto) {
+        Module m = new Module();
+        m.setId(dto.getId());
         m.setName(dto.getName());
         m.setDescription(dto.getDescription());
         m.setType(dto.getType());
