@@ -6,23 +6,29 @@ import '../styles/WarehouseOrderCard.css';
 /**
  * WarehouseOrderCard Component
  * 
- * Displays a warehouse order with context-aware action buttons based on order status.
- * Uses BaseOrderCard for consistent layout with dual quantity display and scenario badges.
+ * Displays a warehouse (Modules Supermarket - WS-8) order with context-aware action buttons.
+ * Uses BaseOrderCard for consistent layout with items grid display and scenario badges.
  * 
- * Features:
- * - Dual quantity display (fulfilled/requested)
- * - Scenario badge (DIRECT_FULFILLMENT, PRODUCTION_REQUIRED, etc.)
+ * ARCHITECTURE:
+ * - Uses CardBase.css for structural layout (display, flexbox, grid)
+ * - WarehouseOrderCard.css provides orange color theme and status badges
+ * - Semantic button colors via OrderCardButtons.css and Button component variants
+ * - Items display: ACRONYM + QUANTITY (simplified format matching customer orders)
+ * 
+ * FEATURES:
+ * - Simple quantity display (requested quantity)
+ * - Scenario badge (DIRECT_FULFILLMENT, PRODUCTION_REQUIRED)
  * - Source customer order reference
- * - Priority selection for production orders
+ * - Status-specific action buttons with semantic coloring
  * 
- * @param {Object} order - Warehouse order object
- * @param {Function} onConfirm - Handler for confirming order (PENDING → PROCESSING)
+ * @param {Object} order - Warehouse order from API
+ * @param {number} order.id - Order ID
+ * @param {string} order.status - Order status (PENDING, CONFIRMED, PROCESSING, FULFILLED, etc.)
+ * @param {Array} order.orderItems - Array of order items
+ * @param {Function} onConfirm - Handler for confirming order
  * @param {Function} onFulfill - Handler for fulfilling order
  * @param {Function} onCancel - Handler for cancelling order
  * @param {Function} onCreateProductionOrder - Handler for creating production order
- * @param {boolean} needsProduction - Whether production order is needed (stock insufficient)
- * @param {boolean} isProcessing - Whether fulfillment is in progress
- * @param {boolean} isConfirming - Whether confirmation is in progress
  * @param {Function} getProductDisplayName - Function to format product names with acronyms
  * @param {Object} notificationMessage - Optional notification message {text, type}
  */
@@ -42,13 +48,13 @@ function WarehouseOrderCard({
   notificationMessage = null
 }) {
   
-  // Get status badge styling
+  // Get status CSS class for badge styling
   const getStatusClass = (status) => {
     const statusMap = {
       PENDING: 'pending',
       CONFIRMED: 'confirmed',
       PROCESSING: 'processing',
-      AWAITING_PRODUCTION: 'processing',  // Show as processing (blue) when waiting for production
+      AWAITING_PRODUCTION: 'processing',
       FULFILLED: 'fulfilled',
       REJECTED: 'rejected',
       CANCELLED: 'cancelled'
@@ -62,7 +68,7 @@ function WarehouseOrderCard({
       PENDING: 'PENDING',
       CONFIRMED: 'CONFIRMED',
       PROCESSING: 'PROCESSING',
-      AWAITING_PRODUCTION: 'PRODUCTION',  // Display as "PRODUCTION" instead of "AWAITING_PRODUCTION"
+      AWAITING_PRODUCTION: 'PRODUCTION',
       FULFILLED: 'FULFILLED',
       REJECTED: 'REJECTED',
       CANCELLED: 'CANCELLED'
@@ -70,9 +76,32 @@ function WarehouseOrderCard({
     return labelMap[status] || status;
   };
 
-  // Transform order items to BaseOrderCard format with dual quantity display
-  // Support both 'orderItems' (from API) and 'warehouseOrderItems' (legacy)
-  const items = order.orderItems || order.warehouseOrderItems || [];
+  // Map action labels to semantic button variants
+  // Variants: confirm (blue), process (orange), fulfill (green), complete (teal), submit (purple), reject (pink), approve (green), hold (gray)
+  const getActionVariant = (actionLabel) => {
+    const variantMap = {
+      'Confirm': 'confirm',
+      'Confirming...': 'confirm',
+      'Fulfill': 'fulfill',
+      'Fulfilling...': 'fulfill',
+      'Order Production': 'process',
+      'Cancel': 'danger',
+      'Complete': 'complete',
+      'Submit': 'submit',
+      'Reject': 'reject',
+      'Approve': 'approve',
+      'Hold': 'hold',
+      '🟢 LOW': 'success',
+      '🔵 NORMAL': 'primary',
+      '🟠 HIGH': 'warning',
+      '🔴 URGENT': 'danger'
+    };
+    return variantMap[actionLabel] || 'primary';  // Fallback to primary
+  };
+
+  // Transform order items to BaseOrderCard format (ACRONYM + QUANTITY)
+  // API returns 'orderItems'
+  const items = order.orderItems || [];
   const transformedItems = items.map(item => {
     const itemName = getProductDisplayName ? 
       getProductDisplayName(item.itemId, item.itemType) : 
@@ -80,10 +109,7 @@ function WarehouseOrderCard({
     
     return {
       name: itemName,
-      quantity: item.fulfilledQuantity || 0,      // Primary: fulfilled
-      secondaryQuantity: item.requestedQuantity,   // Secondary: requested
-      quantityLabel: 'FF',
-      secondaryLabel: 'RQ',
+      quantity: item.requestedQuantity || 0,
       statusColor: (item.fulfilledQuantity >= item.requestedQuantity) ? '#059669' : '#dc2626'
     };
   }) || [];
@@ -95,8 +121,7 @@ function WarehouseOrderCard({
   } : null;
 
   // Build subtitle with source order reference
-  // Support both 'customerOrderId' (from API) and 'sourceCustomerOrderId' (legacy)
-  const customerOrderRef = order.customerOrderId || order.sourceCustomerOrderId;
+  const customerOrderRef = order.customerOrderId;
   const subtitle = customerOrderRef ? 
     `Source: CO-${customerOrderRef}` : null;
 
@@ -116,14 +141,14 @@ function WarehouseOrderCard({
       case 'PENDING':
         actions.push({
           label: isConfirming ? 'Confirming...' : 'Confirm',
-          variant: 'primary',
+          variant: getActionVariant('Confirm'),
           size: 'small',
           onClick: () => onConfirm(order.id, order.orderNumber || order.warehouseOrderNumber),
           show: !!onConfirm
         });
         actions.push({
           label: 'Cancel',
-          variant: 'danger',
+          variant: getActionVariant('Cancel'),
           size: 'small',
           onClick: () => onCancel(order.id),
           show: !!onCancel
@@ -136,28 +161,28 @@ function WarehouseOrderCard({
         if (showPrioritySelection && onSelectPriority) {
           actions.push({
             label: creatingOrder ? '...' : '🟢 LOW',
-            variant: 'success',
+            variant: getActionVariant('🟢 LOW'),
             size: 'small',
             onClick: () => onSelectPriority(order, 'LOW'),
             show: true
           });
           actions.push({
             label: creatingOrder ? '...' : '🔵 NORMAL',
-            variant: 'primary',
+            variant: getActionVariant('🔵 NORMAL'),
             size: 'small',
             onClick: () => onSelectPriority(order, 'NORMAL'),
             show: true
           });
           actions.push({
             label: creatingOrder ? '...' : '🟠 HIGH',
-            variant: 'warning',
+            variant: getActionVariant('🟠 HIGH'),
             size: 'small',
             onClick: () => onSelectPriority(order, 'HIGH'),
             show: true
           });
           actions.push({
             label: creatingOrder ? '...' : '🔴 URGENT',
-            variant: 'danger',
+            variant: getActionVariant('🔴 URGENT'),
             size: 'small',
             onClick: () => onSelectPriority(order, 'URGENT'),
             show: true
@@ -167,7 +192,7 @@ function WarehouseOrderCard({
           if (needsProduction && onCreateProductionOrder) {
             actions.push({
               label: '🏭 Order Production',
-              variant: 'warning',
+              variant: getActionVariant('Order Production'),
               size: 'small',
               onClick: () => onCreateProductionOrder(order),
               show: true
@@ -175,7 +200,7 @@ function WarehouseOrderCard({
           } else {
             actions.push({
               label: isProcessing ? 'Fulfilling...' : 'Fulfill',
-              variant: 'success',
+              variant: getActionVariant('Fulfill'),
               size: 'small',
               onClick: () => onFulfill(order.id, order.warehouseOrderNumber),
               show: !!onFulfill
@@ -183,7 +208,7 @@ function WarehouseOrderCard({
           }
           actions.push({
             label: 'Cancel',
-            variant: 'danger',
+            variant: getActionVariant('Cancel'),
             size: 'small',
             onClick: () => onCancel(order.id),
             show: !!onCancel
@@ -196,28 +221,28 @@ function WarehouseOrderCard({
         if (showPrioritySelection && onSelectPriority) {
           actions.push({
             label: creatingOrder ? '...' : '🟢 LOW',
-            variant: 'success',
+            variant: getActionVariant('🟢 LOW'),
             size: 'small',
             onClick: () => onSelectPriority(order, 'LOW'),
             show: true
           });
           actions.push({
             label: creatingOrder ? '...' : '🔵 NORMAL',
-            variant: 'primary',
+            variant: getActionVariant('🔵 NORMAL'),
             size: 'small',
             onClick: () => onSelectPriority(order, 'NORMAL'),
             show: true
           });
           actions.push({
             label: creatingOrder ? '...' : '🟠 HIGH',
-            variant: 'warning',
+            variant: getActionVariant('🟠 HIGH'),
             size: 'small',
             onClick: () => onSelectPriority(order, 'HIGH'),
             show: true
           });
           actions.push({
             label: creatingOrder ? '...' : '🔴 URGENT',
-            variant: 'danger',
+            variant: getActionVariant('🔴 URGENT'),
             size: 'small',
             onClick: () => onSelectPriority(order, 'URGENT'),
             show: true
@@ -227,7 +252,7 @@ function WarehouseOrderCard({
           if (needsProduction && onCreateProductionOrder) {
             actions.push({
               label: '🏭 Order Production',
-              variant: 'warning',
+              variant: getActionVariant('Order Production'),
               size: 'small',
               onClick: () => onCreateProductionOrder(order),
               show: true
@@ -235,7 +260,7 @@ function WarehouseOrderCard({
           } else {
             actions.push({
               label: isProcessing ? 'Fulfilling...' : 'Fulfill',
-              variant: 'success',
+              variant: getActionVariant('Fulfill'),
               size: 'small',
               onClick: () => onFulfill(order.id, order.warehouseOrderNumber),
               show: !!onFulfill
@@ -243,7 +268,7 @@ function WarehouseOrderCard({
           }
           actions.push({
             label: 'Cancel',
-            variant: 'danger',
+            variant: getActionVariant('Cancel'),
             size: 'small',
             onClick: () => onCancel(order.id),
             show: !!onCancel
@@ -272,7 +297,7 @@ function WarehouseOrderCard({
       default:
         actions.push({
           label: 'Cancel',
-          variant: 'danger',
+          variant: getActionVariant('Cancel'),
           size: 'small',
           onClick: () => onCancel(order.id),
           show: !!onCancel
@@ -284,7 +309,7 @@ function WarehouseOrderCard({
 
   return (
     <BaseOrderCard
-      orderNumber={`#${order.orderNumber || order.warehouseOrderNumber}`}
+      orderNumber={`#${order.orderNumber}`}
       status={getStatusLabel(order.status)}
       statusClass={getStatusClass(order.status)}
       cardType="warehouse-order-card"
@@ -302,13 +327,12 @@ function WarehouseOrderCard({
 WarehouseOrderCard.propTypes = {
   order: PropTypes.shape({
     id: PropTypes.number.isRequired,
-    orderNumber: PropTypes.string,  // From API
-    warehouseOrderNumber: PropTypes.string,  // Legacy field name
+    orderNumber: PropTypes.string.isRequired,
     status: PropTypes.string.isRequired,
-    customerOrderId: PropTypes.number,  // From API
-    sourceCustomerOrderId: PropTypes.number,  // Legacy field name
+    customerOrderId: PropTypes.number,
     triggerScenario: PropTypes.string,
-    orderItems: PropTypes.arrayOf(  // From API
+    createdAt: PropTypes.string,
+    orderItems: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.number,
         itemId: PropTypes.number,
@@ -317,18 +341,7 @@ WarehouseOrderCard.propTypes = {
         requestedQuantity: PropTypes.number,
         fulfilledQuantity: PropTypes.number
       })
-    ),
-    warehouseOrderItems: PropTypes.arrayOf(  // Legacy field name
-      PropTypes.shape({
-        id: PropTypes.number,
-        itemId: PropTypes.number,
-        itemName: PropTypes.string,
-        itemType: PropTypes.string,
-        requestedQuantity: PropTypes.number,
-        fulfilledQuantity: PropTypes.number
-      })
-    ),
-    createdAt: PropTypes.string
+    )
   }).isRequired,
   onConfirm: PropTypes.func,
   onFulfill: PropTypes.func,

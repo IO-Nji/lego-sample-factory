@@ -255,11 +255,7 @@
 }
 
 .order-card {
-  background-color: #fef3c7;
-  border: 1px solid #fbbf24;
-  border-radius: 0.375rem;
-  padding: 1rem;
-  transition: all 0.2s;
+  /* All styles removed. Use BaseOrderCard.css only for order cards. */
 }
 
 .order-card:hover {

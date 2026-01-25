@@ -1,0 +1,147 @@
+/**
+ * DEPRECATED - BaseOrderCard.css (January 2026)
+ * 
+ * ⚠️ THIS FILE IS OBSOLETE AND SHOULD NOT BE USED
+ * 
+ * REASON FOR DEPRECATION:
+ * - Replaced by CardBase.css (universal layout structure)
+ * - Mixed structural and color properties (violates SRP)
+ * - Used by old card implementations
+ * 
+ * MIGRATION PATH:
+ * 1. Use CardBase.css for layout structure
+ * 2. Use card-type-specific CSS for color theming
+ * 3. Update component imports to use new CSS system
+ * 
+ * DO NOT USE THIS FILE FOR NEW IMPLEMENTATIONS
+ * 
+ * For details, see: _dev-docs/CARD_SYSTEM_JANUARY_2026.md
+ */
+
+/* BaseOrderCard - DEPRECATED foundational style for all order cards */
+.base-order-card {
+  flex: 0 1 28%;
+  width: 100%;
+  min-width: 180px;
+  max-width: 150px;
+  height: 160px;
+  margin: 1rem 0.5rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  background: linear-gradient(135deg,#f5f7fa,#fff);
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all .3s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 2px 4px #0000000d;
+}
+
+.base-order-card.status-pending {
+  border-left: 2px solid #f59e0b;
+  background: #fff3cd;
+  color: #856404;
+}
+
+.order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.order-number {
+  color: #f59e0b;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.order-status-badge {
+  padding: 0.25em 0.75em;
+  border-radius: 1em;
+  font-size: 0.85em;
+  font-weight: 500;
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #f59e0b;
+}
+
+.order-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.order-items-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem; /* Reduce spacing between name and quantity */
+}
+
+.item-name {
+  font-weight: 500;
+  color: #212121;
+}
+
+.item-quantity-section {
+  font-weight: bold;
+  color: #2c5aa0;
+}
+
+.order-date-notification-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 0.85em;
+  color: #666;
+  margin-top: auto;
+}
+
+.order-card-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.order-notification-message {
+  margin-right: 1rem;
+  font-size: 0.9em;
+  color: #dc3545;
+}
+
+.order-info-section {
+  margin-bottom: 0.5rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95em;
+  color: #666;
+}
+
+.order-notes {
+  font-size: 0.95em;
+  color: #999;
+  margin-bottom: 0.5rem;
+}
+
+.no-items {
+  color: #999;
+  font-size: 0.95em;
+  text-align: center;
+}

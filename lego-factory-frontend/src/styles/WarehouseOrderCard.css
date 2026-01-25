@@ -1,208 +1,270 @@
-/* ============================================ */
-/* WAREHOUSE ORDER CARD COMPONENT STYLES       */
-/* Distinct styling from CustomerOrderCard     */
-/* Uses orange/purple tones for differentiation */
-/* ============================================ */
+/**
+ * WarehouseOrderCard.css (January 2026)
+ * 
+ * ROLE: Warehouse order card color theming and status badge styling
+ * 
+ * ARCHITECTURE:
+ * - Inherits all STRUCTURAL layout from CardBase.css
+ * - Defines ONLY color theme for warehouse orders (orange/warm tones)
+ * - Status badges with color-specific gradients and borders
+ * 
+ * DO NOT ADD:
+ * - Display/flexbox properties (use CardBase.css)
+ * - Padding/margin for layout (use CardBase.css)
+ * - Header/footer backgrounds or borders (use CardBase.css)
+ * - Generic element styling (use card-specific color overrides)
+ * 
+ * RELATED FILES:
+ * - CardBase.css: Layout structure
+ * - WarehouseOrderCard.jsx: Component logic
+ * - OrderCardButtons.css: Button color system
+ */
 
-/* Import base order card dimensions */
-@import './OrderCardBase.css';
+@import './CardBase.css';
 
-/* Base Card Container */
+/* Base Card Container - Layout structure + Warehouse color theme */
 .warehouse-order-card {
-  /* Use base dimensions */
-  composes: order-card-base;
+  /* STRUCTURAL PROPERTIES - Layout and card dimensions */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 160px;
+  padding: 0.75rem;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  border-left: 4px solid #fed7aa;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   
-  /* Warehouse-specific styling */
-  background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%); /* Orange tint */
-  border: 2px solid #fed7aa;
-  box-shadow: 0 1px 1px rgba(251, 146, 60, 0.1);
+  /* WAREHOUSE COLOR THEME - Background and accent colors */
+  background: linear-gradient(135deg, #f5f7fa, #fff);
 }
 
 .warehouse-order-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
   border-color: #ea580c;
-  box-shadow: 0 8px 16px rgba(234, 88, 12, 0.2);
-  transform: translateY(-2px);
-}
-
-/* Status Indicator - Left Border Colors */
-.warehouse-order-card.status-pending {
-  border-left: 2px solid #f59e0b; /* Amber - awaiting action */
-}
-
-.warehouse-order-card.status-processing {
-  border-left: 2px solid #8b5cf6; /* Purple - in progress */
-}
-
-.warehouse-order-card.status-fulfilled {
-  border-left: 2px solid #10b981; /* Green - success */
-}
-
-.warehouse-order-card.status-rejected {
-  border-left: 2px solid #ef4444; /* Red - rejected */
-}
-
-.warehouse-order-card.status-cancelled {
-  border-left: 2px solid #6b7280; /* Gray - inactive */
-  opacity: 0.7;
+  border-left-color: #ea580c;
 }
 
 /* ============================================ */
 /* CARD HEADER - Order number and status badge */
 /* ============================================ */
 .warehouse-order-card .order-card-header {
-  padding: 0.125rem 0.25rem;
-  background: linear-gradient(to right, #fff7ed, #ffffff);
-  border-bottom: 1px solid #fed7aa;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #fed7aa;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .warehouse-order-card .order-number {
-  font-size: 0.7rem;
   font-weight: 600;
+  font-size: 0.95rem;
   color: #9a3412;
-  font-family: 'Courier New', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  margin: 0;
 }
 
-/* Status Badge - Pill-shaped indicators */
+/* Status Badge - Pill-shaped with gradient */
 .warehouse-order-card .order-status-badge {
-  padding: 0.25rem 0.25rem;
-  border-radius: 9999px;
-  font-size: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 70px;
+  text-align: center;
+  flex-shrink: 0;
+  border: 1px solid #fed7aa;
 }
 
-/* Status Badge Variants */
+/* Status Badge Variants - With gradients and borders */
 .warehouse-order-card .order-status-badge.pending {
-  background-color: #fef3c7; /* Light amber */
-  color: #92400e; /* Dark amber */
+  background: linear-gradient(135deg, #fef3c7 0%, #ffe89c 100%);
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.warehouse-order-card .order-status-badge.confirmed {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+  border-color: #3b82f6;
 }
 
 .warehouse-order-card .order-status-badge.processing {
-  background-color: #ede9fe; /* Light purple */
-  color: #5b21b6; /* Dark purple */
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+  color: #5b21b6;
+  border-color: #8b5cf6;
 }
 
 .warehouse-order-card .order-status-badge.fulfilled {
-  background-color: #d1fae5; /* Light green */
-  color: #065f46; /* Dark green */
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border-color: #10b981;
 }
 
 .warehouse-order-card .order-status-badge.rejected {
-  background-color: #fee2e2; /* Light red */
-  color: #991b1b; /* Dark red */
-}
-
-.warehouse-order-card .order-status-badge.cancelled {
-  background-color: #f3f4f6; /* Light gray */
-  color: #374151; /* Dark gray */
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border-color: #ef4444;
 }
 
 /* ============================================ */
-/* CARD BODY - Order details and items         */
+/* CARD BODY - Items list with grid layout    */
 /* ============================================ */
-/* Uses base body alignment from OrderCardBase.css */
-/* Only color overrides needed */
-
-.warehouse-order-card .order-meta {
-  background-color: #fff7ed;
+.warehouse-order-card .order-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  color: #333;
 }
 
-.warehouse-order-card .meta-label {
+.warehouse-order-card .order-items-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 1.5rem;
+  align-content: start;
+}
+
+.warehouse-order-card .order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.warehouse-order-card .item-name {
+  flex: 1;
+  color: #78350f;
+  font-weight: 500;
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+.warehouse-order-card .item-quantity-section {
+  font-weight: 700;
   color: #9a3412;
+  font-size: 0.8rem;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
-.warehouse-order-card .meta-value {
-  color: #ea580c;
+.warehouse-order-card .no-items {
+  color: #999;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 0.5rem 0;
+  font-style: italic;
 }
 
-/* Scenario Badge - Uses base styling from OrderCardBase.css */
-/* Only color variants defined here */
-
-.warehouse-order-card .scenario-badge.scenario_2 {
-  background-color: #e9d5ff; /* Light purple */
-  color: #6b21a8; /* Dark purple */
+/* ============================================ */
+/* CARD META - Date/Timestamp row             */
+/* ============================================ */
+.warehouse-order-card .order-date-notification-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #666;
+  padding-top: 0.3rem;
+  border-top: 1px solid #f0f0f0;
+  margin-top: auto;
 }
 
-.warehouse-order-card .scenario-badge.scenario_3 {
-  background-color: #ddd6fe; /* Light indigo */
-  color: #4c1d95; /* Dark indigo */
+.warehouse-order-card .order-date {
+  background: linear-gradient(135deg, #f0f0f0, #e8e8e8);
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 500;
+  color: #666;
+  font-size: 0.7rem;
 }
 
-/* Uses base item list layout from OrderCardBase.css */
-/* Only color overrides needed */
+/* ============================================ */
+/* CARD FOOTER - Action buttons                */
+/* ============================================ */
+.warehouse-order-card .order-card-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #fed7aa;
+  min-height: auto;
+  flex-wrap: wrap;
+}
+
+.warehouse-order-card .order-card-footer button,
+.warehouse-order-card .order-card-footer .btn {
+  flex: 0 1 auto;
+  min-width: auto;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+/* Status Indicator - Left Border Colors (status badges) */
+.warehouse-order-card.status-pending {
+  --card-status-accent: #f59e0b; /* Amber - awaiting action */
+}
+
+.warehouse-order-card.status-confirmed {
+  --card-status-accent: #3b82f6; /* Blue - confirmed */
+}
+
+.warehouse-order-card.status-processing {
+  --card-status-accent: #8b5cf6; /* Purple - in progress */
+}
+
+.warehouse-order-card.status-fulfilled {
+  --card-status-accent: #10b981; /* Green - success */
+}
+
+.warehouse-order-card.status-rejected {
+  --card-status-accent: #ef4444; /* Red - rejected */
+}
+
+.warehouse-order-card.status-cancelled {
+  --card-status-accent: #6b7280; /* Gray - inactive */
+  opacity: 0.7;
+}
+
+/* ============================================ */
+/* CARD BODY - Inherits all structure from     */
+/* OrderCardBase.css, only color theme here    */
+/* ============================================ */
 
 .warehouse-order-card .item-name {
   color: #78350f;
 }
 
-.warehouse-order-card .item-quantity.requested {
-  color: #ea580c;
+.warehouse-order-card .info-label {
+  color: #c2410c;
 }
 
-.warehouse-order-card .item-quantity.fulfilled {
-  color: #059669;
-}
-
-/* Date and notification row - imported from OrderCardBase.css */
-.warehouse-order-card .order-date-notification-row {
-  border-top-color: #fed7aa;
-}
-
-/* Date styling inherited from OrderCardBase.css */
-
-/* Warehouse order specific notification colors (orange theme) */
-.warehouse-order-card .order-notification-message.success {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.warehouse-order-card .order-notification-message.info {
-  background: #fef3c7;
-  color: #78350f;
-}
-
-/* ============================================ */
-/* CARD FOOTER - Action buttons                */
-/* Uses base styling from OrderCardBase.css    */
-/* ============================================ */
-.warehouse-order-card .order-card-footer {
-  background-color: #fffbeb;
-  border-top-color: #fed7aa;
-}
-
-/* ============================================ */
-/* ANIMATIONS                                   */
-/* ============================================ */
-
-/* Pulse animation for processing status */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-/* Slide-in animation for new orders */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.warehouse-order-card.new-order {
-  animation: slideIn 0.3s ease-out;
+.warehouse-order-card .info-value {
+  color: #9a3412;
 }

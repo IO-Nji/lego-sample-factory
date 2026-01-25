@@ -1,6 +1,6 @@
+import '../styles/FinalAssemblyOrderCard.css';
 import PropTypes from 'prop-types';
 import BaseOrderCard from './BaseOrderCard';
-import '../styles/CustomerOrderCard.css';
 
 /**
  * FinalAssemblyOrderCard Component
@@ -38,8 +38,10 @@ function FinalAssemblyOrderCard({
   const getStatusClass = (status) => {
     const statusMap = {
       'PENDING': 'pending',
+      'CONFIRMED': 'confirmed',
       'IN_PROGRESS': 'in-progress',
       'COMPLETED': 'completed',
+      'SUBMITTED': 'submitted',
       'CANCELLED': 'cancelled',
       'HALTED': 'halted'
     };
@@ -58,9 +60,38 @@ function FinalAssemblyOrderCard({
     });
   };
 
-  // Build subtitle with source order reference
-  const subtitle = order.warehouseOrderId ? 
-    `Warehouse Order #${order.warehouseOrderId}` : null;
+  // Map action labels to semantic button variants for consistent coloring
+  const getActionVariant = (actionLabel) => {
+    const variantMap = {
+      'Confirm Order': 'confirm',
+      'Confirming...': 'confirm',
+      'Start Assembly': 'process',
+      'Starting...': 'process',
+      'Complete Assembly': 'complete',
+      'Completing...': 'complete',
+      'Submit Product': 'submit',
+      'Submitting...': 'submit'
+    };
+    return variantMap[actionLabel] || 'primary';  // Fallback to primary
+  };
+
+  // Extract WO number from notes field (format: "Auto-created from warehouse order WO-XXXXXXXX")
+  const extractWoNumber = () => {
+    if (order.notes) {
+      const match = order.notes.match(/WO-[A-Z0-9]+/i);
+      if (match) return match[0];
+    }
+    return order.warehouseOrderNumber || null;
+  };
+
+  // Build subtitle with source order reference - use extracted WO number
+  const woNumber = extractWoNumber();
+  const subtitle = woNumber ? `WO: ${woNumber}` : null;
+
+  // Clean notes - remove "Auto-created from warehouse order WO-XXXXXXXX" prefix
+  const cleanNotes = order.notes ? 
+    order.notes.replace(/^Auto-created from warehouse order WO-[A-Z0-9]+\s*/i, '').trim() || null 
+    : null;
 
   // Transform to item format for BaseOrderCard
   const getProductName = () => {
@@ -121,8 +152,8 @@ function FinalAssemblyOrderCard({
     switch(status) {
       case 'PENDING':
         actions.push({
-          label: isProcessing ? 'Confirming...' : '✓ Confirm Order',
-          variant: 'info',
+          label: isProcessing ? 'Confirming...' : 'Confirm Order',
+          variant: getActionVariant('Confirm Order'),
           size: 'small',
           onClick: () => onConfirm(order.id, order.orderNumber),
           show: !!onConfirm,
@@ -132,8 +163,8 @@ function FinalAssemblyOrderCard({
       
       case 'CONFIRMED':
         actions.push({
-          label: isProcessing ? 'Starting...' : '▶️ Start Assembly',
-          variant: 'success',
+          label: isProcessing ? 'Starting...' : 'Start Assembly',
+          variant: getActionVariant('Start Assembly'),
           size: 'small',
           onClick: () => onStart(order.id, order.orderNumber),
           show: !!onStart,
@@ -143,8 +174,8 @@ function FinalAssemblyOrderCard({
       
       case 'IN_PROGRESS':
         actions.push({
-          label: isProcessing ? 'Completing...' : '✅ Complete Assembly',
-          variant: 'primary',
+          label: isProcessing ? 'Completing...' : 'Complete Assembly',
+          variant: getActionVariant('Complete Assembly'),
           size: 'small',
           onClick: () => onComplete(order.id, order.orderNumber),
           show: !!onComplete,
@@ -154,8 +185,8 @@ function FinalAssemblyOrderCard({
       
       case 'COMPLETED':
         actions.push({
-          label: isProcessing ? 'Submitting...' : '📦 Submit Product',
-          variant: 'warning',
+          label: isProcessing ? 'Submitting...' : 'Submit Product',
+          variant: getActionVariant('Submit Product'),
           size: 'small',
           onClick: () => onSubmit(order.id, order.orderNumber),
           show: !!onSubmit,
@@ -176,10 +207,10 @@ function FinalAssemblyOrderCard({
 
   // Build notification for submitted status
   const notificationMessage = order.status === 'SUBMITTED' ? {
-    text: '✅ Products credited to Plant Warehouse',
+    text: 'Products credited to Plant Warehouse',
     type: 'success'
   } : order.status === 'COMPLETED' ? {
-    text: '⏳ Ready to submit - click Submit to credit Plant Warehouse',
+    text: 'Ready to submit - click Submit to credit Plant Warehouse',
     type: 'info'
   } : null;
 
@@ -192,7 +223,7 @@ function FinalAssemblyOrderCard({
       subtitle={subtitle}
       items={items}
       infoSections={infoSections}
-      notes={order.notes}
+      notes={cleanNotes}
       dateText={dateText}
       notificationMessage={notificationMessage}
       actions={getActions()}

@@ -42,19 +42,22 @@
   display: grid;
   grid-template-columns: 1fr auto 20%;
   gap: var(--spacing-4);
-  align-items: center;
+  align-items: stretch;
   height: 300px;
+  min-height: 300px;
+  max-height: 300px;
 }
 
 .activityColumn {
-  min-width: 0; /* Allow shrinking */
-  height: 300px;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .statsColumn {
   width: fit-content;
-  min-width: 300px;
-  max-width: none; /* Allow grid to expand to fit all stats in 4 rows */
   height: auto;
   display: flex;
   align-items: flex-start;
@@ -63,7 +66,10 @@
 
 .formColumn {
   width: 100%;
-  height: 300px;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 /* Bottom Row - 2 Columns */
@@ -75,7 +81,7 @@
 }
 
 .ordersColumn {
-  min-width: 0; /* Allow shrinking */
+  min-width: 0;
 }
 
 .inventoryColumn {
@@ -88,7 +94,10 @@
   min-width: 280px;
 }
 
-/* Card Styling */
+/* ============================================================================
+   CARD STYLING - Base Container
+   ============================================================================ */
+
 .card {
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
@@ -96,8 +105,12 @@
   padding: var(--spacing-4);
   box-shadow: var(--shadow-sm);
   height: 100%;
+  width: 100%;
+  min-height: 0;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .cardHeader {
@@ -121,19 +134,32 @@
 
 .cardContent {
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
   min-height: 0;
+  max-height: 100%;
 }
 
-/* Orders Grid */
+/* ============================================================================
+   ORDERS GRID - Three Column Layout for Cards
+   ============================================================================ */
+
 .ordersGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-8);
-  justify-content: start;
+  gap: var(--spacing-4);
+  align-items: stretch;
+  width: 100%;
 }
 
-/* Filter Form Styling */
+.ordersGrid > * {
+  min-width: 0;
+}
+
+/* ============================================================================
+   FILTER FORM STYLING
+   ============================================================================ */
+
 .filterForm {
   display: flex;
   flex-direction: column;
@@ -181,23 +207,21 @@
   border-color: var(--color-primary);
 }
 
-/* Responsive Design */
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
 @media (max-width: 1400px) {
-  .topRow {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-  
   .bottomRow {
     grid-template-columns: 1fr;
   }
-  
+
   .statsColumn,
   .formColumn,
   .filterColumn {
     width: 100%;
   }
-  
+
   .activityColumn,
   .formColumn {
     height: auto;
@@ -210,17 +234,14 @@
     padding: var(--spacing-2);
     gap: var(--spacing-2);
   }
-  
-  .ordersGrid {
-    grid-template-columns: 1fr;
-  }
-  
+
   .topRow,
   .bottomRow {
     gap: var(--spacing-2);
   }
-  
+
   .statsColumn {
     min-width: 100%;
   }
 }
+

@@ -100,7 +100,6 @@ function PlantWarehouseDashboard() {
     const workstationId = session?.user?.workstationId || 7;
     if (!workstationId) {
       setOrders([]);
-      setFilteredOrders([]);
       return;
     }
     try {

@@ -83,7 +83,16 @@ Button.propTypes = {
     'warning', 
     'outline', 
     'ghost', 
-    'link'
+    'link',
+    // Action-based variants (semantic coloring)
+    'confirm',
+    'process',
+    'fulfill',
+    'complete',
+    'submit',
+    'reject',
+    'approve',
+    'hold'
   ]),
   
   /** Button size */

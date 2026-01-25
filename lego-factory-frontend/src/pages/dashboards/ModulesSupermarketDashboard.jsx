@@ -5,6 +5,7 @@ import { StandardDashboardLayout, StatisticsGrid, InventoryTable, ActivityLog, O
 import WarehouseOrderCard from "../../components/WarehouseOrderCard";
 import { getInventoryStatusColor, generateAcronym } from "../../utils/dashboardHelpers";
 import { useInventoryDisplay } from "../../hooks/useInventoryDisplay";
+import { useActivityLog } from "../../hooks/useActivityLog";
 
 function ModulesSupermarketDashboard() {
   const { session } = useAuth();
@@ -17,12 +18,15 @@ function ModulesSupermarketDashboard() {
     getItemName: getModuleName,
     fetchInventory 
   } = useInventoryDisplay('MODULE', 8);
+  
+  // Use enhanced activity log hook with auto-login tracking
+  const { notifications, addNotification, clearNotifications } = useActivityLog(session, 'MODS-SP');
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [fulfillmentInProgress, setFulfillmentInProgress] = useState({});
   const [confirmationInProgress, setConfirmationInProgress] = useState({});
   const [selectedModule, setSelectedModule] = useState(null);
-  const [notifications, setNotifications] = useState([]);
   const [showProductionOrderForm, setShowProductionOrderForm] = useState(false);
   const [productionOrderForm, setProductionOrderForm] = useState({
     sourceWarehouseOrderId: null,
@@ -48,21 +52,6 @@ function ModulesSupermarketDashboard() {
     }
     // For other item types, just generate acronym from type
     return generateAcronym(itemType);
-  };
-
-  const addNotification = (message, type = 'info') => {
-    const newNotification = {
-      id: Date.now() + Math.random(),
-      message,
-      type,
-      timestamp: new Date().toISOString(),
-      station: session?.user?.workstation?.name || 'MODS-SP'
-    };
-    setNotifications(prev => [newNotification, ...prev]);
-  };
-
-  const clearNotifications = () => {
-    setNotifications([]);
   };
 
   useEffect(() => {

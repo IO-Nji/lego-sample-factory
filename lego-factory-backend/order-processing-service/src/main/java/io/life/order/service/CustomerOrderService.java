@@ -31,15 +31,18 @@ public class CustomerOrderService {
     private final WarehouseOrderRepository warehouseOrderRepository;
     private final FinalAssemblyOrderService finalAssemblyOrderService;
     private final OrderAuditService orderAuditService;
+    private final InventoryService inventoryService;
 
     public CustomerOrderService(CustomerOrderRepository customerOrderRepository, 
                                 WarehouseOrderRepository warehouseOrderRepository,
                                 FinalAssemblyOrderService finalAssemblyOrderService,
-                                OrderAuditService orderAuditService) {
+                                OrderAuditService orderAuditService,
+                                InventoryService inventoryService) {
         this.customerOrderRepository = customerOrderRepository;
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.finalAssemblyOrderService = finalAssemblyOrderService;
         this.orderAuditService = orderAuditService;
+        this.inventoryService = inventoryService;
         // Custom exception for mapping errors is now a static nested class below
     }
 
@@ -159,15 +162,10 @@ public class CustomerOrderService {
             throw new IllegalStateException("Only PENDING orders can be confirmed");
         }
         
-        // STOCK CHECK REFINEMENT: Check PRODUCT stock at Plant Warehouse (WS-7) DURING confirmation
+        // STOCK CHECK DURING CONFIRMATION: Check PRODUCT stock at Plant Warehouse (WS-7)
         // This determines the scenario path: direct fulfillment or warehouse order needed
         boolean hasAllStock = order.getOrderItems().stream()
-            .allMatch(item -> {
-                // Plant Warehouse checks PRODUCT stock
-                // Note: This is a simplified check. In production, you'd inject InventoryService
-                // For now, we'll set the trigger scenario based on item availability
-                return true; // Placeholder - actual check would use InventoryService
-            });
+            .allMatch(item -> inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity()));
         
         // Set triggerScenario based on stock check
         if (hasAllStock) {

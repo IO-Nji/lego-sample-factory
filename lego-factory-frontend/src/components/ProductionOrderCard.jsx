@@ -54,6 +54,22 @@ function ProductionOrderCard({
     return statusMap[status] || 'default';
   };
 
+  // Map action labels to semantic button variants for consistent coloring
+  const getActionVariant = (actionLabel) => {
+    const variantMap = {
+      '✓ Confirm': 'confirm',
+      'Confirm': 'confirm',
+      'Cancel': 'danger',
+      '📅 Schedule': 'process',
+      'Scheduling...': 'process',
+      '📤 Submit': 'submit',
+      'Complete': 'complete',
+      '✓ Complete': 'complete',
+      'Completing...': 'complete'
+    };
+    return variantMap[actionLabel] || 'primary';  // Fallback to primary
+  };
+
   // Build subtitle with source order reference
   const subtitle = order.sourceWarehouseOrderId ? 
     `Source: WO-${order.sourceWarehouseOrderId}` : null;
@@ -108,14 +124,14 @@ function ProductionOrderCard({
         // Step 1: Confirm the order
         actions.push({
           label: '✓ Confirm',
-          variant: 'primary',
+          variant: getActionVariant('✓ Confirm'),
           size: 'small',
           onClick: () => onConfirm(order.id),
           show: !!onConfirm
         });
         actions.push({
           label: 'Cancel',
-          variant: 'danger',
+          variant: getActionVariant('Cancel'),
           size: 'small',
           onClick: () => onCancel(order.id),
           show: !!onCancel
@@ -126,14 +142,14 @@ function ProductionOrderCard({
         // Step 2: Schedule with SimAL (shows preview popup before submitting)
         actions.push({
           label: isScheduling ? 'Scheduling...' : '📅 Schedule',
-          variant: 'primary',
+          variant: getActionVariant('📅 Schedule'),
           size: 'small',
           onClick: () => onSchedule(order),
           show: !!onSchedule
         });
         actions.push({
           label: 'Cancel',
-          variant: 'danger',
+          variant: getActionVariant('Cancel'),
           size: 'small',
           onClick: () => onCancel(order.id),
           show: !!onCancel
@@ -144,14 +160,14 @@ function ProductionOrderCard({
         // Legacy status - treat like CONFIRMED for backward compatibility
         actions.push({
           label: isScheduling ? 'Scheduling...' : '📅 Schedule',
-          variant: 'primary',
+          variant: getActionVariant('📅 Schedule'),
           size: 'small',
           onClick: () => onSchedule(order),
           show: !!onSchedule
         });
         actions.push({
           label: 'Cancel',
-          variant: 'danger',
+          variant: getActionVariant('Cancel'),
           size: 'small',
           onClick: () => onCancel(order.id),
           show: !!onCancel
@@ -162,14 +178,14 @@ function ProductionOrderCard({
         // Step 3: Submit/Dispatch (creates control orders)
         actions.push({
           label: '📤 Submit',
-          variant: 'success',
+          variant: getActionVariant('📤 Submit'),
           size: 'small',
           onClick: () => onStart(order.id),
           show: !!onStart
         });
         actions.push({
           label: 'Cancel',
-          variant: 'danger',
+          variant: getActionVariant('Cancel'),
           size: 'small',
           onClick: () => onCancel(order.id),
           show: !!onCancel
@@ -184,14 +200,14 @@ function ProductionOrderCard({
       case 'IN_PRODUCTION':
         actions.push({
           label: '✅ Complete',
-          variant: 'success',
+          variant: getActionVariant('✅ Complete'),
           size: 'small',
           onClick: () => onComplete(order.id),
           show: !!onComplete
         });
         actions.push({
           label: 'Cancel',
-          variant: 'danger',
+          variant: getActionVariant('Cancel'),
           size: 'small',
           onClick: () => onCancel(order.id),
           show: !!onCancel
@@ -206,7 +222,7 @@ function ProductionOrderCard({
       default:
         actions.push({
           label: 'Cancel',
-          variant: 'danger',
+          variant: getActionVariant('Cancel'),
           size: 'small',
           onClick: () => onCancel(order.id),
           show: !!onCancel
