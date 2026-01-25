@@ -145,7 +145,7 @@ function AdminDashboard() {
         api.get("/supply-orders/warehouse").catch((err) => { console.error("Supply orders error:", err.response?.status, err.response?.data || err.message); return { data: [] }; }),
         api.get("/customer-orders").catch((err) => { console.error("Customer orders error:", err.response?.status, err.response?.data || err.message); return { data: [] }; }),
         api.get("/stock/alerts/low").catch((err) => { console.error("Stock alerts error:", err.response?.status, err.response?.data || err.message); return { data: [] }; }),
-        api.get("/masterdata/product-variants").catch((err) => { console.error("Products error:", err.response?.data || err.message); return { data: [] }; }),
+        api.get("/masterdata/products").catch((err) => { console.error("Products error:", err.response?.data || err.message); return { data: [] }; }),
       ]);
 
       const wsData = Array.isArray(wsResponse?.data) ? wsResponse.data : [];

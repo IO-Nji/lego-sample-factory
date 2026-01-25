@@ -48,7 +48,7 @@ function HomePage() {
     const fetchAllData = async () => {
       try {
         const [productsRes, modulesRes, partsRes] = await Promise.all([
-          api.get('/masterdata/product-variants'),
+          api.get('/masterdata/products'),
           api.get('/masterdata/modules'),
           api.get('/masterdata/parts')
         ]);
@@ -78,7 +78,7 @@ function HomePage() {
       setLoadingModules(true);
       try {
         // Fetch product modules
-        const modulesResponse = await api.get(`/masterdata/product-variants/${selectedProduct.id}/modules`);
+        const modulesResponse = await api.get(`/masterdata/products/${selectedProduct.id}/modules`);
         const productModules = modulesResponse.data;
         
         // For each module, fetch its parts
