@@ -114,14 +114,20 @@ public class WarehouseOrderService {
 
         // STOCK CHECK REFINEMENT: Check MODULE stock at Modules Supermarket (WS-8) DURING confirmation
         // This determines the scenario path: direct fulfillment or production required
+        logger.info("=== WAREHOUSE ORDER CONFIRMATION: Checking MODULE stock for order {} at workstation {} ===", 
+            order.getOrderNumber(), order.getWorkstationId());
+        
         boolean hasAllModules = order.getOrderItems().stream()
             .allMatch(item -> {
                 // Modules Supermarket (WS-8) checks MODULE stock
-                return inventoryService.checkStock(
+                boolean stockAvailable = inventoryService.checkStock(
                     order.getWorkstationId(), // Modules Supermarket workstation ID (8)
                     item.getItemId(),
                     item.getRequestedQuantity()
                 );
+                logger.info("  Module {} (qty: {}) - Stock available: {}", 
+                    item.getItemId(), item.getRequestedQuantity(), stockAvailable);
+                return stockAvailable;
             });
         
         // Set triggerScenario based on MODULE stock check

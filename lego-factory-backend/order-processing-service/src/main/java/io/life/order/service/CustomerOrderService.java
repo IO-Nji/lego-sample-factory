@@ -164,8 +164,16 @@ public class CustomerOrderService {
         
         // STOCK CHECK DURING CONFIRMATION: Check PRODUCT stock at Plant Warehouse (WS-7)
         // This determines the scenario path: direct fulfillment or warehouse order needed
+        logger.info("=== CUSTOMER ORDER CONFIRMATION: Checking stock for order {} at workstation {} ===", 
+            order.getOrderNumber(), order.getWorkstationId());
+        
         boolean hasAllStock = order.getOrderItems().stream()
-            .allMatch(item -> inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity()));
+            .allMatch(item -> {
+                boolean stockAvailable = inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
+                logger.info("  Item {} (type: {}, qty: {}) - Stock available: {}", 
+                    item.getItemId(), item.getItemType(), item.getQuantity(), stockAvailable);
+                return stockAvailable;
+            });
         
         // Set triggerScenario based on stock check
         if (hasAllStock) {
