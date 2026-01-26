@@ -10,12 +10,13 @@ import styles from './WorkstationCard.module.css';
  * - Displays workstation icon, name, and tooltip
  * - Hover effects with smooth animations
  * - Status indication with color coding (blue = idle, yellow = active)
- * - Customizable tooltip content
+ * - Structured tooltips with role description and username
  * - Click handler support for navigation/actions
  * 
  * @param {string} icon - Emoji icon for the workstation
  * @param {string} name - Display name of the workstation
- * @param {string} tooltip - Descriptive text shown on hover
+ * @param {string|object} tooltip - Descriptive text or structured tooltip object
+ *                                  Structured format: { description, username } or string
  * @param {string} status - 'idle' (blue, no orders) or 'active' (yellow, orders present)
  * @param {function} onClick - Optional click handler
  * @param {string} className - Additional CSS classes
@@ -42,8 +43,32 @@ function WorkstationCard({ icon, name, tooltip, status = 'idle', onClick, classN
     setIsHovered(false);
   };
 
+  // Parse tooltip - can be string or structured object
+  const parseTooltip = (tooltip) => {
+    if (!tooltip) return null;
+    
+    // If it's already an object, return as is
+    if (typeof tooltip === 'object' && tooltip.description) {
+      return tooltip;
+    }
+    
+    // If it's a string with pipe delimiter, parse it
+    if (typeof tooltip === 'string' && tooltip.includes('|')) {
+      const parts = tooltip.split('|').map(p => p.trim());
+      return {
+        description: parts[0] || '',
+        username: parts[1] || null
+      };
+    }
+    
+    // Default: treat as simple string description
+    return { description: tooltip, username: null };
+  };
+
+  const tooltipData = parseTooltip(tooltip);
+
   // Tooltip rendered via Portal to escape stacking contexts
-  const tooltipElement = isHovered && tooltip ? createPortal(
+  const tooltipElement = isHovered && tooltipData ? createPortal(
     <div 
       className={styles.tooltip}
       style={{
@@ -51,7 +76,15 @@ function WorkstationCard({ icon, name, tooltip, status = 'idle', onClick, classN
         left: tooltipPos.x + 10,
       }}
     >
-      {tooltip}
+      {tooltipData.description && (
+        <div className={styles.tooltipDescription}>{tooltipData.description}</div>
+      )}
+      {tooltipData.username && (
+        <div className={styles.tooltipUserSection}>
+          <div className={styles.tooltipUserLabel}>username:</div>
+          <div className={styles.tooltipUsername}>{tooltipData.username}</div>
+        </div>
+      )}
     </div>,
     document.body
   ) : null;
@@ -85,7 +118,13 @@ function WorkstationCard({ icon, name, tooltip, status = 'idle', onClick, classN
 WorkstationCard.propTypes = {
   icon: PropTypes.string.isRequired,
   name: PropTypes.oneOfType([PropTypes.string, PropTypes.node]).isRequired,
-  tooltip: PropTypes.string.isRequired,
+  tooltip: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.shape({
+      description: PropTypes.string,
+      username: PropTypes.string
+    })
+  ]).isRequired,
   status: PropTypes.oneOf(['idle', 'active']),
   onClick: PropTypes.func,
   className: PropTypes.string,
