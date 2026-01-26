@@ -2,17 +2,55 @@
 # =========================================================
 # LIFE System - Push Docker Images to Local Registry
 # =========================================================
-# This script builds, tags, and pushes all Docker images
+# This script builds, tags, and pushes Docker images
 # to the local registry at 192.168.1.237:5000
 #
-# Usage: ./push-to-registry.sh
+# Features:
+# - Detects modified services (compares to origin/prod)
+# - Only builds changed services by default
+# - Continues on warnings (only fails on actual errors)
+# - Better image ID detection with fallback methods
+#
+# Usage: 
+#   ./push-to-registry.sh          # Build only modified services
+#   ./push-to-registry.sh --all    # Build all services
+#   ./push-to-registry.sh --help   # Show this help
 # =========================================================
 
-set -e  # Exit on error
+# Show help if requested
+if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+    cat << 'EOF'
+LIFE System - Docker Registry Push Script
 
-# Configuration
-REGISTRY="192.168.1.237:5000"
-PROJECT_NAME="lego-sample-factory"
+This script builds and pushes Docker images to the local registry.
+
+USAGE:
+  ./push-to-registry.sh [OPTIONS]
+
+OPTIONS:
+  (none)    Build only services modified since origin/prod
+  --all     Build all services regardless of changes
+  --help    Show this help message
+
+FEATURES:
+  • Smart detection of modified services
+  • Continues on build warnings
+  • Multiple image ID detection methods
+  • Detailed progress output
+  • Version tagging with git commit
+
+EXAMPLES:
+  # Build only modified services
+  ./push-to-registry.sh
+
+  # Build all services
+  ./push-to-registry.sh --all
+
+REGISTRY: 192.168.1.237:5000
+
+EOF
+    exit 0
+fi
 
 # Color codes for output
 RED='\033[0;31m'
@@ -21,8 +59,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Services to build and push
-SERVICES=(
+# Configuration
+REGISTRY="192.168.1.237:5000"
+PROJECT_NAME="lego-sample-factory"
+
+# All available services
+ALL_SERVICES=(
     "nginx-root-proxy"
     "frontend"
     "api-gateway"
@@ -33,7 +75,76 @@ SERVICES=(
     "simal-integration-service"
 )
 
-# Get version from git
+# Check if --all flag is provided
+BUILD_ALL=false
+if [[ "$1" == "--all" ]]; then
+    BUILD_ALL=true
+fi
+
+# Check if --all flag is provided
+BUILD_ALL=false
+if [[ "$1" == "--all" ]]; then
+    BUILD_ALL=true
+fi
+
+# Function to check if service was modified
+service_modified() {
+    local SERVICE=$1
+    local SERVICE_PATH=""
+    
+    # Determine service path
+    case "$SERVICE" in
+        "nginx-root-proxy")
+            SERVICE_PATH="nginx-root-proxy/"
+            ;;
+        "frontend")
+            SERVICE_PATH="lego-factory-frontend/"
+            ;;
+        "api-gateway"|"user-service"|"masterdata-service"|"inventory-service"|"order-processing-service"|"simal-integration-service")
+            SERVICE_PATH="lego-factory-backend/${SERVICE}/"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+    
+    # Check if files in service path were modified (comparing to origin/prod)
+    if git diff --quiet origin/prod HEAD -- "$SERVICE_PATH" 2>/dev/null; then
+        return 1  # No changes
+    else
+        return 0  # Has changes
+    fi
+}
+
+# Determine which services to build
+SERVICES=()
+if [ "$BUILD_ALL" = true ]; then
+    echo -e "${YELLOW}Building ALL services (--all flag provided)${NC}"
+    SERVICES=("${ALL_SERVICES[@]}")
+else
+    echo -e "${BLUE}Detecting modified services...${NC}"
+    for SERVICE in "${ALL_SERVICES[@]}"; do
+        if service_modified "$SERVICE"; then
+            SERVICES+=("$SERVICE")
+            echo -e "${GREEN}  ✓${NC} ${SERVICE} - modified"
+        else
+            echo -e "${BLUE}  ○${NC} ${SERVICE} - unchanged"
+        fi
+    done
+    
+    if [ ${#SERVICES[@]} -eq 0 ]; then
+        echo -e "${YELLOW}No modified services detected.${NC}"
+        echo -e "${YELLOW}Use --all flag to build all services anyway.${NC}"
+        exit 0
+    fi
+fi
+
+echo ""
+echo -e "${GREEN}Services to build: ${#SERVICES[@]}${NC}"
+for SERVICE in "${SERVICES[@]}"; do
+    echo -e "  • ${SERVICE}"
+done
+echo ""
 GIT_COMMIT=$(git rev-parse --short HEAD)
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 VERSION_TAG="${GIT_BRANCH}-${GIT_COMMIT}-$(date +%Y%m%d-%H%M%S)"
@@ -73,20 +184,46 @@ push_service() {
     echo -e "${BLUE}Processing: ${SERVICE}${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     
-    # Build with docker-compose
+    # Build with docker-compose (allow warnings, only fail on actual errors)
     echo -e "${YELLOW}[1/5]${NC} Building ${SERVICE}..."
-    if ! docker-compose build --no-cache "${SERVICE}" 2>&1 | grep -E "(Building|Successfully built|ERROR)"; then
-        echo -e "${RED}✗ Build failed for ${SERVICE}${NC}"
+    BUILD_OUTPUT=$(docker-compose build --no-cache "${SERVICE}" 2>&1)
+    BUILD_EXIT_CODE=$?
+    
+    # Show relevant build output
+    echo "$BUILD_OUTPUT" | grep -E "(Building|Successfully built|Successfully tagged|ERROR|FAILED)" | tail -10
+    
+    # Check if build actually failed (not just warnings)
+    if [ $BUILD_EXIT_CODE -ne 0 ]; then
+        echo -e "${RED}✗ Build failed for ${SERVICE} (exit code: $BUILD_EXIT_CODE)${NC}"
+        echo "$BUILD_OUTPUT" | grep -E "ERROR" | tail -5
         FAILED_PUSHES+=("${SERVICE}")
         return 1
     fi
     echo -e "${GREEN}✓ Build successful${NC}"
     
-    # Get the image ID from docker-compose
+    # Get the image ID - try multiple methods
     echo -e "${YELLOW}[2/5]${NC} Getting image ID..."
+    
+    # Method 1: docker-compose images
     LOCAL_IMAGE=$(docker-compose images -q "${SERVICE}" 2>/dev/null | head -n1)
+    
+    # Method 2: If not found, try getting from docker images directly
     if [ -z "$LOCAL_IMAGE" ]; then
+        LOCAL_IMAGE=$(docker images -q "${PROJECT_NAME}-${SERVICE}:latest" 2>/dev/null | head -n1)
+    fi
+    
+    # Method 3: Try with lego-sample-factory prefix
+    if [ -z "$LOCAL_IMAGE" ]; then
+        LOCAL_IMAGE=$(docker images -q "lego-sample-factory-${SERVICE}:latest" 2>/dev/null | head -n1)
+    fi
+    
+    if [ -z "$LOCAL_IMAGE" ]; then
+        echo -e "${YELLOW}⚠ Could not find image ID automatically, searching...${NC}"
+        # Show what images exist for this service
+        docker images | grep -E "(${SERVICE}|${PROJECT_NAME})" | head -5
         echo -e "${RED}✗ Could not find built image for ${SERVICE}${NC}"
+        echo -e "${YELLOW}Available images:${NC}"
+        docker images --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}" | grep -i "${SERVICE}" || echo "  (none found)"
         FAILED_PUSHES+=("${SERVICE}")
         return 1
     fi
@@ -144,6 +281,11 @@ push_service() {
 TOTAL_SERVICES=${#SERVICES[@]}
 CURRENT=0
 
+echo ""
+echo -e "${BLUE}==========================================${NC}"
+echo -e "${BLUE}Starting Build & Push Process${NC}"
+echo -e "${BLUE}==========================================${NC}"
+
 for SERVICE in "${SERVICES[@]}"; do
     CURRENT=$((CURRENT + 1))
     echo ""
@@ -151,8 +293,9 @@ for SERVICE in "${SERVICES[@]}"; do
     echo -e "${BLUE}Service ${CURRENT}/${TOTAL_SERVICES}${NC}"
     echo -e "${BLUE}═══════════════════════════════════════${NC}"
     
+    # Continue even if one service fails
     if ! push_service "${SERVICE}"; then
-        echo -e "${RED}Failed to process ${SERVICE}${NC}"
+        echo -e "${YELLOW}⚠ Skipping ${SERVICE}, continuing with next service...${NC}"
     fi
 done
 
@@ -174,8 +317,17 @@ if [ ${#FAILED_PUSHES[@]} -gt 0 ]; then
         echo -e "  ${RED}✗${NC} ${SERVICE}"
     done
     echo ""
-    echo -e "${RED}Some services failed. Please check the output above.${NC}"
-    exit 1
+    echo -e "${YELLOW}Some services failed, but successful ones were pushed.${NC}"
+    echo -e "${YELLOW}Check the output above for details.${NC}"
+    
+    # Don't exit with error if at least some services succeeded
+    if [ ${#SUCCESSFUL_PUSHES[@]} -gt 0 ]; then
+        echo -e "${GREEN}${#SUCCESSFUL_PUSHES[@]} service(s) pushed successfully.${NC}"
+        exit 0
+    else
+        echo -e "${RED}All services failed!${NC}"
+        exit 1
+    fi
 fi
 
 echo ""
