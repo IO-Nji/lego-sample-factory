@@ -338,7 +338,7 @@ function HomePage() {
                 <WorkstationCard 
                   icon="🛒" 
                   name="Customer" 
-                  tooltip={{ description: "Place Order for Products", username: "customer" }}
+                  tooltip={{ description: "Place Customer Order for Products", username: "lego_admin" }}
                   layout="horizontal"
                 />
                 <div className="flow-connector green right-arrow">
@@ -348,7 +348,7 @@ function HomePage() {
                 <WorkstationCard 
                   icon="🏭" 
                   name={<>Plant<br/>Warehouse</>} 
-                  tooltip={{ description: "Stock Check; Fulfill customer order or order production", username: "plant_warehouse" }}
+                  tooltip={{ description: "Stock Check; Fulfill Customer Order or Order Production", username: "plant_warehouse" }}
                   status="highlight"
                   layout="horizontal"
                 />
@@ -359,7 +359,7 @@ function HomePage() {
                 <WorkstationCard 
                   icon="📦" 
                   name="Delivery" 
-                  tooltip="Order shipped to customer | Scenario 1: Direct Fulfillment complete"
+                  tooltip={{ description: "Order Shipped to Customer", username: "Fulfillment Scenarios Complete" }}
                   layout="horizontal"
                 />
               </div>
