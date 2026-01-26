@@ -27,9 +27,10 @@
 /* L.I.F.E Title Styling */
 .hero-title-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 1.5rem;
 }
 
 .hero-main-title {
