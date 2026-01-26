@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import Footer from './Footer';
 import styles from './StandardDashboardLayout.module.css';
 
 /**
@@ -92,6 +93,9 @@ function StandardDashboardLayout({
           </div>
         )}
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

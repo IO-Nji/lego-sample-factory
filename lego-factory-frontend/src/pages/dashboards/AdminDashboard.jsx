@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../../api/api";
-import { StatCard, Button, ActivityLog, PageHeader, WorkstationCard, StatisticsGrid } from "../../components";
+import { StatCard, Button, ActivityLog, PageHeader, WorkstationCard, StatisticsGrid, CompactScheduleTimeline, Footer } from "../../components";
 import PieChart from "../../components/PieChart";
 import BarChart from "../../components/BarChart";
 import "../../styles/Chart.css";
@@ -33,6 +33,10 @@ function AdminDashboard() {
     recentOrders: [],
     productionByType: {},
   });
+  
+  // Gantt Chart Data
+  const [scheduledTasks, setScheduledTasks] = useState([]);
+  const [scheduledOrders, setScheduledOrders] = useState([]);
 
   // Track last data to prevent unnecessary updates
   const lastDataRef = useRef(null);
@@ -97,6 +101,38 @@ function AdminDashboard() {
       }
     } catch (err) {
       console.error('Failed to fetch audit logs:', err);
+    }
+  }, []);
+  
+  // Fetch scheduled tasks for Gantt chart
+  const fetchScheduledData = useCallback(async () => {
+    try {
+      const response = await api.get("/simal/scheduled-orders");
+      const orders = Array.isArray(response?.data) ? response.data : [];
+      
+      setScheduledOrders(orders);
+      
+      // Extract and format all tasks for timeline (same as ProductionPlanningDashboard)
+      const allTasks = [];
+      orders.forEach(order => {
+        if (order.scheduledTasks && Array.isArray(order.scheduledTasks)) {
+          order.scheduledTasks.forEach(task => {
+            allTasks.push({
+              ...task,
+              id: task.taskId,
+              workstationName: task.workstationName,
+              startTime: task.startTime,
+              endTime: task.endTime,
+              status: order.status || 'SCHEDULED',
+              orderId: order.id,
+              scheduleId: order.scheduleId
+            });
+          });
+        }
+      });
+      setScheduledTasks(allTasks);
+    } catch (err) {
+      console.error('Failed to fetch scheduled data:', err);
     }
   }, []);
 
@@ -223,6 +259,9 @@ function AdminDashboard() {
 
       // Fetch audit logs for notifications (replaced detectOrderChanges)
       fetchAuditLogs();
+      
+      // Fetch scheduled data for Gantt chart
+      fetchScheduledData();
 
       // OPTIMIZATION: Only update state if data has actually changed
       // Use JSON comparison for deep equality check
@@ -239,7 +278,7 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [dashboardData.totalOrders, fetchAuditLogs]);
+  }, [dashboardData.totalOrders, fetchAuditLogs, fetchScheduledData]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -323,40 +362,96 @@ function AdminDashboard() {
         </Button>
       </div>
 
-      {/* Row 1: System Activity Log (flex) | Statistics Grid (fixed) | Stacked Charts (fixed) */}
+      {/* Row 1: Activity Log (flex) | Order Status Chart | Production Type Chart */}
       <div style={{ 
         display: 'flex',
         gap: '1.25rem',
-        marginBottom: '2rem',
+        marginBottom: '1.5rem',
         alignItems: 'stretch',
-        height: '380px'
+        height: '320px'
       }}>
-        {/* Column 1: System Activity Log - Takes remaining space, constrained height */}
+        {/* Column 1: System Activity Log */}
         <div style={{ 
           flex: '1',
+          minWidth: '0',
           height: '100%',
-          maxHeight: '380px',
+          backgroundColor: 'white',
+          borderRadius: '0.5rem',
+          border: '1px solid var(--color-border)',
+          padding: '1rem',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column'
         }}>
-          <div style={{ height: '100%', overflow: 'hidden' }}>
-            <ActivityLog 
-              notifications={notifications}
-              title="SYSTEM ACTIVITY LOG"
-              maxVisible={10}
-              onClear={clearNotifications}
-            />
-          </div>
+          <ActivityLog 
+            notifications={notifications}
+            title="SYSTEM ACTIVITY LOG"
+            maxVisible={10}
+            onClear={clearNotifications}
+            titleStyle={{ textAlign: 'left' }}
+          />
         </div>
 
-        {/* Column 2: Statistics Grid - Fixed width, compact 4x2 layout, centered vertically */}
+        {/* Column 2: Order Status Distribution */}
         <div style={{ 
           flexShrink: 0,
+          width: '260px',
+          height: '100%',
+          backgroundColor: 'white',
+          borderRadius: '0.5rem',
+          border: '1px solid var(--color-border)',
+          padding: '1rem',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%'
+          justifyContent: 'center'
+        }}>
+          <PieChart 
+            title="ORDER STATUS DISTRIBUTION"
+            data={orderStatusData}
+            size={135}
+          />
+        </div>
+
+        {/* Column 3: Production by Type */}
+        <div style={{ 
+          flexShrink: 0,
+          width: '260px',
+          height: '100%',
+          backgroundColor: 'white',
+          borderRadius: '0.5rem',
+          border: '1px solid var(--color-border)',
+          padding: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <PieChart 
+            title="PRODUCTION STATUS TYPE"
+            data={productionTypeData}
+            size={135}
+          />
+        </div>
+      </div>
+
+      {/* Row 2: Statistics Grid | Gantt Chart */}
+      <div style={{ 
+        display: 'flex',
+        gap: '1.25rem',
+        marginBottom: '1.5rem',
+        alignItems: 'stretch',
+        height: '360px'
+      }}>
+        {/* Column 1: Statistics Grid */}
+        <div style={{ 
+          flexShrink: 0,
+          height: '100%',
+          backgroundColor: 'white',
+          borderRadius: '0.5rem',
+          border: '1px solid var(--color-border)',
+          padding: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}>
           <StatisticsGrid 
             stats={[
@@ -372,46 +467,52 @@ function AdminDashboard() {
           />
         </div>
 
-        {/* Column 3: Stacked Charts - Fixed width, centered vertically */}
+        {/* Column 2: Gantt Chart */}
         <div style={{ 
+          flex: '1',
+          minWidth: '0',
+          height: '100%',
+          backgroundColor: 'white',
+          borderRadius: '0.5rem',
+          border: '1px solid var(--color-border)',
+          padding: '1rem',
+          overflow: 'hidden',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          flexShrink: 0,
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%'
+          flexDirection: 'column'
         }}>
-          <PieChart 
-            title="ORDER STATUS DISTRIBUTION"
-            data={orderStatusData}
-            size={110}
-          />
-          <PieChart 
-            title="PRODUCTION BY TYPE"
-            data={productionTypeData}
-            size={110}
+          <CompactScheduleTimeline
+            scheduledTasks={scheduledTasks}
+            onTaskClick={(task) => {
+              console.log('Task clicked:', task);
+              addNotification(`Viewing task: ${task.taskType || task.operationType || 'Task'}`, 'info');
+            }}
+            title="Production Schedule Timeline"
           />
         </div>
       </div>
 
-      {/* Row 2: Workstation Monitor + User Roles + Recent Orders */}
-      <div style={{ padding: '0', marginTop: '2rem' }}>
+      {/* Row 3: Workstation Monitor + User Roles + Recent Orders */}
+      <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'stretch' }}>
+        {/* Workstation Status Monitor */}
         <div style={{ 
-          display: 'flex', 
-          gap: '1.25rem',
-          alignItems: 'stretch'
+          flex: '0 0 calc(40% - 0.83rem)',
+          minWidth: 0,
+          backgroundColor: 'white',
+          borderRadius: '0.5rem',
+          border: '1px solid var(--color-border)',
+          padding: '1rem'
         }}>
-          {/* Workstation Status Monitor - 33% */}
-          <div style={{ flex: '0 0 calc(33.33% - 0.67rem)', minWidth: 0 }}>
-            <div className="chart-container" style={{ padding: '0.5rem' }}>
-              <h3 className="component-title">WORKSTATION STATUS MONITOR</h3>
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '0.35rem',
-                padding: '0'
-              }}>
+          <h3 className="component-title" style={{ marginBottom: '1rem' }}>WORKSTATION STATUS MONITOR</h3>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '0.6rem',
+            padding: '0',
+            justifyItems: 'center',
+            alignItems: 'center',
+            justifyContent: 'center',
+            alignContent: 'center'
+          }}>
                 {dashboardData.workstations.map((ws) => {
                   // Determine status based on actual orders at workstation
                   // 'active' (yellow) only when workstation has pending/processing orders
@@ -450,25 +551,39 @@ function AdminDashboard() {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
+        </div>
           
-          {/* User Roles Distribution - 33% */}
-          <div style={{ flex: '0 0 calc(33.33% - 0.67rem)', minWidth: 0 }}>
-            <div className="chart-container" style={{ padding: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <PieChart 
-                title="USER ROLES DISTRIBUTION"
-                data={userRoleData}
-                size={180}
-              />
-            </div>
-          </div>
+        {/* User Roles Distribution - Horizontal Layout */}
+        <div style={{ 
+          flex: '1',
+          minWidth: 0,
+          backgroundColor: 'white',
+          borderRadius: '0.5rem',
+          border: '1px solid var(--color-border)',
+          padding: '1rem',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <PieChart 
+            title="USER ROLES DISTRIBUTION"
+            data={userRoleData}
+            size={120}
+            layout="horizontal"
+          />
+        </div>
           
-          {/* Recent Orders - 33% */}
-          <div className="chart-container" style={{ flex: '0 0 calc(33.33% - 0.67rem)', minWidth: 0, padding: '0.5rem' }}>
-            <h3 className="component-title">RECENT ORDERS</h3>
-            {dashboardData.recentOrders.length > 0 ? (
-              <div style={{ overflowY: 'auto', maxHeight: '320px' }}>
+        {/* Recent Orders */}
+        <div style={{ 
+          flex: '0 0 calc(30% - 0.83rem)',
+          minWidth: 0,
+          backgroundColor: 'white',
+          borderRadius: '0.5rem',
+          border: '1px solid var(--color-border)',
+          padding: '1rem'
+        }}>
+          <h3 className="component-title" style={{ marginBottom: '1rem' }}>RECENT ORDERS</h3>
+          {dashboardData.recentOrders.length > 0 ? (
+            <div style={{ overflowY: 'auto', maxHeight: '280px' }}>
                 <table style={{ 
                   width: '100%', 
                   borderCollapse: 'collapse',
@@ -526,13 +641,15 @@ function AdminDashboard() {
                     })}
                   </tbody>
                 </table>
-              </div>
-            ) : (
-              <div className="chart-empty">No recent orders</div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="chart-empty">No recent orders</div>
+          )}
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
