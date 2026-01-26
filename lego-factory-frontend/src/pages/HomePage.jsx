@@ -338,7 +338,7 @@ function HomePage() {
                 <WorkstationCard 
                   icon="🛒" 
                   name="Customer" 
-                  tooltip="Customer places order for products | Entry point for all orders"
+                  tooltip={{ description: "Place Order for Products", username: "customer" }}
                   layout="horizontal"
                 />
                 <div className="flow-connector green right-arrow">
@@ -348,7 +348,7 @@ function HomePage() {
                 <WorkstationCard 
                   icon="🏭" 
                   name={<>Plant<br/>Warehouse</>} 
-                  tooltip={{ description: "Check stock and fulfill customer orders, or trigger production if stock unavailable", username: "plant_warehouse" }}
+                  tooltip={{ description: "Stock Check; Fulfill customer order or order production", username: "plant_warehouse" }}
                   status="highlight"
                   layout="horizontal"
                 />
@@ -381,7 +381,7 @@ function HomePage() {
                 <WorkstationCard 
                   icon="🏢" 
                   name={<>Modules<br/>Supermarket</>} 
-                  tooltip={{ description: "Manage module inventory and trigger production when stock is low", username: "modules_supermarket" }}
+                  tooltip={{ description: "Manage Modules Inventory + Trigger Production", username: "modules_supermarket" }}
                   layout="horizontal"
                 />
                 <div className="flow-connector purple left-arrow">
@@ -391,7 +391,7 @@ function HomePage() {
                 <WorkstationCard 
                   icon="🔨" 
                   name={<>Final<br/>Assembly</>} 
-                  tooltip={{ description: "Assemble MODULES to PRODUCT", username: "final_assembly" }}
+                  tooltip={{ description: "Assemble MODULES → PRODUCT", username: "final_assembly" }}
                   layout="horizontal"
                 />
               </div>
@@ -414,14 +414,14 @@ function HomePage() {
                   <WorkstationCard 
                     icon="📋" 
                     name={<>Production<br/>Planning</>} 
-                    tooltip={{ description: "Create and schedule production orders for the factory", username: "production_planning" }}
+                    tooltip={{ description: "Schedule Production Orders + Dispatch to Workstations", username: "production_planning" }}
                     layout="horizontal"
                   />
                   <div className="stack-arrow purple">↓</div>
                   <WorkstationCard 
                     icon="🎛️" 
                     name="Control" 
-                    tooltip={{ description: "Coordinate and monitor manufacturing operations", username: "production_control" }}
+                    tooltip={{ description: "Coordinate Manufacturing + Monitor Operations", username: "production_control" }}
                     layout="horizontal"
                   />
                 </div>
@@ -435,14 +435,14 @@ function HomePage() {
                   <WorkstationCard 
                     icon="📦" 
                     name={<>Parts<br/>Supply</>} 
-                    tooltip={{ description: "Manage raw material inventory and supply to production workstations", username: "parts_supply" }}
+                    tooltip={{ description: "Manage Raw Materials + Supply to Workstations", username: "parts_supply" }}
                     layout="horizontal"
                   />
                   <div className="stack-arrow green">↓</div>
                   <WorkstationCard 
                     icon="⚙️" 
                     name="Manufacturing" 
-                    tooltip={{ description: "Produce PARTS from raw materials (Injection → Pre-Production → Finishing)", username: "injection_molding" }}
+                    tooltip={{ description: "Produce PARTS: Injection → Pre-Production → Finishing", username: "injection_molding" }}
                     layout="horizontal"
                   />
                 </div>
@@ -456,7 +456,7 @@ function HomePage() {
                   <WorkstationCard 
                     icon="🔧" 
                     name="Assembly" 
-                    tooltip={{ description: "Assemble PARTS to MODULES (Gear Assembly → Motor Assembly)", username: "gear_assembly" }}
+                    tooltip={{ description: "Assemble PARTS → MODULES (Gear + Motor)", username: "gear_assembly" }}
                     layout="horizontal"
                   />
                 </div>
@@ -599,10 +599,7 @@ function HomePage() {
                 <div className="arch-layer">
                   <div 
                     className={`service-box frontend ${serviceHealth['frontend'] || 'unknown'}`}
-                    title="React Frontend
-● Role-based dashboards for 9 user types
-● Real-time order & inventory management
-● Built with: React 18 + Vite + Recharts"
+                    data-tooltip="React SPA | 9 role-based dashboards + real-time updates | React 18 + Vite"
                   >
                     <span className="service-name">React App</span>
                     <span className="service-tech">UI Layer</span>
@@ -616,10 +613,7 @@ function HomePage() {
               <div className="arch-layer">
                 <div 
                   className={`service-box gateway ${serviceHealth['api-gateway'] || 'unknown'}`}
-                  title="API Gateway
-● Central routing & load balancing
-● JWT authentication & validation
-● Built with: Spring Cloud Gateway 4.1.5"
+                  data-tooltip="Routing Hub | JWT auth + request filtering + load balancing | Spring Cloud Gateway"
                 >
                   <span className="service-name">API Gateway</span>
                   <span className="service-tech">Auth & Routing</span>
@@ -637,10 +631,7 @@ function HomePage() {
                 <div className="arch-layer services-primary">
                   <div 
                     className={`service-box service-user ${serviceHealth['user-service'] || 'unknown'}`}
-                    title="User Service
-● Authentication & JWT token generation
-● 9 role-based access control levels
-● Built with: Spring Boot 3.4 + H2 Database"
+                    data-tooltip="Auth & Users | JWT tokens + 9 role RBAC + workstation assignments | Spring Boot 3.4"
                   >
                     <span className="service-name">User</span>
                     <span className={`health-indicator ${serviceHealth['user-service'] || 'unknown'}`}></span>
@@ -648,10 +639,7 @@ function HomePage() {
                   
                   <div 
                     className={`service-box service-order ${serviceHealth['order-processing-service'] || 'unknown'}`}
-                    title="Order Processing Service
-● Customer, warehouse & production orders
-● Automated fulfillment workflows
-● Built with: Spring Boot 3.4 + JPA + H2"
+                    data-tooltip="Order Engine | Customer/warehouse/production orders + fulfillment workflows | Spring Boot 3.4"
                   >
                     <span className="service-name">Order</span>
                     <span className={`health-indicator ${serviceHealth['order-processing-service'] || 'unknown'}`}></span>
@@ -659,10 +647,7 @@ function HomePage() {
                   
                   <div 
                     className={`service-box service-simal ${serviceHealth['simal-integration-service'] || 'unknown'}`}
-                    title="SimAL Integration Service
-● Production scheduling & optimization
-● Interactive Gantt chart timeline
-● Built with: Spring Boot 3.4 + SimAL API"
+                    data-tooltip="Scheduling AI | Production optimization + interactive Gantt charts | SimAL API"
                   >
                     <span className="service-name">SimAL</span>
                     <span className={`health-indicator ${serviceHealth['simal-integration-service'] || 'unknown'}`}></span>
@@ -677,10 +662,7 @@ function HomePage() {
                 <div className="arch-layer services-secondary">
                   <div 
                     className={`service-box service-masterdata ${serviceHealth['masterdata-service'] || 'unknown'}`}
-                    title="Masterdata Service
-● Product catalog & Bill of Materials
-● Module & part definitions
-● Built with: Spring Boot 3.4 + JPA + H2"
+                    data-tooltip="Product Catalog | BOM hierarchy + product/module/part definitions | Spring Boot 3.4"
                   >
                     <span className="service-name">Masterdata</span>
                     <span className={`health-indicator ${serviceHealth['masterdata-service'] || 'unknown'}`}></span>
@@ -688,10 +670,7 @@ function HomePage() {
                   
                   <div 
                     className={`service-box service-inventory ${serviceHealth['inventory-service'] || 'unknown'}`}
-                    title="Inventory Service
-● Real-time stock tracking (9 workstations)
-● Audit trail & transaction history
-● Built with: Spring Boot 3.4 + JPA + H2"
+                    data-tooltip="Stock Tracker | Real-time inventory across 9 workstations + audit ledger | Spring Boot 3.4"
                   >
                     <span className="service-name">Inventory</span>
                     <span className={`health-indicator ${serviceHealth['inventory-service'] || 'unknown'}`}></span>

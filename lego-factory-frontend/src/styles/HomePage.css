@@ -1070,6 +1070,59 @@
   z-index: 10;
 }
 
+/* Microservices Tooltip Styling */
+.service-box[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d66 100%);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: pre-line;
+  width: 260px;
+  text-align: left;
+  z-index: 999999;
+  box-shadow: 
+    0 12px 32px rgba(44, 90, 160, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.2);
+  line-height: 1.6;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.service-box[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Tooltip arrow */
+.service-box[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: #1e3d66;
+  z-index: 999998;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.service-box[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
 .service-box.healthy:hover {
   box-shadow: 0 0 12px rgba(0, 230, 118, 0.5), 0 0 20px rgba(0, 230, 118, 0.3), 0 6px 16px rgba(44, 90, 160, 0.25);
 }
