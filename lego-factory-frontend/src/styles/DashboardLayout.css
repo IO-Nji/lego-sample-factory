@@ -21,6 +21,7 @@
   letter-spacing: 0.05em;
   color: var(--color-gray-700);
   margin: 0 0 0.4rem 0;
+  text-align: center;
 }
 
 /* Messages */

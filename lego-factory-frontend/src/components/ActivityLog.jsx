@@ -34,7 +34,8 @@ function ActivityLog({
   onClear,
   maxVisible = 50,
   emptyMessage = 'No activity yet',
-  enableColorCoding = true
+  enableColorCoding = true,
+  titleStyle = {}
 }) {
   const containerRef = useRef(null);
   const prevCountRef = useRef(notifications.length);
@@ -100,7 +101,7 @@ function ActivityLog({
   return (
     <div className={styles.activityLogContainer}>
       <div className={styles.header}>
-        <h2 className={styles.title}>{icon} {title}</h2>
+        <h2 className={styles.title} style={titleStyle}>{icon} {title}</h2>
         {onClear && notifications.length > 0 && (
           <button 
             onClick={onClear} 

@@ -7,8 +7,9 @@ import '../styles/DashboardLayout.css'; // Import for .component-title class
  * @param {Array} data - Array of {label, value, color}
  * @param {string} title - Chart title
  * @param {number} size - Chart diameter in pixels (default 200)
+ * @param {string} layout - 'vertical' (default) or 'horizontal' (chart and legend side-by-side)
  */
-function PieChart({ data, title, size = 200 }) {
+function PieChart({ data, title, size = 200, layout = 'vertical' }) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   
   if (total === 0) {
@@ -29,21 +30,24 @@ function PieChart({ data, title, size = 200 }) {
     return `${item.color} ${startAngle}% ${currentAngle}%`;
   }).join(', ');
 
+  const isHorizontal = layout === 'horizontal';
+
   return (
     <div className="chart-container">
       {title && <h3 className="component-title">{title}</h3>}
-      <div className="pie-chart-wrapper">
+      <div className="pie-chart-wrapper" style={isHorizontal ? { display: 'flex', alignItems: 'center', gap: '1.5rem' } : {}}>
         <div 
           className="pie-chart" 
           style={{ 
             width: size, 
             height: size,
-            background: `conic-gradient(${gradientStops})`
+            background: `conic-gradient(${gradientStops})`,
+            flexShrink: 0
           }}
         >
           <div className="pie-center"></div>
         </div>
-        <div className="chart-legend">
+        <div className="chart-legend" style={isHorizontal ? { flex: 1, minWidth: 0 } : {}}>
           {data.map((item, index) => (
             <div key={index} className="legend-item">
               <span className="legend-color" style={{ backgroundColor: item.color }}></span>
