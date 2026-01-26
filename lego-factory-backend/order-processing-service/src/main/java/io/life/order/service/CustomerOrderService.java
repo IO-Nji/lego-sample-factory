@@ -216,6 +216,45 @@ public class CustomerOrderService {
     }
 
     /**
+     * Check the current triggerScenario for a CONFIRMED order based on real-time stock.
+     * This dynamically re-evaluates stock availability, accounting for changes since confirmation.
+     * 
+     * @param id Customer order ID
+     * @return Current trigger scenario ("DIRECT_FULFILLMENT" or "WAREHOUSE_ORDER_NEEDED")
+     */
+    @Transactional(readOnly = true)
+    public String checkCurrentTriggerScenario(Long id) {
+        CustomerOrder order = getOrThrow(id);
+        
+        // Only check for CONFIRMED orders
+        if (!STATUS_CONFIRMED.equals(order.getStatus())) {
+            logger.debug("Order {} is not CONFIRMED, returning stored triggerScenario: {}", id, order.getTriggerScenario());
+            return order.getTriggerScenario();
+        }
+        
+        // Re-check stock availability in real-time
+        logger.info("=== DYNAMIC STOCK CHECK: Re-evaluating stock for order {} ===", order.getOrderNumber());
+        
+        boolean hasAllStock = order.getOrderItems().stream()
+            .allMatch(item -> {
+                boolean stockAvailable = inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
+                logger.info("  Item {} (qty: {}) - Current stock available: {}", 
+                    item.getItemId(), item.getQuantity(), stockAvailable);
+                return stockAvailable;
+            });
+        
+        String currentScenario = hasAllStock ? "DIRECT_FULFILLMENT" : "WAREHOUSE_ORDER_NEEDED";
+        
+        // Log if scenario has changed since confirmation
+        if (!currentScenario.equals(order.getTriggerScenario())) {
+            logger.warn("Order {} scenario changed: {} → {} (stock levels changed)", 
+                order.getOrderNumber(), order.getTriggerScenario(), currentScenario);
+        }
+        
+        return currentScenario;
+    }
+
+    /**
      * Check if a customer order can be completed.
      * 
      * A customer order can be completed when:

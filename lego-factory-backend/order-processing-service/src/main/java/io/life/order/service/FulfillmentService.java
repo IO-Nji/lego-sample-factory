@@ -172,49 +172,60 @@ public class FulfillmentService {
         warehouseOrder.setNotes("Auto-generated from customer order " + order.getOrderNumber());
 
         // BOM INTEGRATION: Convert products to modules using Bill of Materials
+        // Track which product each module group belongs to (for Final Assembly)
         List<WarehouseOrderItem> warehouseOrderItems = new ArrayList<>();
-        java.util.Map<Long, Integer> moduleRequirements = new java.util.HashMap<>();
         
+        // Process each customer order item separately to preserve product-to-module mapping
         for (OrderItem item : order.getOrderItems()) {
             if ("PRODUCT".equalsIgnoreCase(item.getItemType())) {
-                // Use BOM to get module requirements for this product
-                logger.info("BOM Lookup: Converting product {} (qty {}) to modules", item.getItemId(), item.getQuantity());
+                Long productId = item.getItemId();
+                Integer productQty = item.getQuantity();
+                
+                // Fetch product name from masterdata-service
+                String productName = masterdataService.getItemName("PRODUCT", productId);
+                
+                // Use BOM to get module requirements for this specific product
+                logger.info("BOM Lookup: Converting product {} ({}) qty {} to modules", productId, productName, productQty);
                 java.util.Map<Long, Integer> productModules = masterdataService.getModuleRequirementsForProduct(
-                    item.getItemId(), 
-                    item.getQuantity()
+                    productId, 
+                    productQty
                 );
                 
-                // Aggregate module requirements
+                // Create warehouse order items for each module, tracking the product ID
                 for (java.util.Map.Entry<Long, Integer> entry : productModules.entrySet()) {
                     Long moduleId = entry.getKey();
                     Integer requiredQty = entry.getValue();
-                    moduleRequirements.merge(moduleId, requiredQty, Integer::sum);
-                    logger.info("  - Product {} requires Module {} qty {}", item.getItemId(), moduleId, requiredQty);
+                    
+                    WarehouseOrderItem woItem = new WarehouseOrderItem();
+                    woItem.setWarehouseOrder(warehouseOrder);
+                    woItem.setItemId(moduleId);
+                    woItem.setProductId(productId); // Track which product this module is for
+                    
+                    // Fetch module name from masterdata-service
+                    String moduleName = masterdataService.getItemName("MODULE", moduleId);
+                    woItem.setItemName(moduleName);
+                    woItem.setRequestedQuantity(requiredQty);
+                    woItem.setFulfilledQuantity(0);
+                    woItem.setItemType("MODULE");
+                    woItem.setNotes("For product: " + productName + " (ID: " + productId + ")");
+                    warehouseOrderItems.add(woItem);
+                    
+                    logger.info("  - Module {} ({}) qty {} for product {} ({})", moduleId, moduleName, requiredQty, productId, productName);
                 }
             } else {
                 // For non-products, add directly (fallback for legacy data)
-                moduleRequirements.merge(item.getItemId(), item.getQuantity(), Integer::sum);
+                String itemName = masterdataService.getItemName(item.getItemType(), item.getItemId());
+                
+                WarehouseOrderItem woItem = new WarehouseOrderItem();
+                woItem.setWarehouseOrder(warehouseOrder);
+                woItem.setItemId(item.getItemId());
+                woItem.setProductId(null); // No product mapping for non-product items
+                woItem.setItemName(itemName);
+                woItem.setRequestedQuantity(item.getQuantity());
+                woItem.setFulfilledQuantity(0);
+                woItem.setItemType(item.getItemType());
+                warehouseOrderItems.add(woItem);
             }
-        }
-        
-        // Create warehouse order items from aggregated module requirements
-        for (java.util.Map.Entry<Long, Integer> entry : moduleRequirements.entrySet()) {
-            Long moduleId = entry.getKey();
-            Integer totalQty = entry.getValue();
-            
-            WarehouseOrderItem woItem = new WarehouseOrderItem();
-            woItem.setWarehouseOrder(warehouseOrder);
-            woItem.setItemId(moduleId);
-            
-            // Fetch module name from masterdata-service
-            String moduleName = masterdataService.getItemName("MODULE", moduleId);
-            woItem.setItemName(moduleName);
-            woItem.setRequestedQuantity(totalQty);
-            woItem.setFulfilledQuantity(0);
-            woItem.setItemType("MODULE"); // Warehouse orders always deal with MODULEs
-            warehouseOrderItems.add(woItem);
-            
-            logger.info("  - Warehouse order item: Module {} ({}) qty {}", moduleId, moduleName, totalQty);
         }
         
         warehouseOrder.setOrderItems(warehouseOrderItems);
@@ -258,31 +269,52 @@ public class FulfillmentService {
         warehouseOrder.setNotes("Auto-generated from customer order " + order.getOrderNumber() + " (partial fulfillment)");
 
         // BOM INTEGRATION: Convert unavailable products to module requirements
-        java.util.Map<Long, Integer> moduleRequirements = new java.util.HashMap<>();
+        // Track which product each module group belongs to
+        List<WarehouseOrderItem> warehouseOrderItems = new ArrayList<>();
         
         // Fulfill available items and collect BOM requirements for unavailable ones
         for (OrderItem item : order.getOrderItems()) {
             if ("PRODUCT".equalsIgnoreCase(item.getItemType())) {
+                Long productId = item.getItemId();
+                Integer productQty = item.getQuantity();
+                
+                // Fetch product name from masterdata-service
+                String productName = masterdataService.getItemName("PRODUCT", productId);
+                
                 // Check if product is available at Plant Warehouse
-                if (inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity())) {
+                if (inventoryService.checkStock(order.getWorkstationId(), productId, productQty)) {
                     // Fulfill from local stock
-                    inventoryService.updateStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
-                    item.setFulfilledQuantity((item.getFulfilledQuantity() == null ? 0 : item.getFulfilledQuantity()) + item.getQuantity());
-                    logger.info("  - Product {} fulfilled from local stock", item.getItemId());
+                    inventoryService.updateStock(order.getWorkstationId(), productId, productQty);
+                    item.setFulfilledQuantity((item.getFulfilledQuantity() == null ? 0 : item.getFulfilledQuantity()) + productQty);
+                    logger.info("  - Product {} ({}) fulfilled from local stock", productId, productName);
                 } else {
                     // Product not available - use BOM to convert to module requirements
-                    logger.info("BOM Lookup: Converting unavailable product {} (qty {}) to modules", item.getItemId(), item.getQuantity());
+                    logger.info("BOM Lookup: Converting unavailable product {} ({}) qty {} to modules", productId, productName, productQty);
                     java.util.Map<Long, Integer> productModules = masterdataService.getModuleRequirementsForProduct(
-                        item.getItemId(), 
-                        item.getQuantity()
+                        productId, 
+                        productQty
                     );
                     
-                    // Aggregate module requirements
+                    // Create warehouse order items for each module, tracking the product ID
                     for (java.util.Map.Entry<Long, Integer> entry : productModules.entrySet()) {
                         Long moduleId = entry.getKey();
                         Integer requiredQty = entry.getValue();
-                        moduleRequirements.merge(moduleId, requiredQty, Integer::sum);
-                        logger.info("  - Product {} requires Module {} qty {}", item.getItemId(), moduleId, requiredQty);
+                        
+                        WarehouseOrderItem woItem = new WarehouseOrderItem();
+                        woItem.setWarehouseOrder(warehouseOrder);
+                        woItem.setItemId(moduleId);
+                        woItem.setProductId(productId); // Track which product this module is for
+                        
+                        // Fetch module name from masterdata-service
+                        String moduleName = masterdataService.getItemName("MODULE", moduleId);
+                        woItem.setItemName(moduleName);
+                        woItem.setRequestedQuantity(requiredQty);
+                        woItem.setFulfilledQuantity(0);
+                        woItem.setItemType("MODULE");
+                        woItem.setNotes("For product: " + productName + " (ID: " + productId + ")");
+                        warehouseOrderItems.add(woItem);
+                        
+                        logger.info("  - Module {} ({}) qty {} for product {} ({})", moduleId, moduleName, requiredQty, productId, productName);
                     }
                 }
             } else {
@@ -292,30 +324,19 @@ public class FulfillmentService {
                     item.setFulfilledQuantity((item.getFulfilledQuantity() == null ? 0 : item.getFulfilledQuantity()) + item.getQuantity());
                     logger.info("  - Item {} fulfilled from local stock", item.getItemId());
                 } else {
-                    moduleRequirements.merge(item.getItemId(), item.getQuantity(), Integer::sum);
+                    String itemName = masterdataService.getItemName(item.getItemType(), item.getItemId());
+                    
+                    WarehouseOrderItem woItem = new WarehouseOrderItem();
+                    woItem.setWarehouseOrder(warehouseOrder);
+                    woItem.setItemId(item.getItemId());
+                    woItem.setProductId(null); // No product mapping for non-product items
+                    woItem.setItemName(itemName);
+                    woItem.setRequestedQuantity(item.getQuantity());
+                    woItem.setFulfilledQuantity(0);
+                    woItem.setItemType(item.getItemType());
+                    warehouseOrderItems.add(woItem);
                 }
             }
-        }
-        
-        // Create warehouse order items from aggregated module requirements
-        List<WarehouseOrderItem> warehouseOrderItems = new ArrayList<>();
-        for (java.util.Map.Entry<Long, Integer> entry : moduleRequirements.entrySet()) {
-            Long moduleId = entry.getKey();
-            Integer totalQty = entry.getValue();
-            
-            WarehouseOrderItem woItem = new WarehouseOrderItem();
-            woItem.setWarehouseOrder(warehouseOrder);
-            woItem.setItemId(moduleId);
-            
-            // Fetch module name from masterdata-service
-            String moduleName = masterdataService.getItemName("MODULE", moduleId);
-            woItem.setItemName(moduleName);
-            woItem.setRequestedQuantity(totalQty);
-            woItem.setFulfilledQuantity(0);
-            woItem.setItemType("MODULE"); // Warehouse orders always deal with MODULEs
-            warehouseOrderItems.add(woItem);
-            
-            logger.info("  - Module {} ({}) requested from Modules Supermarket qty {}", moduleId, moduleName, totalQty);
         }
 
         // Only save warehouse order if there are items to request

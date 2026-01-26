@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -92,6 +93,23 @@ public class CustomerOrderController {
     public ResponseEntity<Boolean> canComplete(@PathVariable Long id) {
         boolean canComplete = customerOrderService.canCompleteOrder(id);
         return ResponseEntity.ok(canComplete);
+    }
+
+    /**
+     * GET /api/customer-orders/{id}/current-scenario
+     * Dynamically check the current trigger scenario based on real-time stock levels.
+     * 
+     * Returns:
+     * - "DIRECT_FULFILLMENT" if sufficient stock is available
+     * - "WAREHOUSE_ORDER_NEEDED" if stock is insufficient
+     * 
+     * This endpoint re-evaluates stock in real-time, accounting for changes
+     * that may have occurred since the order was confirmed.
+     */
+    @GetMapping("/{id}/current-scenario")
+    public ResponseEntity<Map<String, String>> getCurrentScenario(@PathVariable Long id) {
+        String scenario = customerOrderService.checkCurrentTriggerScenario(id);
+        return ResponseEntity.ok(Map.of("triggerScenario", scenario));
     }
 
     // --- Explicit status transition endpoints ---

@@ -120,11 +120,31 @@ function PlantWarehouseDashboard() {
     try {
       const response = await api.get("/customer-orders/workstation/" + workstationId);
       const ordersList = Array.isArray(response.data) ? response.data : [];
-      setOrders(ordersList);
-      applyFilter(ordersList, filterStatus);
+      
+      // Dynamically check current trigger scenario for CONFIRMED orders
+      const ordersWithCurrentScenario = await Promise.all(
+        ordersList.map(async (order) => {
+          if (order.status === 'CONFIRMED') {
+            try {
+              const scenarioResponse = await api.get(`/customer-orders/${order.id}/current-scenario`);
+              return {
+                ...order,
+                triggerScenario: scenarioResponse.data.triggerScenario
+              };
+            } catch (err) {
+              console.error(`Failed to fetch current scenario for order ${order.id}:`, err);
+              return order; // Keep original if check fails
+            }
+          }
+          return order;
+        })
+      );
+      
+      setOrders(ordersWithCurrentScenario);
+      applyFilter(ordersWithCurrentScenario, filterStatus);
       
       // Check completion status for PROCESSING orders
-      await checkProcessingOrdersCompletion(ordersList);
+      await checkProcessingOrdersCompletion(ordersWithCurrentScenario);
     } catch (err) {
       if (err.response?.status !== 404) {
         setError("Failed to load orders: " + (err.response?.data?.message || err.message));

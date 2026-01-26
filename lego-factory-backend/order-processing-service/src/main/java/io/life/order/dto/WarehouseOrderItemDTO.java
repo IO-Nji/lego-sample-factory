@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class WarehouseOrderItemDTO {
     private Long id;
     private Long itemId;
+    private Long productId; // Track which product this module is for
     private String itemName;
     private Integer requestedQuantity;
     private Integer fulfilledQuantity;

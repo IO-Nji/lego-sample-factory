@@ -179,3 +179,5 @@ test-warehouse-fulfillment.sh
 test-warehouse-order-with-stock.sh
 verify-scenario-2-behavior.sh
 verify-scenarios-1-2.sh
+.github/copilot-instructions.md
+.github/copilot-instructions.md
