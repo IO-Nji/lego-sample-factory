@@ -193,7 +193,10 @@ function HomePage() {
       <section className="home-page">
         {/* Welcome Header */}
         <div className="home-hero">
-          <h2>LIFE System - LEGO Integrated Factory Execution</h2>
+          <div className="hero-title-container">
+            <h1 className="hero-main-title">L.I.F.E</h1>
+            <p className="hero-slogan">LEGO Integrated Factory Execution</p>
+          </div>
         </div>
 
         {message && (
