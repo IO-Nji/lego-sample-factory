@@ -9,7 +9,7 @@ console.log("API Configuration loaded - endpoints will use axios baseURL from ap
 export const LOGIN_ENDPOINT = `/auth/login`;
 export const USERS_ENDPOINT = `/users`;
 export const WORKSTATIONS_ENDPOINT = `/masterdata/workstations`;
-export const PRODUCT_VARIANTS_ENDPOINT = `/masterdata/product-variants`;
+export const PRODUCTS_ENDPOINT = `/masterdata/products`;
 export const MODULES_ENDPOINT = `/masterdata/modules`;
 export const PARTS_ENDPOINT = `/masterdata/parts`;
 

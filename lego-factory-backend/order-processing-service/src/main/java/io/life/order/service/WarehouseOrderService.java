@@ -114,14 +114,20 @@ public class WarehouseOrderService {
 
         // STOCK CHECK REFINEMENT: Check MODULE stock at Modules Supermarket (WS-8) DURING confirmation
         // This determines the scenario path: direct fulfillment or production required
+        logger.info("=== WAREHOUSE ORDER CONFIRMATION: Checking MODULE stock for order {} at workstation {} ===", 
+            order.getOrderNumber(), order.getWorkstationId());
+        
         boolean hasAllModules = order.getOrderItems().stream()
             .allMatch(item -> {
                 // Modules Supermarket (WS-8) checks MODULE stock
-                return inventoryService.checkStock(
+                boolean stockAvailable = inventoryService.checkStock(
                     order.getWorkstationId(), // Modules Supermarket workstation ID (8)
                     item.getItemId(),
                     item.getRequestedQuantity()
                 );
+                logger.info("  Module {} (qty: {}) - Stock available: {}", 
+                    item.getItemId(), item.getRequestedQuantity(), stockAvailable);
+                return stockAvailable;
             });
         
         // Set triggerScenario based on MODULE stock check
@@ -374,28 +380,45 @@ public class WarehouseOrderService {
     /**
      * Create FinalAssemblyOrders from WarehouseOrder (Scenario 2)
      * Called after modules are debited from Modules Supermarket
-     * Creates one FinalAssemblyOrder per warehouse order item
+     * Groups modules by product and creates one FinalAssemblyOrder per unique product
      */
     private void createFinalAssemblyOrdersFromWarehouseOrder(WarehouseOrder order) {
         try {
             logger.info("Creating Final Assembly orders for warehouse order {}", order.getOrderNumber());
             
+            // Group warehouse order items by productId
+            java.util.Map<Long, java.util.List<WarehouseOrderItem>> itemsByProduct = new java.util.HashMap<>();
             for (WarehouseOrderItem item : order.getOrderItems()) {
-                if (item.getFulfilledQuantity() > 0) {
-                    try {
-                        Long productId = item.getItemId();
-                        Integer quantity = item.getFulfilledQuantity();
-                        
-                        // Create Final Assembly order using new service (Scenario 2)
-                        finalAssemblyOrderService.createFromWarehouseOrder(order, productId, quantity);
-                        
-                        logger.info("✓ Final Assembly order created for Product #{} ({}) qty {}", 
-                                productId, item.getItemName(), quantity);
-                        
-                    } catch (Exception e) {
-                        logger.error("✗ Failed to create Final Assembly order for item {}: {}", item.getItemId(), e.getMessage());
-                        // Continue with other items even if one fails
+                if (item.getProductId() != null && item.getFulfilledQuantity() > 0) {
+                    itemsByProduct.computeIfAbsent(item.getProductId(), k -> new java.util.ArrayList<>()).add(item);
+                }
+            }
+            
+            // Create one Final Assembly order per unique product
+            for (java.util.Map.Entry<Long, java.util.List<WarehouseOrderItem>> entry : itemsByProduct.entrySet()) {
+                Long productId = entry.getKey();
+                java.util.List<WarehouseOrderItem> productItems = entry.getValue();
+                
+                try {
+                    // Calculate total quantity for this product (usually just the count of fulfilled items)
+                    // For now, assume 1 product per set of modules
+                    Integer quantity = 1;
+                    
+                    // Get product name for logging
+                    String productName = productItems.get(0).getNotes(); // Contains "For product: NAME"
+                    if (productName != null && productName.startsWith("For product: ")) {
+                        productName = productName.substring("For product: ".length());
                     }
+                    
+                    // Create Final Assembly order using productId (not moduleId!)
+                    finalAssemblyOrderService.createFromWarehouseOrder(order, productId, quantity);
+                    
+                    logger.info("✓ Final Assembly order created for Product #{} ({}) qty {}", 
+                            productId, productName, quantity);
+                    
+                } catch (Exception e) {
+                    logger.error("✗ Failed to create Final Assembly order for product {}: {}", productId, e.getMessage());
+                    // Continue with other products even if one fails
                 }
             }
             
@@ -477,6 +500,7 @@ public class WarehouseOrderService {
         WarehouseOrderItemDTO dto = new WarehouseOrderItemDTO();
         dto.setId(item.getId());
         dto.setItemId(item.getItemId());
+        dto.setProductId(item.getProductId());
         dto.setItemName(item.getItemName());
         dto.setRequestedQuantity(item.getRequestedQuantity());
         dto.setFulfilledQuantity(item.getFulfilledQuantity());

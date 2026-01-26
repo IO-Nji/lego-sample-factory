@@ -30,7 +30,8 @@ function PlantWarehouseDashboard() {
     inventory, 
     masterdata: products,
     getItemName: getProductName,
-    fetchInventory 
+    fetchInventory,
+    error: inventoryError
   } = useInventoryDisplay('PRODUCT', 7);
   
   // Use enhanced activity log hook with auto-login tracking
@@ -40,6 +41,20 @@ function PlantWarehouseDashboard() {
   const [loading, setLoading] = useState(false);
   const [fulfillingOrderId, setFulfillingOrderId] = useState(null);
   const [error, setError] = useState(null);
+  
+  // Log and notify when products fail to load
+  useEffect(() => {
+    if (inventoryError) {
+      console.error('[PlantWarehouse] Product loading error:', inventoryError);
+      addNotification(`⚠️ Failed to load products: ${inventoryError}`, 'error');
+    }
+    if (products.length === 0 && !inventoryError) {
+      console.warn('[PlantWarehouse] No products available - database may not be seeded');
+    }
+    if (products.length > 0) {
+      console.log(`[PlantWarehouse] Successfully loaded ${products.length} products`);
+    }
+  }, [inventoryError, products, addNotification]);
 
   // Check if PROCESSING orders can be completed (all FA orders submitted)
   const checkProcessingOrdersCompletion = async (ordersList) => {
@@ -100,17 +115,36 @@ function PlantWarehouseDashboard() {
     const workstationId = session?.user?.workstationId || 7;
     if (!workstationId) {
       setOrders([]);
-      setFilteredOrders([]);
       return;
     }
     try {
       const response = await api.get("/customer-orders/workstation/" + workstationId);
       const ordersList = Array.isArray(response.data) ? response.data : [];
-      setOrders(ordersList);
-      applyFilter(ordersList, filterStatus);
+      
+      // Dynamically check current trigger scenario for CONFIRMED orders
+      const ordersWithCurrentScenario = await Promise.all(
+        ordersList.map(async (order) => {
+          if (order.status === 'CONFIRMED') {
+            try {
+              const scenarioResponse = await api.get(`/customer-orders/${order.id}/current-scenario`);
+              return {
+                ...order,
+                triggerScenario: scenarioResponse.data.triggerScenario
+              };
+            } catch (err) {
+              console.error(`Failed to fetch current scenario for order ${order.id}:`, err);
+              return order; // Keep original if check fails
+            }
+          }
+          return order;
+        })
+      );
+      
+      setOrders(ordersWithCurrentScenario);
+      applyFilter(ordersWithCurrentScenario, filterStatus);
       
       // Check completion status for PROCESSING orders
-      await checkProcessingOrdersCompletion(ordersList);
+      await checkProcessingOrdersCompletion(ordersWithCurrentScenario);
     } catch (err) {
       if (err.response?.status !== 404) {
         setError("Failed to load orders: " + (err.response?.data?.message || err.message));
@@ -240,8 +274,8 @@ function PlantWarehouseDashboard() {
     { value: orders.filter(o => o.status === "PENDING").length, label: 'Pending', variant: 'pending', icon: '⏳' },
     { value: orders.filter(o => o.status === "PROCESSING").length, label: 'Processing', variant: 'processing', icon: '⚙️' },
     { value: orders.filter(o => o.status === "COMPLETED").length, label: 'Completed', variant: 'success', icon: '✅' },
-    { value: inventory.filter(item => item.itemType === "PRODUCT_VARIANT" || item.itemType === "PRODUCT").length, label: 'Product Types', variant: 'info', icon: '🏷️' },
-    { value: inventory.filter(item => item.itemType === "PRODUCT_VARIANT" || item.itemType === "PRODUCT").reduce((sum, item) => sum + (item.quantity || 0), 0), label: 'Total Stock', variant: 'default', icon: '📊' },
+    { value: inventory.filter(item => item.itemType === "PRODUCT").length, label: 'Product Types', variant: 'info', icon: '🏷️' },
+    { value: inventory.filter(item => item.itemType === "PRODUCT").reduce((sum, item) => sum + (item.quantity || 0), 0), label: 'Total Stock', variant: 'default', icon: '📊' },
     { value: inventory.filter(item => item.quantity < 5).length, label: 'Low Stock', variant: 'warning', icon: '⚠️' },
     { value: inventory.filter(item => item.quantity === 0).length, label: 'Out of Stock', variant: 'danger', icon: '🚫' },
   ];
@@ -264,26 +298,36 @@ function PlantWarehouseDashboard() {
   );
 
   // Render Create Order Form using FormCard component
-  const renderFormCompact = () => (
-    <FormCard
-      title="New Order"
-      icon="➕"
-      items={products}
-      selectedItems={selectedProducts}
-      onItemChange={(itemId, quantity) => {
-        setSelectedProducts({
-          ...selectedProducts,
-          [itemId]: quantity
-        });
-      }}
-      onSubmit={handleCreateOrder}
-      loading={loading}
-      buttonText={loading ? "Creating..." : "Create Order"}
-      getItemDisplayName={(item) => item.name}
-      emptyMessage="No products"
-      columnHeaders={{ item: 'Product', quantity: 'Qty' }}
-    />
-  );
+  const renderFormCompact = () => {
+    // Determine appropriate empty message based on loading state
+    let emptyMessage = "No products";
+    if (inventoryError) {
+      emptyMessage = "⚠️ Failed to load products - Check backend connection";
+    } else if (products.length === 0) {
+      emptyMessage = "⏳ Loading products... (or database not seeded)";
+    }
+    
+    return (
+      <FormCard
+        title="New Order"
+        icon="➕"
+        items={products}
+        selectedItems={selectedProducts}
+        onItemChange={(itemId, quantity) => {
+          setSelectedProducts({
+            ...selectedProducts,
+            [itemId]: quantity
+          });
+        }}
+        onSubmit={handleCreateOrder}
+        loading={loading}
+        buttonText={loading ? "Creating..." : "Create Order"}
+        getItemDisplayName={(item) => item.name}
+        emptyMessage={emptyMessage}
+        columnHeaders={{ item: 'Product', quantity: 'Qty' }}
+      />
+    );
+  };
 
   // Render Inventory Table using InventoryTable component
   const renderInventory = () => (

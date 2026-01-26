@@ -87,23 +87,32 @@ public class FulfillmentService {
             "Fulfillment started for order " + order.getOrderNumber());
         logger.info("Starting fulfillment for order {} ({})", order.getId(), order.getOrderNumber());
 
-        // Check which items are available locally
+        // Re-check stock at fulfill time (may have changed since confirmation)
         boolean allItemsAvailable = order.getOrderItems().stream()
-                .allMatch(item -> inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity()));
+                .allMatch(item -> {
+                    boolean hasStock = inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
+                    logger.info("  Stock check at fulfill: item {} qty {} - available: {}", 
+                        item.getItemId(), item.getQuantity(), hasStock);
+                    return hasStock;
+                });
 
         if (allItemsAvailable) {
             // Scenario 1: Direct Fulfillment
+            logger.info("All items available - proceeding with direct fulfillment");
             return scenario1_DirectFulfillment(order);
         } else {
+            logger.info("Stock insufficient at fulfill time - stock changed since confirmation");
             // Check if any items are available
             boolean anyItemsAvailable = order.getOrderItems().stream()
                     .anyMatch(item -> inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity()));
 
             if (anyItemsAvailable) {
                 // Scenario 3: Modules Supermarket (partial availability)
+                logger.info("Partial stock available - routing to Scenario 3 (Modules Supermarket)");
                 return scenario3_ModulesSupermarket(order);
             } else {
                 // Scenario 2: Warehouse Order (nothing available locally)
+                logger.info("No stock available - routing to Scenario 2 (Warehouse Order)");
                 return scenario2_WarehouseOrder(order);
             }
         }
@@ -131,6 +140,9 @@ public class FulfillmentService {
             order.setStatus("COMPLETED");
             logger.info("Order {} fulfilled directly. Inventory updated.", order.getOrderNumber());
             orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "COMPLETED", "Order fulfilled directly (Scenario 1)");
+            
+            // Update triggerScenario for other CONFIRMED orders at this workstation
+            updateOtherConfirmedOrdersScenario(order.getWorkstationId(), order.getId());
         } else {
             order.setStatus("CANCELLED");
             logger.warn("Order {} fulfillment failed during inventory update.", order.getOrderNumber());
@@ -160,49 +172,60 @@ public class FulfillmentService {
         warehouseOrder.setNotes("Auto-generated from customer order " + order.getOrderNumber());
 
         // BOM INTEGRATION: Convert products to modules using Bill of Materials
+        // Track which product each module group belongs to (for Final Assembly)
         List<WarehouseOrderItem> warehouseOrderItems = new ArrayList<>();
-        java.util.Map<Long, Integer> moduleRequirements = new java.util.HashMap<>();
         
+        // Process each customer order item separately to preserve product-to-module mapping
         for (OrderItem item : order.getOrderItems()) {
             if ("PRODUCT".equalsIgnoreCase(item.getItemType())) {
-                // Use BOM to get module requirements for this product
-                logger.info("BOM Lookup: Converting product {} (qty {}) to modules", item.getItemId(), item.getQuantity());
+                Long productId = item.getItemId();
+                Integer productQty = item.getQuantity();
+                
+                // Fetch product name from masterdata-service
+                String productName = masterdataService.getItemName("PRODUCT", productId);
+                
+                // Use BOM to get module requirements for this specific product
+                logger.info("BOM Lookup: Converting product {} ({}) qty {} to modules", productId, productName, productQty);
                 java.util.Map<Long, Integer> productModules = masterdataService.getModuleRequirementsForProduct(
-                    item.getItemId(), 
-                    item.getQuantity()
+                    productId, 
+                    productQty
                 );
                 
-                // Aggregate module requirements
+                // Create warehouse order items for each module, tracking the product ID
                 for (java.util.Map.Entry<Long, Integer> entry : productModules.entrySet()) {
                     Long moduleId = entry.getKey();
                     Integer requiredQty = entry.getValue();
-                    moduleRequirements.merge(moduleId, requiredQty, Integer::sum);
-                    logger.info("  - Product {} requires Module {} qty {}", item.getItemId(), moduleId, requiredQty);
+                    
+                    WarehouseOrderItem woItem = new WarehouseOrderItem();
+                    woItem.setWarehouseOrder(warehouseOrder);
+                    woItem.setItemId(moduleId);
+                    woItem.setProductId(productId); // Track which product this module is for
+                    
+                    // Fetch module name from masterdata-service
+                    String moduleName = masterdataService.getItemName("MODULE", moduleId);
+                    woItem.setItemName(moduleName);
+                    woItem.setRequestedQuantity(requiredQty);
+                    woItem.setFulfilledQuantity(0);
+                    woItem.setItemType("MODULE");
+                    woItem.setNotes("For product: " + productName + " (ID: " + productId + ")");
+                    warehouseOrderItems.add(woItem);
+                    
+                    logger.info("  - Module {} ({}) qty {} for product {} ({})", moduleId, moduleName, requiredQty, productId, productName);
                 }
             } else {
                 // For non-products, add directly (fallback for legacy data)
-                moduleRequirements.merge(item.getItemId(), item.getQuantity(), Integer::sum);
+                String itemName = masterdataService.getItemName(item.getItemType(), item.getItemId());
+                
+                WarehouseOrderItem woItem = new WarehouseOrderItem();
+                woItem.setWarehouseOrder(warehouseOrder);
+                woItem.setItemId(item.getItemId());
+                woItem.setProductId(null); // No product mapping for non-product items
+                woItem.setItemName(itemName);
+                woItem.setRequestedQuantity(item.getQuantity());
+                woItem.setFulfilledQuantity(0);
+                woItem.setItemType(item.getItemType());
+                warehouseOrderItems.add(woItem);
             }
-        }
-        
-        // Create warehouse order items from aggregated module requirements
-        for (java.util.Map.Entry<Long, Integer> entry : moduleRequirements.entrySet()) {
-            Long moduleId = entry.getKey();
-            Integer totalQty = entry.getValue();
-            
-            WarehouseOrderItem woItem = new WarehouseOrderItem();
-            woItem.setWarehouseOrder(warehouseOrder);
-            woItem.setItemId(moduleId);
-            
-            // Fetch module name from masterdata-service
-            String moduleName = masterdataService.getItemName("MODULE", moduleId);
-            woItem.setItemName(moduleName);
-            woItem.setRequestedQuantity(totalQty);
-            woItem.setFulfilledQuantity(0);
-            woItem.setItemType("MODULE"); // Warehouse orders always deal with MODULEs
-            warehouseOrderItems.add(woItem);
-            
-            logger.info("  - Warehouse order item: Module {} ({}) qty {}", moduleId, moduleName, totalQty);
         }
         
         warehouseOrder.setOrderItems(warehouseOrderItems);
@@ -246,31 +269,52 @@ public class FulfillmentService {
         warehouseOrder.setNotes("Auto-generated from customer order " + order.getOrderNumber() + " (partial fulfillment)");
 
         // BOM INTEGRATION: Convert unavailable products to module requirements
-        java.util.Map<Long, Integer> moduleRequirements = new java.util.HashMap<>();
+        // Track which product each module group belongs to
+        List<WarehouseOrderItem> warehouseOrderItems = new ArrayList<>();
         
         // Fulfill available items and collect BOM requirements for unavailable ones
         for (OrderItem item : order.getOrderItems()) {
             if ("PRODUCT".equalsIgnoreCase(item.getItemType())) {
+                Long productId = item.getItemId();
+                Integer productQty = item.getQuantity();
+                
+                // Fetch product name from masterdata-service
+                String productName = masterdataService.getItemName("PRODUCT", productId);
+                
                 // Check if product is available at Plant Warehouse
-                if (inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity())) {
+                if (inventoryService.checkStock(order.getWorkstationId(), productId, productQty)) {
                     // Fulfill from local stock
-                    inventoryService.updateStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
-                    item.setFulfilledQuantity((item.getFulfilledQuantity() == null ? 0 : item.getFulfilledQuantity()) + item.getQuantity());
-                    logger.info("  - Product {} fulfilled from local stock", item.getItemId());
+                    inventoryService.updateStock(order.getWorkstationId(), productId, productQty);
+                    item.setFulfilledQuantity((item.getFulfilledQuantity() == null ? 0 : item.getFulfilledQuantity()) + productQty);
+                    logger.info("  - Product {} ({}) fulfilled from local stock", productId, productName);
                 } else {
                     // Product not available - use BOM to convert to module requirements
-                    logger.info("BOM Lookup: Converting unavailable product {} (qty {}) to modules", item.getItemId(), item.getQuantity());
+                    logger.info("BOM Lookup: Converting unavailable product {} ({}) qty {} to modules", productId, productName, productQty);
                     java.util.Map<Long, Integer> productModules = masterdataService.getModuleRequirementsForProduct(
-                        item.getItemId(), 
-                        item.getQuantity()
+                        productId, 
+                        productQty
                     );
                     
-                    // Aggregate module requirements
+                    // Create warehouse order items for each module, tracking the product ID
                     for (java.util.Map.Entry<Long, Integer> entry : productModules.entrySet()) {
                         Long moduleId = entry.getKey();
                         Integer requiredQty = entry.getValue();
-                        moduleRequirements.merge(moduleId, requiredQty, Integer::sum);
-                        logger.info("  - Product {} requires Module {} qty {}", item.getItemId(), moduleId, requiredQty);
+                        
+                        WarehouseOrderItem woItem = new WarehouseOrderItem();
+                        woItem.setWarehouseOrder(warehouseOrder);
+                        woItem.setItemId(moduleId);
+                        woItem.setProductId(productId); // Track which product this module is for
+                        
+                        // Fetch module name from masterdata-service
+                        String moduleName = masterdataService.getItemName("MODULE", moduleId);
+                        woItem.setItemName(moduleName);
+                        woItem.setRequestedQuantity(requiredQty);
+                        woItem.setFulfilledQuantity(0);
+                        woItem.setItemType("MODULE");
+                        woItem.setNotes("For product: " + productName + " (ID: " + productId + ")");
+                        warehouseOrderItems.add(woItem);
+                        
+                        logger.info("  - Module {} ({}) qty {} for product {} ({})", moduleId, moduleName, requiredQty, productId, productName);
                     }
                 }
             } else {
@@ -280,30 +324,19 @@ public class FulfillmentService {
                     item.setFulfilledQuantity((item.getFulfilledQuantity() == null ? 0 : item.getFulfilledQuantity()) + item.getQuantity());
                     logger.info("  - Item {} fulfilled from local stock", item.getItemId());
                 } else {
-                    moduleRequirements.merge(item.getItemId(), item.getQuantity(), Integer::sum);
+                    String itemName = masterdataService.getItemName(item.getItemType(), item.getItemId());
+                    
+                    WarehouseOrderItem woItem = new WarehouseOrderItem();
+                    woItem.setWarehouseOrder(warehouseOrder);
+                    woItem.setItemId(item.getItemId());
+                    woItem.setProductId(null); // No product mapping for non-product items
+                    woItem.setItemName(itemName);
+                    woItem.setRequestedQuantity(item.getQuantity());
+                    woItem.setFulfilledQuantity(0);
+                    woItem.setItemType(item.getItemType());
+                    warehouseOrderItems.add(woItem);
                 }
             }
-        }
-        
-        // Create warehouse order items from aggregated module requirements
-        List<WarehouseOrderItem> warehouseOrderItems = new ArrayList<>();
-        for (java.util.Map.Entry<Long, Integer> entry : moduleRequirements.entrySet()) {
-            Long moduleId = entry.getKey();
-            Integer totalQty = entry.getValue();
-            
-            WarehouseOrderItem woItem = new WarehouseOrderItem();
-            woItem.setWarehouseOrder(warehouseOrder);
-            woItem.setItemId(moduleId);
-            
-            // Fetch module name from masterdata-service
-            String moduleName = masterdataService.getItemName("MODULE", moduleId);
-            woItem.setItemName(moduleName);
-            woItem.setRequestedQuantity(totalQty);
-            woItem.setFulfilledQuantity(0);
-            woItem.setItemType("MODULE"); // Warehouse orders always deal with MODULEs
-            warehouseOrderItems.add(woItem);
-            
-            logger.info("  - Module {} ({}) requested from Modules Supermarket qty {}", moduleId, moduleName, totalQty);
         }
 
         // Only save warehouse order if there are items to request
@@ -349,6 +382,58 @@ public class FulfillmentService {
         order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + "Scenario 4: Routed to Production Planning for custom items");
 
         return mapToDTO(customerOrderRepository.save(order));
+    }
+
+    /**
+     * Update triggerScenario for all other CONFIRMED orders at the same workstation.
+     * Call this after a successful fulfillment that changed stock levels.
+     * This ensures other orders show the correct buttons based on current stock.
+     */
+    private void updateOtherConfirmedOrdersScenario(Long workstationId, Long excludeOrderId) {
+        logger.info("Updating triggerScenario for other CONFIRMED orders at workstation {}", workstationId);
+        
+        // Find all CONFIRMED orders at this workstation (excluding the just-fulfilled order)
+        List<CustomerOrder> confirmedOrders = customerOrderRepository.findAll().stream()
+            .filter(o -> "CONFIRMED".equals(o.getStatus()))
+            .filter(o -> workstationId.equals(o.getWorkstationId()))
+            .filter(o -> !excludeOrderId.equals(o.getId()))
+            .toList();
+        
+        logger.info("Found {} other CONFIRMED orders to update", confirmedOrders.size());
+        
+        for (CustomerOrder otherOrder : confirmedOrders) {
+            // Re-check stock for this order
+            boolean allItemsAvailable = otherOrder.getOrderItems().stream()
+                .allMatch(item -> inventoryService.checkStock(
+                    otherOrder.getWorkstationId(), 
+                    item.getItemId(), 
+                    item.getQuantity()
+                ));
+            
+            String newScenario;
+            if (allItemsAvailable) {
+                newScenario = "DIRECT_FULFILLMENT";
+            } else {
+                // Check if any items available for partial fulfillment
+                boolean anyItemsAvailable = otherOrder.getOrderItems().stream()
+                    .anyMatch(item -> inventoryService.checkStock(
+                        otherOrder.getWorkstationId(), 
+                        item.getItemId(), 
+                        item.getQuantity()
+                    ));
+                newScenario = anyItemsAvailable ? "PARTIAL_FULFILLMENT" : "WAREHOUSE_ORDER_NEEDED";
+            }
+            
+            // Only update if scenario changed
+            if (!newScenario.equals(otherOrder.getTriggerScenario())) {
+                logger.info("Order {} triggerScenario updated: {} → {}", 
+                    otherOrder.getOrderNumber(), 
+                    otherOrder.getTriggerScenario(), 
+                    newScenario);
+                otherOrder.setTriggerScenario(newScenario);
+                customerOrderRepository.save(otherOrder);
+            }
+        }
     }
 
     private CustomerOrderDTO mapToDTO(CustomerOrder order) {

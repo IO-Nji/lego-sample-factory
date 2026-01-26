@@ -23,7 +23,10 @@ public class WarehouseOrderItem {
     private WarehouseOrder warehouseOrder;
 
     @Column(nullable = false)
-    private Long itemId; // Product or Module ID
+    private Long itemId; // Module ID (items in the warehouse order)
+
+    @Column(nullable = true)
+    private Long productId; // Original product ID this module is for (for tracking back to customer order)
 
     @Column(nullable = false)
     private String itemName;

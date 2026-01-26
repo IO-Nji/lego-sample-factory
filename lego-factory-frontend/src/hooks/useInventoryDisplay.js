@@ -4,7 +4,7 @@ import api from '../api/api';
 /**
  * Custom hook for managing inventory display with masterdata lookup
  * 
- * @param {string} itemType - Type of items: 'PRODUCT_VARIANT', 'MODULE', or 'PART'
+ * @param {string} itemType - Type of items: 'PRODUCT', 'MODULE', or 'PART'
  * @param {number} workstationId - ID of the workstation (optional, for auto-fetching inventory)
  * @returns {object} - Inventory management state and functions
  * 
@@ -33,9 +33,8 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
   // Determine API endpoint based on item type
   const getMasterdataEndpoint = useCallback(() => {
     switch (itemType) {
-      case 'PRODUCT_VARIANT':
       case 'PRODUCT':
-        return '/masterdata/product-variants';
+        return '/masterdata/products';
       case 'MODULE':
         return '/masterdata/modules';
       case 'PART':
@@ -49,12 +48,28 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
   const fetchMasterdata = useCallback(async () => {
     try {
       const endpoint = getMasterdataEndpoint();
+      console.log(`[useInventoryDisplay] Fetching ${itemType} from ${endpoint}...`);
       const response = await api.get(endpoint);
-      setMasterdata(response.data);
-      return response.data;
+      console.log(`[useInventoryDisplay] Received ${response.data?.length || 0} ${itemType} items:`, response.data);
+      
+      if (!response.data || response.data.length === 0) {
+        console.warn(`[useInventoryDisplay] WARNING: No ${itemType} data received from ${endpoint}`);
+        console.warn('[useInventoryDisplay] Check if masterdata-service database is seeded properly');
+      }
+      
+      setMasterdata(response.data || []);
+      return response.data || [];
     } catch (err) {
-      console.error(`[useInventoryDisplay] Error fetching ${itemType} masterdata:`, err);
-      setError(err.response?.data?.message || `Failed to load ${itemType.toLowerCase()} data`);
+      console.error(`[useInventoryDisplay] ERROR fetching ${itemType} masterdata from ${getMasterdataEndpoint()}:`, err);
+      console.error('[useInventoryDisplay] Full error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        endpoint: getMasterdataEndpoint()
+      });
+      const errorMsg = err.response?.data?.message || err.message || `Failed to load ${itemType.toLowerCase()} data`;
+      setError(errorMsg);
+      setMasterdata([]); // Set empty array on error
       return [];
     }
   }, [itemType, getMasterdataEndpoint]);
@@ -71,16 +86,8 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
       const response = await api.get(`/stock/workstation/${wsId}`);
       const inventoryData = response.data || [];
       
-      // Filter by itemType if needed - handle both PRODUCT and PRODUCT_VARIANT as synonyms
-      const filteredInventory = inventoryData.filter(item => {
-        if (item.itemType === itemType) return true;
-        // Handle PRODUCT/PRODUCT_VARIANT interchangeably
-        if ((itemType === 'PRODUCT' || itemType === 'PRODUCT_VARIANT') && 
-            (item.itemType === 'PRODUCT' || item.itemType === 'PRODUCT_VARIANT')) {
-          return true;
-        }
-        return false;
-      });
+      // Filter by itemType if needed
+      const filteredInventory = inventoryData.filter(item => item.itemType === itemType);
       
       setInventory(filteredInventory);
       return filteredInventory;
@@ -107,7 +114,6 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
 
     // Fallback display names
     switch (itemType) {
-      case 'PRODUCT_VARIANT':
       case 'PRODUCT':
         return `Product #${item.itemId}`;
       case 'MODULE':

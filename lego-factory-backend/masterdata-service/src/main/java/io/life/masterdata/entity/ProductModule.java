@@ -17,7 +17,7 @@ public class ProductModule {
     private Long id;
 
     @Column(nullable = false)
-    private Long productVariantId;
+    private Long productId;
 
     @Column(nullable = false)
     private Long moduleId;
@@ -25,8 +25,8 @@ public class ProductModule {
     @Column(nullable = false)
     private Integer quantity;
 
-    public ProductModule(Long productVariantId, Long moduleId, Integer quantity) {
-        this.productVariantId = productVariantId;
+    public ProductModule(Long productId, Long moduleId, Integer quantity) {
+        this.productId = productId;
         this.moduleId = moduleId;
         this.quantity = quantity;
     }

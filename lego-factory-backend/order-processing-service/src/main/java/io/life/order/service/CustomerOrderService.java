@@ -31,15 +31,18 @@ public class CustomerOrderService {
     private final WarehouseOrderRepository warehouseOrderRepository;
     private final FinalAssemblyOrderService finalAssemblyOrderService;
     private final OrderAuditService orderAuditService;
+    private final InventoryService inventoryService;
 
     public CustomerOrderService(CustomerOrderRepository customerOrderRepository, 
                                 WarehouseOrderRepository warehouseOrderRepository,
                                 FinalAssemblyOrderService finalAssemblyOrderService,
-                                OrderAuditService orderAuditService) {
+                                OrderAuditService orderAuditService,
+                                InventoryService inventoryService) {
         this.customerOrderRepository = customerOrderRepository;
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.finalAssemblyOrderService = finalAssemblyOrderService;
         this.orderAuditService = orderAuditService;
+        this.inventoryService = inventoryService;
         // Custom exception for mapping errors is now a static nested class below
     }
 
@@ -159,14 +162,17 @@ public class CustomerOrderService {
             throw new IllegalStateException("Only PENDING orders can be confirmed");
         }
         
-        // STOCK CHECK REFINEMENT: Check PRODUCT stock at Plant Warehouse (WS-7) DURING confirmation
+        // STOCK CHECK DURING CONFIRMATION: Check PRODUCT stock at Plant Warehouse (WS-7)
         // This determines the scenario path: direct fulfillment or warehouse order needed
+        logger.info("=== CUSTOMER ORDER CONFIRMATION: Checking stock for order {} at workstation {} ===", 
+            order.getOrderNumber(), order.getWorkstationId());
+        
         boolean hasAllStock = order.getOrderItems().stream()
             .allMatch(item -> {
-                // Plant Warehouse checks PRODUCT stock
-                // Note: This is a simplified check. In production, you'd inject InventoryService
-                // For now, we'll set the trigger scenario based on item availability
-                return true; // Placeholder - actual check would use InventoryService
+                boolean stockAvailable = inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
+                logger.info("  Item {} (type: {}, qty: {}) - Stock available: {}", 
+                    item.getItemId(), item.getItemType(), item.getQuantity(), stockAvailable);
+                return stockAvailable;
             });
         
         // Set triggerScenario based on stock check
@@ -207,6 +213,45 @@ public class CustomerOrderService {
         CustomerOrder saved = customerOrderRepository.save(order);
         orderAuditService.recordOrderEvent(ORDER_TYPE_CUSTOMER, saved.getId(), STATUS_COMPLETED, "Order completed");
         return mapToDTO(saved);
+    }
+
+    /**
+     * Check the current triggerScenario for a CONFIRMED order based on real-time stock.
+     * This dynamically re-evaluates stock availability, accounting for changes since confirmation.
+     * 
+     * @param id Customer order ID
+     * @return Current trigger scenario ("DIRECT_FULFILLMENT" or "WAREHOUSE_ORDER_NEEDED")
+     */
+    @Transactional(readOnly = true)
+    public String checkCurrentTriggerScenario(Long id) {
+        CustomerOrder order = getOrThrow(id);
+        
+        // Only check for CONFIRMED orders
+        if (!STATUS_CONFIRMED.equals(order.getStatus())) {
+            logger.debug("Order {} is not CONFIRMED, returning stored triggerScenario: {}", id, order.getTriggerScenario());
+            return order.getTriggerScenario();
+        }
+        
+        // Re-check stock availability in real-time
+        logger.info("=== DYNAMIC STOCK CHECK: Re-evaluating stock for order {} ===", order.getOrderNumber());
+        
+        boolean hasAllStock = order.getOrderItems().stream()
+            .allMatch(item -> {
+                boolean stockAvailable = inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
+                logger.info("  Item {} (qty: {}) - Current stock available: {}", 
+                    item.getItemId(), item.getQuantity(), stockAvailable);
+                return stockAvailable;
+            });
+        
+        String currentScenario = hasAllStock ? "DIRECT_FULFILLMENT" : "WAREHOUSE_ORDER_NEEDED";
+        
+        // Log if scenario has changed since confirmation
+        if (!currentScenario.equals(order.getTriggerScenario())) {
+            logger.warn("Order {} scenario changed: {} → {} (stock levels changed)", 
+                order.getOrderNumber(), order.getTriggerScenario(), currentScenario);
+        }
+        
+        return currentScenario;
     }
 
     /**

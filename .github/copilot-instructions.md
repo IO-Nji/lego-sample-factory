@@ -1,6 +1,6 @@
 # LIFE System – Copilot Instructions
 
-> **Last Updated:** January 25, 2026  
+> **Last Updated:** January 26, 2026  
 > This file guides AI coding agents through the LIFE (LEGO Integrated Factory Execution) microservice architecture. It captures critical patterns, domain logic, and workflows required for productive contribution.
 
 ## Quick Start
@@ -46,6 +46,27 @@ api-gateway routes to 5 microservices:
 **Service communication:** REST over Docker DNS (e.g., `http://inventory-service:8014`). No direct DB access between services.  
 **Database isolation:** Each service has independent H2 in-memory database, seeded by `DataInitializer`.  
 **JWT:** Issued by user-service, validated by gateway. Keep `SECURITY_JWT_SECRET` synchronized across `.env` and all `application.properties` files.
+
+## Data Model: Products, Modules, and Parts
+
+**Product Hierarchy (3-tier BOM):**
+```
+Product (WS-7 Plant Warehouse)
+  ↳ Modules (WS-8 Modules Supermarket)
+      ↳ Parts (WS-9 Parts Supply)
+```
+
+**Key Concepts:**
+- **Products** = End items shipped to customers (e.g., "LEGO Model Car")
+- **Modules** = Subassemblies (Gear Module, Motor Module) built at WS-4, WS-5, WS-6
+- **Parts** = Raw materials/components produced at WS-1, WS-2, WS-3
+- **Variants** = No longer used; products have direct `variantName` field (e.g., "Red", "Blue")
+- **BOM Lookup** = Masterdata service provides product → modules → parts relationships
+
+**Stock Management:**
+- Each workstation has isolated inventory (no shared stock pools)
+- Stock queries: `GET /api/inventory?workstationId={id}&variantId={id}`
+- Credit/debit operations ONLY happen on order completion (not confirmation)
 
 ## 9 Roles × 9 Workstations: Role-Based UI Routing
 
@@ -97,11 +118,19 @@ ProductionOrder → Supply Orders (WS-9) + Workstation Orders
   └─ WS-6: Final Assembly → ONLY point where WS-7 is credited
 ```
 
+**CRITICAL: ProductId Tracking Through Order Chain:**
+- `WarehouseOrderItem` has `productId` field to track which product modules belong to
+- `FulfillmentService` sets `productId` when converting products to modules via BOM lookup
+- `WarehouseOrderService.createFinalAssemblyOrdersFromWarehouseOrder()` groups items by `productId`
+- `FinalAssemblyOrder.outputProductId` must contain actual PRODUCT ID (1-4), never module IDs (7+)
+- This ensures Final Assembly credits Plant Warehouse with correct product inventory
+
 **Scenario 2 Workflow (STRICT SEQUENCE):**
 1. **PlantWarehouse (WS-7) - Confirm CustomerOrder:** Stock check for PRODUCTS only → sets `triggerScenario`
 2. **Frontend shows:** "Fulfill" button (DIRECT_FULFILLMENT) or "Process" button (WAREHOUSE_ORDER_NEEDED)
 3. **ModulesSupermarket (WS-8) - Confirm WarehouseOrder:** Stock check for MODULES only → sets `triggerScenario`
 4. **Frontend shows:** "Fulfill" button (DIRECT_FULFILLMENT) or "Order Production" button (PRODUCTION_REQUIRED)
+5. **FinalAssembly (WS-6) - Submit Order:** Credits Plant Warehouse with PRODUCT using `productId` from warehouse order items
 
 **Key:** Stock checks DURING confirmation, not before or after. Never credit earlier in flow than designed above.
 
@@ -193,27 +222,80 @@ ProductionOrder → Supply Orders (WS-9) + Workstation Orders
 - `./test-final-assembly-workflow.sh` - Tests Final Assembly (WS-6) completion and Plant Warehouse credit
 - Read scripts to understand expected sequencing; modify them when adding new endpoints
 
+### Common Debugging Scenarios
+**Service won't start:**
+```bash
+# Check logs for startup errors (JPA schema issues, port conflicts)
+docker-compose logs -f order-processing-service
+
+# Verify port availability
+netstat -tulpn | grep 8015
+
+# Rebuild with clean cache
+docker-compose build --no-cache order-processing-service
+```
+
+**401 Unauthorized on API calls:**
+- Verify JWT token in request headers: `Authorization: Bearer <token>`
+- Check `SECURITY_JWT_SECRET` matches across `.env`, api-gateway, and user-service
+- Token might be expired (default: 1 hour); re-login to get new token
+
+**Stock not updating:**
+- Confirm you're calling completion endpoint (POST `/complete`), not confirmation (PUT)
+- Check inventory-service logs for debit/credit operations
+- Verify workstation ID matches in order and inventory record
+
+**Frontend shows 404 for API:**
+- Check nginx-root-proxy logs: `docker-compose logs -f nginx-root-proxy`
+- Verify route exists in [api-gateway/application.properties](lego-factory-backend/api-gateway/src/main/resources/application.properties)
+- Test endpoint directly: `curl http://localhost:1011/api/...`
+
+**H2 database "lost" data:**
+- H2 is in-memory; all data resets on service restart
+- Check DataInitializer seed data if entities missing on startup
+- For persistent testing, consider switching to PostgreSQL (infrastructure ready)
+
 ### Git Workflow (Jan 2026 Best Practice)
 ```bash
-git checkout -b feature/your-feature  # Create feature branch from prod
+git checkout -b feature/your-feature  # Create feature branch from dev
 # ... make changes, test thoroughly ...
 git add . && git commit -m "Implement X feature"
 git push origin feature/your-feature  # Push to remote
-# Create PR, get review, merge to prod when ready
+# Create PR, get review, merge to dev when ready
 ```
 - NEVER commit directly to `master`; keep it as last-known-good state
-- Use `prod` as active development branch
+- Use `dev` as active development branch (current)
+- `prod` branch is for production-ready releases
 - Each feature should have its own branch
+
+### Docker Registry Deployment (Production)
+**For deploying to live servers:**
+```bash
+# Development machine: Build, tag, and push to local registry
+./push-to-registry.sh  # Tags with {branch}-{commit}-{timestamp}
+
+# Live server: Pull and deploy latest images
+./pull-from-registry.sh && docker-compose up -d
+
+# Diagnose live server issues
+./diagnose-live-server.sh  # Checks services, logs, and network
+```
+
+**Registry:** `192.168.1.237:5000` (local)  
+**Images auto-tagged:** Both `latest` and versioned tags for rollback capability  
+**See:** [DOCKER_REGISTRY_DEPLOYMENT.md](../DOCKER_REGISTRY_DEPLOYMENT.md) for detailed deployment workflows
 
 ## Pitfalls to Avoid
 
 1. **Stock timing**: Do NOT credit/debit inventory on confirmation. Only on completion endpoints. Never check stock BEFORE confirmation—stock checks must happen DURING the confirm operation.
-2. **Endpoint routing**: Always add gateway routes in [api-gateway/application.properties](lego-factory-backend/api-gateway/src/main/resources/application.properties) when creating new endpoints; never assume a service is accessible directly.
-3. **Frontend paths**: Use `session?.user?.workstationId` (flat field, NOT `session?.user?.workstation?.id`).
-4. **JWT synchronization**: If you change `SECURITY_JWT_SECRET`, update `.env`, gateway `application.properties`, AND user-service `application.properties`.
-5. **Order status transitions**: Validate state transitions in the service layer, not the controller. WarehouseOrder status goes PENDING → CONFIRMED (not PROCESSING) after confirmation.
-6. **Database assumptions**: Never write raw SQL or assume a shared database. All inter-service queries go via REST API.
-7. **HTTP verbs**: Confirm/status-change = PUT, Start/Complete/Halt = POST (not PUT). Retrieve = GET, Create = POST, Update notes = PATCH.
-8. **UI components**: Never create inline styles or custom UI; always extend StandardDashboardLayout and reuse design-system components.
-9. **Docker hostnames**: Use service DNS names (`http://user-service:8012`), not `localhost`. These only resolve inside the Docker network.
-10. **Cache invalidation**: Restart services with `--no-cache` when changing code. Vite handles JS versioning, but Docker layers may cache old JARs.
+2. **ProductId tracking**: WarehouseOrderItem must have BOTH `itemId` (module) AND `productId` (target product). FinalAssemblyOrder uses `productId` to credit correct inventory.
+3. **Endpoint routing**: Always add gateway routes in [api-gateway/application.properties](lego-factory-backend/api-gateway/src/main/resources/application.properties) when creating new endpoints; never assume a service is accessible directly.
+4. **Frontend paths**: Use `session?.user?.workstationId` (flat field, NOT `session?.user?.workstation?.id`).
+5. **JWT synchronization**: If you change `SECURITY_JWT_SECRET`, update `.env`, gateway `application.properties`, AND user-service `application.properties`.
+6. **Order status transitions**: Validate state transitions in the service layer, not the controller. WarehouseOrder status goes PENDING → CONFIRMED (not PROCESSING) after confirmation.
+7. **Database assumptions**: Never write raw SQL or assume a shared database. All inter-service queries go via REST API.
+8. **HTTP verbs**: Confirm/status-change = PUT, Start/Complete/Halt = POST (not PUT). Retrieve = GET, Create = POST, Update notes = PATCH.
+9. **UI components**: Never create inline styles or custom UI; always extend StandardDashboardLayout and reuse design-system components.
+10. **Docker hostnames**: Use service DNS names (`http://user-service:8012`), not `localhost`. These only resolve inside the Docker network.
+11. **Cache invalidation**: Restart services with `--no-cache` when changing code. Vite handles JS versioning, but Docker layers may cache old JARs.
+12. **BOM conversions**: When converting products to modules, preserve original productId through order chain to ensure correct final inventory crediting.

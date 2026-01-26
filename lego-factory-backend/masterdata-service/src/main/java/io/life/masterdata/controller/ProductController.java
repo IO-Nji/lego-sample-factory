@@ -1,16 +1,16 @@
 package io.life.masterdata.controller;
 
-import io.life.masterdata.dto.ProductVariantDto;
+import io.life.masterdata.dto.ProductDto;
 import io.life.masterdata.entity.Module;
 import io.life.masterdata.entity.ModulePart;
 import io.life.masterdata.entity.Part;
 import io.life.masterdata.entity.ProductModule;
-import io.life.masterdata.entity.ProductVariant;
+import io.life.masterdata.entity.Product;
 import io.life.masterdata.service.ModulePartService;
 import io.life.masterdata.service.ModuleService;
 import io.life.masterdata.service.PartService;
 import io.life.masterdata.service.ProductModuleService;
-import io.life.masterdata.service.ProductVariantService;
+import io.life.masterdata.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,165 +21,165 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * REST Controller for ProductVariant management.
- * Allows admins to view, create, update, and delete product variants.
+ * REST Controller for Product management.
+ * Allows admins to view, create, update, and delete products.
  */
 @RestController
-@RequestMapping("/api/masterdata/product-variants")
+@RequestMapping("/api/masterdata/products")
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RequiredArgsConstructor
 @Slf4j
-public class ProductVariantController {
+public class ProductController {
 
-    private final ProductVariantService productVariantService;
+    private final ProductService productService;
     private final ProductModuleService productModuleService;
     private final ModuleService moduleService;
     private final ModulePartService modulePartService;
     private final PartService partService;
 
     /**
-     * GET /api/masterdata/product-variants
-     * Get all product variants
+     * GET /api/masterdata/products
+     * Get all products
      */
     @GetMapping
-    public ResponseEntity<List<ProductVariantDto>> getAllProductVariants() {
-        log.debug("Fetching all product variants");
-        List<ProductVariantDto> variants = productVariantService.findAll()
+    public ResponseEntity<List<ProductDto>> getAllProducts() {
+        log.debug("Fetching all products");
+        List<ProductDto> products = productService.findAll()
                 .stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(variants);
+        return ResponseEntity.ok(products);
     }
 
     /**
-     * GET /api/masterdata/product-variants/{id}
-     * Get a specific product variant by ID
+     * GET /api/masterdata/products/{id}
+     * Get a specific product by ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ProductVariantDto> getProductVariantById(@PathVariable Long id) {
-        log.debug("Fetching product variant with ID: {}", id);
-        return productVariantService.findById(id)
-                .map(variant -> ResponseEntity.ok(convertToDto(variant)))
+    public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
+        log.debug("Fetching product with ID: {}", id);
+        return productService.findById(id)
+                .map(product -> ResponseEntity.ok(convertToDto(product)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /**
-     * POST /api/masterdata/product-variants
-     * Create a new product variant
+     * POST /api/masterdata/products
+     * Create a new product
      * Request body: { "name", "description", "price", "estimatedTimeMinutes" }
      */
     @PostMapping
-    public ResponseEntity<ProductVariantDto> createProductVariant(@RequestBody ProductVariantDto dto) {
-        log.info("Creating new product variant: {}", dto.getName());
+    public ResponseEntity<ProductDto> createProduct(@RequestBody ProductDto dto) {
+        log.info("Creating new product: {}", dto.getName());
         
-        ProductVariant variant = new ProductVariant();
-        variant.setName(dto.getName());
-        variant.setDescription(dto.getDescription());
-        variant.setPrice(dto.getPrice());
-        variant.setEstimatedTimeMinutes(dto.getEstimatedTimeMinutes());
+        Product product = new Product();
+        product.setName(dto.getName());
+        product.setDescription(dto.getDescription());
+        product.setPrice(dto.getPrice());
+        product.setEstimatedTimeMinutes(dto.getEstimatedTimeMinutes());
 
         try {
-            ProductVariant saved = productVariantService.save(variant);
-            log.info("Product variant created successfully with ID: {}", saved.getId());
+            Product saved = productService.save(product);
+            log.info("Product created successfully with ID: {}", saved.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(saved));
         } catch (Exception e) {
-            log.error("Failed to create product variant: {}", e.getMessage());
+            log.error("Failed to create product: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
 
     /**
-     * PUT /api/masterdata/product-variants/{id}
-     * Update an existing product variant
+     * PUT /api/masterdata/products/{id}
+     * Update an existing product
      * Request body: { "name", "description", "price", "estimatedTimeMinutes" }
      */
     @PutMapping("/{id}")
-    public ResponseEntity<ProductVariantDto> updateProductVariant(
+    public ResponseEntity<ProductDto> updateProduct(
             @PathVariable Long id,
-            @RequestBody ProductVariantDto dto) {
-        log.info("Updating product variant with ID: {}", id);
+            @RequestBody ProductDto dto) {
+        log.info("Updating product with ID: {}", id);
 
-        var optionalVariant = productVariantService.findById(id);
-        if (optionalVariant.isEmpty()) {
-            log.warn("Product variant not found with ID: {}", id);
+        var optionalProduct = productService.findById(id);
+        if (optionalProduct.isEmpty()) {
+            log.warn("Product not found with ID: {}", id);
             return ResponseEntity.notFound().build();
         }
 
-        ProductVariant variant = optionalVariant.get();
-        variant.setName(dto.getName());
-        variant.setDescription(dto.getDescription());
-        variant.setPrice(dto.getPrice());
-        variant.setEstimatedTimeMinutes(dto.getEstimatedTimeMinutes());
+        Product product = optionalProduct.get();
+        product.setName(dto.getName());
+        product.setDescription(dto.getDescription());
+        product.setPrice(dto.getPrice());
+        product.setEstimatedTimeMinutes(dto.getEstimatedTimeMinutes());
 
         try {
-            ProductVariant updated = productVariantService.save(variant);
-            log.info("Product variant updated successfully with ID: {}", id);
+            Product updated = productService.save(product);
+            log.info("Product updated successfully with ID: {}", id);
             return ResponseEntity.ok(convertToDto(updated));
         } catch (Exception e) {
-            log.error("Failed to update product variant: {}", e.getMessage());
+            log.error("Failed to update product: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
 
     /**
-     * DELETE /api/masterdata/product-variants/{id}
-     * Delete a product variant
+     * DELETE /api/masterdata/products/{id}
+     * Delete a product
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProductVariant(@PathVariable Long id) {
-        log.info("Deleting product variant with ID: {}", id);
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        log.info("Deleting product with ID: {}", id);
 
-        if (productVariantService.findById(id).isPresent()) {
+        if (productService.findById(id).isPresent()) {
             try {
-                productVariantService.deleteById(id);
-                log.info("Product variant deleted successfully with ID: {}", id);
+                productService.deleteById(id);
+                log.info("Product deleted successfully with ID: {}", id);
                 return ResponseEntity.noContent().build();
             } catch (Exception e) {
-                log.error("Failed to delete product variant: {}", e.getMessage());
+                log.error("Failed to delete product: {}", e.getMessage());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
             }
         } else {
-            log.warn("Product variant not found with ID: {}", id);
+            log.warn("Product not found with ID: {}", id);
             return ResponseEntity.notFound().build();
         }
     }
 
     /**
-     * GET /api/masterdata/product-variants/{id}/modules
-     * Get all modules (with quantities) for a specific product variant
+     * GET /api/masterdata/products/{id}/modules
+     * Get all modules (with quantities) for a specific product
      */
     @GetMapping("/{id}/modules")
     public ResponseEntity<List<ProductModule>> getProductModules(@PathVariable Long id) {
-        log.debug("Fetching modules for product variant ID: {}", id);
+        log.debug("Fetching modules for product ID: {}", id);
         
-        Optional<ProductVariant> productOpt = productVariantService.findById(id);
+        Optional<Product> productOpt = productService.findById(id);
         if (productOpt.isEmpty()) {
-            log.warn("Product variant not found with ID: {}", id);
+            log.warn("Product not found with ID: {}", id);
             return ResponseEntity.notFound().build();
         }
 
-        List<ProductModule> productModules = productModuleService.findByProductVariantId(id);
-        log.debug("Found {} modules for product variant ID: {}", productModules.size(), id);
+        List<ProductModule> productModules = productModuleService.findByProductId(id);
+        log.debug("Found {} modules for product ID: {}", productModules.size(), id);
         
         return ResponseEntity.ok(productModules);
     }
 
     /**
-     * GET /api/masterdata/product-variants/{id}/composition
+     * GET /api/masterdata/products/{id}/composition
      * Get the complete composition (modules and parts) for a specific product
      */
     @GetMapping("/{id}/composition")
     public ResponseEntity<Map<String, Object>> getProductComposition(@PathVariable Long id) {
-        log.debug("Fetching composition for product variant ID: {}", id);
+        log.debug("Fetching composition for product ID: {}", id);
         
-        Optional<ProductVariant> productOpt = productVariantService.findById(id);
+        Optional<Product> productOpt = productService.findById(id);
         if (productOpt.isEmpty()) {
-            log.warn("Product variant not found with ID: {}", id);
+            log.warn("Product not found with ID: {}", id);
             return ResponseEntity.notFound().build();
         }
 
         // Get all modules for this product
-        List<ProductModule> productModules = productModuleService.findByProductVariantId(id);
+        List<ProductModule> productModules = productModuleService.findByProductId(id);
         
         List<Map<String, Object>> modulesWithParts = new ArrayList<>();
         
@@ -227,15 +227,15 @@ public class ProductVariantController {
     }
 
     /**
-     * Helper method to convert ProductVariant entity to DTO
+     * Helper method to convert Product entity to DTO
      */
-    private ProductVariantDto convertToDto(ProductVariant variant) {
-        return new ProductVariantDto(
-                variant.getId(),
-                variant.getName(),
-                variant.getDescription(),
-                variant.getPrice(),
-                variant.getEstimatedTimeMinutes()
+    private ProductDto convertToDto(Product product) {
+        return new ProductDto(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getEstimatedTimeMinutes()
         );
     }
 }

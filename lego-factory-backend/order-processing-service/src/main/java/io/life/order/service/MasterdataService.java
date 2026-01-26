@@ -31,7 +31,7 @@ public class MasterdataService {
     /**
      * Fetch item name from masterdata-service based on item type and ID.
      * 
-     * @param itemType "PRODUCT_VARIANT", "MODULE", or "PART"
+     * @param itemType "PRODUCT", "MODULE", or "PART"
      * @param itemId The item's ID
      * @return The item's name, or a fallback string if not found
      */
@@ -59,7 +59,7 @@ public class MasterdataService {
 
     private String getEndpointForType(String itemType) {
         return switch (itemType.toUpperCase()) {
-            case "PRODUCT", "PRODUCT_VARIANT" -> "/product-variants";
+            case "PRODUCT" -> "/products";
             case "MODULE" -> "/modules";
             case "PART" -> "/parts";
             default -> null;
@@ -67,15 +67,15 @@ public class MasterdataService {
     }
 
     /**
-     * Fetch product modules (bill of materials) for a product variant.
+     * Fetch product modules (bill of materials) for a product.
      * Returns a list of modules with their required quantities.
      * 
-     * @param productVariantId The product variant ID
+     * @param productId The product ID
      * @return List of ProductModuleDTO containing module IDs and quantities
      */
-    public List<ProductModuleDTO> getProductModules(Long productVariantId) {
+    public List<ProductModuleDTO> getProductModules(Long productId) {
         try {
-            String url = masterdataServiceUrl + "/api/masterdata/product-variants/" + productVariantId + "/modules";
+            String url = masterdataServiceUrl + "/api/masterdata/products/" + productId + "/modules";
             log.debug("Fetching product modules from: {}", url);
             
             ResponseEntity<List<ProductModuleDTO>> response = restTemplate.exchange(
@@ -87,26 +87,26 @@ public class MasterdataService {
             
             List<ProductModuleDTO> modules = response.getBody();
             if (modules != null && !modules.isEmpty()) {
-                log.debug("Found {} modules for product variant {}", modules.size(), productVariantId);
+                log.debug("Found {} modules for product {}", modules.size(), productId);
                 return modules;
             }
         } catch (Exception e) {
-            log.error("Failed to fetch product modules for product variant {}: {}", productVariantId, e.getMessage());
+            log.error("Failed to fetch product modules for product {}: {}", productId, e.getMessage());
         }
         
         return Collections.emptyList();
     }
 
     /**
-     * Convert order items (product variants with quantities) to aggregated module requirements.
-     * For each product variant, fetches its module composition and multiplies by order quantity.
+     * Convert order items (products with quantities) to aggregated module requirements.
+     * For each product, fetches its module composition and multiplies by order quantity.
      * 
-     * @param productVariantId Product variant ID
+     * @param productId Product ID
      * @param orderQuantity Quantity of products ordered
      * @return Map of module ID to total required quantity
      */
-    public Map<Long, Integer> getModuleRequirementsForProduct(Long productVariantId, Integer orderQuantity) {
-        List<ProductModuleDTO> productModules = getProductModules(productVariantId);
+    public Map<Long, Integer> getModuleRequirementsForProduct(Long productId, Integer orderQuantity) {
+        List<ProductModuleDTO> productModules = getProductModules(productId);
         
         Map<Long, Integer> requirements = new HashMap<>();
         for (ProductModuleDTO pm : productModules) {
@@ -148,7 +148,7 @@ public class MasterdataService {
      */
     public static class ProductModuleDTO {
         private Long id;
-        private Long productVariantId;
+        private Long productId;
         private Long moduleId;
         private Integer quantity;
 
@@ -162,12 +162,12 @@ public class MasterdataService {
             this.id = id;
         }
 
-        public Long getProductVariantId() {
-            return productVariantId;
+        public Long getProductId() {
+            return productId;
         }
 
-        public void setProductVariantId(Long productVariantId) {
-            this.productVariantId = productVariantId;
+        public void setProductId(Long productId) {
+            this.productId = productId;
         }
 
         public Long getModuleId() {

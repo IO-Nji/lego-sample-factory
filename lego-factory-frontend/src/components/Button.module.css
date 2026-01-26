@@ -177,6 +177,162 @@
   text-decoration: underline;
 }
 
+/* ============================================================================
+   ACTION-BASED VARIANTS (Semantic Coloring)
+   ============================================================================ */
+
+/* Confirm Action - Blue */
+.confirm {
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d66 100%);
+  color: #ffffff;
+  border-color: #2c5aa0;
+}
+
+.confirm:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1e3d66 0%, #0f1f33 100%);
+  border-color: #1e3d66;
+  box-shadow: 0 4px 8px rgba(44, 90, 160, 0.3);
+  transform: translateY(-1px);
+}
+
+.confirm:active:not(:disabled) {
+  background: #0f1f33;
+  transform: translateY(1px);
+}
+
+/* Process Action - Orange */
+.process {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: #ffffff;
+  border-color: #ff9800;
+}
+
+.process:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
+  border-color: #f57c00;
+  box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.process:active:not(:disabled) {
+  background: #e65100;
+  transform: translateY(1px);
+}
+
+/* Fulfill Action - Green */
+.fulfill {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  color: #ffffff;
+  border-color: #4caf50;
+}
+
+.fulfill:hover:not(:disabled) {
+  background: linear-gradient(135deg, #45a049 0%, #388e3c 100%);
+  border-color: #45a049;
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+  transform: translateY(-1px);
+}
+
+.fulfill:active:not(:disabled) {
+  background: #388e3c;
+  transform: translateY(1px);
+}
+
+/* Complete Action - Teal */
+.complete {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  color: #ffffff;
+  border-color: #17a2b8;
+}
+
+.complete:hover:not(:disabled) {
+  background: linear-gradient(135deg, #138496 0%, #0c5460 100%);
+  border-color: #138496;
+  box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+  transform: translateY(-1px);
+}
+
+.complete:active:not(:disabled) {
+  background: #0c5460;
+  transform: translateY(1px);
+}
+
+/* Submit Action - Purple */
+.submit {
+  background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+  color: #ffffff;
+  border-color: #9c27b0;
+}
+
+.submit:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%);
+  border-color: #7b1fa2;
+  box-shadow: 0 4px 8px rgba(156, 39, 176, 0.3);
+  transform: translateY(-1px);
+}
+
+.submit:active:not(:disabled) {
+  background: #6a1b9a;
+  transform: translateY(1px);
+}
+
+/* Reject Action - Pink */
+.reject {
+  background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
+  color: #ffffff;
+  border-color: #e91e63;
+}
+
+.reject:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c2185b 0%, #880e4f 100%);
+  border-color: #c2185b;
+  box-shadow: 0 4px 8px rgba(233, 30, 99, 0.3);
+  transform: translateY(-1px);
+}
+
+.reject:active:not(:disabled) {
+  background: #880e4f;
+  transform: translateY(1px);
+}
+
+/* Approve Action - Green (different shade from fulfill) */
+.approve {
+  background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+  color: #ffffff;
+  border-color: #28a745;
+}
+
+.approve:hover:not(:disabled) {
+  background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+  border-color: #218838;
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+  transform: translateY(-1px);
+}
+
+.approve:active:not(:disabled) {
+  background: #1e7e34;
+  transform: translateY(1px);
+}
+
+/* Hold Action - Gray */
+.hold {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: #ffffff;
+  border-color: #6c757d;
+}
+
+.hold:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a6268 0%, #4e555b 100%);
+  border-color: #5a6268;
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+  transform: translateY(-1px);
+}
+
+.hold:active:not(:disabled) {
+  background: #4e555b;
+  transform: translateY(1px);
+}
+
 /* Size Variants */
 .small {
   height: 32px;

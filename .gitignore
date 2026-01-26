@@ -179,3 +179,17 @@ test-warehouse-fulfillment.sh
 test-warehouse-order-with-stock.sh
 verify-scenario-2-behavior.sh
 verify-scenarios-1-2.sh
+.github/copilot-instructions.md
+.github/copilot-instructions.md
+deploy-to-live.sh
+deploy-triggerscenario-fix.sh
+diagnose-live-server.sh
+DOCKER_REGISTRY_DEPLOYMENT.md
+LIVE_SERVER_COMMANDS.md
+LIVE_SERVER_DEPLOYMENT_GUIDE.md
+PROD_BRANCH_RESET_SUMMARY.md
+PRODUCT_VARIANT_REMOVAL_SUMMARY.md
+pull-from-registry.sh
+push-to-registry.sh
+troubleshoot-masterdata.sh
+.github/copilot-instructions.md

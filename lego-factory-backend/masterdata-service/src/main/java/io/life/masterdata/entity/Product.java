@@ -11,11 +11,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "product_variants")
+@Table(name = "products")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductVariant {
+public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

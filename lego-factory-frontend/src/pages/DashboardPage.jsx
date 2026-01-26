@@ -38,7 +38,9 @@ function DashboardPage() {
   }, []);
 
   const userRole = session?.user?.role;
-  const workstationId = session?.user?.workstationId;
+  // Ensure workstationId is a number for consistent switch comparison
+  const rawWorkstationId = session?.user?.workstationId;
+  const workstationId = rawWorkstationId ? Number(rawWorkstationId) : null;
 
   if (isLoading) {
     return (

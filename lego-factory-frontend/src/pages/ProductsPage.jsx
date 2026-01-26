@@ -24,7 +24,7 @@ export default function ProductsPage() {
     try {
       setLoading(true);
       setError(null);
-      const productsRes = await api.get('/masterdata/product-variants');
+      const productsRes = await api.get('/masterdata/products');
       setProducts(productsRes.data);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -37,7 +37,7 @@ export default function ProductsPage() {
   const fetchProductComposition = async (productId) => {
     try {
       setCompositionLoading(true);
-      const response = await api.get(`/masterdata/product-variants/${productId}/composition`);
+      const response = await api.get(`/masterdata/products/${productId}/composition`);
       setProductComposition(response.data);
     } catch (err) {
       console.error('Error fetching product composition:', err);
