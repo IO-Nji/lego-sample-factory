@@ -82,7 +82,11 @@ function WorkstationCard({ icon, name, tooltip, status = 'idle', onClick, classN
       {tooltipData.username && (
         <div className={styles.tooltipUserSection}>
           <div className={styles.tooltipUserLabel}>username:</div>
-          <div className={styles.tooltipUsername}>{tooltipData.username}</div>
+          <div className={styles.tooltipUsername}>
+            {tooltipData.username.split('\\n').map((name, idx) => (
+              <div key={idx}>{name}</div>
+            ))}
+          </div>
         </div>
       )}
     </div>,

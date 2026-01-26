@@ -1077,20 +1077,20 @@
   bottom: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d66 100%);
+  background: linear-gradient(135deg, #4a7bc8 0%, #3a5f99 100%);
   color: white;
-  padding: 0.75rem 1rem;
+  padding: 0.64rem 0.85rem;
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: 0.64rem;
   font-weight: 500;
   white-space: pre-line;
   width: 260px;
-  text-align: left;
+  text-align: center;
   z-index: 999999;
   box-shadow: 
     0 12px 32px rgba(44, 90, 160, 0.5),
     0 4px 12px rgba(0, 0, 0, 0.2);
-  line-height: 1.6;
+  line-height: 1.4;
   border: 2px solid rgba(255, 255, 255, 0.2);
   pointer-events: none;
   opacity: 0;
@@ -1111,7 +1111,7 @@
   left: 50%;
   transform: translateX(-50%);
   border: 8px solid transparent;
-  border-top-color: #1e3d66;
+  border-top-color: #3a5f99;
   z-index: 999998;
   opacity: 0;
   visibility: hidden;

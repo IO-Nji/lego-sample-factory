@@ -442,7 +442,7 @@ function HomePage() {
                   <WorkstationCard 
                     icon="⚙️" 
                     name="Manufacturing" 
-                    tooltip={{ description: "Produce PARTS: Injection → Pre-Production → Finishing", username: "injection_molding" }}
+                    tooltip={{ description: "Produce PARTS: Injection → Pre-Production → Finishing", username: "injection_molding\nparts_pre_production\npart_finishing" }}
                     layout="horizontal"
                   />
                 </div>
@@ -456,7 +456,7 @@ function HomePage() {
                   <WorkstationCard 
                     icon="🔧" 
                     name="Assembly" 
-                    tooltip={{ description: "Assemble PARTS → MODULES (Gear + Motor)", username: "gear_assembly" }}
+                    tooltip={{ description: "Assemble PARTS → MODULES (Gear + Motor)", username: "gear_assembly\nmotor_assembly" }}
                     layout="horizontal"
                   />
                 </div>
