@@ -1,5 +1,7 @@
 package io.life.order.service;
 
+import io.life.order.dto.ProductionControlOrderDTO;
+import io.life.order.dto.AssemblyControlOrderDTO;
 import io.life.order.dto.ProductionOrderDTO;
 import io.life.order.entity.ProductionOrder;
 import io.life.order.entity.ProductionOrderItem;
@@ -32,11 +34,17 @@ public class ProductionOrderService {
 
     private final ProductionOrderRepository productionOrderRepository;
     private final WarehouseOrderRepository warehouseOrderRepository;
+    private final ProductionControlOrderService productionControlOrderService;
+    private final AssemblyControlOrderService assemblyControlOrderService;
 
     public ProductionOrderService(ProductionOrderRepository productionOrderRepository,
-                                 WarehouseOrderRepository warehouseOrderRepository) {
+                                 WarehouseOrderRepository warehouseOrderRepository,
+                                 ProductionControlOrderService productionControlOrderService,
+                                 AssemblyControlOrderService assemblyControlOrderService) {
         this.productionOrderRepository = productionOrderRepository;
         this.warehouseOrderRepository = warehouseOrderRepository;
+        this.productionControlOrderService = productionControlOrderService;
+        this.assemblyControlOrderService = assemblyControlOrderService;
     }
 
     /**
@@ -369,9 +377,6 @@ public class ProductionOrderService {
      * Creates ProductionControlOrder and AssemblyControlOrder entities.
      * This is the downward dispatch step in Scenario 3 flow.
      * 
-     * Note: Control orders are created by a separate service (to be implemented in Feature 3.2).
-     * This method marks the production order as dispatched and returns it.
-     * 
      * @param id Production order ID
      * @return Updated production order DTO
      */
@@ -385,13 +390,56 @@ public class ProductionOrderService {
                     + productionOrder.getStatus());
         }
 
+        // Create control orders based on production order items
+        if (productionOrder.getProductionOrderItems() != null && !productionOrder.getProductionOrderItems().isEmpty()) {
+            
+            for (ProductionOrderItem item : productionOrder.getProductionOrderItems()) {
+                String workstationType = item.getWorkstationType();
+                
+                if ("MANUFACTURING".equals(workstationType)) {
+                    // Create Production Control Order for manufacturing workstations (WS-1, WS-2, WS-3)
+                    logger.info("Creating Production Control Order for item {} (type: {})", item.getItemId(), item.getItemType());
+                    
+                    productionControlOrderService.createControlOrder(
+                        productionOrder.getId(),
+                        null, // Will be assigned by production control station
+                        productionOrder.getSimalScheduleId(),
+                        productionOrder.getPriority(),
+                        LocalDateTime.now(), // Start now or based on schedule
+                        productionOrder.getExpectedCompletionTime(),
+                        "Manufacture " + item.getItemName() + " (Qty: " + item.getQuantity() + ")",
+                        "Check quality after each stage",
+                        "Follow safety protocols for machinery",
+                        item.getEstimatedTimeMinutes()
+                    );
+                    
+                } else if ("ASSEMBLY".equals(workstationType)) {
+                    // Create Assembly Control Order for assembly workstations (WS-4, WS-5, WS-6)
+                    logger.info("Creating Assembly Control Order for item {} (type: {})", item.getItemId(), item.getItemType());
+                    
+                    assemblyControlOrderService.createControlOrder(
+                        productionOrder.getId(),
+                        null, // Will be assigned by assembly control station
+                        productionOrder.getSimalScheduleId(),
+                        productionOrder.getPriority(),
+                        LocalDateTime.now(),
+                        productionOrder.getExpectedCompletionTime(),
+                        "Assemble " + item.getItemName() + " (Qty: " + item.getQuantity() + ")",
+                        "Verify assembly quality",
+                        "Test functionality after assembly",
+                        "Package according to specifications",
+                        item.getEstimatedTimeMinutes(),
+                        item.getItemId(),
+                        item.getItemType(),
+                        item.getQuantity()
+                    );
+                }
+            }
+        }
+
         productionOrder.setStatus("DISPATCHED");
-
         ProductionOrder updated = productionOrderRepository.save(productionOrder);
-        logger.info("Dispatched production order {} to control stations", id);
-
-        // TODO: Feature 3.2 - Create ProductionControlOrder and AssemblyControlOrder here
-        // This will be implemented when control order service is ready
+        logger.info("Dispatched production order {} to control stations - created control orders", id);
 
         return mapToDTO(updated);
     }
