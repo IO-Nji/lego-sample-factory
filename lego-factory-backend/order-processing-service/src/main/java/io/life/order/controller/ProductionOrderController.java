@@ -205,6 +205,65 @@ public class ProductionOrderController {
     }
 
     /**
+     * Confirm production order (CREATED -> CONFIRMED) - Production Planning confirms receipt
+     */
+    @PostMapping("/{id}/confirm")
+    public ResponseEntity<ProductionOrderDTO> confirmProductionOrder(@PathVariable Long id) {
+        ProductionOrderDTO order = productionOrderService.confirmProductionOrder(id);
+        return ResponseEntity.ok(order);
+    }
+
+    /**
+     * Schedule production order (CONFIRMED -> SCHEDULED) - SimAL integration
+     */
+    @PostMapping("/{id}/schedule")
+    public ResponseEntity<ProductionOrderDTO> scheduleProduction(
+            @PathVariable Long id,
+            @RequestBody ScheduleProductionRequest request) {
+        ProductionOrderDTO order = productionOrderService.scheduleProduction(
+                id,
+                request.getScheduledStartTime(),
+                request.getScheduledEndTime(),
+                request.getGanttChartId()
+        );
+        return ResponseEntity.ok(order);
+    }
+
+    /**
+     * Dispatch production order to control stations (SCHEDULED -> DISPATCHED)
+     * Creates control orders for manufacturing and assembly
+     */
+    @PostMapping("/{id}/dispatch")
+    public ResponseEntity<ProductionOrderDTO> dispatchToControlStations(@PathVariable Long id) {
+        ProductionOrderDTO order = productionOrderService.dispatchToControlStations(id);
+        return ResponseEntity.ok(order);
+    }
+
+    /**
+     * Update from control order completion (upward notification)
+     * Called when a control order completes
+     */
+    @PostMapping("/{id}/control-completion")
+    public ResponseEntity<ProductionOrderDTO> updateFromControlOrderCompletion(
+            @PathVariable Long id,
+            @RequestBody ControlCompletionRequest request) {
+        ProductionOrderDTO order = productionOrderService.updateFromControlOrderCompletion(
+                id,
+                request.getControlOrderId()
+        );
+        return ResponseEntity.ok(order);
+    }
+
+    /**
+     * Complete production order with warehouse notification (final step)
+     */
+    @PostMapping("/{id}/complete-with-notification")
+    public ResponseEntity<ProductionOrderDTO> completeProductionOrderWithNotification(@PathVariable Long id) {
+        ProductionOrderDTO order = productionOrderService.completeProductionOrderWithNotification(id);
+        return ResponseEntity.ok(order);
+    }
+
+    /**
      * Cancel production order
      */
     @PatchMapping("/{id}/cancel")
@@ -315,5 +374,33 @@ public class ProductionOrderController {
 
         public String getStatus() { return status; }
         public void setStatus(String status) { this.status = status; }
+    }
+
+    /**
+     * Request class for scheduling production (Scenario 3 flow)
+     */
+    public static class ScheduleProductionRequest {
+        private LocalDateTime scheduledStartTime;
+        private LocalDateTime scheduledEndTime;
+        private String ganttChartId;
+
+        public LocalDateTime getScheduledStartTime() { return scheduledStartTime; }
+        public void setScheduledStartTime(LocalDateTime scheduledStartTime) { this.scheduledStartTime = scheduledStartTime; }
+
+        public LocalDateTime getScheduledEndTime() { return scheduledEndTime; }
+        public void setScheduledEndTime(LocalDateTime scheduledEndTime) { this.scheduledEndTime = scheduledEndTime; }
+
+        public String getGanttChartId() { return ganttChartId; }
+        public void setGanttChartId(String ganttChartId) { this.ganttChartId = ganttChartId; }
+    }
+
+    /**
+     * Request class for control order completion notification
+     */
+    public static class ControlCompletionRequest {
+        private Long controlOrderId;
+
+        public Long getControlOrderId() { return controlOrderId; }
+        public void setControlOrderId(Long controlOrderId) { this.controlOrderId = controlOrderId; }
     }
 }
