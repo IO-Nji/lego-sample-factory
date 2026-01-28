@@ -30,6 +30,7 @@ public class ProductionControlOrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductionControlOrderService.class);
     private static final String STATUS_ASSIGNED = "ASSIGNED";
+    private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String ERROR_CONTROL_ORDER_NOT_FOUND = "Control order not found: ";
@@ -146,6 +147,27 @@ public class ProductionControlOrderService {
     }
 
     /**
+     * Confirm a control order.
+     * Control station acknowledges receipt and reviews order details.
+     * After confirmation, they can request parts from Parts Supply.
+     */
+    public ProductionControlOrderDTO confirmOrder(Long id) {
+        @SuppressWarnings("null")
+        ProductionControlOrder order = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + id));
+
+        if (!STATUS_ASSIGNED.equals(order.getStatus())) {
+            throw new IllegalStateException("Cannot confirm - order status is " + order.getStatus());
+        }
+
+        order.setStatus(STATUS_CONFIRMED);
+        ProductionControlOrder updated = repository.save(order);
+        logger.info("Confirmed production control order {}", order.getControlOrderNumber());
+
+        return mapToDTO(updated);
+    }
+
+    /**
      * Start production on a control order.
      */
     public ProductionControlOrderDTO startProduction(Long id) {
@@ -153,7 +175,8 @@ public class ProductionControlOrderService {
         ProductionControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + id));
 
-        if (!STATUS_ASSIGNED.equals(order.getStatus())) {
+        // Can start from ASSIGNED or CONFIRMED status
+        if (!STATUS_ASSIGNED.equals(order.getStatus()) && !STATUS_CONFIRMED.equals(order.getStatus())) {
             throw new IllegalStateException("Cannot start production - order status is " + order.getStatus());
         }
 

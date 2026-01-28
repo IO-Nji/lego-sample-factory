@@ -179,3 +179,4 @@ docker-compose up -d
 
 **Script Location:** `/home/nji/Documents/DEV/Java/LIFE/lego-sample-factory/push-to-registry.sh`  
 **Registry:** `192.168.1.237:5000`
+

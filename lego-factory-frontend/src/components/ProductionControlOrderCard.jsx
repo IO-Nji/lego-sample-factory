@@ -29,6 +29,7 @@ import '../styles/CustomerOrderCard.css';
  * @param {Function} onStart - Handler for starting production
  * @param {Function} onComplete - Handler for completing production
  * @param {Function} onHalt - Handler for halting production
+ * @param {Function} onConfirm - Handler for confirming control order
  * @param {Function} onRequestParts - Handler for requesting parts supply
  * @param {Function} onDispatch - Handler for dispatching to workstation
  * @param {Function} onViewDetails - Handler for viewing order details
@@ -38,6 +39,7 @@ function ProductionControlOrderCard({
   onStart,
   onComplete,
   onHalt,
+  onConfirm,
   onRequestParts,
   onDispatch,
   onViewDetails
@@ -78,6 +80,7 @@ function ProductionControlOrderCard({
       'HALTED': 'halted',
       'ABANDONED': 'abandoned',
       'ASSIGNED': 'assigned',
+      'CONFIRMED': 'confirmed',
       'PENDING': 'pending'
     };
     return statusMap[status] || 'default';
@@ -190,12 +193,56 @@ function ProductionControlOrderCard({
 
       case 'ASSIGNED':
         actions.push({
-          label: '▶️ Start Production',
-          variant: 'success',
+          label: '✅ Confirm Order',
+          variant: 'primary',
           size: 'small',
-          onClick: () => onStart(order.id),
-          show: !!onStart
+          onClick: () => onConfirm(order.id),
+          show: !!onConfirm
         });
+        actions.push({
+          label: 'Details',
+          variant: 'ghost',
+          size: 'small',
+          onClick: () => onViewDetails(order),
+          show: !!onViewDetails
+        });
+        break;
+
+      case 'CONFIRMED':
+        // Check supply order status to determine button
+        if (loadingSupply) {
+          actions.push({
+            label: 'Loading...',
+            variant: 'outline',
+            size: 'small',
+            disabled: true,
+            show: true
+          });
+        } else if (hasFulfilledSupply) {
+          actions.push({
+            label: '🚀 Dispatch to Workstation',
+            variant: 'success',
+            size: 'small',
+            onClick: () => onDispatch(order.id),
+            show: !!onDispatch
+          });
+        } else if (hasActiveSupply) {
+          actions.push({
+            label: '⏳ Waiting for Parts...',
+            variant: 'outline',
+            size: 'small',
+            disabled: true,
+            show: true
+          });
+        } else {
+          actions.push({
+            label: '📦 Request Parts',
+            variant: 'primary',
+            size: 'small',
+            onClick: () => onRequestParts(order),
+            show: !!onRequestParts
+          });
+        }
         actions.push({
           label: 'Details',
           variant: 'ghost',

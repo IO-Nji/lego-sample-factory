@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Button from './Button';
 import '../styles/ErrorNotification.css';
 
 /**
@@ -51,13 +52,14 @@ export function ErrorNotification({
         <div className="notification-message">
           {message}
         </div>
-        <button 
-          className="notification-close"
+        <Button 
+          variant="ghost"
+          size="small"
           onClick={handleClose}
-          aria-label="Close notification"
+          ariaLabel="Close notification"
         >
           ×
-        </button>
+        </Button>
       </div>
     </div>
   );

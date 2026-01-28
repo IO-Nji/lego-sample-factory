@@ -32,6 +32,7 @@ public class AssemblyControlOrderService {
     private static final Logger logger = LoggerFactory.getLogger(AssemblyControlOrderService.class);
     private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
     private static final String STATUS_ASSIGNED = "ASSIGNED";
+    private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String STATUS_HALTED = "HALTED";
 
@@ -188,6 +189,27 @@ public class AssemblyControlOrderService {
     }
 
     /**
+     * Confirm a control order.
+     * Control station acknowledges receipt and reviews order details.
+     * After confirmation, they can request parts from Parts Supply.
+     */
+    public AssemblyControlOrderDTO confirmOrder(Long id) {
+        @SuppressWarnings("null")
+        AssemblyControlOrder order = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
+
+        if (!STATUS_ASSIGNED.equals(order.getStatus())) {
+            throw new IllegalStateException("Cannot confirm - order status is " + order.getStatus());
+        }
+
+        order.setStatus(STATUS_CONFIRMED);
+        AssemblyControlOrder updated = repository.save(order);
+        logger.info("Confirmed assembly control order {}", order.getControlOrderNumber());
+
+        return mapToDTO(updated);
+    }
+
+    /**
      * Start assembly on a control order.
      */
     public AssemblyControlOrderDTO startAssembly(Long id) {
@@ -195,7 +217,8 @@ public class AssemblyControlOrderService {
         AssemblyControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
 
-        if (!STATUS_ASSIGNED.equals(order.getStatus())) {
+        // Can start from ASSIGNED or CONFIRMED status
+        if (!STATUS_ASSIGNED.equals(order.getStatus()) && !STATUS_CONFIRMED.equals(order.getStatus())) {
             throw new IllegalStateException("Cannot start assembly - order status is " + order.getStatus());
         }
 

@@ -83,7 +83,7 @@ function ProductionControlDashboard() {
   };
 
   useEffect(() => {
-    if (session?.user?.workstationId) {
+    if (session?.user) {
       fetchControlOrders();
       fetchSupplyOrders();
       const interval = setInterval(() => {
@@ -92,7 +92,7 @@ function ProductionControlDashboard() {
       }, 30000); // Refresh every 30 seconds
       return () => clearInterval(interval);
     }
-  }, [session?.user?.workstationId]);
+  }, [session?.user]);
 
   useEffect(() => {
     applyFilter(controlOrders, filterStatus);
@@ -103,6 +103,18 @@ function ProductionControlDashboard() {
       setFilteredOrders(ordersList);
     } else {
       setFilteredOrders(ordersList.filter(order => order.status === status));
+    }
+  };
+
+  const handleConfirmOrder = async (orderId) => {
+    try {
+      await api.post(`/production-control-orders/${orderId}/confirm`);
+      setSuccess("Order confirmed successfully");
+      addNotification("Order confirmed - ready to request parts", "success");
+      fetchControlOrders();
+    } catch (err) {
+      setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to confirm order", "error");
     }
   };
 
@@ -148,6 +160,8 @@ function ProductionControlDashboard() {
   };
 
   const handleCreateSupplyOrder = (order) => {
+    console.log("Opening supply order modal for order:", order);
+    console.log("Order assignedWorkstationId:", order.assignedWorkstationId);
     setSelectedOrder(order);
     setSupplyOrderForm({
       parts: [{ partId: "1", quantityRequested: 10, unit: "piece", notes: "Plastic parts" }],
@@ -186,11 +200,18 @@ function ProductionControlDashboard() {
       return;
     }
 
+    // Validate that the control order has an assigned workstation
+    if (!selectedOrder.assignedWorkstationId) {
+      setError("Control order does not have an assigned workstation. Cannot create supply order.");
+      console.error("Selected order missing assignedWorkstationId:", selectedOrder);
+      return;
+    }
+
     try {
       const requestBody = {
         sourceControlOrderId: selectedOrder.id,
         sourceControlOrderType: "PRODUCTION",
-        requestingWorkstationId: session?.user?.workstationId,
+        requestingWorkstationId: selectedOrder.assignedWorkstationId,
         priority: supplyOrderForm.priority,
         requestedByTime: selectedOrder.targetStartTime,
         requiredItems: supplyOrderForm.parts.map(p => ({
@@ -202,13 +223,28 @@ function ProductionControlDashboard() {
         notes: supplyOrderForm.notes
       };
 
+      console.log("Creating supply order with body:", requestBody);
+      console.log("Request URL:", '/supply-orders');
+      console.log("Auth token present:", !!localStorage.getItem('authToken'));
+      
       await api.post('/supply-orders', requestBody);
       
       setSuccess("Supply order created successfully");
+      addNotification("Supply order created", "success");
       setShowSupplyOrderModal(false);
       fetchSupplyOrders();
+      fetchControlOrders(); // Refresh control orders to update card button states
     } catch (err) {
-      setError("Failed to create supply order: " + (err.response?.data?.message || err.message));
+      console.error("Supply order creation error - Full error object:", err);
+      console.error("Error response:", err.response);
+      console.error("Error response status:", err.response?.status);
+      console.error("Error response data:", err.response?.data);
+      console.error("Error message:", err.message);
+      
+      const errorMsg = err.response?.data?.message || err.message || "Unknown error";
+      console.error("Supply order creation failed:", errorMsg, err.response);
+      setError("Failed to create supply order: " + errorMsg);
+      addNotification("Failed to create supply order", "error");
     }
   };
 
@@ -272,6 +308,7 @@ function ProductionControlDashboard() {
         <ProductionControlOrderCard
           key={order.id}
           order={order}
+          onConfirm={handleConfirmOrder}
           onStart={handleStartProduction}
           onComplete={handleCompleteProduction}
           onHalt={(orderId) => handleHaltProduction(orderId, "Operator initiated halt")}
@@ -326,12 +363,11 @@ function ProductionControlDashboard() {
     if (!showDetailsModal || !selectedOrder) return null;
 
     return (
-      <div className="modal">
-        <div className="modal-overlay" onClick={() => setShowDetailsModal(false)} />
-        <div className="modal-content">
+      <div className="modal-overlay" onClick={() => setShowDetailsModal(false)}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h2>Control Order: {selectedOrder.controlOrderNumber}</h2>
-            <button onClick={() => setShowDetailsModal(false)} className="modal-close">×</button>
+            <Button variant="ghost" size="small" onClick={() => setShowDetailsModal(false)} ariaLabel="Close modal">×</Button>
           </div>
           <div className="modal-body">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem" }}>
@@ -369,12 +405,11 @@ function ProductionControlDashboard() {
     if (!showSupplyOrderModal) return null;
 
     return (
-      <div className="modal">
-        <div className="modal-overlay" onClick={() => setShowSupplyOrderModal(false)} />
-        <div className="modal-content">
+      <div className="modal-overlay" onClick={() => setShowSupplyOrderModal(false)}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h2>Request Parts Supply</h2>
-            <button onClick={() => setShowSupplyOrderModal(false)} className="modal-close">×</button>
+            <Button variant="ghost" size="small" onClick={() => setShowSupplyOrderModal(false)} ariaLabel="Close modal">×</Button>
           </div>
           <div className="modal-body">
             <div style={{ marginBottom: "1rem" }}>

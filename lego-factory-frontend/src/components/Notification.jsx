@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import Button from './Button';
 import styles from './Notification.module.css';
 import '../styles/DashboardLayout.css'; // Import for .component-title class
 
@@ -80,13 +81,14 @@ const Notification = ({
       <div className={styles.header}>
         <h3 className="component-title" style={{ margin: 0 }}>{title}</h3>
         {onClear && notifications.length > 0 && (
-          <button 
-            className={styles.clearButton}
+          <Button 
+            variant="ghost"
+            size="small"
             onClick={onClear}
-            title="Clear all notifications"
+            ariaLabel="Clear all notifications"
           >
             Clear
-          </button>
+          </Button>
         )}
       </div>
       

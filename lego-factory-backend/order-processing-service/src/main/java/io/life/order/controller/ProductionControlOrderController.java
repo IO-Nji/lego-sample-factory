@@ -89,6 +89,20 @@ public class ProductionControlOrderController {
     }
 
     /**
+     * Confirm a production control order.
+     * Control station acknowledges and reviews the order before requesting parts.
+     */
+    @PostMapping("/{id}/confirm")
+    public ResponseEntity<ProductionControlOrderDTO> confirmOrder(@PathVariable Long id) {
+        try {
+            ProductionControlOrderDTO order = productionControlOrderService.confirmOrder(id);
+            return ResponseEntity.ok(order);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    /**
      * Start production on a control order
      */
     @PostMapping("/{id}/start")

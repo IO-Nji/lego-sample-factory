@@ -89,6 +89,20 @@ public class AssemblyControlOrderController {
     }
 
     /**
+     * Confirm an assembly control order.
+     * Control station acknowledges and reviews the order before requesting parts.
+     */
+    @PostMapping("/{id}/confirm")
+    public ResponseEntity<AssemblyControlOrderDTO> confirmOrder(@PathVariable Long id) {
+        try {
+            AssemblyControlOrderDTO order = assemblyControlOrderService.confirmOrder(id);
+            return ResponseEntity.ok(order);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    /**
      * Start assembly on a control order
      */
     @PutMapping("/{id}/start")
