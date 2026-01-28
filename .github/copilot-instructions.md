@@ -132,6 +132,26 @@ ProductionOrder → Supply Orders (WS-9) + Workstation Orders
 4. **Frontend shows:** "Fulfill" button (DIRECT_FULFILLMENT) or "Order Production" button (PRODUCTION_REQUIRED)
 5. **FinalAssembly (WS-6) - Submit Order:** Credits Plant Warehouse with PRODUCT using `productId` from warehouse order items
 
+**Scenario 3 Workflow - Bidirectional Flow (Full Production):**
+
+*Downward Dispatch (Customer → Parts Supply):*
+1. CustomerOrder → WarehouseOrder (AWAITING_PRODUCTION)
+2. ProductionOrder created & scheduled (SimAL)
+3. Control Orders created (Production + Assembly) → **confirm receipt**
+4. Control stations → place PartSupplyOrders → Parts Supply **confirms receipt**
+5. Parts Supply fulfills → **notifies control stations**
+6. Control stations → dispatch workstation orders → workstations **confirm receipt**
+
+*Upward Confirmation (Parts Supply → Customer):*
+7. Workstations execute & complete → **credit inventory** (WS-3→WS-9 parts, WS-4/5→WS-8 modules) → **notify control**
+8. Control Orders fulfilled → **update Production Planning**
+9. ProductionOrder complete → **update Gantt chart** → **notify Modules Supermarket**
+10. WarehouseOrder fulfilled → creates FinalAssemblyOrder → **dispatch to WS-6**
+11. Final Assembly → **credits Plant Warehouse** → **notifies WS-7**
+12. CustomerOrder fulfilled
+
+**Critical: Supply orders are gatekeepers** - workstation orders stay `PENDING` until supply `FULFILLED`. All completions propagate upward through parent orders.
+
 **Key:** Stock checks DURING confirmation, not before or after. Never credit earlier in flow than designed above.
 
 ## Backend Patterns & Implementation
