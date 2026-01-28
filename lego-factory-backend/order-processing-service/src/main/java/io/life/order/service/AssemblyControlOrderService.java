@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 public class AssemblyControlOrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(AssemblyControlOrderService.class);
+    private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
     private static final String STATUS_ASSIGNED = "ASSIGNED";
     private static final String STATUS_COMPLETED = "COMPLETED";
@@ -115,7 +116,7 @@ public class AssemblyControlOrderService {
                 .sourceProductionOrderId(sourceProductionOrderId)
                 .assignedWorkstationId(assignedWorkstationId)
                 .simalScheduleId(simalScheduleId)
-                .status(STATUS_ASSIGNED)
+                .status(STATUS_PENDING)
                 .priority(priority)
                 .targetStartTime(targetStartTime)
                 .targetCompletionTime(targetCompletionTime)
@@ -131,7 +132,8 @@ public class AssemblyControlOrderService {
 
         @SuppressWarnings("null")
         AssemblyControlOrder saved = repository.save(order);
-        logger.info("Created assembly control order {} for workstation {}", controlOrderNumber, assignedWorkstationId);
+        logger.info("Created assembly control order {} (ID: {}) with status PENDING for production order {}",
+                    controlOrderNumber, saved.getId(), sourceProductionOrderId);
 
         return mapToDTO(saved);
     }

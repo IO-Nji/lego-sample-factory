@@ -391,16 +391,20 @@ public class ProductionOrderService {
         }
 
         // Create control orders based on production order items
+        int manufacturingOrdersCreated = 0;
+        int assemblyOrdersCreated = 0;
+        
         if (productionOrder.getProductionOrderItems() != null && !productionOrder.getProductionOrderItems().isEmpty()) {
+            logger.info("Creating control orders for {} production order items", productionOrder.getProductionOrderItems().size());
             
             for (ProductionOrderItem item : productionOrder.getProductionOrderItems()) {
                 String workstationType = item.getWorkstationType();
+                logger.info("  Processing item: {} (ID: {}, Type: {}, WorkstationType: {})", 
+                        item.getItemName(), item.getItemId(), item.getItemType(), workstationType);
                 
                 if ("MANUFACTURING".equals(workstationType)) {
                     // Create Production Control Order for manufacturing workstations (WS-1, WS-2, WS-3)
-                    logger.info("Creating Production Control Order for item {} (type: {})", item.getItemId(), item.getItemType());
-                    
-                    productionControlOrderService.createControlOrder(
+                    ProductionControlOrderDTO controlOrder = productionControlOrderService.createControlOrder(
                         productionOrder.getId(),
                         null, // Will be assigned by production control station
                         productionOrder.getSimalScheduleId(),
@@ -412,12 +416,12 @@ public class ProductionOrderService {
                         "Follow safety protocols for machinery",
                         item.getEstimatedTimeMinutes()
                     );
+                    manufacturingOrdersCreated++;
+                    logger.info("    ✓ Created Production Control Order: {}", controlOrder.getControlOrderNumber());
                     
                 } else if ("ASSEMBLY".equals(workstationType)) {
                     // Create Assembly Control Order for assembly workstations (WS-4, WS-5, WS-6)
-                    logger.info("Creating Assembly Control Order for item {} (type: {})", item.getItemId(), item.getItemType());
-                    
-                    assemblyControlOrderService.createControlOrder(
+                    AssemblyControlOrderDTO assemblyOrder = assemblyControlOrderService.createControlOrder(
                         productionOrder.getId(),
                         null, // Will be assigned by assembly control station
                         productionOrder.getSimalScheduleId(),
@@ -433,9 +437,14 @@ public class ProductionOrderService {
                         item.getItemType(),
                         item.getQuantity()
                     );
+                    assemblyOrdersCreated++;
+                    logger.info("    ✓ Created Assembly Control Order: {}", assemblyOrder.getControlOrderNumber());
                 }
             }
         }
+        
+        logger.info("Dispatch complete: {} Manufacturing orders, {} Assembly orders created", 
+                manufacturingOrdersCreated, assemblyOrdersCreated);
 
         productionOrder.setStatus("DISPATCHED");
         ProductionOrder updated = productionOrderRepository.save(productionOrder);
