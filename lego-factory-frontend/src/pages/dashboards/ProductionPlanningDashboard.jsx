@@ -49,7 +49,7 @@ function ProductionPlanningDashboard() {
     setSuccess(null);
     
     try {
-      await api.put(`/production-planning/${orderId}/confirm`);
+      await api.post(`/production-orders/${orderId}/confirm`);
       setSuccess("Production order confirmed - ready for scheduling");
       addNotification("Order confirmed and ready for scheduling", "success");
       await fetchProductionOrders();
