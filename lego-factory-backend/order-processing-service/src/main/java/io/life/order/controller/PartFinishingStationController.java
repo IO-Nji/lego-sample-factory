@@ -1,6 +1,8 @@
 package io.life.order.controller;
 
 import io.life.order.dto.ProductionControlOrderDTO;
+import io.life.order.dto.request.HaltRequest;
+import io.life.order.dto.request.NotesRequest;
 import io.life.order.service.ProductionControlOrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -131,25 +133,5 @@ public class PartFinishingStationController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
-    }
-
-    /**
-     * Request class for halting production
-     */
-    public static class HaltRequest {
-        private String reason;
-
-        public String getReason() { return reason; }
-        public void setReason(String reason) { this.reason = reason; }
-    }
-
-    /**
-     * Request class for operator notes
-     */
-    public static class NotesRequest {
-        private String notes;
-
-        public String getNotes() { return notes; }
-        public void setNotes(String notes) { this.notes = notes; }
     }
 }

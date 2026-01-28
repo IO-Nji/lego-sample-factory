@@ -1,6 +1,7 @@
 package io.life.order.controller;
 
 import io.life.order.dto.AssemblyControlOrderDTO;
+import io.life.order.dto.request.NotesRequest;
 import io.life.order.service.AssemblyControlOrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -128,18 +129,6 @@ public class MotorAssemblyStationController {
             return ResponseEntity.ok(order);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        }
-    }
-
-    public static class NotesRequest {
-        private String notes;
-
-        public String getNotes() {
-            return notes;
-        }
-
-        public void setNotes(String notes) {
-            this.notes = notes;
         }
     }
 }

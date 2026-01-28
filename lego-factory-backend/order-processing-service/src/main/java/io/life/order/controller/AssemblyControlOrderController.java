@@ -2,7 +2,8 @@ package io.life.order.controller;
 
 import io.life.order.dto.AssemblyControlOrderDTO;
 import io.life.order.dto.SupplyOrderDTO;
-import io.life.order.dto.SupplyOrderItemDTO;
+import io.life.order.dto.request.AssemblyControlOrderCreateRequest;
+import io.life.order.dto.request.RequestPartsRequest;
 import io.life.order.service.AssemblyControlOrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -192,7 +193,7 @@ public class AssemblyControlOrderController {
      */
     @PostMapping
     public ResponseEntity<AssemblyControlOrderDTO> createControlOrder(
-            @RequestBody CreateControlOrderRequest request) {
+            @RequestBody AssemblyControlOrderCreateRequest request) {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
             LocalDateTime targetStart = LocalDateTime.parse(request.getTargetStartTime(), formatter);
@@ -218,84 +219,5 @@ public class AssemblyControlOrderController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-    }
-
-    /**
-     * Request class for creating an assembly control order from SimAL
-     */
-    public static class CreateControlOrderRequest {
-        private Long sourceProductionOrderId;
-        private Long assignedWorkstationId;
-        private String simalScheduleId;
-        private String targetStartTime;
-        private String targetCompletionTime;
-        private String priority;
-        private String assemblyInstructions;
-        private String qualityCheckpoints;
-        private Long itemId;
-        private String itemType;
-        private Integer quantity;
-
-        // Getters and setters
-        public Long getSourceProductionOrderId() { return sourceProductionOrderId; }
-        public void setSourceProductionOrderId(Long sourceProductionOrderId) {
-            this.sourceProductionOrderId = sourceProductionOrderId;
-        }
-
-        public Long getAssignedWorkstationId() { return assignedWorkstationId; }
-        public void setAssignedWorkstationId(Long assignedWorkstationId) {
-            this.assignedWorkstationId = assignedWorkstationId;
-        }
-
-        public String getSimalScheduleId() { return simalScheduleId; }
-        public void setSimalScheduleId(String simalScheduleId) { this.simalScheduleId = simalScheduleId; }
-
-        public String getTargetStartTime() { return targetStartTime; }
-        public void setTargetStartTime(String targetStartTime) { this.targetStartTime = targetStartTime; }
-
-        public String getTargetCompletionTime() { return targetCompletionTime; }
-        public void setTargetCompletionTime(String targetCompletionTime) {
-            this.targetCompletionTime = targetCompletionTime;
-        }
-
-        public String getPriority() { return priority; }
-        public void setPriority(String priority) { this.priority = priority; }
-
-        public String getAssemblyInstructions() { return assemblyInstructions; }
-        public void setAssemblyInstructions(String assemblyInstructions) {
-            this.assemblyInstructions = assemblyInstructions;
-        }
-
-        public String getQualityCheckpoints() { return qualityCheckpoints; }
-        public void setQualityCheckpoints(String qualityCheckpoints) {
-            this.qualityCheckpoints = qualityCheckpoints;
-        }
-
-        public Long getItemId() { return itemId; }
-        public void setItemId(Long itemId) { this.itemId = itemId; }
-
-        public String getItemType() { return itemType; }
-        public void setItemType(String itemType) { this.itemType = itemType; }
-
-        public Integer getQuantity() { return quantity; }
-        public void setQuantity(Integer quantity) { this.quantity = quantity; }
-    }
-
-    // Request DTO for requesting parts
-    public static class RequestPartsRequest {
-        private List<SupplyOrderItemDTO> requiredParts;
-        private LocalDateTime neededBy;
-        private String notes;
-
-        public List<SupplyOrderItemDTO> getRequiredParts() { return requiredParts; }
-        public void setRequiredParts(List<SupplyOrderItemDTO> requiredParts) {
-            this.requiredParts = requiredParts;
-        }
-
-        public LocalDateTime getNeededBy() { return neededBy; }
-        public void setNeededBy(LocalDateTime neededBy) { this.neededBy = neededBy; }
-
-        public String getNotes() { return notes; }
-        public void setNotes(String notes) { this.notes = notes; }
     }
 }

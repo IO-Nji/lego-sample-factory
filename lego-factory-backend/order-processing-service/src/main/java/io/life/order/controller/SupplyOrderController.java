@@ -1,17 +1,13 @@
 package io.life.order.controller;
 
 import io.life.order.dto.SupplyOrderDTO;
-import io.life.order.dto.SupplyOrderItemDTO;
+import io.life.order.dto.request.SupplyOrderCreateRequest;
+import io.life.order.dto.request.SupplyOrderFromControlRequest;
 import io.life.order.service.SupplyOrderService;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -34,28 +30,11 @@ public class SupplyOrderController {
     }
 
     /**
-     * Request object for creating a new supply order.
-     */
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class CreateSupplyOrderRequest {
-        private Long sourceControlOrderId;
-        private String sourceControlOrderType; // PRODUCTION or ASSEMBLY
-        private Long requestingWorkstationId;
-        private String priority;
-        private LocalDateTime requestedByTime;
-        private List<SupplyOrderItemDTO> requiredItems;
-        private String notes;
-    }
-
-    /**
      * Create a new supply order.
      * Called by production/assembly control operators to request parts from warehouse.
      */
     @PostMapping
-    public ResponseEntity<SupplyOrderDTO> createSupplyOrder(@RequestBody CreateSupplyOrderRequest request) {
+    public ResponseEntity<SupplyOrderDTO> createSupplyOrder(@RequestBody SupplyOrderCreateRequest request) {
         SupplyOrderDTO order = supplyOrderService.createSupplyOrder(
                 request.getSourceControlOrderId(),
                 request.getSourceControlOrderType(),
@@ -69,24 +48,11 @@ public class SupplyOrderController {
     }
 
     /**
-     * Request object for creating a supply order from a control order.
-     * Parts are automatically determined from BOM.
-     */
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class CreateFromControlOrderRequest {
-        private Long controlOrderId;
-        private String controlOrderType; // ASSEMBLY or PRODUCTION
-        private String priority;
-    }
-
-    /**
      * Create a supply order from a control order with automatic BOM lookup.
      * Parts needed are automatically determined from the module's BOM.
      */
     @PostMapping("/from-control-order")
-    public ResponseEntity<?> createFromControlOrder(@RequestBody CreateFromControlOrderRequest request) {
+    public ResponseEntity<?> createFromControlOrder(@RequestBody SupplyOrderFromControlRequest request) {
         logger.info("Creating supply order from control order: controlOrderId={}, type={}, priority={}",
             request.getControlOrderId(), request.getControlOrderType(), request.getPriority());
         try {
