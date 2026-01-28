@@ -207,6 +207,7 @@ function ProductionControlDashboard() {
       setSuccess("Supply order created successfully");
       setShowSupplyOrderModal(false);
       fetchSupplyOrders();
+      fetchControlOrders(); // Refresh control orders to update card button states
     } catch (err) {
       setError("Failed to create supply order: " + (err.response?.data?.message || err.message));
     }
