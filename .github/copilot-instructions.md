@@ -217,9 +217,10 @@ ProductionOrder → Supply Orders (WS-9) + Workstation Orders
 - **API debugging**: Open DevTools → Network tab → inspect `/api/...` requests to verify auth headers and response codes
 
 ### Scenario Validation Scripts
+- `./test-scenario-1.sh` - Validates Scenario 1 flow: CustomerOrder with sufficient stock (direct fulfillment)
 - `./test-scenario-2.sh` - Validates Scenario 2 flow: CustomerOrder → WarehouseOrder → ProductionOrder
-- `./verify-scenarios-1-2.sh` - Full validation of both scenarios
-- `./test-final-assembly-workflow.sh` - Tests Final Assembly (WS-6) completion and Plant Warehouse credit
+- `./verify-scenarios-1-2.sh` - Full validation of both scenarios end-to-end
+- `./verify-code-in-images.sh` - Verifies Docker images contain expected code changes
 - Read scripts to understand expected sequencing; modify them when adding new endpoints
 
 ### Common Debugging Scenarios
@@ -274,16 +275,20 @@ git push origin feature/your-feature  # Push to remote
 # Development machine: Build, tag, and push to local registry
 ./push-to-registry.sh  # Tags with {branch}-{commit}-{timestamp}
 
-# Live server: Pull and deploy latest images
+# Live server: Pull and deploy latest images (recommended - automatic)
+./update-from-registry.sh  # Auto-pull, stop, start, verify
+
+# Alternative: Manual pull with confirmation
 ./pull-from-registry.sh && docker-compose up -d
 
-# Diagnose live server issues
-./diagnose-live-server.sh  # Checks services, logs, and network
+# Diagnose server issues
+./check-server-state.sh  # Checks services, logs, and network
+./diagnose-server-git-state.sh  # Verifies git state and sync issues
 ```
 
 **Registry:** `192.168.1.237:5000` (local)  
 **Images auto-tagged:** Both `latest` and versioned tags for rollback capability  
-**See:** [DOCKER_REGISTRY_DEPLOYMENT.md](../DOCKER_REGISTRY_DEPLOYMENT.md) for detailed deployment workflows
+**See:** [SERVER_UPDATE_GUIDE.md](../SERVER_UPDATE_GUIDE.md) for detailed deployment workflows
 
 ## Pitfalls to Avoid
 
