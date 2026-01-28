@@ -151,7 +151,8 @@ function AssemblyControlDashboard() {
   const handleCreateSupplyOrder = (order) => {
     setSelectedOrder(order);
     setSupplyOrderForm({
-      parts: [{ partId: "1", quantityRequested: 10, unit: "piece", notes: "Assembly parts" }],
+      // Start with empty partId - operator must select actual required parts (IDs 10-12)
+      parts: [{ partId: "", quantityRequested: 10, unit: "piece", notes: "Assembly parts" }],
       priority: order.priority || "MEDIUM",
       notes: `Parts for Assembly Control Order ${order.controlOrderNumber}`
     });
@@ -208,6 +209,7 @@ function AssemblyControlDashboard() {
       setSuccess("Supply order created successfully");
       setShowSupplyOrderModal(false);
       fetchSupplyOrders();
+      fetchControlOrders(); // Refresh control orders to update card button states
     } catch (err) {
       setError("Failed to create supply order: " + (err.response?.data?.message || err.message));
     }

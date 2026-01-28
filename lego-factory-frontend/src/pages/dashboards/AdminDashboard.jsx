@@ -368,7 +368,7 @@ function AdminDashboard() {
         gap: '1.25rem',
         marginBottom: '1.5rem',
         alignItems: 'stretch',
-        height: '320px'
+        height: '400px'
       }}>
         {/* Column 1: System Activity Log */}
         <div style={{ 
@@ -400,10 +400,7 @@ function AdminDashboard() {
           backgroundColor: 'white',
           borderRadius: '0.5rem',
           border: '1px solid var(--color-border)',
-          padding: '1rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
+          padding: '1rem'
         }}>
           <PieChart 
             title="ORDER STATUS DISTRIBUTION"
@@ -420,10 +417,7 @@ function AdminDashboard() {
           backgroundColor: 'white',
           borderRadius: '0.5rem',
           border: '1px solid var(--color-border)',
-          padding: '1rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
+          padding: '1rem'
         }}>
           <PieChart 
             title="PRODUCTION STATUS TYPE"
