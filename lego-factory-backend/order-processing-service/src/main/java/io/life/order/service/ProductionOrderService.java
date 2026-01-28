@@ -414,10 +414,14 @@ public class ProductionOrderService {
                         "Manufacture " + item.getItemName() + " (Qty: " + item.getQuantity() + ")",
                         "Check quality after each stage",
                         "Follow safety protocols for machinery",
-                        item.getEstimatedTimeMinutes()
+                        item.getEstimatedTimeMinutes(),
+                        item.getItemId(),
+                        item.getItemType(),
+                        item.getQuantity()
                     );
                     manufacturingOrdersCreated++;
-                    logger.info("    ✓ Created Production Control Order: {}", controlOrder.getControlOrderNumber());
+                    logger.info("    ✓ Created Production Control Order: {} for item {} (ID: {}) qty {}", 
+                            controlOrder.getControlOrderNumber(), item.getItemType(), item.getItemId(), item.getQuantity());
                     
                 } else if ("ASSEMBLY".equals(workstationType)) {
                     // Create Assembly Control Order for assembly workstations (WS-4, WS-5, WS-6)

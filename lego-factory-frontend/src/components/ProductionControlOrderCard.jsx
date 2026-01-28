@@ -45,17 +45,21 @@ function ProductionControlOrderCard({
   const [supplyOrders, setSupplyOrders] = useState([]);
   const [loadingSupply, setLoadingSupply] = useState(false);
 
-  // Fetch supply orders when component mounts or order changes
+  // Fetch supply orders when component mounts, order changes, or periodically
   useEffect(() => {
     if (order.id && (order.status === 'PENDING' || order.status === 'ASSIGNED')) {
       fetchSupplyOrders();
+      
+      // Set up periodic refresh to catch new supply orders
+      const interval = setInterval(fetchSupplyOrders, 5000);
+      return () => clearInterval(interval);
     }
   }, [order.id, order.status]);
 
   const fetchSupplyOrders = async () => {
     try {
       setLoadingSupply(true);
-      const response = await api.get(`/production-control-orders/${order.id}/supply-orders`);
+      const response = await api.get(`/supply-orders/source/${order.id}?type=PRODUCTION`);
       setSupplyOrders(response.data || []);
     } catch (error) {
       console.error('Error fetching supply orders:', error);
@@ -162,13 +166,29 @@ function ProductionControlOrderCard({
             onClick: () => onDispatch(order.id),
             show: !!onDispatch
           });
+          // Show view supply order button
+          actions.push({
+            label: '📋 View Supply Order',
+            variant: 'outline',
+            size: 'small',
+            onClick: () => onViewDetails({ ...order, supplyOrders }),
+            show: !!onViewDetails
+          });
         } else if (hasActiveSupply) {
           actions.push({
-            label: '⏳ Waiting for Parts...',
-            variant: 'outline',
+            label: '⏳ Awaiting Parts...',
+            variant: 'warning',
             size: 'small',
             disabled: true,
             show: true
+          });
+          // Show view supply order button
+          actions.push({
+            label: '📋 View Supply Order',
+            variant: 'outline',
+            size: 'small',
+            onClick: () => onViewDetails({ ...order, supplyOrders }),
+            show: !!onViewDetails
           });
         } else {
           actions.push({
@@ -178,14 +198,14 @@ function ProductionControlOrderCard({
             onClick: () => onRequestParts(order),
             show: !!onRequestParts
           });
+          actions.push({
+            label: 'Details',
+            variant: 'ghost',
+            size: 'small',
+            onClick: () => onViewDetails(order),
+            show: !!onViewDetails
+          });
         }
-        actions.push({
-          label: 'Details',
-          variant: 'ghost',
-          size: 'small',
-          onClick: () => onViewDetails(order),
-          show: !!onViewDetails
-        });
         break;
 
       case 'ASSIGNED':

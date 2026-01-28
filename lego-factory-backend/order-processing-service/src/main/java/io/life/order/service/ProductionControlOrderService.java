@@ -57,7 +57,8 @@ public class ProductionControlOrderService {
     }
 
     /**
-     * Create a production control order from a production order.
+     * Create a production control order from a production order (backwards compatible version without item info).
+     * Uses default values for itemId (null), itemType (null), quantity (null).
      */
     public ProductionControlOrderDTO createControlOrder(
             Long sourceProductionOrderId,
@@ -70,6 +71,34 @@ public class ProductionControlOrderService {
             String qualityCheckpoints,
             String safetyProcedures,
             Integer estimatedDurationMinutes) {
+        
+        // Call the full method with null item values for backwards compatibility
+        return createControlOrder(
+                sourceProductionOrderId, assignedWorkstationId, simalScheduleId,
+                priority, targetStartTime, targetCompletionTime,
+                productionInstructions, qualityCheckpoints, safetyProcedures,
+                estimatedDurationMinutes,
+                null, null, null  // Default values for backwards compatibility
+        );
+    }
+
+    /**
+     * Create a production control order from a production order (full version with item info).
+     */
+    public ProductionControlOrderDTO createControlOrder(
+            Long sourceProductionOrderId,
+            Long assignedWorkstationId,
+            String simalScheduleId,
+            String priority,
+            LocalDateTime targetStartTime,
+            LocalDateTime targetCompletionTime,
+            String productionInstructions,
+            String qualityCheckpoints,
+            String safetyProcedures,
+            Integer estimatedDurationMinutes,
+            Long itemId,
+            String itemType,
+            Integer quantity) {
 
         String controlOrderNumber = generateControlOrderNumber();
 
@@ -86,12 +115,15 @@ public class ProductionControlOrderService {
                 .qualityCheckpoints(qualityCheckpoints)
                 .safetyProcedures(safetyProcedures)
                 .estimatedDurationMinutes(estimatedDurationMinutes)
+                .itemId(itemId)
+                .itemType(itemType)
+                .quantity(quantity)
                 .build();
 
         @SuppressWarnings("null")
         ProductionControlOrder saved = repository.save(order);
-        logger.info("Created production control order {} (ID: {}) with status PENDING for production order {}", 
-                    controlOrderNumber, saved.getId(), sourceProductionOrderId);
+        logger.info("Created production control order {} (ID: {}) with status PENDING for production order {} - Item: {} (ID: {}) Qty: {}", 
+                    controlOrderNumber, saved.getId(), sourceProductionOrderId, itemType, itemId, quantity);
 
         return mapToDTO(saved);
     }

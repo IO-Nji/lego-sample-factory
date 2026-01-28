@@ -266,6 +266,7 @@ public class SimalController {
 
     /**
      * Helper method to generate scheduled tasks based on order items.
+     * For modules, this will create BOTH manufacturing tasks (for parts) AND assembly tasks (for modules).
      */
     private List<SimalScheduledOrderResponse.ScheduledTask> generateScheduledTasks(
             SimalProductionOrderRequest request, String scheduleId) {
@@ -280,6 +281,20 @@ public class SimalController {
 
                 String workstationType = item.getWorkstationType() != null ? 
                         item.getWorkstationType() : "MANUFACTURING";
+                
+                // For ASSEMBLY items (modules), first create manufacturing tasks for parts
+                if ("ASSEMBLY".equals(workstationType)) {
+                    List<SimalScheduledOrderResponse.ScheduledTask> partsTasks = 
+                            generatePartsManufacturingTasks(item, scheduleId, currentTime, sequence);
+                    
+                    for (SimalScheduledOrderResponse.ScheduledTask partsTask : partsTasks) {
+                        tasks.add(partsTask);
+                        currentTime = currentTime.plusMinutes(partsTask.getDuration());
+                        sequence++;
+                    }
+                }
+                
+                // Then create the assembly/manufacturing task for the item itself
                 String workstationId = assignWorkstation(workstationType, sequence);
 
                 SimalScheduledOrderResponse.ScheduledTask task = 
@@ -306,6 +321,92 @@ public class SimalController {
         }
 
         return tasks;
+    }
+
+    /**
+     * Generate manufacturing tasks for parts required by a module.
+     * Fetches the module's BOM from masterdata-service and creates tasks for each part.
+     *
+     * @param moduleItem The module item that requires parts
+     * @param scheduleId The schedule ID for task naming
+     * @param startTime The start time for the first manufacturing task
+     * @param startSequence The starting sequence number
+     * @return List of manufacturing tasks for parts
+     */
+    private List<SimalScheduledOrderResponse.ScheduledTask> generatePartsManufacturingTasks(
+            SimalProductionOrderRequest.OrderLineItem moduleItem, 
+            String scheduleId, 
+            LocalDateTime startTime, 
+            int startSequence) {
+        
+        List<SimalScheduledOrderResponse.ScheduledTask> partsTasks = new ArrayList<>();
+        
+        try {
+            // Fetch module BOM from masterdata-service using /modules/{id}/parts endpoint
+            String modulePartsUrl = masterdataApiBaseUrl + "/masterdata/modules/" + moduleItem.getItemId() + "/parts";
+            log.debug("Fetching module BOM from: {}", modulePartsUrl);
+            
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> moduleParts = restTemplate.getForObject(modulePartsUrl, List.class);
+            
+            if (moduleParts != null && !moduleParts.isEmpty()) {
+                log.info("Creating {} manufacturing tasks for parts of module: {}", 
+                        moduleParts.size(), moduleItem.getItemName());
+                    
+                    LocalDateTime currentTime = startTime;
+                    int sequence = startSequence;
+                    
+                    for (Map<String, Object> modulePart : moduleParts) {
+                        Object partIdObj = modulePart.get("partId");
+                        Object quantityObj = modulePart.get("quantity");
+                        
+                        if (partIdObj != null && quantityObj != null) {
+                            Long partId = partIdObj instanceof Integer ? 
+                                    ((Integer) partIdObj).longValue() : (Long) partIdObj;
+                            Integer quantityPerModule = quantityObj instanceof Integer ? 
+                                    (Integer) quantityObj : 1;
+                            
+                            // Fetch part details to get the name
+                            String partUrl = masterdataApiBaseUrl + "/masterdata/parts/" + partId;
+                            Map<String, Object> partData = restTemplate.getForObject(partUrl, Map.class);
+                            String partName = partData != null ? (String) partData.get("name") : "Part " + partId;
+                            
+                            // Total parts needed = module quantity * parts per module
+                            int totalPartsNeeded = moduleItem.getQuantity() * quantityPerModule;
+                            int duration = 30; // Default 30 minutes per part batch
+                            
+                            // Assign to manufacturing workstation (WS-1, WS-2, or WS-3)
+                            String workstationId = assignWorkstation("MANUFACTURING", sequence);
+                            
+                            SimalScheduledOrderResponse.ScheduledTask partsTask = 
+                                    SimalScheduledOrderResponse.ScheduledTask.builder()
+                                    .taskId("TASK-" + scheduleId + "-" + sequence)
+                                    .itemId(partId.toString())
+                                    .itemName(partName)
+                                    .quantity(totalPartsNeeded)
+                                    .workstationId(workstationId)
+                                    .workstationName(getWorkstationName(workstationId))
+                                    .startTime(isoFormatter.format(currentTime))
+                                    .endTime(isoFormatter.format(currentTime.plusMinutes(duration)))
+                                    .duration(duration)
+                                    .status("PENDING")
+                                    .sequence(sequence)
+                                    .build();
+                            
+                            partsTasks.add(partsTask);
+                            currentTime = currentTime.plusMinutes(duration);
+                            sequence++;
+                        }
+                    }
+                } else {
+                    log.warn("Module {} has no parts in BOM", moduleItem.getItemName());
+                }
+        } catch (Exception e) {
+            log.error("Failed to generate parts manufacturing tasks for module {}: {}", 
+                    moduleItem.getItemName(), e.getMessage(), e);
+        }
+        
+        return partsTasks;
     }
 
     /**
@@ -406,24 +507,35 @@ public class SimalController {
             @PathVariable String scheduleId,
             @RequestParam(required = false) Long productionOrderId) {
 
-        log.info("Creating control orders from schedule: {}", scheduleId);
+        log.info("=== CREATE CONTROL ORDERS REQUESTED ===");
+        log.info("Schedule ID: {}, Production Order ID: {}", scheduleId, productionOrderId);
 
         ScheduledOrder orderEntity = scheduledOrderRepository.findByScheduleId(scheduleId)
                 .orElse(null);
         if (orderEntity == null) {
+            log.error("❌ Schedule not found: {}", scheduleId);
             return ResponseEntity.notFound().build();
         }
+
+        log.info("Found schedule entity: {}", orderEntity.getScheduleId());
 
         // Convert entity to DTO for control order integration
         SimalScheduledOrderResponse schedule = convertToResponse(orderEntity);
 
         if (productionOrderId == null) {
+            log.warn("Production order ID not provided, using default test ID: 1");
             productionOrderId = 1L; // Default for testing
         }
 
         try {
+            log.info("Calling ControlOrderIntegrationService to create control orders...");
             Map<String, String> createdOrders = controlOrderIntegrationService
                     .createControlOrdersFromSchedule(schedule, productionOrderId);
+
+            log.info("✓ Successfully created {} control orders", createdOrders.size());
+            createdOrders.forEach((wsId, controlOrderNum) -> 
+                log.info("  - Workstation {}: {}", wsId, controlOrderNum)
+            );
 
             Map<String, Object> response = new HashMap<>();
             response.put(SCHEDULE_ID, scheduleId);
@@ -435,7 +547,7 @@ public class SimalController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            log.error("Error creating control orders: {}", e.getMessage(), e);
+            log.error("❌ Error creating control orders: {}", e.getMessage(), e);
 
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put(STATUS, "ERROR");

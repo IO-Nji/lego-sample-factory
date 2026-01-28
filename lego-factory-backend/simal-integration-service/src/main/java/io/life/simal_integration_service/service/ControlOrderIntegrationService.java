@@ -121,6 +121,18 @@ public class ControlOrderIntegrationService {
         request.put("priority", determinePriority(schedule.getOrderNumber()));
         request.put("productionInstructions", buildProductionInstructions(tasks));
         request.put("qualityCheckpoints", buildQualityCheckpoints(tasks));
+        
+        // Add item info from the first task (for parts request functionality)
+        SimalScheduledOrderResponse.ScheduledTask firstTask = tasks.get(0);
+        if (firstTask.getItemId() != null) {
+            try {
+                request.put("itemId", Long.parseLong(firstTask.getItemId()));
+            } catch (NumberFormatException e) {
+                log.warn("Could not parse itemId: {}", firstTask.getItemId());
+            }
+        }
+        request.put("itemType", "PART"); // Manufacturing workstations produce PARTs
+        request.put("quantity", firstTask.getQuantity());
 
         String url = orderProcessingApiBaseUrl + "/production-control-orders";
         log.debug("Posting ProductionControlOrder to: {}", url);
@@ -160,6 +172,18 @@ public class ControlOrderIntegrationService {
         request.put("priority", determinePriority(schedule.getOrderNumber()));
         request.put("assemblyInstructions", buildAssemblyInstructions(tasks));
         request.put("qualityCheckpoints", buildQualityStandards(tasks));
+        
+        // Add item info from the first task (for parts request functionality)
+        SimalScheduledOrderResponse.ScheduledTask firstTask = tasks.get(0);
+        if (firstTask.getItemId() != null) {
+            try {
+                request.put("itemId", Long.parseLong(firstTask.getItemId()));
+            } catch (NumberFormatException e) {
+                log.warn("Could not parse itemId: {}", firstTask.getItemId());
+            }
+        }
+        request.put("itemType", "MODULE"); // Assembly workstations produce MODULEs
+        request.put("quantity", firstTask.getQuantity());
 
         String url = orderProcessingApiBaseUrl + "/assembly-control-orders";
         log.debug("Posting AssemblyControlOrder to: {}", url);

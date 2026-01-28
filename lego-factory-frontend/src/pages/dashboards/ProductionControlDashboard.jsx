@@ -43,6 +43,9 @@ function ProductionControlDashboard() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showSupplyOrderModal, setShowSupplyOrderModal] = useState(false);
+  const [availableParts, setAvailableParts] = useState([]);
+  const [modalError, setModalError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const [supplyOrderForm, setSupplyOrderForm] = useState({
     parts: [{ partId: "", quantityRequested: 1, unit: "piece", notes: "" }],
     priority: "MEDIUM",
@@ -66,6 +69,16 @@ function ProductionControlDashboard() {
     }
   };
 
+  // Fetch available parts for supply order form
+  const fetchAvailableParts = async () => {
+    try {
+      const response = await api.get('/masterdata/parts');
+      setAvailableParts(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error('Failed to load parts:', err);
+    }
+  };
+
   // Fetch supply orders for this workstation
   const fetchSupplyOrders = async () => {
     const workstationId = session?.user?.workstationId;
@@ -76,23 +89,25 @@ function ProductionControlDashboard() {
 
     try {
       const response = await api.get(`/supply-orders/workstation/${workstationId}`);
-      setSupplyOrders(Array.isArray(response.data) ? response.data : []);
+      setSupplyOrders(Array.isArray(response.data) ? response.data : []);;
     } catch (err) {
       console.error("Failed to load supply orders:", err);
     }
   };
 
   useEffect(() => {
-    if (session?.user?.workstationId) {
+    // Control users don't have a workstationId - they manage ALL manufacturing orders
+    if (session?.user) {
       fetchControlOrders();
       fetchSupplyOrders();
+      fetchAvailableParts();
       const interval = setInterval(() => {
         fetchControlOrders();
         fetchSupplyOrders();
       }, 30000); // Refresh every 30 seconds
       return () => clearInterval(interval);
     }
-  }, [session?.user?.workstationId]);
+  }, [session?.user]);
 
   useEffect(() => {
     applyFilter(controlOrders, filterStatus);
@@ -147,16 +162,35 @@ function ProductionControlDashboard() {
     setShowDetailsModal(true);
   };
 
-  const handleCreateSupplyOrder = (order) => {
-    setSelectedOrder(order);
-    setSupplyOrderForm({
-      parts: [{ partId: "1", quantityRequested: 10, unit: "piece", notes: "Plastic parts" }],
-      priority: order.priority || "MEDIUM",
-      notes: `Parts for Control Order ${order.controlOrderNumber}`
-    });
-    setShowSupplyOrderModal(true);
+  // Create supply order with automatic BOM lookup (no manual part selection needed)
+  const handleCreateSupplyOrder = async (order) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const requestBody = {
+        controlOrderId: order.id,
+        controlOrderType: "PRODUCTION",
+        priority: order.priority || "MEDIUM"
+      };
+
+      console.log('Creating supply order from control order:', requestBody);
+      await api.post('/supply-orders/from-control-order', requestBody);
+      
+      setSuccess("Supply order created successfully - parts determined from BOM");
+      addNotification("Supply order created from BOM", "success");
+      fetchSupplyOrders();
+      fetchControlOrders(); // Refresh control orders to update card button states
+    } catch (err) {
+      console.error('Supply order creation error:', err);
+      setError("Failed to create supply order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to create supply order", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Legacy handlers for manual part selection (kept for reference but not used)
   const handleAddPart = () => {
     setSupplyOrderForm(prev => ({
       ...prev,
@@ -181,16 +215,30 @@ function ProductionControlDashboard() {
   };
 
   const handleSubmitSupplyOrder = async () => {
-    if (!selectedOrder || supplyOrderForm.parts.some(p => !p.partId || p.quantityRequested <= 0)) {
-      setError("Please fill in all required fields");
+    setModalError(null);
+    
+    // Validate required fields
+    if (!selectedOrder) {
+      setModalError("No order selected");
+      return;
+    }
+    
+    if (supplyOrderForm.parts.some(p => !p.partId || p.quantityRequested <= 0)) {
+      setModalError("Please select a part and enter a valid quantity for all items");
+      return;
+    }
+    
+    if (!selectedOrder.assignedWorkstationId) {
+      setModalError("Order has no assigned workstation - cannot create supply order");
       return;
     }
 
+    setSubmitting(true);
     try {
       const requestBody = {
         sourceControlOrderId: selectedOrder.id,
         sourceControlOrderType: "PRODUCTION",
-        requestingWorkstationId: session?.user?.workstationId,
+        requestingWorkstationId: selectedOrder.assignedWorkstationId,
         priority: supplyOrderForm.priority,
         requestedByTime: selectedOrder.targetStartTime,
         requiredItems: supplyOrderForm.parts.map(p => ({
@@ -202,14 +250,19 @@ function ProductionControlDashboard() {
         notes: supplyOrderForm.notes
       };
 
+      console.log('Creating supply order with:', requestBody);
       await api.post('/supply-orders', requestBody);
       
       setSuccess("Supply order created successfully");
+      addNotification("Supply order created", "success");
       setShowSupplyOrderModal(false);
       fetchSupplyOrders();
       fetchControlOrders(); // Refresh control orders to update card button states
     } catch (err) {
-      setError("Failed to create supply order: " + (err.response?.data?.message || err.message));
+      console.error('Supply order creation error:', err);
+      setModalError("Failed to create supply order: " + (err.response?.data?.message || err.message));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -371,19 +424,34 @@ function ProductionControlDashboard() {
 
     return (
       <div className="modal">
-        <div className="modal-overlay" onClick={() => setShowSupplyOrderModal(false)} />
+        <div className="modal-overlay" onClick={() => !submitting && setShowSupplyOrderModal(false)} />
         <div className="modal-content">
           <div className="modal-header">
             <h2>Request Parts Supply</h2>
-            <button onClick={() => setShowSupplyOrderModal(false)} className="modal-close">×</button>
+            <button onClick={() => !submitting && setShowSupplyOrderModal(false)} className="modal-close">×</button>
           </div>
           <div className="modal-body">
+            {/* Error display inside modal */}
+            {modalError && (
+              <div style={{ 
+                padding: "0.75rem", 
+                marginBottom: "1rem", 
+                backgroundColor: "#fee2e2", 
+                border: "1px solid #fecaca", 
+                borderRadius: "0.375rem",
+                color: "#dc2626"
+              }}>
+                {modalError}
+              </div>
+            )}
+            
             <div style={{ marginBottom: "1rem" }}>
               <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Priority:</label>
               <select
                 value={supplyOrderForm.priority}
                 onChange={(e) => setSupplyOrderForm(prev => ({ ...prev, priority: e.target.value }))}
                 style={{ width: "100%", padding: "0.5rem", borderRadius: "0.375rem", border: "1px solid #d1d5db" }}
+                disabled={submitting}
               >
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Medium</option>
@@ -395,37 +463,35 @@ function ProductionControlDashboard() {
             <div style={{ marginBottom: "1rem" }}>
               <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Parts Required:</label>
               {supplyOrderForm.parts.map((part, index) => (
-                <div key={index} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                  <input
-                    type="text"
-                    placeholder="Part ID"
+                <div key={index} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", alignItems: "center" }}>
+                  <select
                     value={part.partId}
                     onChange={(e) => handlePartChange(index, 'partId', e.target.value)}
-                    style={{ flex: 1, padding: "0.5rem", borderRadius: "0.375rem", border: "1px solid #d1d5db" }}
-                  />
+                    style={{ flex: 2, padding: "0.5rem", borderRadius: "0.375rem", border: "1px solid #d1d5db" }}
+                    disabled={submitting}
+                  >
+                    <option value="">Select Part...</option>
+                    {availableParts.map(p => (
+                      <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>
+                    ))}
+                  </select>
                   <input
                     type="number"
                     min="1"
-                    placeholder="Quantity"
+                    placeholder="Qty"
                     value={part.quantityRequested}
                     onChange={(e) => handlePartChange(index, 'quantityRequested', e.target.value)}
-                    style={{ width: "100px", padding: "0.5rem", borderRadius: "0.375rem", border: "1px solid #d1d5db" }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Unit"
-                    value={part.unit}
-                    onChange={(e) => handlePartChange(index, 'unit', e.target.value)}
                     style={{ width: "80px", padding: "0.5rem", borderRadius: "0.375rem", border: "1px solid #d1d5db" }}
+                    disabled={submitting}
                   />
                   {supplyOrderForm.parts.length > 1 && (
-                    <Button variant="danger" size="small" onClick={() => handleRemovePart(index)}>
+                    <Button variant="danger" size="small" onClick={() => handleRemovePart(index)} disabled={submitting}>
                       Remove
                     </Button>
                   )}
                 </div>
               ))}
-              <Button variant="secondary" size="small" onClick={handleAddPart} style={{marginTop: '0.5rem'}}>
+              <Button variant="secondary" size="small" onClick={handleAddPart} style={{marginTop: '0.5rem'}} disabled={submitting}>
                 Add Part
               </Button>
             </div>
@@ -437,15 +503,16 @@ function ProductionControlDashboard() {
                 onChange={(e) => setSupplyOrderForm(prev => ({ ...prev, notes: e.target.value }))}
                 style={{ width: "100%", padding: "0.5rem", borderRadius: "0.375rem", border: "1px solid #d1d5db", minHeight: "80px" }}
                 rows="3"
+                disabled={submitting}
               />
             </div>
 
             <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-              <Button variant="secondary" onClick={() => setShowSupplyOrderModal(false)}>
+              <Button variant="secondary" onClick={() => setShowSupplyOrderModal(false)} disabled={submitting}>
                 Cancel
               </Button>
-              <Button variant="primary" onClick={handleSubmitSupplyOrder}>
-                Create Supply Order
+              <Button variant="primary" onClick={handleSubmitSupplyOrder} loading={submitting} disabled={submitting}>
+                {submitting ? 'Creating...' : 'Create Supply Order'}
               </Button>
             </div>
           </div>

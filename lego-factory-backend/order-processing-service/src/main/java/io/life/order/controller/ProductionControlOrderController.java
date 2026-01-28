@@ -269,7 +269,10 @@ public class ProductionControlOrderController {
                     request.getProductionInstructions(),
                     request.getQualityCheckpoints(),
                     "Standard safety procedures apply",
-                    120  // Default 2-hour estimate
+                    120,  // Default 2-hour estimate
+                    request.getItemId(),
+                    request.getItemType(),
+                    request.getQuantity()
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(order);
         } catch (Exception e) {
@@ -289,6 +292,9 @@ public class ProductionControlOrderController {
         private String priority;
         private String productionInstructions;
         private String qualityCheckpoints;
+        private Long itemId;
+        private String itemType;
+        private Integer quantity;
 
         // Getters and setters
         public Long getSourceProductionOrderId() { return sourceProductionOrderId; }
@@ -324,6 +330,15 @@ public class ProductionControlOrderController {
         public void setQualityCheckpoints(String qualityCheckpoints) {
             this.qualityCheckpoints = qualityCheckpoints;
         }
+
+        public Long getItemId() { return itemId; }
+        public void setItemId(Long itemId) { this.itemId = itemId; }
+
+        public String getItemType() { return itemType; }
+        public void setItemType(String itemType) { this.itemType = itemType; }
+
+        public Integer getQuantity() { return quantity; }
+        public void setQuantity(Integer quantity) { this.quantity = quantity; }
     }
 
     // Request DTO for requesting parts

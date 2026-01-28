@@ -209,7 +209,10 @@ public class AssemblyControlOrderController {
                     request.getQualityCheckpoints(),
                     "Standard testing procedures apply",
                     "Standard packaging requirements",
-                    90  // Default 90-minute estimate
+                    90,  // Default 90-minute estimate
+                    request.getItemId(),
+                    request.getItemType(),
+                    request.getQuantity()
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(order);
         } catch (Exception e) {
@@ -229,6 +232,9 @@ public class AssemblyControlOrderController {
         private String priority;
         private String assemblyInstructions;
         private String qualityCheckpoints;
+        private Long itemId;
+        private String itemType;
+        private Integer quantity;
 
         // Getters and setters
         public Long getSourceProductionOrderId() { return sourceProductionOrderId; }
@@ -264,6 +270,15 @@ public class AssemblyControlOrderController {
         public void setQualityCheckpoints(String qualityCheckpoints) {
             this.qualityCheckpoints = qualityCheckpoints;
         }
+
+        public Long getItemId() { return itemId; }
+        public void setItemId(Long itemId) { this.itemId = itemId; }
+
+        public String getItemType() { return itemType; }
+        public void setItemType(String itemType) { this.itemType = itemType; }
+
+        public Integer getQuantity() { return quantity; }
+        public void setQuantity(Integer quantity) { this.quantity = quantity; }
     }
 
     // Request DTO for requesting parts

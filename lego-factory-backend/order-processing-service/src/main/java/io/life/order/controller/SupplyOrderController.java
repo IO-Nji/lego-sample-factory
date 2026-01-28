@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * REST Controller for Supply Order management.
@@ -21,9 +23,10 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/supply-orders")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
+@CrossOrigin(origins = "*", maxAge = 3600)
 public class SupplyOrderController {
 
+    private static final Logger logger = LoggerFactory.getLogger(SupplyOrderController.class);
     private final SupplyOrderService supplyOrderService;
 
     public SupplyOrderController(SupplyOrderService supplyOrderService) {
@@ -63,6 +66,46 @@ public class SupplyOrderController {
                 request.getNotes()
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(order);
+    }
+
+    /**
+     * Request object for creating a supply order from a control order.
+     * Parts are automatically determined from BOM.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CreateFromControlOrderRequest {
+        private Long controlOrderId;
+        private String controlOrderType; // ASSEMBLY or PRODUCTION
+        private String priority;
+    }
+
+    /**
+     * Create a supply order from a control order with automatic BOM lookup.
+     * Parts needed are automatically determined from the module's BOM.
+     */
+    @PostMapping("/from-control-order")
+    public ResponseEntity<?> createFromControlOrder(@RequestBody CreateFromControlOrderRequest request) {
+        logger.info("Creating supply order from control order: controlOrderId={}, type={}, priority={}",
+            request.getControlOrderId(), request.getControlOrderType(), request.getPriority());
+        try {
+            SupplyOrderDTO order = supplyOrderService.createSupplyOrderFromControlOrder(
+                    request.getControlOrderId(),
+                    request.getControlOrderType(),
+                    request.getPriority()
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(order);
+        } catch (IllegalArgumentException e) {
+            logger.error("IllegalArgumentException creating supply order: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            logger.error("IllegalStateException creating supply order: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Exception creating supply order: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
     }
 
     /**
