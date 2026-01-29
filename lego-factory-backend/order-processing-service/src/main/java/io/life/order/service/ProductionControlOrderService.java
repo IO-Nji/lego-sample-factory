@@ -3,6 +3,7 @@ package io.life.order.service;
 import io.life.order.dto.ProductionControlOrderDTO;
 import io.life.order.dto.SupplyOrderDTO;
 import io.life.order.dto.SupplyOrderItemDTO;
+import io.life.order.dto.request.ProductionControlOrderCreateRequest;
 import io.life.order.entity.ProductionControlOrder;
 import io.life.order.repository.ProductionControlOrderRepository;
 import io.life.order.entity.SupplyOrder;
@@ -58,9 +59,41 @@ public class ProductionControlOrderService implements WorkstationOrderOperations
     }
 
     /**
+     * Create a production control order using a request DTO.
+     * This is the preferred method - eliminates parameter explosion.
+     * 
+     * @param request The request DTO containing all order details
+     * @return The created production control order DTO
+     */
+    public ProductionControlOrderDTO createControlOrder(ProductionControlOrderCreateRequest request) {
+        LocalDateTime targetStart = request.getTargetStartTime() != null 
+                ? LocalDateTime.parse(request.getTargetStartTime()) : null;
+        LocalDateTime targetEnd = request.getTargetCompletionTime() != null 
+                ? LocalDateTime.parse(request.getTargetCompletionTime()) : null;
+
+        return createControlOrder(
+                request.getSourceProductionOrderId(),
+                request.getAssignedWorkstationId(),
+                request.getSimalScheduleId(),
+                request.getPriority(),
+                targetStart,
+                targetEnd,
+                request.getProductionInstructions(),
+                request.getQualityCheckpoints(),
+                request.getSafetyProcedures(),
+                request.getEstimatedDurationMinutes(),
+                request.getItemId(),
+                request.getItemType(),
+                request.getQuantity()
+        );
+    }
+
+    /**
      * Create a production control order from a production order (backwards compatible version without item info).
      * Uses default values for itemId (null), itemType (null), quantity (null).
+     * @deprecated Use {@link #createControlOrder(ProductionControlOrderCreateRequest)} instead
      */
+    @Deprecated
     public ProductionControlOrderDTO createControlOrder(
             Long sourceProductionOrderId,
             Long assignedWorkstationId,
@@ -85,7 +118,9 @@ public class ProductionControlOrderService implements WorkstationOrderOperations
 
     /**
      * Create a production control order from a production order (full version with item info).
+     * @deprecated Use {@link #createControlOrder(ProductionControlOrderCreateRequest)} instead
      */
+    @Deprecated
     public ProductionControlOrderDTO createControlOrder(
             Long sourceProductionOrderId,
             Long assignedWorkstationId,

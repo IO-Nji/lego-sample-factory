@@ -58,6 +58,21 @@ public class AssemblyControlOrderCreateRequest {
     private String qualityCheckpoints;
 
     /**
+     * Testing procedures to follow during assembly.
+     */
+    private String testingProcedures;
+
+    /**
+     * Packaging requirements for the assembled product.
+     */
+    private String packagingRequirements;
+
+    /**
+     * Estimated duration in minutes.
+     */
+    private Integer estimatedDurationMinutes;
+
+    /**
      * Item ID (module) being assembled.
      */
     private Long itemId;

@@ -3,6 +3,7 @@ package io.life.order.service;
 import io.life.order.dto.AssemblyControlOrderDTO;
 import io.life.order.dto.SupplyOrderDTO;
 import io.life.order.dto.SupplyOrderItemDTO;
+import io.life.order.dto.request.AssemblyControlOrderCreateRequest;
 import io.life.order.entity.AssemblyControlOrder;
 import io.life.order.entity.CustomerOrder;
 import io.life.order.repository.AssemblyControlOrderRepository;
@@ -64,9 +65,42 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
     }
 
     /**
+     * Create an assembly control order using a request DTO.
+     * This is the preferred method - eliminates parameter explosion.
+     * 
+     * @param request The request DTO containing all order details
+     * @return The created assembly control order DTO
+     */
+    public AssemblyControlOrderDTO createControlOrder(AssemblyControlOrderCreateRequest request) {
+        LocalDateTime targetStart = request.getTargetStartTime() != null 
+                ? LocalDateTime.parse(request.getTargetStartTime()) : null;
+        LocalDateTime targetEnd = request.getTargetCompletionTime() != null 
+                ? LocalDateTime.parse(request.getTargetCompletionTime()) : null;
+
+        return createControlOrder(
+                request.getSourceProductionOrderId(),
+                request.getAssignedWorkstationId(),
+                request.getSimalScheduleId(),
+                request.getPriority(),
+                targetStart,
+                targetEnd,
+                request.getAssemblyInstructions(),
+                request.getQualityCheckpoints(),
+                request.getTestingProcedures(),
+                request.getPackagingRequirements(),
+                request.getEstimatedDurationMinutes(),
+                request.getItemId(),
+                request.getItemType(),
+                request.getQuantity()
+        );
+    }
+
+    /**
      * Create a new assembly control order (backwards compatible version without item info).
      * Uses default values for itemId (1L), itemType ("MODULE"), quantity (1).
+     * @deprecated Use {@link #createControlOrder(AssemblyControlOrderCreateRequest)} instead
      */
+    @Deprecated
     public AssemblyControlOrderDTO createControlOrder(
             Long sourceProductionOrderId,
             Long assignedWorkstationId,
@@ -92,7 +126,9 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
 
     /**
      * Create a new assembly control order (full version with item info).
+     * @deprecated Use {@link #createControlOrder(AssemblyControlOrderCreateRequest)} instead
      */
+    @Deprecated
     public AssemblyControlOrderDTO createControlOrder(
             Long sourceProductionOrderId,
             Long assignedWorkstationId,

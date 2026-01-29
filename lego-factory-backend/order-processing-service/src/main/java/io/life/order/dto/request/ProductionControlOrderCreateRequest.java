@@ -58,6 +58,16 @@ public class ProductionControlOrderCreateRequest {
     private String qualityCheckpoints;
 
     /**
+     * Safety procedures to follow during production.
+     */
+    private String safetyProcedures;
+
+    /**
+     * Estimated duration in minutes.
+     */
+    private Integer estimatedDurationMinutes;
+
+    /**
      * Item ID (part) being produced.
      */
     private Long itemId;
