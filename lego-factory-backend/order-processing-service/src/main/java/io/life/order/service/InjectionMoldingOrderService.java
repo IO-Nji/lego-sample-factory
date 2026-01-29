@@ -1,18 +1,16 @@
 package io.life.order.service;
 
+import io.life.order.client.InventoryClient;
 import io.life.order.entity.InjectionMoldingOrder;
-import io.life.order.entity.ProductionControlOrder;
 import io.life.order.repository.InjectionMoldingOrderRepository;
-import io.life.order.repository.ProductionControlOrderRepository;
+import io.life.order.service.OrderOrchestrationService.WorkstationOrderType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 /**
  * InjectionMoldingOrderService
@@ -28,11 +26,8 @@ import java.util.Map;
 public class InjectionMoldingOrderService {
 
     private final InjectionMoldingOrderRepository injectionMoldingOrderRepository;
-    private final ProductionControlOrderRepository productionControlOrderRepository;
-    private final RestTemplate restTemplate;
-
-    private static final String INVENTORY_SERVICE_URL = "http://inventory-service:8014";
-    private static final Long MODULES_SUPERMARKET_ID = 8L;
+    private final InventoryClient inventoryClient;
+    private final OrderOrchestrationService orchestrationService;
 
     public List<InjectionMoldingOrder> getOrdersForWorkstation(Long workstationId) {
         return injectionMoldingOrderRepository.findByWorkstationId(workstationId);
@@ -120,52 +115,19 @@ public class InjectionMoldingOrderService {
     }
 
     private void creditInventory(InjectionMoldingOrder order) {
-        try {
-            String url = INVENTORY_SERVICE_URL + "/api/stock/adjust";
-            Map<String, Object> request = Map.of(
-                    "workstationId", MODULES_SUPERMARKET_ID,
-                    "itemType", "PART",
-                    "itemId", order.getOutputPartId(),
-                    "delta", order.getQuantity(),
-                    "reasonCode", "PRODUCTION",
-                    "notes", "Completed order: " + order.getOrderNumber()
-            );
-
-            restTemplate.postForObject(url, request, Void.class);
-            log.info("Credited {} PART {} ({}) to Modules Supermarket", 
-                    order.getQuantity(), order.getOutputPartId(), order.getOutputPartName());
-
-        } catch (Exception e) {
-            log.error("Failed to credit inventory for order {}: {}", 
-                    order.getOrderNumber(), e.getMessage());
-            throw new RuntimeException("Inventory credit failed", e);
-        }
+        inventoryClient.creditPartsToModulesSupermarket(
+                order.getOutputPartId(),
+                order.getQuantity(),
+                order.getOrderNumber()
+        );
+        log.info("Credited {} PART {} ({}) to Modules Supermarket", 
+                order.getQuantity(), order.getOutputPartId(), order.getOutputPartName());
     }
 
     private void propagateStatusToParent(Long productionControlOrderId) {
-        try {
-            long totalOrders = injectionMoldingOrderRepository.findByProductionControlOrderId(productionControlOrderId).size();
-            long completedOrders = injectionMoldingOrderRepository.countByProductionControlOrderIdAndStatus(
-                    productionControlOrderId, "COMPLETED");
-
-            log.info("ProductionControlOrder {} progress: {}/{} injection molding orders completed", 
-                    productionControlOrderId, completedOrders, totalOrders);
-
-            if (completedOrders == totalOrders && totalOrders > 0) {
-                ProductionControlOrder parent = productionControlOrderRepository.findById(productionControlOrderId)
-                        .orElseThrow(() -> new RuntimeException("Parent control order not found"));
-
-                parent.setStatus("COMPLETED");
-                parent.setActualFinishTime(LocalDateTime.now());
-                productionControlOrderRepository.save(parent);
-
-                log.info("Auto-completed ProductionControlOrder {} - all injection molding finished", 
-                        parent.getControlOrderNumber());
-            }
-
-        } catch (Exception e) {
-            log.error("Failed to propagate status to parent control order {}: {}", 
-                    productionControlOrderId, e.getMessage());
-        }
+        orchestrationService.notifyWorkstationOrderComplete(
+                WorkstationOrderType.INJECTION_MOLDING,
+                productionControlOrderId
+        );
     }
 }
