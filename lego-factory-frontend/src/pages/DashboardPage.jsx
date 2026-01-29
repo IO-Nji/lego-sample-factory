@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { getRolePrimaryWorkstation } from "../config/workstationConfig";
 import AdminDashboard from "./dashboards/AdminDashboard";
 import PlantWarehouseDashboard from "./dashboards/PlantWarehouseDashboard";
 import ModulesSupermarketDashboard from "./dashboards/ModulesSupermarketDashboard";
@@ -16,9 +17,15 @@ import AssemblyControlDashboard from "./dashboards/AssemblyControlDashboard";
 
 /**
  * DashboardPage - Workstation-aware dashboard router
- * Routes users to their workstation-specific dashboard based on workstationId
  * 
- * Workstation Mapping:
+ * Routing Strategy (priority order):
+ * 1. Admin role → AdminDashboard
+ * 2. User's explicit workstationId → Workstation-specific dashboard
+ * 3. Role's primary workstation → Workstation-specific dashboard
+ * 4. Role-specific dashboard (for control/planning roles with no workstation)
+ * 5. Fallback for unknown configuration
+ * 
+ * Workstation Mapping (WS-1 to WS-9):
  * - WS-1: Injection Molding (Manufacturing)
  * - WS-2: Parts Pre-Production (Manufacturing)
  * - WS-3: Part Finishing (Manufacturing)
@@ -28,7 +35,32 @@ import AssemblyControlDashboard from "./dashboards/AssemblyControlDashboard";
  * - WS-7: Plant Warehouse (Customer Fulfillment)
  * - WS-8: Modules Supermarket (Internal Warehouse)
  * - WS-9: Parts Supply Warehouse (Raw Materials)
+ * 
+ * @see workstationConfig.js for ROLE_WORKSTATION_ACCESS mapping
+ * @see backend UserRole.java for consistent access rules
  */
+
+// Workstation ID → Dashboard Component mapping
+const WORKSTATION_DASHBOARDS = {
+  1: InjectionMoldingDashboard,
+  2: PartsPreProductionDashboard,
+  3: PartFinishingDashboard,
+  4: GearAssemblyDashboard,
+  5: MotorAssemblyDashboard,
+  6: FinalAssemblyDashboard,
+  7: PlantWarehouseDashboard,
+  8: ModulesSupermarketDashboard,
+  9: PartsSupplyWarehouseDashboard,
+};
+
+// Role → Dashboard Component mapping (for roles without a specific workstation)
+const ROLE_DASHBOARDS = {
+  ADMIN: AdminDashboard,
+  PRODUCTION_PLANNING: ProductionPlanningDashboard,
+  PRODUCTION_CONTROL: ProductionControlDashboard,
+  ASSEMBLY_CONTROL: AssemblyControlDashboard,
+};
+
 function DashboardPage() {
   const { session, isAdmin } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
@@ -38,9 +70,9 @@ function DashboardPage() {
   }, []);
 
   const userRole = session?.user?.role;
-  // Ensure workstationId is a number for consistent switch comparison
+  // Ensure workstationId is a number for consistent lookup
   const rawWorkstationId = session?.user?.workstationId;
-  const workstationId = rawWorkstationId ? Number(rawWorkstationId) : null;
+  const userWorkstationId = rawWorkstationId ? Number(rawWorkstationId) : null;
 
   if (isLoading) {
     return (
@@ -51,50 +83,31 @@ function DashboardPage() {
     );
   }
 
-  // Admin gets admin dashboard
+  // 1. Admin gets admin dashboard
   if (isAdmin) {
     return <AdminDashboard />;
   }
 
-  // Route by workstation ID first (most specific)
-  switch (workstationId) {
-    case 1:
-      return <InjectionMoldingDashboard />;
-    case 2:
-      return <PartsPreProductionDashboard />;
-    case 3:
-      return <PartFinishingDashboard />;
-    case 4:
-      return <GearAssemblyDashboard />;
-    case 5:
-      return <MotorAssemblyDashboard />;
-    case 6:
-      return <FinalAssemblyDashboard />;
-    case 7:
-      return <PlantWarehouseDashboard />;
-    case 8:
-      return <ModulesSupermarketDashboard />;
-    case 9:
-      return <PartsSupplyWarehouseDashboard />;
+  // 2. Route by user's explicit workstation ID (highest priority)
+  if (userWorkstationId && WORKSTATION_DASHBOARDS[userWorkstationId]) {
+    const DashboardComponent = WORKSTATION_DASHBOARDS[userWorkstationId];
+    return <DashboardComponent />;
   }
 
-  // Fallback to role-based routing for users without workstation assignment
-  switch (userRole) {
-    case "PLANT_WAREHOUSE":
-      return <PlantWarehouseDashboard />;
-    case "MODULES_SUPERMARKET":
-      return <ModulesSupermarketDashboard />;
-    case "PARTS_SUPPLY":
-      return <PartsSupplyWarehouseDashboard />;
-    case "PRODUCTION_PLANNING":
-      return <ProductionPlanningDashboard />;
-    case "PRODUCTION_CONTROL":
-      return <ProductionControlDashboard />;
-    case "ASSEMBLY_CONTROL":
-      return <AssemblyControlDashboard />;
+  // 3. Route by role's primary workstation (from config)
+  const rolePrimaryWorkstation = getRolePrimaryWorkstation(userRole);
+  if (rolePrimaryWorkstation > 0 && WORKSTATION_DASHBOARDS[rolePrimaryWorkstation]) {
+    const DashboardComponent = WORKSTATION_DASHBOARDS[rolePrimaryWorkstation];
+    return <DashboardComponent />;
   }
 
-  // Default fallback for unknown roles
+  // 4. Route by role-specific dashboard (for control/planning roles)
+  if (userRole && ROLE_DASHBOARDS[userRole]) {
+    const DashboardComponent = ROLE_DASHBOARDS[userRole];
+    return <DashboardComponent />;
+  }
+
+  // 5. Default fallback for unknown roles/configurations
   return (
     <section>
       <h2>Factory</h2>

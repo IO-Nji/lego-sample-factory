@@ -91,6 +91,20 @@
   transform: translateY(-1px);
 }
 
+/* PRODUCTION - Indigo/Blue (Scenario 4: direct production bypass) */
+.order-card-footer button.btn-production,
+.order-card-footer button[data-action="production"] {
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  color: white;
+}
+
+.order-card-footer button.btn-production:hover:not(:disabled),
+.order-card-footer button[data-action="production"]:hover:not(:disabled) {
+  background: linear-gradient(135deg, #3730a3 0%, #312e81 100%);
+  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+  transform: translateY(-1px);
+}
+
 /* APPROVE - Green Approve (acceptance/approval) */
 .order-card-footer button.btn-approve,
 .order-card-footer button[data-action="approve"] {

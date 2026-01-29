@@ -11,6 +11,7 @@ function CustomerOrderCard({
   onConfirm,
   onFulfill,
   onProcess,
+  onOrderProduction,
   onComplete,
   onCancel,
   isProcessing,
@@ -84,7 +85,22 @@ function CustomerOrderCard({
               <span>✓ Fulfill</span>
             </button>
           );
+        } else if (triggerScenario === 'DIRECT_PRODUCTION') {
+          // Scenario 4: Large order, bypass warehouse, go directly to production
+          return (
+            <button 
+              type="button" 
+              className="btn btn-production btn-sm"
+              onClick={() => onOrderProduction && onOrderProduction(resolvedOrder.id)}
+              disabled={isProcessing}
+              data-action="production"
+              title="Order quantity exceeds threshold - bypass warehouse and create production order directly"
+            >
+              <span>🏭 Order Production</span>
+            </button>
+          );
         } else {
+          // WAREHOUSE_ORDER_NEEDED or default
           return (
             <button 
               type="button" 

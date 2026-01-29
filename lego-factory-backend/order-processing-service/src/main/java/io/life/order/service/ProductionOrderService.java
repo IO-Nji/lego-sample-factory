@@ -3,10 +3,13 @@ package io.life.order.service;
 import io.life.order.dto.ProductionControlOrderDTO;
 import io.life.order.dto.AssemblyControlOrderDTO;
 import io.life.order.dto.ProductionOrderDTO;
+import io.life.order.entity.CustomerOrder;
+import io.life.order.entity.OrderItem;
 import io.life.order.entity.ProductionOrder;
 import io.life.order.entity.ProductionOrderItem;
 import io.life.order.entity.WarehouseOrder;
 import io.life.order.entity.WarehouseOrderItem;
+import io.life.order.repository.CustomerOrderRepository;
 import io.life.order.repository.ProductionOrderRepository;
 import io.life.order.repository.WarehouseOrderRepository;
 import org.slf4j.Logger;
@@ -23,7 +26,8 @@ import java.util.stream.Collectors;
 /**
  * Service for managing ProductionOrder entities.
  * Handles creation, retrieval, and status updates of production orders.
- * Production orders are created when WarehouseOrders cannot be fulfilled.
+ * Production orders are created when WarehouseOrders cannot be fulfilled (Scenario 3)
+ * or when large customer orders bypass warehouse (Scenario 4).
  */
 @Service
 @Transactional
@@ -36,20 +40,100 @@ public class ProductionOrderService {
 
     private final ProductionOrderRepository productionOrderRepository;
     private final WarehouseOrderRepository warehouseOrderRepository;
+    private final CustomerOrderRepository customerOrderRepository;
     private final ProductionControlOrderService productionControlOrderService;
     private final AssemblyControlOrderService assemblyControlOrderService;
     private final InventoryService inventoryService;
 
     public ProductionOrderService(ProductionOrderRepository productionOrderRepository,
                                  WarehouseOrderRepository warehouseOrderRepository,
+                                 CustomerOrderRepository customerOrderRepository,
                                  ProductionControlOrderService productionControlOrderService,
                                  AssemblyControlOrderService assemblyControlOrderService,
                                  InventoryService inventoryService) {
         this.productionOrderRepository = productionOrderRepository;
         this.warehouseOrderRepository = warehouseOrderRepository;
+        this.customerOrderRepository = customerOrderRepository;
         this.productionControlOrderService = productionControlOrderService;
         this.assemblyControlOrderService = assemblyControlOrderService;
         this.inventoryService = inventoryService;
+    }
+
+    /**
+     * Create a production order directly from a CustomerOrder (Scenario 4).
+     * Used when large orders bypass the warehouse and go directly to production.
+     * This is triggered when order quantity >= LOT_SIZE_THRESHOLD.
+     * 
+     * @param customerOrderId The source customer order ID
+     * @param priority Priority level (LOW, NORMAL, HIGH, URGENT)
+     * @param dueDate When the order should be completed
+     * @param notes Additional notes
+     * @param createdByWorkstationId Workstation ID of the operator creating the order
+     * @return Created ProductionOrderDTO
+     */
+    public ProductionOrderDTO createFromCustomerOrder(
+            Long customerOrderId,
+            String priority,
+            LocalDateTime dueDate,
+            String notes,
+            Long createdByWorkstationId) {
+
+        CustomerOrder customerOrder = customerOrderRepository.findById(customerOrderId)
+                .orElseThrow(() -> new RuntimeException("Customer order not found: " + customerOrderId));
+
+        logger.info("Creating Scenario 4 production order from customer order {} (triggerScenario: {})", 
+                customerOrder.getOrderNumber(), customerOrder.getTriggerScenario());
+
+        String productionOrderNumber = generateProductionOrderNumber();
+
+        ProductionOrder productionOrder = ProductionOrder.builder()
+                .productionOrderNumber(productionOrderNumber)
+                .sourceCustomerOrderId(customerOrderId)
+                .sourceWarehouseOrderId(null)  // Scenario 4: No warehouse order
+                .status("CREATED")
+                .priority(priority != null ? priority : "NORMAL")
+                .dueDate(dueDate != null ? dueDate : LocalDateTime.now().plusDays(1))
+                .triggerScenario("SCENARIO_4")
+                .createdByWorkstationId(createdByWorkstationId)
+                .assignedWorkstationId(6L)  // Default to Final Assembly (WS-6)
+                .notes(notes != null ? notes : "Scenario 4: Direct production from customer order (high volume)")
+                .build();
+
+        // Create production order items from customer order items
+        List<ProductionOrderItem> productionOrderItems = new ArrayList<>();
+        if (customerOrder.getOrderItems() != null) {
+            for (OrderItem coItem : customerOrder.getOrderItems()) {
+                // Customer orders contain PRODUCT items
+                // Products need to go through the full production pipeline
+                ProductionOrderItem poItem = ProductionOrderItem.builder()
+                        .productionOrder(productionOrder)
+                        .itemType(coItem.getItemType())
+                        .itemId(coItem.getItemId())
+                        .itemName("Product " + coItem.getItemId())  // Will be enriched by masterdata
+                        .quantity(coItem.getQuantity())
+                        .estimatedTimeMinutes(60)  // Default estimate for full product
+                        .workstationType("FULL_PRODUCTION")  // Requires both manufacturing and assembly
+                        .build();
+                productionOrderItems.add(poItem);
+                
+                logger.info("  Added production order item: Product {} qty {} - full production", 
+                        coItem.getItemId(), coItem.getQuantity());
+            }
+        }
+        productionOrder.setProductionOrderItems(productionOrderItems);
+
+        ProductionOrder saved = productionOrderRepository.save(productionOrder);
+        logger.info("Created Scenario 4 production order {} from customer order {} with {} items", 
+                productionOrderNumber, customerOrder.getOrderNumber(), productionOrderItems.size());
+
+        // Update customer order status to PROCESSING
+        customerOrder.setStatus("PROCESSING");
+        customerOrder.setNotes((customerOrder.getNotes() != null ? customerOrder.getNotes() + " | " : "") 
+                + "Scenario 4: Production order " + productionOrderNumber + " created");
+        customerOrderRepository.save(customerOrder);
+        logger.info("Updated customer order {} status to PROCESSING", customerOrder.getOrderNumber());
+
+        return mapToDTO(saved);
     }
 
     /**

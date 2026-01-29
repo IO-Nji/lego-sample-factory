@@ -151,6 +151,29 @@ public class ProductionOrderController {
     }
 
     /**
+     * Create a production order directly from customer order (Scenario 4).
+     * Used when large orders bypass warehouse and go directly to production.
+     * 
+     * Request body: {
+     *   "customerOrderId": 123,
+     *   "priority": "HIGH",
+     *   "notes": "Large order - direct production"
+     * }
+     */
+    @PostMapping("/from-customer-order")
+    public ResponseEntity<ProductionOrderDTO> createFromCustomerOrder(
+            @RequestBody CreateFromCustomerOrderRequest request) {
+        ProductionOrderDTO order = productionOrderService.createFromCustomerOrder(
+                request.getCustomerOrderId(),
+                request.getPriority(),
+                request.getDueDate(),
+                request.getNotes(),
+                request.getCreatedByWorkstationId()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
+    }
+
+    /**
      * Update production order status
      */
     @PatchMapping("/{id}/status")
@@ -332,6 +355,33 @@ public class ProductionOrderController {
 
         public Long getAssignedWorkstationId() { return assignedWorkstationId; }
         public void setAssignedWorkstationId(Long assignedWorkstationId) { this.assignedWorkstationId = assignedWorkstationId; }
+    }
+
+    /**
+     * Request class for creating production orders directly from customer orders (Scenario 4)
+     */
+    public static class CreateFromCustomerOrderRequest {
+        private Long customerOrderId;
+        private String priority;
+        private LocalDateTime dueDate;
+        private String notes;
+        private Long createdByWorkstationId;
+
+        // Getters and Setters
+        public Long getCustomerOrderId() { return customerOrderId; }
+        public void setCustomerOrderId(Long customerOrderId) { this.customerOrderId = customerOrderId; }
+
+        public String getPriority() { return priority; }
+        public void setPriority(String priority) { this.priority = priority; }
+
+        public LocalDateTime getDueDate() { return dueDate; }
+        public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
+
+        public String getNotes() { return notes; }
+        public void setNotes(String notes) { this.notes = notes; }
+
+        public Long getCreatedByWorkstationId() { return createdByWorkstationId; }
+        public void setCreatedByWorkstationId(Long createdByWorkstationId) { this.createdByWorkstationId = createdByWorkstationId; }
     }
 
     /**

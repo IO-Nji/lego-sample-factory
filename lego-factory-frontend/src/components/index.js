@@ -63,3 +63,6 @@ export { default as Tooltip } from './Tooltip';
 
 // Workstation Components
 export { default as WorkstationCard } from './WorkstationCard';
+
+// Admin Components
+export { default as AdminSettingsPanel } from './AdminSettingsPanel';
