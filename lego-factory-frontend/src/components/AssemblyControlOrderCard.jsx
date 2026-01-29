@@ -16,16 +16,20 @@ import '../styles/CustomerOrderCard.css';
  * - Target and actual timing (TS, TC, AS, AF)
  * - Workstation information
  * - Supply order status checking (auto-fetch on mount)
- * - Status-aware actions (Request Parts, Dispatch, Start, Complete)
+ * - Status-aware actions following the confirm → [operations] → dispatch sequence
  * 
- * Button Logic:
- * - PENDING status:
- *   - If no supply order: Show "Request Parts"
- *   - If supply order PENDING/IN_PROGRESS: Show disabled "Waiting for Parts..."
- *   - If supply order FULFILLED: Show "Dispatch to Workstation"
- * - IN_PROGRESS status: Show "Start Assembly" → "Complete Assembly"
+ * Button Sequence (Scenario 3):
+ * - PENDING: Show "✓ Confirm Receipt" button
+ * - CONFIRMED: 
+ *   - If no supply order: Show "📦 Request Parts"
+ *   - If supply order PENDING/IN_PROGRESS: Show disabled "⏳ Awaiting Parts..."
+ *   - If supply order FULFILLED: Show "🚀 Dispatch to Workstation"
+ * - ASSIGNED (dispatched to workstation): Show "▶️ Start Assembly"
+ * - IN_PROGRESS: Show "✅ Complete" and "⏸️ Halt"
+ * - COMPLETED/HALTED: No action buttons (just Details)
  * 
  * @param {Object} order - Assembly control order object
+ * @param {Function} onConfirm - Handler for confirming receipt
  * @param {Function} onStart - Handler for starting assembly
  * @param {Function} onComplete - Handler for completing assembly
  * @param {Function} onHalt - Handler for halting assembly
@@ -35,6 +39,7 @@ import '../styles/CustomerOrderCard.css';
  */
 function AssemblyControlOrderCard({ 
   order, 
+  onConfirm,
   onStart,
   onComplete,
   onHalt,
@@ -47,7 +52,7 @@ function AssemblyControlOrderCard({
 
   // Fetch supply orders when component mounts, order changes, or periodically
   useEffect(() => {
-    if (order.id && (order.status === 'PENDING' || order.status === 'ASSIGNED')) {
+    if (order.id && (order.status === 'PENDING' || order.status === 'ASSIGNED' || order.status === 'CONFIRMED')) {
       fetchSupplyOrders();
       
       // Set up periodic refresh to catch new supply orders
@@ -149,7 +154,25 @@ function AssemblyControlOrderCard({
     
     switch(status) {
       case 'PENDING':
-        // Check supply order status to determine button
+        // Step 1: Control station needs to confirm receipt of the order
+        actions.push({
+          label: '✓ Confirm Receipt',
+          variant: 'confirm',
+          size: 'small',
+          onClick: () => onConfirm(order.id),
+          show: !!onConfirm
+        });
+        actions.push({
+          label: 'Details',
+          variant: 'ghost',
+          size: 'small',
+          onClick: () => onViewDetails(order),
+          show: !!onViewDetails
+        });
+        break;
+
+      case 'CONFIRMED':
+        // Step 2: After confirmation, check supply order status
         if (loadingSupply) {
           actions.push({
             label: 'Loading...',
@@ -159,6 +182,7 @@ function AssemblyControlOrderCard({
             show: true
           });
         } else if (hasFulfilledSupply) {
+          // Step 4: Supply fulfilled - can dispatch to workstation
           actions.push({
             label: '🚀 Dispatch to Workstation',
             variant: 'success',
@@ -166,7 +190,6 @@ function AssemblyControlOrderCard({
             onClick: () => onDispatch(order.id),
             show: !!onDispatch
           });
-          // Show view supply order button
           actions.push({
             label: '📋 View Supply Order',
             variant: 'outline',
@@ -175,6 +198,7 @@ function AssemblyControlOrderCard({
             show: !!onViewDetails
           });
         } else if (hasActiveSupply) {
+          // Step 3: Waiting for supply order to be fulfilled
           actions.push({
             label: '⏳ Awaiting Parts...',
             variant: 'warning',
@@ -182,7 +206,6 @@ function AssemblyControlOrderCard({
             disabled: true,
             show: true
           });
-          // Show view supply order button
           actions.push({
             label: '📋 View Supply Order',
             variant: 'outline',
@@ -191,6 +214,7 @@ function AssemblyControlOrderCard({
             show: !!onViewDetails
           });
         } else {
+          // No supply order yet - request parts
           actions.push({
             label: '📦 Request Parts',
             variant: 'primary',
@@ -209,6 +233,7 @@ function AssemblyControlOrderCard({
         break;
 
       case 'ASSIGNED':
+        // Step 5: Order dispatched to workstation - workstation can start
         actions.push({
           label: '▶️ Start Assembly',
           variant: 'success',
@@ -226,6 +251,7 @@ function AssemblyControlOrderCard({
         break;
       
       case 'IN_PROGRESS':
+        // Step 6: Work in progress - can complete or halt
         actions.push({
           label: '✅ Complete Assembly',
           variant: 'primary',
@@ -322,6 +348,7 @@ AssemblyControlOrderCard.propTypes = {
     actualFinishTime: PropTypes.string,
     notes: PropTypes.string
   }).isRequired,
+  onConfirm: PropTypes.func,
   onStart: PropTypes.func,
   onComplete: PropTypes.func,
   onHalt: PropTypes.func,
@@ -331,6 +358,7 @@ AssemblyControlOrderCard.propTypes = {
 };
 
 AssemblyControlOrderCard.defaultProps = {
+  onConfirm: () => {},
   onStart: () => {},
   onComplete: () => {},
   onHalt: () => {},

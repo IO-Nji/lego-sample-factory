@@ -95,6 +95,17 @@ public class ProductionControlOrderController {
     }
 
     /**
+     * Confirm receipt of a production control order.
+     * Changes status from PENDING to CONFIRMED.
+     * This is the first step in the control order workflow.
+     */
+    @PutMapping("/{id}/confirm")
+    public ResponseEntity<ProductionControlOrderDTO> confirmReceipt(@PathVariable Long id) {
+        ProductionControlOrderDTO order = productionControlOrderService.confirmReceipt(id);
+        return ResponseEntity.ok(order);
+    }
+
+    /**
      * Start production on a control order
      */
     @PostMapping("/{id}/start")

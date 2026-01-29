@@ -157,6 +157,32 @@ function ProductionControlDashboard() {
     }
   };
 
+  // Confirm receipt of a control order (PENDING → CONFIRMED)
+  const handleConfirmOrder = async (orderId) => {
+    try {
+      await api.put(`/production-control-orders/${orderId}/confirm`);
+      setSuccess("Order receipt confirmed");
+      addNotification("Order receipt confirmed", "success");
+      fetchControlOrders();
+    } catch (err) {
+      setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to confirm order", "error");
+    }
+  };
+
+  // Dispatch order to workstation (CONFIRMED → ASSIGNED)
+  const handleDispatchToWorkstation = async (orderId) => {
+    try {
+      await api.post(`/production-control-orders/${orderId}/dispatch`);
+      setSuccess("Order dispatched to workstation");
+      addNotification("Order dispatched to workstation", "success");
+      fetchControlOrders();
+    } catch (err) {
+      setError("Failed to dispatch order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to dispatch order", "error");
+    }
+  };
+
   const handleViewDetails = (order) => {
     setSelectedOrder(order);
     setShowDetailsModal(true);
@@ -270,20 +296,20 @@ function ProductionControlDashboard() {
   // Stats data for StatisticsGrid
   const statsData = (() => {
     const total = controlOrders.length;
+    const pending = controlOrders.filter(o => o.status === "PENDING").length;
+    const confirmed = controlOrders.filter(o => o.status === "CONFIRMED").length;
     const assigned = controlOrders.filter(o => o.status === "ASSIGNED").length;
     const inProgress = controlOrders.filter(o => o.status === "IN_PROGRESS").length;
     const completed = controlOrders.filter(o => o.status === "COMPLETED").length;
-    const pending = controlOrders.filter(o => o.status === "PENDING").length;
-    const rejected = controlOrders.filter(o => o.status === "REJECTED").length;
     const halted = controlOrders.filter(o => o.status === "HALTED").length;
 
     return [
       { value: total, label: 'Total Orders', variant: 'default', icon: '📦' },
       { value: pending, label: 'Pending', variant: 'pending', icon: '⏳' },
+      { value: confirmed, label: 'Confirmed', variant: 'info', icon: '✓' },
       { value: assigned, label: 'Assigned', variant: 'info', icon: '📝' },
       { value: inProgress, label: 'In Progress', variant: 'warning', icon: '⚙️' },
       { value: completed, label: 'Completed', variant: 'success', icon: '✅' },
-      { value: rejected, label: 'Rejected', variant: 'danger', icon: '❌' },
       { value: halted, label: 'Halted', variant: 'warning', icon: '⏸️' },
       { value: supplyOrders.length, label: 'Supply Orders', variant: 'info', icon: '🚚' },
     ];
@@ -309,11 +335,12 @@ function ProductionControlDashboard() {
       orders={controlOrders}
       filterOptions={[
         { value: 'ALL', label: 'All Orders' },
+        { value: 'PENDING', label: 'Pending' },
+        { value: 'CONFIRMED', label: 'Confirmed' },
         { value: 'ASSIGNED', label: 'Assigned' },
         { value: 'IN_PROGRESS', label: 'In Progress' },
         { value: 'COMPLETED', label: 'Completed' },
-        { value: 'HALTED', label: 'Halted' },
-        { value: 'ABANDONED', label: 'Abandoned' }
+        { value: 'HALTED', label: 'Halted' }
       ]}
       sortOptions={[
         { value: 'orderNumber', label: 'Order Number' },
@@ -326,10 +353,12 @@ function ProductionControlDashboard() {
         <ProductionControlOrderCard
           key={order.id}
           order={order}
+          onConfirm={handleConfirmOrder}
           onStart={handleStartProduction}
           onComplete={handleCompleteProduction}
           onHalt={(orderId) => handleHaltProduction(orderId, "Operator initiated halt")}
           onRequestParts={handleCreateSupplyOrder}
+          onDispatch={handleDispatchToWorkstation}
           onViewDetails={handleViewDetails}
         />
       )}

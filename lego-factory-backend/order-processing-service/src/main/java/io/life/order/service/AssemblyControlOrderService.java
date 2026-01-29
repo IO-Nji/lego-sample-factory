@@ -29,6 +29,7 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
 
     private static final Logger logger = LoggerFactory.getLogger(AssemblyControlOrderService.class);
     private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
     private static final String STATUS_ASSIGNED = "ASSIGNED";
     private static final String STATUS_COMPLETED = "COMPLETED";
@@ -222,6 +223,29 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
     @Override
     public Optional<AssemblyControlOrderDTO> getOrderByNumber(String controlOrderNumber) {
         return repository.findByControlOrderNumber(controlOrderNumber).map(this::mapToDTO);
+    }
+
+    /**
+     * Confirm receipt of an assembly control order.
+     * Changes status from PENDING to CONFIRMED.
+     * This is the first step in the Scenario 3 workflow.
+     */
+    public AssemblyControlOrderDTO confirmReceipt(Long id) {
+        @SuppressWarnings("null")
+        AssemblyControlOrder order = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
+
+        if (!STATUS_PENDING.equals(order.getStatus())) {
+            throw new IllegalStateException("Cannot confirm receipt - order status is " + order.getStatus() + ", expected PENDING");
+        }
+
+        order.setStatus(STATUS_CONFIRMED);
+        order.setUpdatedAt(LocalDateTime.now());
+
+        AssemblyControlOrder updated = repository.save(order);
+        logger.info("Confirmed receipt of control order {}", order.getControlOrderNumber());
+
+        return mapToDTO(updated);
     }
 
     /**
@@ -489,7 +513,7 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
     /**
      * Dispatch control order to workstation.
      * Validates that supply order is fulfilled before dispatching.
-     * Changes status from ASSIGNED to IN_PROGRESS.
+     * Changes status from CONFIRMED to ASSIGNED (ready for workstation to start).
      */
     public AssemblyControlOrderDTO dispatchToWorkstation(Long controlOrderId) {
         @SuppressWarnings("null")
@@ -502,13 +526,13 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
             throw new RuntimeException("Cannot dispatch order - supply order not fulfilled");
         }
         
-        // Validate current status
-        if (!"ASSIGNED".equals(order.getStatus())) {
-            throw new RuntimeException("Cannot dispatch order with status: " + order.getStatus());
+        // Validate current status - must be CONFIRMED
+        if (!STATUS_CONFIRMED.equals(order.getStatus())) {
+            throw new RuntimeException("Cannot dispatch order with status: " + order.getStatus() + ", expected CONFIRMED");
         }
         
-        // Update status to IN_PROGRESS
-        order.setStatus("IN_PROGRESS");
+        // Update status to ASSIGNED (workstation can now start)
+        order.setStatus(STATUS_ASSIGNED);
         order.setUpdatedAt(LocalDateTime.now());
         
         AssemblyControlOrder saved = repository.save(order);

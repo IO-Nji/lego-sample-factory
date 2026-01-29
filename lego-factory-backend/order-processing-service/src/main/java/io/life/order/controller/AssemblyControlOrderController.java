@@ -90,6 +90,17 @@ public class AssemblyControlOrderController {
     }
 
     /**
+     * Confirm receipt of an assembly control order.
+     * Changes status from PENDING to CONFIRMED.
+     * This is the first step in the control order workflow.
+     */
+    @PutMapping("/{id}/confirm")
+    public ResponseEntity<AssemblyControlOrderDTO> confirmReceipt(@PathVariable Long id) {
+        AssemblyControlOrderDTO order = assemblyControlOrderService.confirmReceipt(id);
+        return ResponseEntity.ok(order);
+    }
+
+    /**
      * Start assembly on a control order
      */
     @PutMapping("/{id}/start")
