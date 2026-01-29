@@ -20,6 +20,8 @@ import java.util.Optional;
 /**
  * REST Controller for ProductionControlOrder management.
  * Exposes endpoints for Production Control workstations to view and manage their assigned orders.
+ * 
+ * Error handling: Exceptions propagate to GlobalExceptionHandler for consistent responses.
  */
 @RestController
 @RequestMapping("/api/production-control-orders")
@@ -97,12 +99,8 @@ public class ProductionControlOrderController {
      */
     @PostMapping("/{id}/start")
     public ResponseEntity<ProductionControlOrderDTO> startProduction(@PathVariable Long id) {
-        try {
-            ProductionControlOrderDTO order = productionControlOrderService.startProduction(id);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionControlOrderDTO order = productionControlOrderService.startProduction(id);
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -110,12 +108,8 @@ public class ProductionControlOrderController {
      */
     @PostMapping("/{id}/complete")
     public ResponseEntity<ProductionControlOrderDTO> completeProduction(@PathVariable Long id) {
-        try {
-            ProductionControlOrderDTO order = productionControlOrderService.completeProduction(id);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionControlOrderDTO order = productionControlOrderService.completeProduction(id);
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -125,12 +119,8 @@ public class ProductionControlOrderController {
     public ResponseEntity<ProductionControlOrderDTO> haltProduction(
             @PathVariable Long id,
             @RequestBody HaltRequest request) {
-        try {
-            ProductionControlOrderDTO order = productionControlOrderService.haltProduction(id, request.getReason());
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionControlOrderDTO order = productionControlOrderService.haltProduction(id, request.getReason());
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -140,12 +130,8 @@ public class ProductionControlOrderController {
     public ResponseEntity<ProductionControlOrderDTO> updateNotes(
             @PathVariable Long id,
             @RequestBody NotesRequest request) {
-        try {
-            ProductionControlOrderDTO order = productionControlOrderService.updateOperatorNotes(id, request.getNotes());
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionControlOrderDTO order = productionControlOrderService.updateOperatorNotes(id, request.getNotes());
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -156,17 +142,13 @@ public class ProductionControlOrderController {
     public ResponseEntity<SupplyOrderDTO> requestParts(
             @PathVariable Long id,
             @RequestBody RequestPartsRequest request) {
-        try {
-            SupplyOrderDTO supplyOrder = productionControlOrderService.requestSupplies(
-                    id,
-                    request.getRequiredParts(),
-                    request.getNeededBy(),
-                    request.getNotes()
-            );
-            return ResponseEntity.ok(supplyOrder);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        SupplyOrderDTO supplyOrder = productionControlOrderService.requestSupplies(
+                id,
+                request.getRequiredParts(),
+                request.getNeededBy(),
+                request.getNotes()
+        );
+        return ResponseEntity.ok(supplyOrder);
     }
 
     /**
@@ -175,12 +157,8 @@ public class ProductionControlOrderController {
      */
     @PostMapping("/{id}/dispatch")
     public ResponseEntity<ProductionControlOrderDTO> dispatchToWorkstation(@PathVariable Long id) {
-        try {
-            ProductionControlOrderDTO order = productionControlOrderService.dispatchToWorkstation(id);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionControlOrderDTO order = productionControlOrderService.dispatchToWorkstation(id);
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -199,17 +177,13 @@ public class ProductionControlOrderController {
     public ResponseEntity<ProductionControlOrderDTO> updateDefects(
             @PathVariable Long id,
             @RequestBody DefectsRequest request) {
-        try {
-            ProductionControlOrderDTO order = productionControlOrderService.updateDefects(
-                    id,
-                    request.getDefectsFound(),
-                    request.getDefectsReworked(),
-                    request.getReworkRequired()
-            );
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionControlOrderDTO order = productionControlOrderService.updateDefects(
+                id,
+                request.getDefectsFound(),
+                request.getDefectsReworked(),
+                request.getReworkRequired()
+        );
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -220,29 +194,25 @@ public class ProductionControlOrderController {
     @PostMapping
     public ResponseEntity<ProductionControlOrderDTO> createControlOrder(
             @RequestBody ProductionControlOrderCreateRequest request) {
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-            LocalDateTime targetStart = LocalDateTime.parse(request.getTargetStartTime(), formatter);
-            LocalDateTime targetCompletion = LocalDateTime.parse(request.getTargetCompletionTime(), formatter);
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        LocalDateTime targetStart = LocalDateTime.parse(request.getTargetStartTime(), formatter);
+        LocalDateTime targetCompletion = LocalDateTime.parse(request.getTargetCompletionTime(), formatter);
 
-            ProductionControlOrderDTO order = productionControlOrderService.createControlOrder(
-                    request.getSourceProductionOrderId(),
-                    request.getAssignedWorkstationId(),
-                    request.getSimalScheduleId(),
-                    request.getPriority(),
-                    targetStart,
-                    targetCompletion,
-                    request.getProductionInstructions(),
-                    request.getQualityCheckpoints(),
-                    "Standard safety procedures apply",
-                    120,  // Default 2-hour estimate
-                    request.getItemId(),
-                    request.getItemType(),
-                    request.getQuantity()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionControlOrderDTO order = productionControlOrderService.createControlOrder(
+                request.getSourceProductionOrderId(),
+                request.getAssignedWorkstationId(),
+                request.getSimalScheduleId(),
+                request.getPriority(),
+                targetStart,
+                targetCompletion,
+                request.getProductionInstructions(),
+                request.getQualityCheckpoints(),
+                "Standard safety procedures apply",
+                120,  // Default 2-hour estimate
+                request.getItemId(),
+                request.getItemType(),
+                request.getQuantity()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 }

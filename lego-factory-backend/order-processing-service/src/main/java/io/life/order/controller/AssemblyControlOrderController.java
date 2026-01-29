@@ -150,17 +150,13 @@ public class AssemblyControlOrderController {
     public ResponseEntity<SupplyOrderDTO> requestParts(
             @PathVariable Long id,
             @RequestBody RequestPartsRequest request) {
-        try {
-            SupplyOrderDTO supplyOrder = assemblyControlOrderService.requestSupplies(
-                    id,
-                    request.getRequiredParts(),
-                    request.getNeededBy(),
-                    request.getNotes()
-            );
-            return ResponseEntity.ok(supplyOrder);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        SupplyOrderDTO supplyOrder = assemblyControlOrderService.requestSupplies(
+                id,
+                request.getRequiredParts(),
+                request.getNeededBy(),
+                request.getNotes()
+        );
+        return ResponseEntity.ok(supplyOrder);
     }
 
     /**
@@ -169,12 +165,8 @@ public class AssemblyControlOrderController {
      */
     @PostMapping("/{id}/dispatch")
     public ResponseEntity<AssemblyControlOrderDTO> dispatchToWorkstation(@PathVariable Long id) {
-        try {
-            AssemblyControlOrderDTO order = assemblyControlOrderService.dispatchToWorkstation(id);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        AssemblyControlOrderDTO order = assemblyControlOrderService.dispatchToWorkstation(id);
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -194,30 +186,26 @@ public class AssemblyControlOrderController {
     @PostMapping
     public ResponseEntity<AssemblyControlOrderDTO> createControlOrder(
             @RequestBody AssemblyControlOrderCreateRequest request) {
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-            LocalDateTime targetStart = LocalDateTime.parse(request.getTargetStartTime(), formatter);
-            LocalDateTime targetCompletion = LocalDateTime.parse(request.getTargetCompletionTime(), formatter);
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        LocalDateTime targetStart = LocalDateTime.parse(request.getTargetStartTime(), formatter);
+        LocalDateTime targetCompletion = LocalDateTime.parse(request.getTargetCompletionTime(), formatter);
 
-            AssemblyControlOrderDTO order = assemblyControlOrderService.createControlOrder(
-                    request.getSourceProductionOrderId(),
-                    request.getAssignedWorkstationId(),
-                    request.getSimalScheduleId(),
-                    request.getPriority(),
-                    targetStart,
-                    targetCompletion,
-                    request.getAssemblyInstructions(),
-                    request.getQualityCheckpoints(),
-                    "Standard testing procedures apply",
-                    "Standard packaging requirements",
-                    90,  // Default 90-minute estimate
-                    request.getItemId(),
-                    request.getItemType(),
-                    request.getQuantity()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        AssemblyControlOrderDTO order = assemblyControlOrderService.createControlOrder(
+                request.getSourceProductionOrderId(),
+                request.getAssignedWorkstationId(),
+                request.getSimalScheduleId(),
+                request.getPriority(),
+                targetStart,
+                targetCompletion,
+                request.getAssemblyInstructions(),
+                request.getQualityCheckpoints(),
+                "Standard testing procedures apply",
+                "Standard packaging requirements",
+                90,  // Default 90-minute estimate
+                request.getItemId(),
+                request.getItemType(),
+                request.getQuantity()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 }

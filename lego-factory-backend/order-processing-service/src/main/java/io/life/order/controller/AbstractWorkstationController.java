@@ -3,7 +3,6 @@ package io.life.order.controller;
 import io.life.order.dto.request.HaltRequest;
 import io.life.order.dto.request.NotesRequest;
 import io.life.order.service.WorkstationOrderOperations;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -89,55 +88,43 @@ public abstract class AbstractWorkstationController<T, S extends WorkstationOrde
 
     /**
      * Start work on an order.
+     * Exceptions propagate to GlobalExceptionHandler for consistent error responses.
      */
     @PostMapping("/{id}/start")
     public ResponseEntity<T> startWork(@PathVariable Long id) {
-        try {
-            T order = service.startWork(id);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        }
+        T order = service.startWork(id);
+        return ResponseEntity.ok(order);
     }
 
     /**
      * Complete work on an order.
      * Handles inventory credits and SimAL notifications.
+     * Exceptions propagate to GlobalExceptionHandler for consistent error responses.
      */
     @PutMapping("/{id}/complete")
     public ResponseEntity<T> completeWork(@PathVariable Long id) {
-        try {
-            T order = service.completeWork(id);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        }
+        T order = service.completeWork(id);
+        return ResponseEntity.ok(order);
     }
 
     /**
      * Halt work on an order.
+     * Exceptions propagate to GlobalExceptionHandler for consistent error responses.
      */
     @PostMapping("/{id}/halt")
     public ResponseEntity<T> haltWork(@PathVariable Long id, @RequestBody(required = false) HaltRequest request) {
-        try {
-            String reason = (request != null) ? request.getReason() : null;
-            T order = service.haltWork(id, reason);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        }
+        String reason = (request != null) ? request.getReason() : null;
+        T order = service.haltWork(id, reason);
+        return ResponseEntity.ok(order);
     }
 
     /**
      * Update operator notes on an order.
+     * Exceptions propagate to GlobalExceptionHandler for consistent error responses.
      */
     @PatchMapping("/{id}/notes")
     public ResponseEntity<T> updateNotes(@PathVariable Long id, @RequestBody NotesRequest request) {
-        try {
-            T order = service.updateOperatorNotes(id, request.getNotes());
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        }
+        T order = service.updateOperatorNotes(id, request.getNotes());
+        return ResponseEntity.ok(order);
     }
 }

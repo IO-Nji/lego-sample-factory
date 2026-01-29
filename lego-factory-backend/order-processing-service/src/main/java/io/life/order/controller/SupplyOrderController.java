@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 /**
  * REST Controller for Supply Order management.
  * Handles supply orders for Parts Supply Warehouse.
+ * 
+ * Error handling: Exceptions propagate to GlobalExceptionHandler for consistent responses.
  */
 @RestController
 @RequestMapping("/api/supply-orders")
@@ -52,26 +54,15 @@ public class SupplyOrderController {
      * Parts needed are automatically determined from the module's BOM.
      */
     @PostMapping("/from-control-order")
-    public ResponseEntity<?> createFromControlOrder(@RequestBody SupplyOrderFromControlRequest request) {
+    public ResponseEntity<SupplyOrderDTO> createFromControlOrder(@RequestBody SupplyOrderFromControlRequest request) {
         logger.info("Creating supply order from control order: controlOrderId={}, type={}, priority={}",
             request.getControlOrderId(), request.getControlOrderType(), request.getPriority());
-        try {
-            SupplyOrderDTO order = supplyOrderService.createSupplyOrderFromControlOrder(
-                    request.getControlOrderId(),
-                    request.getControlOrderType(),
-                    request.getPriority()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(order);
-        } catch (IllegalArgumentException e) {
-            logger.error("IllegalArgumentException creating supply order: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (IllegalStateException e) {
-            logger.error("IllegalStateException creating supply order: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            logger.error("Exception creating supply order: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }
+        SupplyOrderDTO order = supplyOrderService.createSupplyOrderFromControlOrder(
+                request.getControlOrderId(),
+                request.getControlOrderType(),
+                request.getPriority()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 
     /**

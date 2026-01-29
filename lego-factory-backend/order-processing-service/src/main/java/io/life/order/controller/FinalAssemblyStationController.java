@@ -2,7 +2,6 @@ package io.life.order.controller;
 
 import io.life.order.dto.AssemblyControlOrderDTO;
 import io.life.order.service.AssemblyControlOrderService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +26,8 @@ import org.springframework.web.bind.annotation.*;
  * 
  * Overridden endpoint:
  * - PUT /{id}/complete - Complete order (credits Plant Warehouse, not Modules Supermarket)
+ * 
+ * Error handling: Exceptions propagate to GlobalExceptionHandler for consistent responses.
  */
 @RestController
 @RequestMapping("/api/assembly/final-assembly")
@@ -50,12 +51,8 @@ public class FinalAssemblyStationController
     @Override
     @PutMapping("/{id}/complete")
     public ResponseEntity<AssemblyControlOrderDTO> completeWork(@PathVariable Long id) {
-        try {
-            // Use special final assembly completion that credits Plant Warehouse
-            AssemblyControlOrderDTO order = assemblyControlOrderService.completeFinalAssembly(id);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        }
+        // Use special final assembly completion that credits Plant Warehouse
+        AssemblyControlOrderDTO order = assemblyControlOrderService.completeFinalAssembly(id);
+        return ResponseEntity.ok(order);
     }
 }
