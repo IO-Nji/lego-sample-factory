@@ -39,6 +39,16 @@ public class ProductionControlOrder {
     @Column(nullable = false)
     private String status; // ASSIGNED, IN_PROGRESS, COMPLETED, HALTED, ABANDONED
 
+    // Item being produced (PART type - produced at manufacturing workstations WS-1, WS-2, WS-3)
+    @Column(nullable = true)
+    private Long itemId;
+
+    @Column(nullable = true, length = 50)
+    private String itemType; // PART
+
+    @Column(nullable = true)
+    private Integer quantity;
+
     @Column(nullable = false)
     private LocalDateTime targetStartTime;
 
@@ -54,13 +64,13 @@ public class ProductionControlOrder {
     @Column(length = 50)
     private String priority; // LOW, MEDIUM, HIGH, URGENT
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String productionInstructions;
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String qualityCheckpoints;
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String safetyProcedures;
 
     private Integer estimatedDurationMinutes;
@@ -73,10 +83,10 @@ public class ProductionControlOrder {
 
     private Boolean reworkRequired;
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String reworkNotes;
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String operatorNotes;
 
     @Column(nullable = false, updatable = false)

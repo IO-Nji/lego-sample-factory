@@ -68,13 +68,13 @@ public class InjectionMoldingOrder {
     private String rawMaterialSpecs; // e.g., "Resin Type A, Color: Red, Weight: 50g"
 
     // Production parameters
-    @Column(length = 500)
+    @Column(length = 2000)
     private String moldingParameters; // Temperature, pressure, cycle time, etc.
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String qualityChecks;
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String operatorNotes;
 
     // Audit fields

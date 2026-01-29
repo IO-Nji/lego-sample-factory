@@ -3,21 +3,25 @@ package io.life.order.service;
 import io.life.order.dto.AssemblyControlOrderDTO;
 import io.life.order.dto.SupplyOrderDTO;
 import io.life.order.dto.SupplyOrderItemDTO;
+import io.life.order.dto.request.AssemblyControlOrderCreateRequest;
 import io.life.order.entity.AssemblyControlOrder;
 import io.life.order.entity.CustomerOrder;
+import io.life.order.entity.FinalAssemblyOrder;
+import io.life.order.entity.GearAssemblyOrder;
+import io.life.order.entity.MotorAssemblyOrder;
 import io.life.order.repository.AssemblyControlOrderRepository;
 import io.life.order.repository.CustomerOrderRepository;
+import io.life.order.repository.FinalAssemblyOrderRepository;
+import io.life.order.repository.GearAssemblyOrderRepository;
+import io.life.order.repository.MotorAssemblyOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -27,9 +31,11 @@ import java.util.stream.Collectors;
  */
 @Service
 @Transactional
-public class AssemblyControlOrderService {
+public class AssemblyControlOrderService implements WorkstationOrderOperations<AssemblyControlOrderDTO> {
 
     private static final Logger logger = LoggerFactory.getLogger(AssemblyControlOrderService.class);
+    private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
     private static final String STATUS_ASSIGNED = "ASSIGNED";
     private static final String STATUS_COMPLETED = "COMPLETED";
@@ -37,12 +43,12 @@ public class AssemblyControlOrderService {
 
     private final AssemblyControlOrderRepository repository;
     private final SupplyOrderService supplyOrderService;
-    private final RestTemplate restTemplate;
     private final InventoryService inventoryService;
     private final CustomerOrderRepository customerOrderRepository;
-
-    @Value("${simal.service.url:http://localhost:8018}")
-    private String simalServiceUrl;
+    private final SimALNotificationService simalNotificationService;
+    private final GearAssemblyOrderRepository gearAssemblyOrderRepository;
+    private final MotorAssemblyOrderRepository motorAssemblyOrderRepository;
+    private final FinalAssemblyOrderRepository finalAssemblyOrderRepository;
 
     @Value("${modules.supermarket.workstation.id:8}")
     private Long modulesSupermarketWorkstationId;
@@ -52,20 +58,59 @@ public class AssemblyControlOrderService {
 
     public AssemblyControlOrderService(AssemblyControlOrderRepository repository, 
                                       SupplyOrderService supplyOrderService,
-                                      RestTemplate restTemplate,
                                       InventoryService inventoryService,
-                                      CustomerOrderRepository customerOrderRepository) {
+                                      CustomerOrderRepository customerOrderRepository,
+                                      SimALNotificationService simalNotificationService,
+                                      GearAssemblyOrderRepository gearAssemblyOrderRepository,
+                                      MotorAssemblyOrderRepository motorAssemblyOrderRepository,
+                                      FinalAssemblyOrderRepository finalAssemblyOrderRepository) {
         this.repository = repository;
         this.supplyOrderService = supplyOrderService;
-        this.restTemplate = restTemplate;
         this.inventoryService = inventoryService;
         this.customerOrderRepository = customerOrderRepository;
+        this.simalNotificationService = simalNotificationService;
+        this.gearAssemblyOrderRepository = gearAssemblyOrderRepository;
+        this.motorAssemblyOrderRepository = motorAssemblyOrderRepository;
+        this.finalAssemblyOrderRepository = finalAssemblyOrderRepository;
+    }
+
+    /**
+     * Create an assembly control order using a request DTO.
+     * This is the preferred method - eliminates parameter explosion.
+     * 
+     * @param request The request DTO containing all order details
+     * @return The created assembly control order DTO
+     */
+    public AssemblyControlOrderDTO createControlOrder(AssemblyControlOrderCreateRequest request) {
+        LocalDateTime targetStart = request.getTargetStartTime() != null 
+                ? LocalDateTime.parse(request.getTargetStartTime()) : null;
+        LocalDateTime targetEnd = request.getTargetCompletionTime() != null 
+                ? LocalDateTime.parse(request.getTargetCompletionTime()) : null;
+
+        return createControlOrder(
+                request.getSourceProductionOrderId(),
+                request.getAssignedWorkstationId(),
+                request.getSimalScheduleId(),
+                request.getPriority(),
+                targetStart,
+                targetEnd,
+                request.getAssemblyInstructions(),
+                request.getQualityCheckpoints(),
+                request.getTestingProcedures(),
+                request.getPackagingRequirements(),
+                request.getEstimatedDurationMinutes(),
+                request.getItemId(),
+                request.getItemType(),
+                request.getQuantity()
+        );
     }
 
     /**
      * Create a new assembly control order (backwards compatible version without item info).
      * Uses default values for itemId (1L), itemType ("MODULE"), quantity (1).
+     * @deprecated Use {@link #createControlOrder(AssemblyControlOrderCreateRequest)} instead
      */
+    @Deprecated
     public AssemblyControlOrderDTO createControlOrder(
             Long sourceProductionOrderId,
             Long assignedWorkstationId,
@@ -91,7 +136,9 @@ public class AssemblyControlOrderService {
 
     /**
      * Create a new assembly control order (full version with item info).
+     * @deprecated Use {@link #createControlOrder(AssemblyControlOrderCreateRequest)} instead
      */
+    @Deprecated
     public AssemblyControlOrderDTO createControlOrder(
             Long sourceProductionOrderId,
             Long assignedWorkstationId,
@@ -115,7 +162,7 @@ public class AssemblyControlOrderService {
                 .sourceProductionOrderId(sourceProductionOrderId)
                 .assignedWorkstationId(assignedWorkstationId)
                 .simalScheduleId(simalScheduleId)
-                .status(STATUS_ASSIGNED)
+                .status(STATUS_PENDING)
                 .priority(priority)
                 .targetStartTime(targetStartTime)
                 .targetCompletionTime(targetCompletionTime)
@@ -131,7 +178,8 @@ public class AssemblyControlOrderService {
 
         @SuppressWarnings("null")
         AssemblyControlOrder saved = repository.save(order);
-        logger.info("Created assembly control order {} for workstation {}", controlOrderNumber, assignedWorkstationId);
+        logger.info("Created assembly control order {} (ID: {}) with status PENDING for production order {}",
+                    controlOrderNumber, saved.getId(), sourceProductionOrderId);
 
         return mapToDTO(saved);
     }
@@ -148,6 +196,7 @@ public class AssemblyControlOrderService {
     /**
      * Get all control orders for a workstation.
      */
+    @Override
     public List<AssemblyControlOrderDTO> getOrdersByWorkstation(Long workstationId) {
         return repository.findByAssignedWorkstationId(workstationId).stream()
                 .map(this::mapToDTO)
@@ -157,6 +206,7 @@ public class AssemblyControlOrderService {
     /**
      * Get all active control orders for a workstation.
      */
+    @Override
     public List<AssemblyControlOrderDTO> getActiveOrdersByWorkstation(Long workstationId) {
         return repository.findByAssignedWorkstationIdAndStatus(workstationId, STATUS_IN_PROGRESS).stream()
                 .map(this::mapToDTO)
@@ -166,6 +216,7 @@ public class AssemblyControlOrderService {
     /**
      * Get all unassigned control orders (status = ASSIGNED).
      */
+    @Override
     public List<AssemblyControlOrderDTO> getUnassignedOrders(Long workstationId) {
         return repository.findByAssignedWorkstationIdAndStatus(workstationId, STATUS_ASSIGNED).stream()
                 .map(this::mapToDTO)
@@ -175,6 +226,7 @@ public class AssemblyControlOrderService {
     /**
      * Get control order by ID.
      */
+    @Override
     @SuppressWarnings("null")
     public Optional<AssemblyControlOrderDTO> getOrderById(Long id) {
         return repository.findById(id).map(this::mapToDTO);
@@ -183,8 +235,32 @@ public class AssemblyControlOrderService {
     /**
      * Get control order by control order number.
      */
+    @Override
     public Optional<AssemblyControlOrderDTO> getOrderByNumber(String controlOrderNumber) {
         return repository.findByControlOrderNumber(controlOrderNumber).map(this::mapToDTO);
+    }
+
+    /**
+     * Confirm receipt of an assembly control order.
+     * Changes status from PENDING to CONFIRMED.
+     * This is the first step in the Scenario 3 workflow.
+     */
+    public AssemblyControlOrderDTO confirmReceipt(Long id) {
+        @SuppressWarnings("null")
+        AssemblyControlOrder order = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
+
+        if (!STATUS_PENDING.equals(order.getStatus())) {
+            throw new IllegalStateException("Cannot confirm receipt - order status is " + order.getStatus() + ", expected PENDING");
+        }
+
+        order.setStatus(STATUS_CONFIRMED);
+        order.setUpdatedAt(LocalDateTime.now());
+
+        AssemblyControlOrder updated = repository.save(order);
+        logger.info("Confirmed receipt of control order {}", order.getControlOrderNumber());
+
+        return mapToDTO(updated);
     }
 
     /**
@@ -263,12 +339,7 @@ public class AssemblyControlOrderService {
         logger.info("Completed assembly production on control order {}", order.getControlOrderNumber());
 
         // Step 2: Call SimAL to update schedule status (fire-and-forget)
-        try {
-            updateSimalScheduleStatus(order.getSimalScheduleId(), "COMPLETED");
-        } catch (Exception e) {
-            logger.warn("Failed to update SimAL schedule status for {}: {}", order.getSimalScheduleId(), e.getMessage());
-            // Don't throw - completion already succeeded, SimAL update is secondary
-        }
+        simalNotificationService.tryUpdateScheduleStatus(order.getSimalScheduleId(), "COMPLETED");
 
         // Step 3: Credit Modules Supermarket inventory (fire-and-forget)
         try {
@@ -313,12 +384,7 @@ public class AssemblyControlOrderService {
         logger.info("Completed final assembly on control order {}", order.getControlOrderNumber());
 
         // Step 2: Call SimAL to update schedule status (fire-and-forget)
-        try {
-            updateSimalScheduleStatus(order.getSimalScheduleId(), STATUS_COMPLETED);
-        } catch (Exception e) {
-            logger.warn("Failed to update SimAL schedule status for {}: {}", order.getSimalScheduleId(), e.getMessage());
-            // Don't throw - completion already succeeded, SimAL update is secondary
-        }
+        simalNotificationService.tryUpdateScheduleStatus(order.getSimalScheduleId(), STATUS_COMPLETED);
 
         // Step 3: Credit Plant Warehouse inventory (fire-and-forget) - FINAL ASSEMBLY ONLY
         try {
@@ -342,7 +408,7 @@ public class AssemblyControlOrderService {
     /**
      * Halt assembly on a control order.
      */
-    public AssemblyControlOrderDTO haltAssembly(Long id) {
+    public AssemblyControlOrderDTO haltAssembly(Long id, String reason) {
         @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
@@ -352,8 +418,11 @@ public class AssemblyControlOrderService {
         }
 
         order.setStatus(STATUS_HALTED);
+        if (reason != null && !reason.isBlank()) {
+            order.setOperatorNotes("Halted: " + reason);
+        }
         AssemblyControlOrder updated = repository.save(order);
-        logger.warn("Halted assembly on control order {}", order.getControlOrderNumber());
+        logger.warn("Halted assembly on control order {}: {}", order.getControlOrderNumber(), reason);
 
         return mapToDTO(updated);
     }
@@ -361,6 +430,7 @@ public class AssemblyControlOrderService {
     /**
      * Update operator notes.
      */
+    @Override
     public AssemblyControlOrderDTO updateOperatorNotes(Long id, String notes) {
         @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(id)
@@ -458,7 +528,8 @@ public class AssemblyControlOrderService {
     /**
      * Dispatch control order to workstation.
      * Validates that supply order is fulfilled before dispatching.
-     * Changes status from ASSIGNED to IN_PROGRESS.
+     * Creates workstation-specific order and changes status to ASSIGNED.
+     * NOTE: Control orders skip the confirm step, so dispatch accepts PENDING or CONFIRMED status.
      */
     public AssemblyControlOrderDTO dispatchToWorkstation(Long controlOrderId) {
         @SuppressWarnings("null")
@@ -471,20 +542,118 @@ public class AssemblyControlOrderService {
             throw new RuntimeException("Cannot dispatch order - supply order not fulfilled");
         }
         
-        // Validate current status
-        if (!"ASSIGNED".equals(order.getStatus())) {
-            throw new RuntimeException("Cannot dispatch order with status: " + order.getStatus());
+        // Validate current status - must be PENDING or CONFIRMED (control orders skip confirm step)
+        if (!STATUS_PENDING.equals(order.getStatus()) && !STATUS_CONFIRMED.equals(order.getStatus())) {
+            throw new RuntimeException("Cannot dispatch order with status: " + order.getStatus() + ", expected PENDING or CONFIRMED");
         }
         
-        // Update status to IN_PROGRESS
-        order.setStatus("IN_PROGRESS");
+        // Create workstation-specific order based on assigned workstation
+        createWorkstationOrder(order);
+        
+        // Update status to ASSIGNED (workstation can now start)
+        order.setStatus(STATUS_ASSIGNED);
         order.setUpdatedAt(LocalDateTime.now());
         
         AssemblyControlOrder saved = repository.save(order);
-        logger.info("Dispatched assembly control order {} to workstation {}", 
+        logger.info("Dispatched assembly control order {} to workstation {} - workstation order created", 
                     order.getControlOrderNumber(), order.getAssignedWorkstationId());
         
         return mapToDTO(saved);
+    }
+
+    /**
+     * Create a workstation-specific order based on the assigned workstation.
+     * WS-4: GearAssemblyOrder
+     * WS-5: MotorAssemblyOrder
+     * WS-6: FinalAssemblyOrder
+     */
+    private void createWorkstationOrder(AssemblyControlOrder controlOrder) {
+        Long workstationId = controlOrder.getAssignedWorkstationId();
+        
+        switch (workstationId.intValue()) {
+            case 4 -> createGearAssemblyOrder(controlOrder);
+            case 5 -> createMotorAssemblyOrder(controlOrder);
+            case 6 -> createFinalAssemblyOrder(controlOrder);
+            default -> logger.warn("Unknown assembly workstation ID: {} for control order {}", 
+                                   workstationId, controlOrder.getControlOrderNumber());
+        }
+    }
+
+    /**
+     * Create a Gear Assembly order for WS-4.
+     */
+    private void createGearAssemblyOrder(AssemblyControlOrder controlOrder) {
+        String orderNumber = "GAO-" + controlOrder.getControlOrderNumber();
+        
+        GearAssemblyOrder wsOrder = GearAssemblyOrder.builder()
+                .orderNumber(orderNumber)
+                .assemblyControlOrderId(controlOrder.getId())
+                .workstationId(4L)
+                .requiredPartIds("[]")
+                .outputModuleId(controlOrder.getItemId() != null ? controlOrder.getItemId() : 0L)
+                .outputModuleName(controlOrder.getAssemblyInstructions() != null ? 
+                                 controlOrder.getAssemblyInstructions().substring(0, Math.min(50, controlOrder.getAssemblyInstructions().length())) : 
+                                 "Gear Module")
+                .quantity(controlOrder.getQuantity() != null ? controlOrder.getQuantity() : 1)
+                .status("PENDING")
+                .priority(controlOrder.getPriority())
+                .targetStartTime(controlOrder.getTargetStartTime())
+                .targetCompletionTime(controlOrder.getTargetCompletionTime())
+                .assemblyInstructions(controlOrder.getAssemblyInstructions())
+                .build();
+        
+        gearAssemblyOrderRepository.save(wsOrder);
+        logger.info("Created Gear Assembly Order {} for WS-4 from control order {}", 
+                   orderNumber, controlOrder.getControlOrderNumber());
+    }
+
+    /**
+     * Create a Motor Assembly order for WS-5.
+     */
+    private void createMotorAssemblyOrder(AssemblyControlOrder controlOrder) {
+        String orderNumber = "MAO-" + controlOrder.getControlOrderNumber();
+        
+        MotorAssemblyOrder wsOrder = MotorAssemblyOrder.builder()
+                .orderNumber(orderNumber)
+                .assemblyControlOrderId(controlOrder.getId())
+                .workstationId(5L)
+                .requiredPartIds("[]")
+                .outputModuleId(controlOrder.getItemId() != null ? controlOrder.getItemId() : 0L)
+                .outputModuleName(controlOrder.getAssemblyInstructions() != null ? 
+                                 controlOrder.getAssemblyInstructions().substring(0, Math.min(50, controlOrder.getAssemblyInstructions().length())) : 
+                                 "Motor Module")
+                .quantity(controlOrder.getQuantity() != null ? controlOrder.getQuantity() : 1)
+                .status("PENDING")
+                .priority(controlOrder.getPriority())
+                .targetStartTime(controlOrder.getTargetStartTime())
+                .targetCompletionTime(controlOrder.getTargetCompletionTime())
+                .assemblyInstructions(controlOrder.getAssemblyInstructions())
+                .build();
+        
+        motorAssemblyOrderRepository.save(wsOrder);
+        logger.info("Created Motor Assembly Order {} for WS-5 from control order {}", 
+                   orderNumber, controlOrder.getControlOrderNumber());
+    }
+
+    /**
+     * Create a Final Assembly order for WS-6.
+     */
+    private void createFinalAssemblyOrder(AssemblyControlOrder controlOrder) {
+        String orderNumber = "FAO-" + controlOrder.getControlOrderNumber();
+        
+        FinalAssemblyOrder wsOrder = new FinalAssemblyOrder();
+        wsOrder.setOrderNumber(orderNumber);
+        wsOrder.setAssemblyControlOrderId(controlOrder.getId());
+        wsOrder.setWorkstationId(6L);
+        wsOrder.setOutputProductId(controlOrder.getItemId() != null ? controlOrder.getItemId() : 0L);
+        wsOrder.setOutputQuantity(controlOrder.getQuantity() != null ? controlOrder.getQuantity() : 1);
+        wsOrder.setOrderDate(LocalDateTime.now());
+        wsOrder.setStatus("PENDING");
+        wsOrder.setNotes(controlOrder.getAssemblyInstructions());
+        
+        finalAssemblyOrderRepository.save(wsOrder);
+        logger.info("Created Final Assembly Order {} for WS-6 from control order {}", 
+                   orderNumber, controlOrder.getControlOrderNumber());
     }
 
     /**
@@ -527,24 +696,6 @@ public class AssemblyControlOrderService {
                 .updatedAt(order.getUpdatedAt())
                 .completedAt(order.getCompletedAt())
                 .build();
-    }
-
-    /**
-     * Update SimAL schedule status via SimAL Integration Service.
-     */
-    private void updateSimalScheduleStatus(String scheduleId, String status) {
-        try {
-            String url = simalServiceUrl + "/api/simal/scheduled-orders/" + scheduleId + "/status";
-            Map<String, Object> request = new HashMap<>();
-            request.put("status", status);
-            request.put("completedAt", LocalDateTime.now().toString());
-            
-            restTemplate.postForObject(url, request, String.class);
-            logger.info("Updated SimAL schedule {} status to {}", scheduleId, status);
-        } catch (Exception e) {
-            logger.error("Failed to update SimAL schedule status for {}", scheduleId, e);
-            throw new RuntimeException("SimAL update failed: " + e.getMessage(), e);
-        }
     }
 
     /**
@@ -611,6 +762,37 @@ public class AssemblyControlOrderService {
             logger.error("✗ Failed to update customer order {} after assembly: {}", customerOrderId, e.getMessage());
             throw new RuntimeException("Customer order update failed: " + e.getMessage(), e);
         }
+    }
+
+    // ========================================================================
+    // WorkstationOrderOperations interface implementation (adapter methods)
+    // ========================================================================
+
+    /**
+     * Start work on an order (interface adapter).
+     * Delegates to startAssembly().
+     */
+    @Override
+    public AssemblyControlOrderDTO startWork(Long id) {
+        return startAssembly(id);
+    }
+
+    /**
+     * Complete work on an order (interface adapter).
+     * Delegates to completeAssemblyProduction() which handles inventory credits.
+     */
+    @Override
+    public AssemblyControlOrderDTO completeWork(Long id) {
+        return completeAssemblyProduction(id);
+    }
+
+    /**
+     * Halt work on an order (interface adapter).
+     * Delegates to haltAssembly().
+     */
+    @Override
+    public AssemblyControlOrderDTO haltWork(Long id, String reason) {
+        return haltAssembly(id, reason);
     }
 }
 

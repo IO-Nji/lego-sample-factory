@@ -169,12 +169,15 @@ public class WarehouseOrderService {
 
         WarehouseOrder order = orderOpt.get();
         
-        // Validate order can be fulfilled (must be CONFIRMED)
-        if (!"CONFIRMED".equals(order.getStatus())) {
-            throw new IllegalStateException("Only CONFIRMED warehouse orders can be fulfilled. Current status: " + order.getStatus() + ". Please confirm the order first.");
+        // Validate order can be fulfilled
+        // CONFIRMED = direct fulfillment from Modules Supermarket
+        // MODULES_READY = production completed, modules now available in Modules Supermarket
+        if (!"CONFIRMED".equals(order.getStatus()) && !"MODULES_READY".equals(order.getStatus())) {
+            throw new IllegalStateException("Only CONFIRMED or MODULES_READY warehouse orders can be fulfilled. Current status: " + order.getStatus());
         }
 
-        logger.info("Processing warehouse order {} from Modules Supermarket (WS-8)", order.getOrderNumber());
+        logger.info("Processing warehouse order {} from Modules Supermarket (WS-8) - Status: {}", 
+                order.getOrderNumber(), order.getStatus());
         orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLMENT_STARTED",
             "Warehouse order fulfillment started: " + order.getOrderNumber());
 

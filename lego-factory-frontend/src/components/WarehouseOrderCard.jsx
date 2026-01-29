@@ -55,6 +55,7 @@ function WarehouseOrderCard({
       CONFIRMED: 'confirmed',
       PROCESSING: 'processing',
       AWAITING_PRODUCTION: 'processing',
+      MODULES_READY: 'ready',
       FULFILLED: 'fulfilled',
       REJECTED: 'rejected',
       CANCELLED: 'cancelled'
@@ -69,6 +70,7 @@ function WarehouseOrderCard({
       CONFIRMED: 'CONFIRMED',
       PROCESSING: 'PROCESSING',
       AWAITING_PRODUCTION: 'PRODUCTION',
+      MODULES_READY: 'READY',
       FULFILLED: 'FULFILLED',
       REJECTED: 'REJECTED',
       CANCELLED: 'CANCELLED'
@@ -285,6 +287,18 @@ function WarehouseOrderCard({
           size: 'small',
           disabled: true,
           show: true
+        });
+        break;
+      
+      case 'MODULES_READY':
+        // Production completed, modules are now available in Modules Supermarket
+        // Show Fulfill button to proceed with creating Final Assembly orders
+        actions.push({
+          label: isProcessing ? 'Fulfilling...' : '✅ Fulfill (Modules Ready)',
+          variant: getActionVariant('Fulfill'),
+          size: 'small',
+          onClick: () => onFulfill(order.id, order.warehouseOrderNumber),
+          show: !!onFulfill
         });
         break;
       

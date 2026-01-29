@@ -236,10 +236,16 @@ public class ProductionPlanningService {
      * Control orders (ProductionControlOrder and AssemblyControlOrder) are automatically created.
      */
     public ProductionOrderDTO dispatchProduction(Long productionOrderId) {
+        logger.info("=== DISPATCH PRODUCTION REQUESTED FOR ORDER ID: {} ===", productionOrderId);
+        
         ProductionOrderDTO order = productionOrderService.getProductionOrderById(productionOrderId)
                 .orElseThrow(() -> new ProductionPlanningException(PRODUCTION_ORDER_NOT_FOUND + productionOrderId));
 
+        logger.info("Found production order: {} with status: {} and scheduleId: {}",
+                order.getProductionOrderNumber(), order.getStatus(), order.getSimalScheduleId());
+
         if (!STATUS_SCHEDULED.equals(order.getStatus())) {
+            logger.error("Cannot dispatch - wrong status. Expected SCHEDULED, got: {}", order.getStatus());
             throw new IllegalStateException("Cannot dispatch production - order must be SCHEDULED, current status: " + order.getStatus());
         }
 
@@ -248,21 +254,26 @@ public class ProductionPlanningService {
             String url = simalApiBaseUrl + "/simal/scheduled-orders/" + order.getSimalScheduleId() + "/create-control-orders";
             String fullUrl = url + "?productionOrderId=" + productionOrderId;
             
+            logger.info("Calling SimAL create-control-orders endpoint: {}", fullUrl);
+            
             @SuppressWarnings("rawtypes")
             ResponseEntity<Map> response = restTemplate.postForEntity(fullUrl, new HashMap<>(), Map.class);
+
+            logger.info("SimAL response status: {}, body: {}", response.getStatusCode(), response.getBody());
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 // Update status to DISPATCHED
                 order = productionOrderService.updateProductionOrderStatus(productionOrderId, STATUS_DISPATCHED);
-                logger.info("Dispatched production for order {} - control orders created", order.getProductionOrderNumber());
+                logger.info("✓ Dispatched production for order {} - control orders created", order.getProductionOrderNumber());
                 return order;
             } else {
+                logger.error("SimAL returned non-2xx status: {}", response.getStatusCode());
                 throw new ProductionPlanningException("SimAL API returned error: " + response.getStatusCode());
             }
         } catch (ProductionPlanningException e) {
             throw e;
         } catch (Exception e) {
-            logger.error("Error dispatching production for order {}: {}", order.getProductionOrderNumber(), e.getMessage(), e);
+            logger.error("❌ Error dispatching production for order {}: {}", order.getProductionOrderNumber(), e.getMessage(), e);
             throw new ProductionPlanningException("Failed to dispatch production for order " +
                     order.getProductionOrderNumber() + ": " + e.getMessage(), e);
         }

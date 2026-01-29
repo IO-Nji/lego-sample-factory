@@ -2,7 +2,8 @@ package io.life.order.controller;
 
 import io.life.order.dto.AssemblyControlOrderDTO;
 import io.life.order.dto.SupplyOrderDTO;
-import io.life.order.dto.SupplyOrderItemDTO;
+import io.life.order.dto.request.AssemblyControlOrderCreateRequest;
+import io.life.order.dto.request.RequestPartsRequest;
 import io.life.order.service.AssemblyControlOrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -89,6 +90,17 @@ public class AssemblyControlOrderController {
     }
 
     /**
+     * Confirm receipt of an assembly control order.
+     * Changes status from PENDING to CONFIRMED.
+     * This is the first step in the control order workflow.
+     */
+    @PutMapping("/{id}/confirm")
+    public ResponseEntity<AssemblyControlOrderDTO> confirmReceipt(@PathVariable Long id) {
+        AssemblyControlOrderDTO order = assemblyControlOrderService.confirmReceipt(id);
+        return ResponseEntity.ok(order);
+    }
+
+    /**
      * Start assembly on a control order
      */
     @PutMapping("/{id}/start")
@@ -149,17 +161,13 @@ public class AssemblyControlOrderController {
     public ResponseEntity<SupplyOrderDTO> requestParts(
             @PathVariable Long id,
             @RequestBody RequestPartsRequest request) {
-        try {
-            SupplyOrderDTO supplyOrder = assemblyControlOrderService.requestSupplies(
-                    id,
-                    request.getRequiredParts(),
-                    request.getNeededBy(),
-                    request.getNotes()
-            );
-            return ResponseEntity.ok(supplyOrder);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        SupplyOrderDTO supplyOrder = assemblyControlOrderService.requestSupplies(
+                id,
+                request.getRequiredParts(),
+                request.getNeededBy(),
+                request.getNotes()
+        );
+        return ResponseEntity.ok(supplyOrder);
     }
 
     /**
@@ -168,12 +176,8 @@ public class AssemblyControlOrderController {
      */
     @PostMapping("/{id}/dispatch")
     public ResponseEntity<AssemblyControlOrderDTO> dispatchToWorkstation(@PathVariable Long id) {
-        try {
-            AssemblyControlOrderDTO order = assemblyControlOrderService.dispatchToWorkstation(id);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        AssemblyControlOrderDTO order = assemblyControlOrderService.dispatchToWorkstation(id);
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -192,95 +196,27 @@ public class AssemblyControlOrderController {
      */
     @PostMapping
     public ResponseEntity<AssemblyControlOrderDTO> createControlOrder(
-            @RequestBody CreateControlOrderRequest request) {
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-            LocalDateTime targetStart = LocalDateTime.parse(request.getTargetStartTime(), formatter);
-            LocalDateTime targetCompletion = LocalDateTime.parse(request.getTargetCompletionTime(), formatter);
+            @RequestBody AssemblyControlOrderCreateRequest request) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        LocalDateTime targetStart = LocalDateTime.parse(request.getTargetStartTime(), formatter);
+        LocalDateTime targetCompletion = LocalDateTime.parse(request.getTargetCompletionTime(), formatter);
 
-            AssemblyControlOrderDTO order = assemblyControlOrderService.createControlOrder(
-                    request.getSourceProductionOrderId(),
-                    request.getAssignedWorkstationId(),
-                    request.getSimalScheduleId(),
-                    request.getPriority(),
-                    targetStart,
-                    targetCompletion,
-                    request.getAssemblyInstructions(),
-                    request.getQualityCheckpoints(),
-                    "Standard testing procedures apply",
-                    "Standard packaging requirements",
-                    90  // Default 90-minute estimate
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-    }
-
-    /**
-     * Request class for creating an assembly control order from SimAL
-     */
-    public static class CreateControlOrderRequest {
-        private Long sourceProductionOrderId;
-        private Long assignedWorkstationId;
-        private String simalScheduleId;
-        private String targetStartTime;
-        private String targetCompletionTime;
-        private String priority;
-        private String assemblyInstructions;
-        private String qualityCheckpoints;
-
-        // Getters and setters
-        public Long getSourceProductionOrderId() { return sourceProductionOrderId; }
-        public void setSourceProductionOrderId(Long sourceProductionOrderId) {
-            this.sourceProductionOrderId = sourceProductionOrderId;
-        }
-
-        public Long getAssignedWorkstationId() { return assignedWorkstationId; }
-        public void setAssignedWorkstationId(Long assignedWorkstationId) {
-            this.assignedWorkstationId = assignedWorkstationId;
-        }
-
-        public String getSimalScheduleId() { return simalScheduleId; }
-        public void setSimalScheduleId(String simalScheduleId) { this.simalScheduleId = simalScheduleId; }
-
-        public String getTargetStartTime() { return targetStartTime; }
-        public void setTargetStartTime(String targetStartTime) { this.targetStartTime = targetStartTime; }
-
-        public String getTargetCompletionTime() { return targetCompletionTime; }
-        public void setTargetCompletionTime(String targetCompletionTime) {
-            this.targetCompletionTime = targetCompletionTime;
-        }
-
-        public String getPriority() { return priority; }
-        public void setPriority(String priority) { this.priority = priority; }
-
-        public String getAssemblyInstructions() { return assemblyInstructions; }
-        public void setAssemblyInstructions(String assemblyInstructions) {
-            this.assemblyInstructions = assemblyInstructions;
-        }
-
-        public String getQualityCheckpoints() { return qualityCheckpoints; }
-        public void setQualityCheckpoints(String qualityCheckpoints) {
-            this.qualityCheckpoints = qualityCheckpoints;
-        }
-    }
-
-    // Request DTO for requesting parts
-    public static class RequestPartsRequest {
-        private List<SupplyOrderItemDTO> requiredParts;
-        private LocalDateTime neededBy;
-        private String notes;
-
-        public List<SupplyOrderItemDTO> getRequiredParts() { return requiredParts; }
-        public void setRequiredParts(List<SupplyOrderItemDTO> requiredParts) {
-            this.requiredParts = requiredParts;
-        }
-
-        public LocalDateTime getNeededBy() { return neededBy; }
-        public void setNeededBy(LocalDateTime neededBy) { this.neededBy = neededBy; }
-
-        public String getNotes() { return notes; }
-        public void setNotes(String notes) { this.notes = notes; }
+        AssemblyControlOrderDTO order = assemblyControlOrderService.createControlOrder(
+                request.getSourceProductionOrderId(),
+                request.getAssignedWorkstationId(),
+                request.getSimalScheduleId(),
+                request.getPriority(),
+                targetStart,
+                targetCompletion,
+                request.getAssemblyInstructions(),
+                request.getQualityCheckpoints(),
+                "Standard testing procedures apply",
+                "Standard packaging requirements",
+                90,  // Default 90-minute estimate
+                request.getItemId(),
+                request.getItemType(),
+                request.getQuantity()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 }

@@ -2,8 +2,15 @@ package io.life.order.service;
 
 import io.life.order.dto.SupplyOrderDTO;
 import io.life.order.dto.SupplyOrderItemDTO;
+import io.life.order.entity.AssemblyControlOrder;
+import io.life.order.entity.ProductionControlOrder;
+import io.life.order.entity.ProductionOrder;
+import io.life.order.entity.ProductionOrderItem;
 import io.life.order.entity.SupplyOrder;
 import io.life.order.entity.SupplyOrderItem;
+import io.life.order.repository.AssemblyControlOrderRepository;
+import io.life.order.repository.ProductionControlOrderRepository;
+import io.life.order.repository.ProductionOrderRepository;
 import io.life.order.repository.SupplyOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,12 +35,26 @@ public class SupplyOrderService {
     private static final String SUPPLY_ORDER_NOT_FOUND = "Supply order not found: ";
 
     private final SupplyOrderRepository repository;
+    private final AssemblyControlOrderRepository assemblyControlOrderRepository;
+    private final ProductionControlOrderRepository productionControlOrderRepository;
+    private final ProductionOrderRepository productionOrderRepository;
+    private final MasterdataService masterdataService;
     @SuppressWarnings("unused")
     private final RestTemplate restTemplate;
 
-    public SupplyOrderService(SupplyOrderRepository repository, RestTemplate restTemplate) {
+    public SupplyOrderService(
+            SupplyOrderRepository repository, 
+            RestTemplate restTemplate,
+            AssemblyControlOrderRepository assemblyControlOrderRepository,
+            ProductionControlOrderRepository productionControlOrderRepository,
+            ProductionOrderRepository productionOrderRepository,
+            MasterdataService masterdataService) {
         this.repository = repository;
         this.restTemplate = restTemplate;
+        this.assemblyControlOrderRepository = assemblyControlOrderRepository;
+        this.productionControlOrderRepository = productionControlOrderRepository;
+        this.productionOrderRepository = productionOrderRepository;
+        this.masterdataService = masterdataService;
     }
 
     /**
@@ -88,6 +109,127 @@ public class SupplyOrderService {
 
         return mapToDTO(finalSaved);
     }
+
+    /**
+     * Create a supply order from a control order with automatic BOM lookup.
+     * The parts needed are automatically determined from the module's BOM.
+     * 
+     * @param controlOrderId The control order ID
+     * @param controlOrderType "ASSEMBLY" or "PRODUCTION"
+     * @param priority Order priority
+     * @return The created supply order DTO
+     */
+    public SupplyOrderDTO createSupplyOrderFromControlOrder(
+            Long controlOrderId,
+            String controlOrderType,
+            String priority) {
+        
+        Long itemId;
+        String itemType;
+        Integer quantity;
+        Long workstationId;
+        LocalDateTime targetStartTime;
+        String controlOrderNumber;
+
+        if ("ASSEMBLY".equalsIgnoreCase(controlOrderType)) {
+            AssemblyControlOrder controlOrder = assemblyControlOrderRepository.findById(controlOrderId)
+                .orElseThrow(() -> new IllegalArgumentException("Assembly control order not found: " + controlOrderId));
+            
+            itemId = controlOrder.getItemId();
+            itemType = controlOrder.getItemType();
+            quantity = controlOrder.getQuantity();
+            workstationId = controlOrder.getAssignedWorkstationId();
+            targetStartTime = controlOrder.getTargetStartTime();
+            controlOrderNumber = controlOrder.getControlOrderNumber();
+        } else if ("PRODUCTION".equalsIgnoreCase(controlOrderType)) {
+            ProductionControlOrder controlOrder = productionControlOrderRepository.findById(controlOrderId)
+                .orElseThrow(() -> new IllegalArgumentException("Production control order not found: " + controlOrderId));
+            
+            workstationId = controlOrder.getAssignedWorkstationId();
+            targetStartTime = controlOrder.getTargetStartTime();
+            controlOrderNumber = controlOrder.getControlOrderNumber();
+            itemId = controlOrder.getItemId();
+            itemType = controlOrder.getItemType();
+            quantity = controlOrder.getQuantity();
+            
+            // Validate that we have item info
+            if (itemId == null) {
+                throw new IllegalStateException("Production control order " + controlOrderId + " has no item ID. Cannot create supply order.");
+            }
+            
+            // For Production Control Orders, create supply order for the PART they need to manufacture
+            // Parts are the lowest level in the BOM hierarchy (Product -> Module -> Part)
+            // Manufacturing workstations need the parts supplied from Parts Supply Warehouse (WS-9)
+            
+            List<SupplyOrderItemDTO> requiredItems = new java.util.ArrayList<>();
+            SupplyOrderItemDTO partItem = new SupplyOrderItemDTO();
+            partItem.setPartId(itemId);
+            partItem.setQuantityRequested(quantity != null ? quantity : 1);
+            partItem.setUnit("piece");
+            partItem.setNotes("Part for production at manufacturing workstation");
+            requiredItems.add(partItem);
+            
+            String notesForPO = String.format("Parts for Production Control Order %s (Part ID: %d, Qty: %d)",
+                controlOrderNumber, itemId, quantity != null ? quantity : 1);
+
+            logger.info("Creating supply order from PRODUCTION control order {} for part {} (qty: {})",
+                controlOrderId, itemId, quantity);
+
+            return createSupplyOrder(
+                controlOrderId,
+                "PRODUCTION",
+                workstationId,
+                priority != null ? priority : "MEDIUM",
+                targetStartTime,
+                requiredItems,
+                notesForPO
+            );
+        } else {
+            throw new IllegalArgumentException("Invalid control order type: " + controlOrderType);
+        }
+
+        // ASSEMBLY control orders: lookup parts from BOM based on module ID
+        if (!"MODULE".equalsIgnoreCase(itemType)) {
+            throw new IllegalArgumentException("Assembly control order item type must be MODULE, got: " + itemType);
+        }
+        
+        Map<Long, Integer> partRequirements = masterdataService.getPartRequirementsForModule(itemId, quantity);
+        
+        if (partRequirements.isEmpty()) {
+            throw new IllegalStateException("No parts found in BOM for module: " + itemId);
+        }
+
+        // Convert part requirements to SupplyOrderItemDTO list
+        List<SupplyOrderItemDTO> requiredItems = partRequirements.entrySet().stream()
+            .map(entry -> {
+                SupplyOrderItemDTO item = new SupplyOrderItemDTO();
+                item.setPartId(entry.getKey());
+                item.setQuantityRequested(entry.getValue());
+                item.setUnit("piece");
+                item.setNotes("BOM requirement for module " + itemId);
+                return item;
+            })
+            .collect(Collectors.toList());
+
+        String notes = String.format("Parts for Assembly Control Order %s (Module ID: %d, Qty: %d)",
+            controlOrderNumber, itemId, quantity);
+
+        logger.info("Creating supply order from ASSEMBLY control order {} for module {} with {} part types",
+            controlOrderId, itemId, requiredItems.size());
+
+        return createSupplyOrder(
+            controlOrderId,
+            "ASSEMBLY",
+            workstationId,
+            priority != null ? priority : "MEDIUM",
+            targetStartTime,
+            requiredItems,
+            notes
+        );
+    }
+
+    /**
+     * Get all supply orders for the Parts Supply Warehouse.
 
     /**
      * Get all supply orders for the Parts Supply Warehouse.

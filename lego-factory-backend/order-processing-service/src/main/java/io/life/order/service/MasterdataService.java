@@ -118,6 +118,56 @@ public class MasterdataService {
     }
 
     /**
+     * Fetch module parts (bill of materials) for a module.
+     * Returns a list of parts with their required quantities.
+     * 
+     * @param moduleId The module ID
+     * @return List of ModulePartDTO containing part IDs and quantities
+     */
+    public List<ModulePartDTO> getModuleParts(Long moduleId) {
+        try {
+            String url = masterdataServiceUrl + "/api/masterdata/modules/" + moduleId + "/parts";
+            log.debug("Fetching module parts from: {}", url);
+            
+            ResponseEntity<List<ModulePartDTO>> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<ModulePartDTO>>() {}
+            );
+            
+            List<ModulePartDTO> parts = response.getBody();
+            if (parts != null && !parts.isEmpty()) {
+                log.debug("Found {} parts for module {}", parts.size(), moduleId);
+                return parts;
+            }
+        } catch (Exception e) {
+            log.error("Failed to fetch module parts for module {}: {}", moduleId, e.getMessage());
+        }
+        
+        return Collections.emptyList();
+    }
+
+    /**
+     * Get part requirements for a module with given quantity.
+     * 
+     * @param moduleId Module ID
+     * @param moduleQuantity Quantity of modules to build
+     * @return Map of part ID to total required quantity
+     */
+    public Map<Long, Integer> getPartRequirementsForModule(Long moduleId, Integer moduleQuantity) {
+        List<ModulePartDTO> moduleParts = getModuleParts(moduleId);
+        
+        Map<Long, Integer> requirements = new HashMap<>();
+        for (ModulePartDTO mp : moduleParts) {
+            int totalRequired = mp.getQuantity() * moduleQuantity;
+            requirements.merge(mp.getPartId(), totalRequired, Integer::sum);
+        }
+        
+        return requirements;
+    }
+
+    /**
      * Simple DTO to extract 'name' field from masterdata-service responses.
      */
     public static class ItemNameResponse {
@@ -176,6 +226,50 @@ public class MasterdataService {
 
         public void setModuleId(Long moduleId) {
             this.moduleId = moduleId;
+        }
+
+        public Integer getQuantity() {
+            return quantity;
+        }
+
+        public void setQuantity(Integer quantity) {
+            this.quantity = quantity;
+        }
+    }
+
+    /**
+     * DTO for ModulePart data from masterdata-service.
+     */
+    public static class ModulePartDTO {
+        private Long id;
+        private Long moduleId;
+        private Long partId;
+        private Integer quantity;
+
+        public ModulePartDTO() {}
+
+        public Long getId() {
+            return id;
+        }
+
+        public void setId(Long id) {
+            this.id = id;
+        }
+
+        public Long getModuleId() {
+            return moduleId;
+        }
+
+        public void setModuleId(Long moduleId) {
+            this.moduleId = moduleId;
+        }
+
+        public Long getPartId() {
+            return partId;
+        }
+
+        public void setPartId(Long partId) {
+            this.partId = partId;
         }
 
         public Integer getQuantity() {
