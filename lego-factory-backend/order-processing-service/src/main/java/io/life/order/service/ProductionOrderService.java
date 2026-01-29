@@ -32,19 +32,24 @@ public class ProductionOrderService {
     private static final Logger logger = LoggerFactory.getLogger(ProductionOrderService.class);
     private static final String PRODUCTION_ORDER_NOT_FOUND = "Production order not found: ";
 
+    private static final Long MODULES_SUPERMARKET_WORKSTATION_ID = 8L;
+
     private final ProductionOrderRepository productionOrderRepository;
     private final WarehouseOrderRepository warehouseOrderRepository;
     private final ProductionControlOrderService productionControlOrderService;
     private final AssemblyControlOrderService assemblyControlOrderService;
+    private final InventoryService inventoryService;
 
     public ProductionOrderService(ProductionOrderRepository productionOrderRepository,
                                  WarehouseOrderRepository warehouseOrderRepository,
                                  ProductionControlOrderService productionControlOrderService,
-                                 AssemblyControlOrderService assemblyControlOrderService) {
+                                 AssemblyControlOrderService assemblyControlOrderService,
+                                 InventoryService inventoryService) {
         this.productionOrderRepository = productionOrderRepository;
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.productionControlOrderService = productionControlOrderService;
         this.assemblyControlOrderService = assemblyControlOrderService;
+        this.inventoryService = inventoryService;
     }
 
     /**
@@ -286,6 +291,7 @@ public class ProductionOrderService {
 
     /**
      * Mark production order as completed.
+     * Credits Modules Supermarket (WS-8) with produced modules/parts.
      */
     public ProductionOrderDTO completeProductionOrder(Long id) {
         @SuppressWarnings("null")
@@ -297,6 +303,9 @@ public class ProductionOrderService {
 
         ProductionOrder updated = productionOrderRepository.save(productionOrder);
         logger.info("Marked production order {} as completed", id);
+
+        // Credit Modules Supermarket with produced items
+        creditModulesSupermarket(updated);
 
         return mapToDTO(updated);
     }
@@ -495,6 +504,8 @@ public class ProductionOrderService {
     /**
      * Complete production order and notify source warehouse order (final step).
      * This triggers the warehouse order to resume and create final assembly order.
+     * Credits Modules Supermarket (WS-8) with produced modules.
+     * Updates source WarehouseOrder status to MODULES_READY for final assembly dispatch.
      * 
      * @param id Production order ID
      * @return Updated production order DTO
@@ -510,10 +521,111 @@ public class ProductionOrderService {
         ProductionOrder updated = productionOrderRepository.save(productionOrder);
         logger.info("Completed production order {}", id);
 
-        // TODO: Feature 3.7 (Orchestration) - Notify warehouse order that modules are ready
-        // WarehouseOrder should transition from AWAITING_PRODUCTION to ready for fulfillment
+        // Credit Modules Supermarket with produced items
+        creditModulesSupermarket(updated);
+
+        // Feature 3.7 (Orchestration) - Notify warehouse order that modules are ready
+        // WarehouseOrder transitions from AWAITING_PRODUCTION to MODULES_READY for fulfillment
+        notifyWarehouseOrderModulesReady(updated);
 
         return mapToDTO(updated);
+    }
+
+    /**
+     * Notify the source warehouse order that production is complete and modules are ready.
+     * Updates the warehouse order status and triggerScenario so it can proceed to fulfillment.
+     * 
+     * @param productionOrder The completed production order
+     */
+    private void notifyWarehouseOrderModulesReady(ProductionOrder productionOrder) {
+        if (productionOrder.getSourceWarehouseOrderId() == null) {
+            logger.info("Production order {} has no source warehouse order to notify", 
+                    productionOrder.getProductionOrderNumber());
+            return;
+        }
+
+        try {
+            WarehouseOrder warehouseOrder = warehouseOrderRepository.findById(productionOrder.getSourceWarehouseOrderId())
+                    .orElse(null);
+            
+            if (warehouseOrder == null) {
+                logger.warn("Source warehouse order {} not found for production order {}", 
+                        productionOrder.getSourceWarehouseOrderId(), productionOrder.getProductionOrderNumber());
+                return;
+            }
+
+            // Update warehouse order status to indicate modules are now available
+            String previousStatus = warehouseOrder.getStatus();
+            warehouseOrder.setStatus("MODULES_READY");
+            warehouseOrder.setTriggerScenario("PRODUCTION_COMPLETE");
+            warehouseOrder.setNotes((warehouseOrder.getNotes() != null ? warehouseOrder.getNotes() + " | " : "") 
+                    + "Production completed - modules credited to Modules Supermarket - ready to fulfill");
+            
+            warehouseOrderRepository.save(warehouseOrder);
+            
+            logger.info("✓ Warehouse order {} notified: {} → MODULES_READY (production order {} completed)", 
+                    warehouseOrder.getOrderNumber(), previousStatus, productionOrder.getProductionOrderNumber());
+            
+        } catch (Exception e) {
+            logger.error("Failed to notify warehouse order for production order {}: {}", 
+                    productionOrder.getProductionOrderNumber(), e.getMessage());
+            // Don't throw - production completion succeeded, warehouse notification is secondary
+        }
+    }
+
+    /**
+     * Credit Modules Supermarket (WS-8) with produced modules from a production order.
+     * This is called when a production order completes to add the produced items to inventory.
+     * 
+     * NOTE: For Scenario 3, production orders are created from warehouse orders which contain
+     * only MODULEs (after BOM conversion from Products → Modules). The implementation supports
+     * PART types for future flexibility (e.g., Scenario 4 or standalone production orders),
+     * but in practice Scenario 3 will only credit MODULE items to the Modules Supermarket.
+     * 
+     * @param productionOrder The completed production order
+     */
+    private void creditModulesSupermarket(ProductionOrder productionOrder) {
+        if (productionOrder.getProductionOrderItems() == null || productionOrder.getProductionOrderItems().isEmpty()) {
+            logger.warn("Production order {} has no items to credit", productionOrder.getProductionOrderNumber());
+            return;
+        }
+
+        logger.info("=== Crediting Modules Supermarket for production order {} ===", 
+                productionOrder.getProductionOrderNumber());
+        
+        int successCount = 0;
+        int failCount = 0;
+        
+        for (ProductionOrderItem item : productionOrder.getProductionOrderItems()) {
+            try {
+                String notes = String.format("Completed production order: %s - %s", 
+                        productionOrder.getProductionOrderNumber(), item.getItemName());
+                
+                boolean credited = inventoryService.creditProductionStock(
+                        MODULES_SUPERMARKET_WORKSTATION_ID,
+                        item.getItemType(),
+                        item.getItemId(),
+                        item.getQuantity(),
+                        notes
+                );
+                
+                if (credited) {
+                    logger.info("  ✓ Credited {} {} {} ({}) to Modules Supermarket", 
+                            item.getQuantity(), item.getItemType(), item.getItemId(), item.getItemName());
+                    successCount++;
+                } else {
+                    logger.warn("  ✗ Failed to credit {} {} {} ({}) to Modules Supermarket", 
+                            item.getQuantity(), item.getItemType(), item.getItemId(), item.getItemName());
+                    failCount++;
+                }
+            } catch (Exception e) {
+                logger.error("  ✗ Error crediting {} {} {} ({}): {}", 
+                        item.getQuantity(), item.getItemType(), item.getItemId(), item.getItemName(), e.getMessage());
+                failCount++;
+            }
+        }
+        
+        logger.info("=== Modules Supermarket credit complete: {} succeeded, {} failed ===", successCount, failCount);
     }
 
     /**

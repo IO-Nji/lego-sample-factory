@@ -113,6 +113,12 @@
   border-color: #10b981;
 }
 
+.warehouse-order-card .order-status-badge.ready {
+  background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%);
+  color: #0f766e;
+  border-color: #14b8a6;
+}
+
 .warehouse-order-card .order-status-badge.rejected {
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   color: #991b1b;

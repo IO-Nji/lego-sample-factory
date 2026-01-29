@@ -291,6 +291,7 @@ function ModulesSupermarketDashboard() {
     { value: warehouseOrders.filter(o => o.status === "PENDING").length, label: 'Pending', variant: 'pending', icon: '⏳' },
     { value: warehouseOrders.filter(o => o.status === "CONFIRMED").length, label: 'Confirmed', variant: 'info', icon: '✓' },
     { value: warehouseOrders.filter(o => o.status === "AWAITING_PRODUCTION").length, label: 'Production', variant: 'warning', icon: '🏭' },
+    { value: warehouseOrders.filter(o => o.status === "MODULES_READY").length, label: 'Ready', variant: 'success', icon: '✅' },
     { value: warehouseOrders.filter(o => o.status === "PROCESSING").length, label: 'Processing', variant: 'processing', icon: '⚙️' },
     { value: warehouseOrders.filter(o => o.status === "FULFILLED").length, label: 'Fulfilled', variant: 'success', icon: '✅' },
     { value: inventory.length, label: 'Module Types', variant: 'info', icon: '🔧' },
@@ -374,6 +375,7 @@ function ModulesSupermarketDashboard() {
         { value: 'PENDING', label: 'Pending' },
         { value: 'CONFIRMED', label: 'Confirmed' },
         { value: 'AWAITING_PRODUCTION', label: 'Production' },
+        { value: 'MODULES_READY', label: 'Ready' },
         { value: 'PROCESSING', label: 'Processing' },
         { value: 'FULFILLED', label: 'Fulfilled' },
         { value: 'CANCELLED', label: 'Cancelled' }

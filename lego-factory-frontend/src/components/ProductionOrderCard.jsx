@@ -65,6 +65,7 @@ function ProductionOrderCard({
       '📤 Submit': 'submit',
       'Complete': 'complete',
       '✓ Complete': 'complete',
+      '✅ Complete': 'complete',
       'Completing...': 'complete'
     };
     return variantMap[actionLabel] || 'primary';  // Fallback to primary
@@ -193,8 +194,15 @@ function ProductionOrderCard({
         break;
       
       case 'DISPATCHED':
-        // Control orders created, waiting for workstations to start
-        // No actions for Production Planning
+        // Control orders created, waiting for workstations to complete
+        // Show Complete button so Production Planning can mark order complete after control orders finish
+        actions.push({
+          label: '✅ Complete',
+          variant: getActionVariant('✅ Complete'),
+          size: 'small',
+          onClick: () => onComplete(order.id),
+          show: !!onComplete
+        });
         break;
       
       case 'IN_PRODUCTION':
