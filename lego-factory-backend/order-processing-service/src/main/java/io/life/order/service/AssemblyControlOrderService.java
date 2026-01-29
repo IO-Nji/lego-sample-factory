@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Transactional
-public class AssemblyControlOrderService {
+public class AssemblyControlOrderService implements WorkstationOrderOperations<AssemblyControlOrderDTO> {
 
     private static final Logger logger = LoggerFactory.getLogger(AssemblyControlOrderService.class);
     private static final String STATUS_PENDING = "PENDING";
@@ -150,6 +150,7 @@ public class AssemblyControlOrderService {
     /**
      * Get all control orders for a workstation.
      */
+    @Override
     public List<AssemblyControlOrderDTO> getOrdersByWorkstation(Long workstationId) {
         return repository.findByAssignedWorkstationId(workstationId).stream()
                 .map(this::mapToDTO)
@@ -159,6 +160,7 @@ public class AssemblyControlOrderService {
     /**
      * Get all active control orders for a workstation.
      */
+    @Override
     public List<AssemblyControlOrderDTO> getActiveOrdersByWorkstation(Long workstationId) {
         return repository.findByAssignedWorkstationIdAndStatus(workstationId, STATUS_IN_PROGRESS).stream()
                 .map(this::mapToDTO)
@@ -168,6 +170,7 @@ public class AssemblyControlOrderService {
     /**
      * Get all unassigned control orders (status = ASSIGNED).
      */
+    @Override
     public List<AssemblyControlOrderDTO> getUnassignedOrders(Long workstationId) {
         return repository.findByAssignedWorkstationIdAndStatus(workstationId, STATUS_ASSIGNED).stream()
                 .map(this::mapToDTO)
@@ -177,6 +180,7 @@ public class AssemblyControlOrderService {
     /**
      * Get control order by ID.
      */
+    @Override
     @SuppressWarnings("null")
     public Optional<AssemblyControlOrderDTO> getOrderById(Long id) {
         return repository.findById(id).map(this::mapToDTO);
@@ -185,6 +189,7 @@ public class AssemblyControlOrderService {
     /**
      * Get control order by control order number.
      */
+    @Override
     public Optional<AssemblyControlOrderDTO> getOrderByNumber(String controlOrderNumber) {
         return repository.findByControlOrderNumber(controlOrderNumber).map(this::mapToDTO);
     }
@@ -344,7 +349,7 @@ public class AssemblyControlOrderService {
     /**
      * Halt assembly on a control order.
      */
-    public AssemblyControlOrderDTO haltAssembly(Long id) {
+    public AssemblyControlOrderDTO haltAssembly(Long id, String reason) {
         @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Control order not found: " + id));
@@ -354,8 +359,11 @@ public class AssemblyControlOrderService {
         }
 
         order.setStatus(STATUS_HALTED);
+        if (reason != null && !reason.isBlank()) {
+            order.setOperatorNotes("Halted: " + reason);
+        }
         AssemblyControlOrder updated = repository.save(order);
-        logger.warn("Halted assembly on control order {}", order.getControlOrderNumber());
+        logger.warn("Halted assembly on control order {}: {}", order.getControlOrderNumber(), reason);
 
         return mapToDTO(updated);
     }
@@ -363,6 +371,7 @@ public class AssemblyControlOrderService {
     /**
      * Update operator notes.
      */
+    @Override
     public AssemblyControlOrderDTO updateOperatorNotes(Long id, String notes) {
         @SuppressWarnings("null")
         AssemblyControlOrder order = repository.findById(id)
@@ -613,6 +622,37 @@ public class AssemblyControlOrderService {
             logger.error("✗ Failed to update customer order {} after assembly: {}", customerOrderId, e.getMessage());
             throw new RuntimeException("Customer order update failed: " + e.getMessage(), e);
         }
+    }
+
+    // ========================================================================
+    // WorkstationOrderOperations interface implementation (adapter methods)
+    // ========================================================================
+
+    /**
+     * Start work on an order (interface adapter).
+     * Delegates to startAssembly().
+     */
+    @Override
+    public AssemblyControlOrderDTO startWork(Long id) {
+        return startAssembly(id);
+    }
+
+    /**
+     * Complete work on an order (interface adapter).
+     * Delegates to completeAssemblyProduction() which handles inventory credits.
+     */
+    @Override
+    public AssemblyControlOrderDTO completeWork(Long id) {
+        return completeAssemblyProduction(id);
+    }
+
+    /**
+     * Halt work on an order (interface adapter).
+     * Delegates to haltAssembly().
+     */
+    @Override
+    public AssemblyControlOrderDTO haltWork(Long id, String reason) {
+        return haltAssembly(id, reason);
     }
 }
 

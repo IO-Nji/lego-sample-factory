@@ -23,10 +23,11 @@ import java.util.stream.Collectors;
 /**
  * Service for managing ProductionControlOrder entities.
  * Handles control orders assigned to Production Control workstations.
+ * Implements WorkstationOrderOperations to support generic workstation controllers.
  */
 @Service
 @Transactional
-public class ProductionControlOrderService {
+public class ProductionControlOrderService implements WorkstationOrderOperations<ProductionControlOrderDTO> {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductionControlOrderService.class);
     private static final String STATUS_PENDING = "PENDING";
@@ -140,6 +141,7 @@ public class ProductionControlOrderService {
     /**
      * Get all control orders for a workstation.
      */
+    @Override
     public List<ProductionControlOrderDTO> getOrdersByWorkstation(Long workstationId) {
         return repository.findByAssignedWorkstationId(workstationId).stream()
                 .map(this::mapToDTO)
@@ -149,6 +151,7 @@ public class ProductionControlOrderService {
     /**
      * Get all active control orders for a workstation.
      */
+    @Override
     public List<ProductionControlOrderDTO> getActiveOrdersByWorkstation(Long workstationId) {
         return repository.findByAssignedWorkstationIdAndStatus(workstationId, STATUS_IN_PROGRESS).stream()
                 .map(this::mapToDTO)
@@ -158,6 +161,7 @@ public class ProductionControlOrderService {
     /**
      * Get all unassigned control orders (status = ASSIGNED).
      */
+    @Override
     public List<ProductionControlOrderDTO> getUnassignedOrders(Long workstationId) {
         return repository.findByAssignedWorkstationIdAndStatus(workstationId, STATUS_ASSIGNED).stream()
                 .map(this::mapToDTO)
@@ -167,6 +171,7 @@ public class ProductionControlOrderService {
     /**
      * Get control order by ID.
      */
+    @Override
     @SuppressWarnings("null")
     public Optional<ProductionControlOrderDTO> getOrderById(Long id) {
         return repository.findById(id).map(this::mapToDTO);
@@ -175,6 +180,7 @@ public class ProductionControlOrderService {
     /**
      * Get control order by control order number.
      */
+    @Override
     public Optional<ProductionControlOrderDTO> getOrderByNumber(String controlOrderNumber) {
         return repository.findByControlOrderNumber(controlOrderNumber).map(this::mapToDTO);
     }
@@ -345,6 +351,7 @@ public class ProductionControlOrderService {
     /**
      * Update operator notes.
      */
+    @Override
     public ProductionControlOrderDTO updateOperatorNotes(Long id, String notes) {
         @SuppressWarnings("null")
         ProductionControlOrder order = repository.findById(id)
@@ -495,5 +502,36 @@ public class ProductionControlOrderService {
                 .updatedAt(order.getUpdatedAt())
                 .completedAt(order.getCompletedAt())
                 .build();
+    }
+
+    // ========================================================================
+    // WorkstationOrderOperations interface implementation (adapter methods)
+    // ========================================================================
+
+    /**
+     * Start work on an order (interface adapter).
+     * Delegates to startProduction().
+     */
+    @Override
+    public ProductionControlOrderDTO startWork(Long id) {
+        return startProduction(id);
+    }
+
+    /**
+     * Complete work on an order (interface adapter).
+     * Delegates to completeManufacturingProduction() which handles inventory credits.
+     */
+    @Override
+    public ProductionControlOrderDTO completeWork(Long id) {
+        return completeManufacturingProduction(id);
+    }
+
+    /**
+     * Halt work on an order (interface adapter).
+     * Delegates to haltProduction().
+     */
+    @Override
+    public ProductionControlOrderDTO haltWork(Long id, String reason) {
+        return haltProduction(id, reason);
     }
 }
