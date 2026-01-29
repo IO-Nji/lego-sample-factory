@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import api from '../../api/api';
-import { Button } from '../../components';
-import '../../styles/AdminSettingsPanel.css';
+import api from '../api/api';
+import Button from './Button';
+import '../styles/AdminSettingsPanel.css';
 
 /**
  * AdminSettingsPanel Component
