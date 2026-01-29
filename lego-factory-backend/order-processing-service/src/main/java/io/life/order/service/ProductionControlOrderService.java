@@ -5,19 +5,16 @@ import io.life.order.dto.SupplyOrderDTO;
 import io.life.order.dto.SupplyOrderItemDTO;
 import io.life.order.dto.request.ProductionControlOrderCreateRequest;
 import io.life.order.entity.ProductionControlOrder;
-import io.life.order.repository.ProductionControlOrderRepository;
 import io.life.order.entity.SupplyOrder;
+import io.life.order.repository.ProductionControlOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -39,23 +36,20 @@ public class ProductionControlOrderService implements WorkstationOrderOperations
 
     private final ProductionControlOrderRepository repository;
     private final SupplyOrderService supplyOrderService;
-    private final RestTemplate restTemplate;
     private final InventoryService inventoryService;
-
-    @Value("${simal.service.url:http://localhost:8018}")
-    private String simalServiceUrl;
+    private final SimALNotificationService simalNotificationService;
 
     @Value("${modules.supermarket.workstation.id:8}")
     private Long modulesSupermarketWorkstationId;
 
     public ProductionControlOrderService(ProductionControlOrderRepository repository, 
                                         SupplyOrderService supplyOrderService,
-                                        RestTemplate restTemplate,
-                                        InventoryService inventoryService) {
+                                        InventoryService inventoryService,
+                                        SimALNotificationService simalNotificationService) {
         this.repository = repository;
         this.supplyOrderService = supplyOrderService;
-        this.restTemplate = restTemplate;
         this.inventoryService = inventoryService;
+        this.simalNotificationService = simalNotificationService;
     }
 
     /**
@@ -303,12 +297,7 @@ public class ProductionControlOrderService implements WorkstationOrderOperations
         logger.info("Completed manufacturing production on control order {}", order.getControlOrderNumber());
 
         // Step 2: Call SimAL to update schedule status (fire-and-forget)
-        try {
-            updateSimalScheduleStatus(order.getSimalScheduleId(), STATUS_COMPLETED);
-        } catch (Exception e) {
-            logger.warn("Failed to update SimAL schedule status for {}: {}", order.getSimalScheduleId(), e.getMessage());
-            // Don't throw - completion already succeeded, SimAL update is secondary
-        }
+        simalNotificationService.tryUpdateScheduleStatus(order.getSimalScheduleId(), STATUS_COMPLETED);
 
         // Step 3: Credit Modules Supermarket inventory (fire-and-forget)
         try {
@@ -319,24 +308,6 @@ public class ProductionControlOrderService implements WorkstationOrderOperations
         }
 
         return mapToDTO(updated);
-    }
-
-    /**
-     * Update SimAL schedule status via SimAL Integration Service.
-     */
-    private void updateSimalScheduleStatus(String scheduleId, String status) {
-        try {
-            String url = simalServiceUrl + "/api/simal/scheduled-orders/" + scheduleId + "/status";
-            Map<String, Object> request = new HashMap<>();
-            request.put("status", status);
-            request.put("completedAt", LocalDateTime.now().toString());
-            
-            restTemplate.postForObject(url, request, String.class);
-            logger.info("Updated SimAL schedule {} status to {}", scheduleId, status);
-        } catch (Exception e) {
-            logger.error("Failed to update SimAL schedule status for {}", scheduleId, e);
-            throw new RuntimeException("SimAL update failed: " + e.getMessage(), e);
-        }
     }
 
     /**

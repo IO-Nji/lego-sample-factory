@@ -13,12 +13,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -39,12 +36,9 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
 
     private final AssemblyControlOrderRepository repository;
     private final SupplyOrderService supplyOrderService;
-    private final RestTemplate restTemplate;
     private final InventoryService inventoryService;
     private final CustomerOrderRepository customerOrderRepository;
-
-    @Value("${simal.service.url:http://localhost:8018}")
-    private String simalServiceUrl;
+    private final SimALNotificationService simalNotificationService;
 
     @Value("${modules.supermarket.workstation.id:8}")
     private Long modulesSupermarketWorkstationId;
@@ -54,14 +48,14 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
 
     public AssemblyControlOrderService(AssemblyControlOrderRepository repository, 
                                       SupplyOrderService supplyOrderService,
-                                      RestTemplate restTemplate,
                                       InventoryService inventoryService,
-                                      CustomerOrderRepository customerOrderRepository) {
+                                      CustomerOrderRepository customerOrderRepository,
+                                      SimALNotificationService simalNotificationService) {
         this.repository = repository;
         this.supplyOrderService = supplyOrderService;
-        this.restTemplate = restTemplate;
         this.inventoryService = inventoryService;
         this.customerOrderRepository = customerOrderRepository;
+        this.simalNotificationService = simalNotificationService;
     }
 
     /**
@@ -306,12 +300,7 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
         logger.info("Completed assembly production on control order {}", order.getControlOrderNumber());
 
         // Step 2: Call SimAL to update schedule status (fire-and-forget)
-        try {
-            updateSimalScheduleStatus(order.getSimalScheduleId(), "COMPLETED");
-        } catch (Exception e) {
-            logger.warn("Failed to update SimAL schedule status for {}: {}", order.getSimalScheduleId(), e.getMessage());
-            // Don't throw - completion already succeeded, SimAL update is secondary
-        }
+        simalNotificationService.tryUpdateScheduleStatus(order.getSimalScheduleId(), "COMPLETED");
 
         // Step 3: Credit Modules Supermarket inventory (fire-and-forget)
         try {
@@ -356,12 +345,7 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
         logger.info("Completed final assembly on control order {}", order.getControlOrderNumber());
 
         // Step 2: Call SimAL to update schedule status (fire-and-forget)
-        try {
-            updateSimalScheduleStatus(order.getSimalScheduleId(), STATUS_COMPLETED);
-        } catch (Exception e) {
-            logger.warn("Failed to update SimAL schedule status for {}: {}", order.getSimalScheduleId(), e.getMessage());
-            // Don't throw - completion already succeeded, SimAL update is secondary
-        }
+        simalNotificationService.tryUpdateScheduleStatus(order.getSimalScheduleId(), STATUS_COMPLETED);
 
         // Step 3: Credit Plant Warehouse inventory (fire-and-forget) - FINAL ASSEMBLY ONLY
         try {
@@ -574,24 +558,6 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
                 .updatedAt(order.getUpdatedAt())
                 .completedAt(order.getCompletedAt())
                 .build();
-    }
-
-    /**
-     * Update SimAL schedule status via SimAL Integration Service.
-     */
-    private void updateSimalScheduleStatus(String scheduleId, String status) {
-        try {
-            String url = simalServiceUrl + "/api/simal/scheduled-orders/" + scheduleId + "/status";
-            Map<String, Object> request = new HashMap<>();
-            request.put("status", status);
-            request.put("completedAt", LocalDateTime.now().toString());
-            
-            restTemplate.postForObject(url, request, String.class);
-            logger.info("Updated SimAL schedule {} status to {}", scheduleId, status);
-        } catch (Exception e) {
-            logger.error("Failed to update SimAL schedule status for {}", scheduleId, e);
-            throw new RuntimeException("SimAL update failed: " + e.getMessage(), e);
-        }
     }
 
     /**
