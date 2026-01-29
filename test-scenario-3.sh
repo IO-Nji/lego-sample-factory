@@ -619,7 +619,7 @@ FA_ORDERS=$(curl -s -X GET "$BASE_URL/final-assembly-orders/workstation/$WORKSTA
 FA_ORDER_ID=$(echo $FA_ORDERS | jq -r 'if type == "array" then (last | .id) else .id end')
 FA_STATUS=$(echo $FA_ORDERS | jq -r 'if type == "array" then (last | .status) else .status end')
 
-if [ "$FA_ORDER_ID" != "null" ] && [ -n "$FA_ORDER_ID" ] && [ "$FA_STATUS" != "COMPLETED" ]; then
+if [ "$FA_ORDER_ID" != "null" ] && [ -n "$FA_ORDER_ID" ] && [ "$FA_STATUS" != "SUBMITTED" ]; then
     print_result 0 "Final Assembly order found (ID: $FA_ORDER_ID, Status: $FA_STATUS)"
     
     # Get product stock before completion
@@ -656,19 +656,21 @@ if [ "$FA_ORDER_ID" != "null" ] && [ -n "$FA_ORDER_ID" ] && [ "$FA_STATUS" != "C
             -H "Authorization: Bearer $TOKEN_FA")
         FA_STATUS=$(echo $FA_COMPLETE | jq -r '.status')
         
-        if [ "$FA_STATUS" == "COMPLETED_ASSEMBLY" ]; then
-            print_result 0 "Final Assembly completed (IN_PROGRESS → COMPLETED_ASSEMBLY)"
+        if [ "$FA_STATUS" == "COMPLETED" ]; then
+            print_result 0 "Final Assembly completed (IN_PROGRESS → COMPLETED)"
+        else
+            print_result 1 "Complete failed (Got: $FA_STATUS)"
         fi
     fi
     
-    if [ "$FA_STATUS" == "COMPLETED_ASSEMBLY" ]; then
+    if [ "$FA_STATUS" == "COMPLETED" ]; then
         print_step "Submit Final Assembly (credits Plant Warehouse)"
         FA_SUBMIT=$(curl -s -X POST "$BASE_URL/final-assembly-orders/$FA_ORDER_ID/submit" \
             -H "Authorization: Bearer $TOKEN_FA")
         FA_STATUS=$(echo $FA_SUBMIT | jq -r '.status')
         
-        if [ "$FA_STATUS" == "COMPLETED" ]; then
-            print_result 0 "Final Assembly submitted (COMPLETED_ASSEMBLY → COMPLETED)"
+        if [ "$FA_STATUS" == "SUBMITTED" ]; then
+            print_result 0 "Final Assembly submitted (COMPLETED → SUBMITTED)"
         else
             print_result 1 "Submit failed (Got: $FA_STATUS)"
         fi

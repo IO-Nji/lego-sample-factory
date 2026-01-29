@@ -365,27 +365,27 @@ if [ "$FA_ORDER_ID" != "null" ] && [ -n "$FA_ORDER_ID" ] && [ "$FA_ORDER_STATUS"
     
     print_info "Plant Warehouse product stock before completion: $PRODUCT_STOCK_BEFORE"
     
-    # Step 3: Complete assembly (IN_PROGRESS → COMPLETED_ASSEMBLY)
+    # Step 3: Complete assembly (IN_PROGRESS → COMPLETED)
     FA_COMPLETE_RESPONSE=$(curl -s -X POST "$BASE_URL/final-assembly-orders/$FA_ORDER_ID/complete" \
         -H "Authorization: Bearer $TOKEN_FA")
     
     FA_COMPLETE_STATUS=$(echo $FA_COMPLETE_RESPONSE | jq -r '.status')
     
-    if [ "$FA_COMPLETE_STATUS" == "COMPLETED_ASSEMBLY" ]; then
-        print_result 0 "Final assembly completed (Status: IN_PROGRESS → COMPLETED_ASSEMBLY)"
+    if [ "$FA_COMPLETE_STATUS" == "COMPLETED" ]; then
+        print_result 0 "Final assembly completed (Status: IN_PROGRESS → COMPLETED)"
     else
         print_result 1 "Final assembly completion failed (Got: $FA_COMPLETE_STATUS)"
     fi
     
-    # Step 4: Submit completion (COMPLETED_ASSEMBLY → COMPLETED, credits warehouse)
+    # Step 4: Submit completion (COMPLETED → SUBMITTED, credits warehouse)
     print_step "Submit final assembly completion - this credits Plant Warehouse"
     FA_SUBMIT_RESPONSE=$(curl -s -X POST "$BASE_URL/final-assembly-orders/$FA_ORDER_ID/submit" \
         -H "Authorization: Bearer $TOKEN_FA")
     
     FA_SUBMIT_STATUS=$(echo $FA_SUBMIT_RESPONSE | jq -r '.status')
     
-    if [ "$FA_SUBMIT_STATUS" == "COMPLETED" ]; then
-        print_result 0 "Final assembly submitted (Status: COMPLETED_ASSEMBLY → COMPLETED)"
+    if [ "$FA_SUBMIT_STATUS" == "SUBMITTED" ]; then
+        print_result 0 "Final assembly submitted (Status: COMPLETED → SUBMITTED)"
     else
         print_result 1 "Final assembly submission failed (Got: $FA_SUBMIT_STATUS)"
     fi
