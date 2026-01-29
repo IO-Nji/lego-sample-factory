@@ -1,6 +1,6 @@
 # LIFE System – Copilot Instructions
 
-> **Last Updated:** January 29, 2026  
+> **Last Updated:** January 30, 2026  
 > This file guides AI coding agents through the LIFE (LEGO Integrated Factory Execution) microservice architecture. It captures critical patterns, domain logic, and workflows required for productive contribution.
 
 ## Quick Start
@@ -22,10 +22,11 @@ cd lego-factory-frontend && npm run dev
 # Rebuild + restart a single service after code changes
 docker-compose build --no-cache order-processing-service && docker-compose up -d order-processing-service
 
-# Validate business scenarios (Scenarios 1-3 complete)
+# Validate business scenarios (All 4 scenarios complete)
 ./test-scenario-1.sh  # Direct fulfillment from stock
 ./test-scenario-2.sh  # Warehouse order + final assembly
 ./test-scenario-3.sh  # Full production pipeline (all 9 workstations)
+./test-scenario-4.sh  # High volume direct production (qty ≥ LOT_SIZE_THRESHOLD)
 ```
 
 ## Architecture: Six Microservices + Single Entry Point
@@ -115,7 +116,7 @@ Product (WS-7 Plant Warehouse)
 - `DIRECT_FULFILLMENT` - Stock available at current workstation, can fulfill immediately
 - `WAREHOUSE_ORDER_NEEDED` - Insufficient stock; must create WarehouseOrder (WS-7 only)
 - `PRODUCTION_REQUIRED` - Must trigger production workflow (WS-8 only)
-- `DIRECT_PRODUCTION` - (Scenario 4, planned) Large lot size bypasses warehouse, goes directly to production
+- `DIRECT_PRODUCTION` - (Scenario 4) Large lot size (≥ LOT_SIZE_THRESHOLD) bypasses warehouse, goes directly to production
 
 **Order Hierarchy (full Scenario 3 flow with control orders):**
 ```
@@ -143,10 +144,11 @@ ProductionOrder (Production Planning)
 - **All control orders must complete:** ProductionOrder cannot complete until ALL control orders are `COMPLETED`
 - **Upward propagation:** Use `OrderOrchestrationService.notifyWorkstationOrderComplete()` to cascade status updates
 
-**Scenario 4 (Planned - High Volume):**
-- When lot size ≥ `LOT_SIZE_THRESHOLD` (default: 3), skip WarehouseOrder entirely
+**Scenario 4 (IMPLEMENTED - High Volume):**
+- When total order quantity ≥ `LOT_SIZE_THRESHOLD` (default: 3, configurable via Admin panel), skip WarehouseOrder entirely
 - CustomerOrder spawns ProductionOrder directly via `ProductionOrderService.createFromCustomerOrder()`
-- Frontend shows "Order Production Directly" button when `triggerScenario = "DIRECT_PRODUCTION"`
+- Frontend shows "Order Production" button when `triggerScenario = "DIRECT_PRODUCTION"`
+- Admin can configure threshold via Admin Dashboard > Settings > LOT_SIZE_THRESHOLD`
 
 **CRITICAL: ProductId Tracking Through Order Chain:**
 - `WarehouseOrderItem` has `productId` field to track which product modules belong to
