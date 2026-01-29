@@ -18,18 +18,18 @@ import '../styles/CustomerOrderCard.css';
  * - Supply order status checking (auto-fetch on mount)
  * - Status-aware actions following the confirm → [operations] → dispatch sequence
  * 
- * Button Sequence (Scenario 3):
- * - PENDING: Show "✓ Confirm Receipt" button
+ * Button Sequence:
+ * - PENDING: Show "✓ Confirm" button
  * - CONFIRMED: 
  *   - If no supply order: Show "📦 Request Parts"
  *   - If supply order PENDING/IN_PROGRESS: Show disabled "⏳ Awaiting Parts..."
- *   - If supply order FULFILLED: Show "🚀 Dispatch to Workstation"
+ *   - If supply order FULFILLED: Show "🚀 Dispatch"
  * - ASSIGNED (dispatched to workstation): Show "▶️ Start Assembly"
  * - IN_PROGRESS: Show "✅ Complete" and "⏸️ Halt"
  * - COMPLETED/HALTED: No action buttons (just Details)
  * 
  * @param {Object} order - Assembly control order object
- * @param {Function} onConfirm - Handler for confirming receipt
+ * @param {Function} onConfirm - Handler for confirming order
  * @param {Function} onStart - Handler for starting assembly
  * @param {Function} onComplete - Handler for completing assembly
  * @param {Function} onHalt - Handler for halting assembly
@@ -154,9 +154,9 @@ function AssemblyControlOrderCard({
     
     switch(status) {
       case 'PENDING':
-        // Step 1: Control station needs to confirm receipt of the order
+        // Step 1: Confirm the order first
         actions.push({
-          label: '✓ Confirm Receipt',
+          label: '✓ Confirm',
           variant: 'confirm',
           size: 'small',
           onClick: () => onConfirm(order.id),
@@ -182,7 +182,7 @@ function AssemblyControlOrderCard({
             show: true
           });
         } else if (hasFulfilledSupply) {
-          // Step 4: Supply fulfilled - can dispatch to workstation
+          // Supply fulfilled - can dispatch to workstation
           actions.push({
             label: '🚀 Dispatch',
             variant: 'success',
@@ -198,7 +198,7 @@ function AssemblyControlOrderCard({
             show: !!onViewDetails
           });
         } else if (hasActiveSupply) {
-          // Step 3: Waiting for supply order to be fulfilled
+          // Waiting for supply order to be fulfilled
           actions.push({
             label: '⏳ Awaiting Parts...',
             variant: 'warning',

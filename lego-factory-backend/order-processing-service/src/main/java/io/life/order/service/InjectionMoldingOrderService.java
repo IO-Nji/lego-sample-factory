@@ -121,12 +121,14 @@ public class InjectionMoldingOrderService {
 
     private void creditInventory(InjectionMoldingOrder order) {
         try {
-            String url = INVENTORY_SERVICE_URL + "/api/stock/credit";
+            String url = INVENTORY_SERVICE_URL + "/api/stock/adjust";
             Map<String, Object> request = Map.of(
                     "workstationId", MODULES_SUPERMARKET_ID,
                     "itemType", "PART",
                     "itemId", order.getOutputPartId(),
-                    "quantity", order.getQuantity()
+                    "delta", order.getQuantity(),
+                    "reasonCode", "PRODUCTION",
+                    "notes", "Completed order: " + order.getOrderNumber()
             );
 
             restTemplate.postForObject(url, request, Void.class);

@@ -12,9 +12,15 @@ import BaseOrderCard from './BaseOrderCard';
  * - Parts list with quantities
  * - Priority badge display
  * - Source control order reference
- * - Status-aware actions (Start, Fulfill, Reject)
+ * - Status-aware actions following confirm → fulfill/reject sequence
+ * 
+ * Button Sequence:
+ * - PENDING: Show "✓ Confirm" button
+ * - CONFIRMED: Show "✅ Fulfill Order" and "❌ Reject" buttons
+ * - FULFILLED/REJECTED/CANCELLED: No action buttons
  * 
  * @param {Object} order - Supply order object
+ * @param {Function} onConfirm - Handler for confirming the supply order
  * @param {Function} onStart - Handler for starting fulfillment (PENDING → IN_PROGRESS)
  * @param {Function} onFulfill - Handler for completing fulfillment
  * @param {Function} onReject - Handler for rejecting order (insufficient stock)
@@ -24,6 +30,7 @@ import BaseOrderCard from './BaseOrderCard';
  */
 function SupplyOrderCard({ 
   order, 
+  onConfirm,
   onStart,
   onFulfill,
   onReject,
@@ -113,6 +120,18 @@ function SupplyOrderCard({
     
     switch(status) {
       case 'PENDING':
+        // Step 1: Confirm the supply order first
+        actions.push({
+          label: '✓ Confirm',
+          variant: 'confirm',
+          size: 'small',
+          onClick: () => onConfirm(order.id),
+          show: !!onConfirm
+        });
+        break;
+
+      case 'CONFIRMED':
+        // Step 2: After confirmation, can fulfill or reject
         actions.push({
           label: '✅ Fulfill Order',
           variant: 'success',
@@ -180,6 +199,7 @@ SupplyOrderCard.propTypes = {
     fulfilledAt: PropTypes.string,
     notes: PropTypes.string
   }).isRequired,
+  onConfirm: PropTypes.func,
   onStart: PropTypes.func,
   onFulfill: PropTypes.func,
   onReject: PropTypes.func,
@@ -189,6 +209,7 @@ SupplyOrderCard.propTypes = {
 };
 
 SupplyOrderCard.defaultProps = {
+  onConfirm: () => {},
   onStart: () => {},
   onFulfill: () => {},
   onReject: () => {},

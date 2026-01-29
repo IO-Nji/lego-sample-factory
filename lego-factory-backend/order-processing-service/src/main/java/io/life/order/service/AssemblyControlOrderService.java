@@ -528,7 +528,8 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
     /**
      * Dispatch control order to workstation.
      * Validates that supply order is fulfilled before dispatching.
-     * Creates workstation-specific order and changes status from CONFIRMED to ASSIGNED.
+     * Creates workstation-specific order and changes status to ASSIGNED.
+     * NOTE: Control orders skip the confirm step, so dispatch accepts PENDING or CONFIRMED status.
      */
     public AssemblyControlOrderDTO dispatchToWorkstation(Long controlOrderId) {
         @SuppressWarnings("null")
@@ -541,9 +542,9 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
             throw new RuntimeException("Cannot dispatch order - supply order not fulfilled");
         }
         
-        // Validate current status - must be CONFIRMED
-        if (!STATUS_CONFIRMED.equals(order.getStatus())) {
-            throw new RuntimeException("Cannot dispatch order with status: " + order.getStatus() + ", expected CONFIRMED");
+        // Validate current status - must be PENDING or CONFIRMED (control orders skip confirm step)
+        if (!STATUS_PENDING.equals(order.getStatus()) && !STATUS_CONFIRMED.equals(order.getStatus())) {
+            throw new RuntimeException("Cannot dispatch order with status: " + order.getStatus() + ", expected PENDING or CONFIRMED");
         }
         
         // Create workstation-specific order based on assigned workstation

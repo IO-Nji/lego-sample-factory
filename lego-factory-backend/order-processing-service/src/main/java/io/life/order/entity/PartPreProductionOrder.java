@@ -73,13 +73,13 @@ public class PartPreProductionOrder {
     private LocalDateTime actualFinishTime;
 
     // Processing specifications
-    @Column(length = 500)
+    @Column(length = 2000)
     private String processingOperations; // Drilling, cutting, machining details
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String qualityChecks;
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String operatorNotes;
 
     // Audit fields
