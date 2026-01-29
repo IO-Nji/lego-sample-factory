@@ -630,7 +630,7 @@ if [ "$FA_ORDER_ID" != "null" ] && [ -n "$FA_ORDER_ID" ] && [ "$FA_STATUS" != "S
     
     if [ "$FA_STATUS" == "PENDING" ]; then
         print_step "Confirm Final Assembly order"
-        FA_CONFIRM=$(curl -s -X POST "$BASE_URL/final-assembly-orders/$FA_ORDER_ID/confirm" \
+        FA_CONFIRM=$(curl -s -X PUT "$BASE_URL/final-assembly-orders/$FA_ORDER_ID/confirm" \
             -H "Authorization: Bearer $TOKEN_FA")
         FA_STATUS=$(echo $FA_CONFIRM | jq -r '.status')
         
