@@ -184,7 +184,7 @@ function AssemblyControlOrderCard({
         } else if (hasFulfilledSupply) {
           // Step 4: Supply fulfilled - can dispatch to workstation
           actions.push({
-            label: '🚀 Dispatch to Workstation',
+            label: '🚀 Dispatch',
             variant: 'success',
             size: 'small',
             onClick: () => onDispatch(order.id),

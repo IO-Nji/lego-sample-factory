@@ -4,8 +4,14 @@ import io.life.order.dto.ProductionControlOrderDTO;
 import io.life.order.dto.SupplyOrderDTO;
 import io.life.order.dto.SupplyOrderItemDTO;
 import io.life.order.dto.request.ProductionControlOrderCreateRequest;
+import io.life.order.entity.InjectionMoldingOrder;
+import io.life.order.entity.PartFinishingOrder;
+import io.life.order.entity.PartPreProductionOrder;
 import io.life.order.entity.ProductionControlOrder;
 import io.life.order.entity.SupplyOrder;
+import io.life.order.repository.InjectionMoldingOrderRepository;
+import io.life.order.repository.PartFinishingOrderRepository;
+import io.life.order.repository.PartPreProductionOrderRepository;
 import io.life.order.repository.ProductionControlOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +45,9 @@ public class ProductionControlOrderService implements WorkstationOrderOperations
     private final SupplyOrderService supplyOrderService;
     private final InventoryService inventoryService;
     private final SimALNotificationService simalNotificationService;
+    private final InjectionMoldingOrderRepository injectionMoldingOrderRepository;
+    private final PartPreProductionOrderRepository partPreProductionOrderRepository;
+    private final PartFinishingOrderRepository partFinishingOrderRepository;
 
     @Value("${modules.supermarket.workstation.id:8}")
     private Long modulesSupermarketWorkstationId;
@@ -46,11 +55,17 @@ public class ProductionControlOrderService implements WorkstationOrderOperations
     public ProductionControlOrderService(ProductionControlOrderRepository repository, 
                                         SupplyOrderService supplyOrderService,
                                         InventoryService inventoryService,
-                                        SimALNotificationService simalNotificationService) {
+                                        SimALNotificationService simalNotificationService,
+                                        InjectionMoldingOrderRepository injectionMoldingOrderRepository,
+                                        PartPreProductionOrderRepository partPreProductionOrderRepository,
+                                        PartFinishingOrderRepository partFinishingOrderRepository) {
         this.repository = repository;
         this.supplyOrderService = supplyOrderService;
         this.inventoryService = inventoryService;
         this.simalNotificationService = simalNotificationService;
+        this.injectionMoldingOrderRepository = injectionMoldingOrderRepository;
+        this.partPreProductionOrderRepository = partPreProductionOrderRepository;
+        this.partFinishingOrderRepository = partFinishingOrderRepository;
     }
 
     /**
@@ -465,7 +480,7 @@ public class ProductionControlOrderService implements WorkstationOrderOperations
     /**
      * Dispatch control order to workstation.
      * Validates that supply order is fulfilled before dispatching.
-     * Changes status from CONFIRMED to ASSIGNED (ready for workstation to start).
+     * Creates workstation-specific order and changes status from CONFIRMED to ASSIGNED.
      */
     public ProductionControlOrderDTO dispatchToWorkstation(Long controlOrderId) {
         @SuppressWarnings("null")
@@ -483,15 +498,119 @@ public class ProductionControlOrderService implements WorkstationOrderOperations
             throw new RuntimeException("Cannot dispatch order with status: " + order.getStatus() + ", expected CONFIRMED");
         }
         
+        // Create workstation-specific order based on assigned workstation
+        createWorkstationOrder(order);
+        
         // Update status to ASSIGNED (workstation can now start)
         order.setStatus(STATUS_ASSIGNED);
         order.setUpdatedAt(LocalDateTime.now());
         
         ProductionControlOrder saved = repository.save(order);
-        logger.info("Dispatched production control order {} to workstation {}", 
+        logger.info("Dispatched production control order {} to workstation {} - workstation order created", 
                     order.getControlOrderNumber(), order.getAssignedWorkstationId());
         
         return mapToDTO(saved);
+    }
+
+    /**
+     * Create a workstation-specific order based on the assigned workstation.
+     * WS-1: InjectionMoldingOrder
+     * WS-2: PartPreProductionOrder
+     * WS-3: PartFinishingOrder
+     */
+    private void createWorkstationOrder(ProductionControlOrder controlOrder) {
+        Long workstationId = controlOrder.getAssignedWorkstationId();
+        
+        switch (workstationId.intValue()) {
+            case 1 -> createInjectionMoldingOrder(controlOrder);
+            case 2 -> createPartPreProductionOrder(controlOrder);
+            case 3 -> createPartFinishingOrder(controlOrder);
+            default -> logger.warn("Unknown manufacturing workstation ID: {} for control order {}", 
+                                   workstationId, controlOrder.getControlOrderNumber());
+        }
+    }
+
+    /**
+     * Create an Injection Molding order for WS-1.
+     */
+    private void createInjectionMoldingOrder(ProductionControlOrder controlOrder) {
+        String orderNumber = "IMO-" + controlOrder.getControlOrderNumber();
+        
+        InjectionMoldingOrder wsOrder = InjectionMoldingOrder.builder()
+                .orderNumber(orderNumber)
+                .productionControlOrderId(controlOrder.getId())
+                .workstationId(1L)
+                .outputPartId(controlOrder.getItemId() != null ? controlOrder.getItemId() : 0L)
+                .outputPartName(controlOrder.getProductionInstructions() != null ? 
+                               controlOrder.getProductionInstructions().substring(0, Math.min(50, controlOrder.getProductionInstructions().length())) : 
+                               "Part")
+                .quantity(controlOrder.getQuantity() != null ? controlOrder.getQuantity() : 1)
+                .status("PENDING")
+                .priority(controlOrder.getPriority())
+                .targetStartTime(controlOrder.getTargetStartTime())
+                .targetCompletionTime(controlOrder.getTargetCompletionTime())
+                .qualityChecks(controlOrder.getQualityCheckpoints())
+                .build();
+        
+        injectionMoldingOrderRepository.save(wsOrder);
+        logger.info("Created Injection Molding Order {} for WS-1 from control order {}", 
+                   orderNumber, controlOrder.getControlOrderNumber());
+    }
+
+    /**
+     * Create a Part Pre-Production order for WS-2.
+     */
+    private void createPartPreProductionOrder(ProductionControlOrder controlOrder) {
+        String orderNumber = "PPO-" + controlOrder.getControlOrderNumber();
+        
+        PartPreProductionOrder wsOrder = PartPreProductionOrder.builder()
+                .orderNumber(orderNumber)
+                .productionControlOrderId(controlOrder.getId())
+                .workstationId(2L)
+                .requiredPartIds("[]")
+                .outputPartId(controlOrder.getItemId() != null ? controlOrder.getItemId() : 0L)
+                .outputPartName(controlOrder.getProductionInstructions() != null ? 
+                               controlOrder.getProductionInstructions().substring(0, Math.min(50, controlOrder.getProductionInstructions().length())) : 
+                               "Part")
+                .quantity(controlOrder.getQuantity() != null ? controlOrder.getQuantity() : 1)
+                .status("PENDING")
+                .priority(controlOrder.getPriority())
+                .targetStartTime(controlOrder.getTargetStartTime())
+                .targetCompletionTime(controlOrder.getTargetCompletionTime())
+                .qualityChecks(controlOrder.getQualityCheckpoints())
+                .build();
+        
+        partPreProductionOrderRepository.save(wsOrder);
+        logger.info("Created Part Pre-Production Order {} for WS-2 from control order {}", 
+                   orderNumber, controlOrder.getControlOrderNumber());
+    }
+
+    /**
+     * Create a Part Finishing order for WS-3.
+     */
+    private void createPartFinishingOrder(ProductionControlOrder controlOrder) {
+        String orderNumber = "PFO-" + controlOrder.getControlOrderNumber();
+        
+        PartFinishingOrder wsOrder = PartFinishingOrder.builder()
+                .orderNumber(orderNumber)
+                .productionControlOrderId(controlOrder.getId())
+                .workstationId(3L)
+                .requiredPartIds("[]")
+                .outputPartId(controlOrder.getItemId() != null ? controlOrder.getItemId() : 0L)
+                .outputPartName(controlOrder.getProductionInstructions() != null ? 
+                               controlOrder.getProductionInstructions().substring(0, Math.min(50, controlOrder.getProductionInstructions().length())) : 
+                               "Part")
+                .quantity(controlOrder.getQuantity() != null ? controlOrder.getQuantity() : 1)
+                .status("PENDING")
+                .priority(controlOrder.getPriority())
+                .targetStartTime(controlOrder.getTargetStartTime())
+                .targetCompletionTime(controlOrder.getTargetCompletionTime())
+                .qualityChecks(controlOrder.getQualityCheckpoints())
+                .build();
+        
+        partFinishingOrderRepository.save(wsOrder);
+        logger.info("Created Part Finishing Order {} for WS-3 from control order {}", 
+                   orderNumber, controlOrder.getControlOrderNumber());
     }
 
     /**

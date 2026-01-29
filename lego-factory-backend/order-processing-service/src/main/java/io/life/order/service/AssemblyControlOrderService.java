@@ -6,8 +6,14 @@ import io.life.order.dto.SupplyOrderItemDTO;
 import io.life.order.dto.request.AssemblyControlOrderCreateRequest;
 import io.life.order.entity.AssemblyControlOrder;
 import io.life.order.entity.CustomerOrder;
+import io.life.order.entity.FinalAssemblyOrder;
+import io.life.order.entity.GearAssemblyOrder;
+import io.life.order.entity.MotorAssemblyOrder;
 import io.life.order.repository.AssemblyControlOrderRepository;
 import io.life.order.repository.CustomerOrderRepository;
+import io.life.order.repository.FinalAssemblyOrderRepository;
+import io.life.order.repository.GearAssemblyOrderRepository;
+import io.life.order.repository.MotorAssemblyOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +46,9 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
     private final InventoryService inventoryService;
     private final CustomerOrderRepository customerOrderRepository;
     private final SimALNotificationService simalNotificationService;
+    private final GearAssemblyOrderRepository gearAssemblyOrderRepository;
+    private final MotorAssemblyOrderRepository motorAssemblyOrderRepository;
+    private final FinalAssemblyOrderRepository finalAssemblyOrderRepository;
 
     @Value("${modules.supermarket.workstation.id:8}")
     private Long modulesSupermarketWorkstationId;
@@ -51,12 +60,18 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
                                       SupplyOrderService supplyOrderService,
                                       InventoryService inventoryService,
                                       CustomerOrderRepository customerOrderRepository,
-                                      SimALNotificationService simalNotificationService) {
+                                      SimALNotificationService simalNotificationService,
+                                      GearAssemblyOrderRepository gearAssemblyOrderRepository,
+                                      MotorAssemblyOrderRepository motorAssemblyOrderRepository,
+                                      FinalAssemblyOrderRepository finalAssemblyOrderRepository) {
         this.repository = repository;
         this.supplyOrderService = supplyOrderService;
         this.inventoryService = inventoryService;
         this.customerOrderRepository = customerOrderRepository;
         this.simalNotificationService = simalNotificationService;
+        this.gearAssemblyOrderRepository = gearAssemblyOrderRepository;
+        this.motorAssemblyOrderRepository = motorAssemblyOrderRepository;
+        this.finalAssemblyOrderRepository = finalAssemblyOrderRepository;
     }
 
     /**
@@ -513,7 +528,7 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
     /**
      * Dispatch control order to workstation.
      * Validates that supply order is fulfilled before dispatching.
-     * Changes status from CONFIRMED to ASSIGNED (ready for workstation to start).
+     * Creates workstation-specific order and changes status from CONFIRMED to ASSIGNED.
      */
     public AssemblyControlOrderDTO dispatchToWorkstation(Long controlOrderId) {
         @SuppressWarnings("null")
@@ -531,15 +546,113 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
             throw new RuntimeException("Cannot dispatch order with status: " + order.getStatus() + ", expected CONFIRMED");
         }
         
+        // Create workstation-specific order based on assigned workstation
+        createWorkstationOrder(order);
+        
         // Update status to ASSIGNED (workstation can now start)
         order.setStatus(STATUS_ASSIGNED);
         order.setUpdatedAt(LocalDateTime.now());
         
         AssemblyControlOrder saved = repository.save(order);
-        logger.info("Dispatched assembly control order {} to workstation {}", 
+        logger.info("Dispatched assembly control order {} to workstation {} - workstation order created", 
                     order.getControlOrderNumber(), order.getAssignedWorkstationId());
         
         return mapToDTO(saved);
+    }
+
+    /**
+     * Create a workstation-specific order based on the assigned workstation.
+     * WS-4: GearAssemblyOrder
+     * WS-5: MotorAssemblyOrder
+     * WS-6: FinalAssemblyOrder
+     */
+    private void createWorkstationOrder(AssemblyControlOrder controlOrder) {
+        Long workstationId = controlOrder.getAssignedWorkstationId();
+        
+        switch (workstationId.intValue()) {
+            case 4 -> createGearAssemblyOrder(controlOrder);
+            case 5 -> createMotorAssemblyOrder(controlOrder);
+            case 6 -> createFinalAssemblyOrder(controlOrder);
+            default -> logger.warn("Unknown assembly workstation ID: {} for control order {}", 
+                                   workstationId, controlOrder.getControlOrderNumber());
+        }
+    }
+
+    /**
+     * Create a Gear Assembly order for WS-4.
+     */
+    private void createGearAssemblyOrder(AssemblyControlOrder controlOrder) {
+        String orderNumber = "GAO-" + controlOrder.getControlOrderNumber();
+        
+        GearAssemblyOrder wsOrder = GearAssemblyOrder.builder()
+                .orderNumber(orderNumber)
+                .assemblyControlOrderId(controlOrder.getId())
+                .workstationId(4L)
+                .requiredPartIds("[]")
+                .outputModuleId(controlOrder.getItemId() != null ? controlOrder.getItemId() : 0L)
+                .outputModuleName(controlOrder.getAssemblyInstructions() != null ? 
+                                 controlOrder.getAssemblyInstructions().substring(0, Math.min(50, controlOrder.getAssemblyInstructions().length())) : 
+                                 "Gear Module")
+                .quantity(controlOrder.getQuantity() != null ? controlOrder.getQuantity() : 1)
+                .status("PENDING")
+                .priority(controlOrder.getPriority())
+                .targetStartTime(controlOrder.getTargetStartTime())
+                .targetCompletionTime(controlOrder.getTargetCompletionTime())
+                .assemblyInstructions(controlOrder.getAssemblyInstructions())
+                .build();
+        
+        gearAssemblyOrderRepository.save(wsOrder);
+        logger.info("Created Gear Assembly Order {} for WS-4 from control order {}", 
+                   orderNumber, controlOrder.getControlOrderNumber());
+    }
+
+    /**
+     * Create a Motor Assembly order for WS-5.
+     */
+    private void createMotorAssemblyOrder(AssemblyControlOrder controlOrder) {
+        String orderNumber = "MAO-" + controlOrder.getControlOrderNumber();
+        
+        MotorAssemblyOrder wsOrder = MotorAssemblyOrder.builder()
+                .orderNumber(orderNumber)
+                .assemblyControlOrderId(controlOrder.getId())
+                .workstationId(5L)
+                .requiredPartIds("[]")
+                .outputModuleId(controlOrder.getItemId() != null ? controlOrder.getItemId() : 0L)
+                .outputModuleName(controlOrder.getAssemblyInstructions() != null ? 
+                                 controlOrder.getAssemblyInstructions().substring(0, Math.min(50, controlOrder.getAssemblyInstructions().length())) : 
+                                 "Motor Module")
+                .quantity(controlOrder.getQuantity() != null ? controlOrder.getQuantity() : 1)
+                .status("PENDING")
+                .priority(controlOrder.getPriority())
+                .targetStartTime(controlOrder.getTargetStartTime())
+                .targetCompletionTime(controlOrder.getTargetCompletionTime())
+                .assemblyInstructions(controlOrder.getAssemblyInstructions())
+                .build();
+        
+        motorAssemblyOrderRepository.save(wsOrder);
+        logger.info("Created Motor Assembly Order {} for WS-5 from control order {}", 
+                   orderNumber, controlOrder.getControlOrderNumber());
+    }
+
+    /**
+     * Create a Final Assembly order for WS-6.
+     */
+    private void createFinalAssemblyOrder(AssemblyControlOrder controlOrder) {
+        String orderNumber = "FAO-" + controlOrder.getControlOrderNumber();
+        
+        FinalAssemblyOrder wsOrder = new FinalAssemblyOrder();
+        wsOrder.setOrderNumber(orderNumber);
+        wsOrder.setAssemblyControlOrderId(controlOrder.getId());
+        wsOrder.setWorkstationId(6L);
+        wsOrder.setOutputProductId(controlOrder.getItemId() != null ? controlOrder.getItemId() : 0L);
+        wsOrder.setOutputQuantity(controlOrder.getQuantity() != null ? controlOrder.getQuantity() : 1);
+        wsOrder.setOrderDate(LocalDateTime.now());
+        wsOrder.setStatus("PENDING");
+        wsOrder.setNotes(controlOrder.getAssemblyInstructions());
+        
+        finalAssemblyOrderRepository.save(wsOrder);
+        logger.info("Created Final Assembly Order {} for WS-6 from control order {}", 
+                   orderNumber, controlOrder.getControlOrderNumber());
     }
 
     /**
