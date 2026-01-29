@@ -148,6 +148,7 @@ function ProductionControlOrderCard({
   }
 
   // Determine which actions to show based on order status and supply order state
+  // TAXONOMY: Confirm=acknowledge, Request=ask for parts, Dispatch=send to workstation, Start/Complete=work actions
   const getActions = () => {
     const status = order.status;
     const actions = [];
@@ -184,14 +185,14 @@ function ProductionControlOrderCard({
         } else if (hasFulfilledSupply) {
           // Supply fulfilled - can dispatch to workstation
           actions.push({
-            label: '🚀 Dispatch',
+            label: '→ Dispatch',
             variant: 'success',
             size: 'small',
             onClick: () => onDispatch(order.id),
             show: !!onDispatch
           });
           actions.push({
-            label: '📋 View Supply Order',
+            label: 'View Supply',
             variant: 'outline',
             size: 'small',
             onClick: () => onViewDetails({ ...order, supplyOrders }),
@@ -200,14 +201,14 @@ function ProductionControlOrderCard({
         } else if (hasActiveSupply) {
           // Waiting for supply order to be fulfilled
           actions.push({
-            label: '⏳ Awaiting Parts...',
+            label: '⏳ Awaiting...',
             variant: 'warning',
             size: 'small',
             disabled: true,
             show: true
           });
           actions.push({
-            label: '📋 View Supply Order',
+            label: 'View Supply',
             variant: 'outline',
             size: 'small',
             onClick: () => onViewDetails({ ...order, supplyOrders }),
@@ -216,7 +217,7 @@ function ProductionControlOrderCard({
         } else {
           // No supply order yet - request parts
           actions.push({
-            label: '📦 Request Parts',
+            label: '↓ Request',
             variant: 'primary',
             size: 'small',
             onClick: () => onRequestParts(order),
@@ -235,7 +236,7 @@ function ProductionControlOrderCard({
       case 'ASSIGNED':
         // Step 5: Order dispatched to workstation - workstation can start
         actions.push({
-          label: '▶️ Start Production',
+          label: '▶ Start',
           variant: 'success',
           size: 'small',
           onClick: () => onStart(order.id),
@@ -253,14 +254,14 @@ function ProductionControlOrderCard({
       case 'IN_PROGRESS':
         // Step 6: Work in progress - can complete or halt
         actions.push({
-          label: '✅ Complete Production',
+          label: '✓ Complete',
           variant: 'primary',
           size: 'small',
           onClick: () => onComplete(order.id),
           show: !!onComplete
         });
         actions.push({
-          label: '⏸️ Halt',
+          label: '⏸ Halt',
           variant: 'warning',
           size: 'small',
           onClick: () => onHalt(order.id),
@@ -277,7 +278,7 @@ function ProductionControlOrderCard({
       
       case 'HALTED':
         actions.push({
-          label: 'Resume',
+          label: '▶ Resume',
           variant: 'success',
           size: 'small',
           onClick: () => onStart(order.id),

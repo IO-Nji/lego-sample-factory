@@ -79,20 +79,15 @@ function WarehouseOrderCard({
   };
 
   // Map action labels to semantic button variants
-  // Variants: confirm (blue), process (orange), fulfill (green), complete (teal), submit (purple), reject (pink), approve (green), hold (gray)
+  // TAXONOMY: Confirm=acknowledge, Fulfill=release from stock (debits), Request=ask for production
   const getActionVariant = (actionLabel) => {
     const variantMap = {
-      'Confirm': 'confirm',
+      '✓ Confirm': 'confirm',
       'Confirming...': 'confirm',
-      'Fulfill': 'fulfill',
+      '✓ Fulfill': 'fulfill',
       'Fulfilling...': 'fulfill',
-      'Order Production': 'process',
+      '↓ Request': 'process',
       'Cancel': 'danger',
-      'Complete': 'complete',
-      'Submit': 'submit',
-      'Reject': 'reject',
-      'Approve': 'approve',
-      'Hold': 'hold',
       '🟢 LOW': 'success',
       '🔵 NORMAL': 'primary',
       '🟠 HIGH': 'warning',
@@ -142,8 +137,8 @@ function WarehouseOrderCard({
     switch(status) {
       case 'PENDING':
         actions.push({
-          label: isConfirming ? 'Confirming...' : 'Confirm',
-          variant: getActionVariant('Confirm'),
+          label: isConfirming ? 'Confirming...' : '✓ Confirm',
+          variant: getActionVariant('✓ Confirm'),
           size: 'small',
           onClick: () => onConfirm(order.id, order.orderNumber || order.warehouseOrderNumber),
           show: !!onConfirm
@@ -193,16 +188,16 @@ function WarehouseOrderCard({
           // Normal fulfillment or production mode based on needsProduction or triggerScenario
           if (needsProduction && onCreateProductionOrder) {
             actions.push({
-              label: '🏭 Order Production',
-              variant: getActionVariant('Order Production'),
+              label: '↓ Request',
+              variant: getActionVariant('↓ Request'),
               size: 'small',
               onClick: () => onCreateProductionOrder(order),
               show: true
             });
           } else {
             actions.push({
-              label: isProcessing ? 'Fulfilling...' : 'Fulfill',
-              variant: getActionVariant('Fulfill'),
+              label: isProcessing ? 'Fulfilling...' : '✓ Fulfill',
+              variant: getActionVariant('✓ Fulfill'),
               size: 'small',
               onClick: () => onFulfill(order.id, order.warehouseOrderNumber),
               show: !!onFulfill
@@ -253,16 +248,16 @@ function WarehouseOrderCard({
           // Normal fulfillment or production mode
           if (needsProduction && onCreateProductionOrder) {
             actions.push({
-              label: '🏭 Order Production',
-              variant: getActionVariant('Order Production'),
+              label: '↓ Request',
+              variant: getActionVariant('↓ Request'),
               size: 'small',
               onClick: () => onCreateProductionOrder(order),
               show: true
             });
           } else {
             actions.push({
-              label: isProcessing ? 'Fulfilling...' : 'Fulfill',
-              variant: getActionVariant('Fulfill'),
+              label: isProcessing ? 'Fulfilling...' : '✓ Fulfill',
+              variant: getActionVariant('✓ Fulfill'),
               size: 'small',
               onClick: () => onFulfill(order.id, order.warehouseOrderNumber),
               show: !!onFulfill
@@ -294,8 +289,8 @@ function WarehouseOrderCard({
         // Production completed, modules are now available in Modules Supermarket
         // Show Fulfill button to proceed with creating Final Assembly orders
         actions.push({
-          label: isProcessing ? 'Fulfilling...' : '✅ Fulfill (Modules Ready)',
-          variant: getActionVariant('Fulfill'),
+          label: isProcessing ? 'Fulfilling...' : '✓ Fulfill',
+          variant: getActionVariant('✓ Fulfill'),
           size: 'small',
           onClick: () => onFulfill(order.id, order.warehouseOrderNumber),
           show: !!onFulfill

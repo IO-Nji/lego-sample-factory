@@ -105,6 +105,7 @@ function WorkstationOrderCard({
   }
 
   // Determine which actions to show based on order status
+  // TAXONOMY: Start=begin work, Complete=finish work, Halt/Resume=pause/resume work
   const getActions = () => {
     const status = order.status;
     const actions = [];
@@ -114,7 +115,7 @@ function WorkstationOrderCard({
       case 'WAITING_FOR_PARTS':
         // Ready to start work
         actions.push({
-          label: isProcessing ? '⏳ Processing...' : '▶️ Start',
+          label: isProcessing ? 'Starting...' : '▶ Start',
           variant: 'success',
           size: 'small',
           onClick: () => onStart(order.id, order.orderNumber),
@@ -126,7 +127,7 @@ function WorkstationOrderCard({
       case 'IN_PROGRESS':
         // Work in progress - can complete or halt
         actions.push({
-          label: isProcessing ? '⏳ Processing...' : '✅ Complete',
+          label: isProcessing ? 'Completing...' : '✓ Complete',
           variant: 'primary',
           size: 'small',
           onClick: () => onComplete(order.id, order.orderNumber),
@@ -135,7 +136,7 @@ function WorkstationOrderCard({
         });
         if (onHalt) {
           actions.push({
-            label: '⏸️ Halt',
+            label: '⏸ Halt',
             variant: 'warning',
             size: 'small',
             onClick: () => onHalt(order.id),
@@ -148,7 +149,7 @@ function WorkstationOrderCard({
       case 'HALTED':
         // Halted - can resume
         actions.push({
-          label: '▶️ Resume',
+          label: '▶ Resume',
           variant: 'success',
           size: 'small',
           onClick: () => (onResume || onStart)(order.id, order.orderNumber),

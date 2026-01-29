@@ -16,7 +16,7 @@ import BaseOrderCard from './BaseOrderCard';
  * 
  * Button Sequence:
  * - PENDING: Show "✓ Confirm" button
- * - CONFIRMED: Show "✅ Fulfill Order" and "❌ Reject" buttons
+ * - CONFIRMED: Show "✓ Fulfill" and "✗ Reject" buttons
  * - FULFILLED/REJECTED/CANCELLED: No action buttons
  * 
  * @param {Object} order - Supply order object
@@ -114,6 +114,7 @@ function SupplyOrderCard({
   })}`;
 
   // Determine which actions to show based on order status
+  // TAXONOMY: Confirm=acknowledge, Fulfill=release items (debits stock), Reject=decline order
   const getActions = () => {
     const status = order.status;
     const actions = [];
@@ -133,14 +134,14 @@ function SupplyOrderCard({
       case 'CONFIRMED':
         // Step 2: After confirmation, can fulfill or reject
         actions.push({
-          label: '✅ Fulfill Order',
+          label: '✓ Fulfill',
           variant: 'success',
           size: 'small',
           onClick: () => onFulfill(order.id),
           show: !!onFulfill
         });
         actions.push({
-          label: '❌ Reject',
+          label: '✗ Reject',
           variant: 'danger',
           size: 'small',
           onClick: () => onReject(order.id),

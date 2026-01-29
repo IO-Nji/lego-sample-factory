@@ -55,17 +55,17 @@ function ProductionOrderCard({
   };
 
   // Map action labels to semantic button variants for consistent coloring
+  // TAXONOMY: Confirm=acknowledge, Schedule=plan, Dispatch=send to stations, Complete=finish work
   const getActionVariant = (actionLabel) => {
     const variantMap = {
       '✓ Confirm': 'confirm',
       'Confirm': 'confirm',
       'Cancel': 'danger',
-      '📅 Schedule': 'process',
+      '⏱ Schedule': 'process',
       'Scheduling...': 'process',
-      '📤 Submit': 'submit',
-      'Complete': 'complete',
+      '→ Dispatch': 'submit',
+      'Dispatching...': 'submit',
       '✓ Complete': 'complete',
-      '✅ Complete': 'complete',
       'Completing...': 'complete'
     };
     return variantMap[actionLabel] || 'primary';  // Fallback to primary
@@ -142,8 +142,8 @@ function ProductionOrderCard({
       case 'CONFIRMED':
         // Step 2: Schedule with SimAL (shows preview popup before submitting)
         actions.push({
-          label: isScheduling ? 'Scheduling...' : '📅 Schedule',
-          variant: getActionVariant('📅 Schedule'),
+          label: isScheduling ? 'Scheduling...' : '⏱ Schedule',
+          variant: getActionVariant('⏱ Schedule'),
           size: 'small',
           onClick: () => onSchedule(order),
           show: !!onSchedule
@@ -160,8 +160,8 @@ function ProductionOrderCard({
       case 'SUBMITTED':
         // Legacy status - treat like CONFIRMED for backward compatibility
         actions.push({
-          label: isScheduling ? 'Scheduling...' : '📅 Schedule',
-          variant: getActionVariant('📅 Schedule'),
+          label: isScheduling ? 'Scheduling...' : '⏱ Schedule',
+          variant: getActionVariant('⏱ Schedule'),
           size: 'small',
           onClick: () => onSchedule(order),
           show: !!onSchedule
@@ -176,10 +176,10 @@ function ProductionOrderCard({
         break;
       
       case 'SCHEDULED':
-        // Step 3: Submit/Dispatch (creates control orders)
+        // Step 3: Dispatch to control stations (creates control orders)
         actions.push({
-          label: '📤 Submit',
-          variant: getActionVariant('📤 Submit'),
+          label: '→ Dispatch',
+          variant: getActionVariant('→ Dispatch'),
           size: 'small',
           onClick: () => onStart(order.id),
           show: !!onStart
@@ -197,8 +197,8 @@ function ProductionOrderCard({
         // Control orders created, waiting for workstations to complete
         // Show Complete button so Production Planning can mark order complete after control orders finish
         actions.push({
-          label: '✅ Complete',
-          variant: getActionVariant('✅ Complete'),
+          label: '✓ Complete',
+          variant: getActionVariant('✓ Complete'),
           size: 'small',
           onClick: () => onComplete(order.id),
           show: !!onComplete
@@ -207,8 +207,8 @@ function ProductionOrderCard({
       
       case 'IN_PRODUCTION':
         actions.push({
-          label: '✅ Complete',
-          variant: getActionVariant('✅ Complete'),
+          label: '✓ Complete',
+          variant: getActionVariant('✓ Complete'),
           size: 'small',
           onClick: () => onComplete(order.id),
           show: !!onComplete

@@ -56,6 +56,7 @@ function CustomerOrderCard({
     }
 
     // Default action buttons based on order status
+    // TAXONOMY: Confirm=acknowledge, Fulfill=release stock, Request=create warehouse order, Complete=finish
     switch (resolvedStatus) {
       case 'PENDING':
         return (
@@ -66,7 +67,7 @@ function CustomerOrderCard({
             disabled={isProcessing}
             data-action="confirm"
           >
-            <span>Confirm</span>
+            <span>✓ Confirm</span>
           </button>
         );
       case 'CONFIRMED':
@@ -80,7 +81,7 @@ function CustomerOrderCard({
               disabled={isProcessing}
               data-action="fulfill"
             >
-              <span>Fulfill</span>
+              <span>✓ Fulfill</span>
             </button>
           );
         } else {
@@ -92,7 +93,7 @@ function CustomerOrderCard({
               disabled={isProcessing}
               data-action="process"
             >
-              <span>Process</span>
+              <span>↓ Request</span>
             </button>
           );
         }
@@ -105,7 +106,7 @@ function CustomerOrderCard({
             disabled={!canComplete || isProcessing}
             data-action="complete"
           >
-            <span>{canComplete ? 'Complete' : 'Pending...'}</span>
+            <span>{canComplete ? '✓ Complete' : 'Pending...'}</span>
           </button>
         );
       case 'COMPLETED':
