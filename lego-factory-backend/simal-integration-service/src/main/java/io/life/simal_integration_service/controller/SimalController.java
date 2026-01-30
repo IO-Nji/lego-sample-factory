@@ -6,6 +6,11 @@ import io.life.simal_integration_service.entity.ScheduledTask;
 import io.life.simal_integration_service.repository.ScheduledOrderRepository;
 import io.life.simal_integration_service.repository.ScheduledTaskRepository;
 import io.life.simal_integration_service.service.ControlOrderIntegrationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +33,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/simal")
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:1011", "http://localhost"})
+@Tag(name = "SimAL Scheduling", description = "Production scheduling and Gantt chart integration for factory execution")
 public class SimalController {
 
     private static final Logger log = LoggerFactory.getLogger(SimalController.class);
@@ -53,13 +59,12 @@ public class SimalController {
         this.restTemplate = restTemplate;
     }
 
-    /**
-     * Submit a production order for scheduling with database persistence.
-     * Generates a schedule with realistic task assignments and saves to database.
-     *
-     * @param request Production order request
-     * @return Scheduled order response with task assignments
-     */
+    @Operation(summary = "Submit production order for scheduling",
+               description = "Generates a schedule with realistic task assignments and saves to database")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Schedule created with task assignments"),
+        @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
     @PostMapping("/production-order")
     public ResponseEntity<SimalScheduledOrderResponse> submitProductionOrder(
             @RequestBody SimalProductionOrderRequest request) {
@@ -130,21 +135,16 @@ public class SimalController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Alias endpoint for scheduling production: POST /api/simal/schedule
-     * Behaves identically to /api/simal/production-order.
-     */
+    @Operation(summary = "Schedule production (alias)", description = "Alias for /production-order endpoint")
+    @ApiResponse(responseCode = "201", description = "Schedule created")
     @PostMapping("/schedule")
     public ResponseEntity<SimalScheduledOrderResponse> schedule(
             @RequestBody SimalProductionOrderRequest request) {
         return submitProductionOrder(request);
     }
 
-    /**
-     * Retrieve all scheduled orders from database.
-     *
-     * @return List of all scheduled orders
-     */
+    @Operation(summary = "Get all scheduled orders", description = "Retrieve all scheduled orders from database")
+    @ApiResponse(responseCode = "200", description = "List of scheduled orders")
     @GetMapping("/scheduled-orders")
     public ResponseEntity<List<SimalScheduledOrderResponse>> getScheduledOrders() {
         List<ScheduledOrder> orders = scheduledOrderRepository.findAllByOrderByCreatedAtDesc();
@@ -157,15 +157,14 @@ public class SimalController {
         return ResponseEntity.ok(responses);
     }
 
-    /**
-     * Retrieve a specific scheduled order by ID from database.
-     *
-     * @param scheduleId Schedule ID
-     * @return Scheduled order or 404 if not found
-     */
+    @Operation(summary = "Get scheduled order by ID", description = "Retrieve a specific scheduled order by schedule ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Scheduled order found"),
+        @ApiResponse(responseCode = "404", description = "Schedule not found")
+    })
     @GetMapping("/scheduled-orders/{scheduleId}")
     public ResponseEntity<SimalScheduledOrderResponse> getScheduledOrder(
-            @PathVariable String scheduleId) {
+            @Parameter(description = "Schedule ID") @PathVariable String scheduleId) {
         log.info("Fetching schedule from database: {}", scheduleId);
 
         Optional<ScheduledOrder> orderOpt = scheduledOrderRepository.findByScheduleId(scheduleId);
@@ -177,13 +176,12 @@ public class SimalController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Mock endpoint to update production time and status for a task.
-     * Updates the in-memory schedule with actual execution time.
-     *
-     * @param request Update request with actual times and status
-     * @return Updated scheduled order response
-     */
+    @Operation(summary = "Update task production time", 
+               description = "Update actual execution time and status for a scheduled task")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Task updated"),
+        @ApiResponse(responseCode = "404", description = "Schedule or task not found")
+    })
     @PostMapping("/update-time")
     public ResponseEntity<SimalScheduledOrderResponse> updateProductionTime(
             @RequestBody SimalUpdateTimeRequest request) {
@@ -242,15 +240,14 @@ public class SimalController {
         return ResponseEntity.ok(convertToResponse(order));
     }
 
-    /**
-     * Mock endpoint to retrieve scheduled orders for a specific customer order.
-     *
-     * @param orderNumber Customer order number
-     * @return Scheduled order or 404 if not found
-     */
+    @Operation(summary = "Get schedule by order number", description = "Retrieve scheduled order by customer/production order number")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Schedule found"),
+        @ApiResponse(responseCode = "404", description = "No schedule found for order")
+    })
     @GetMapping("/scheduled-orders/order/{orderNumber}")
     public ResponseEntity<SimalScheduledOrderResponse> getScheduleByOrderNumber(
-            @PathVariable String orderNumber) {
+            @Parameter(description = "Order number (e.g., PO-001)") @PathVariable String orderNumber) {
         log.info("Fetching schedule for order: {}", orderNumber);
 
         ScheduledOrder order = scheduledOrderRepository.findByOrderNumber(orderNumber)

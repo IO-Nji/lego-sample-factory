@@ -3,6 +3,11 @@ package io.life.order.controller;
 import io.life.order.dto.SystemConfigurationDTO;
 import io.life.order.entity.SystemConfiguration;
 import io.life.order.service.SystemConfigService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,27 +22,18 @@ import java.util.stream.Collectors;
  * 
  * REST API for managing system configurations.
  * Admin-only endpoints for viewing and modifying system settings.
- * 
- * Endpoints:
- * - GET  /api/config                    - List all configurations
- * - GET  /api/config/{key}              - Get specific configuration
- * - PUT  /api/config/{key}              - Update configuration value
- * - GET  /api/config/category/{cat}     - Get configurations by category
- * - GET  /api/config/scenario4/threshold - Get Scenario 4 threshold (convenience)
- * - PUT  /api/config/scenario4/threshold - Set Scenario 4 threshold (convenience)
- * - POST /api/config/cache/refresh      - Refresh configuration cache
  */
 @RestController
 @RequestMapping("/api/config")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "System Configuration", description = "Admin-only system settings and configuration management")
 public class SystemConfigController {
 
     private final SystemConfigService configService;
 
-    /**
-     * Get all system configurations.
-     */
+    @Operation(summary = "Get all configurations", description = "List all system configuration entries")
+    @ApiResponse(responseCode = "200", description = "List of configurations")
     @GetMapping
     public ResponseEntity<List<SystemConfigurationDTO>> getAllConfigurations() {
         List<SystemConfiguration> configs = configService.getAllConfigurations();
@@ -46,36 +42,40 @@ public class SystemConfigController {
                 .collect(Collectors.toList()));
     }
 
-    /**
-     * Get configurations by category.
-     */
+    @Operation(summary = "Get configurations by category", description = "Filter configurations by category")
+    @ApiResponse(responseCode = "200", description = "List of configurations in category")
     @GetMapping("/category/{category}")
-    public ResponseEntity<List<SystemConfigurationDTO>> getByCategory(@PathVariable String category) {
+    public ResponseEntity<List<SystemConfigurationDTO>> getByCategory(
+            @Parameter(description = "Configuration category (e.g., SCENARIO, SYSTEM)") @PathVariable String category) {
         List<SystemConfiguration> configs = configService.getConfigurationsByCategory(category);
         return ResponseEntity.ok(configs.stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList()));
     }
 
-    /**
-     * Get a specific configuration by key.
-     */
+    @Operation(summary = "Get configuration by key", description = "Retrieve a specific configuration value")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Configuration found"),
+        @ApiResponse(responseCode = "404", description = "Configuration not found")
+    })
     @GetMapping("/{key}")
-    public ResponseEntity<SystemConfigurationDTO> getConfiguration(@PathVariable String key) {
+    public ResponseEntity<SystemConfigurationDTO> getConfiguration(
+            @Parameter(description = "Configuration key") @PathVariable String key) {
         return configService.getConfiguration(key)
                 .map(this::mapToDTO)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * Update a configuration value.
-     * 
-     * Request body: { "value": "newValue", "updatedBy": "adminUsername" }
-     */
+    @Operation(summary = "Update configuration", description = "Update a configuration value (Admin only)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Configuration updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Configuration not found")
+    })
     @PutMapping("/{key}")
     public ResponseEntity<SystemConfigurationDTO> updateConfiguration(
-            @PathVariable String key,
+            @Parameter(description = "Configuration key") @PathVariable String key,
             @RequestBody Map<String, String> request) {
 
         String value = request.get("value");
@@ -98,11 +98,9 @@ public class SystemConfigController {
     // SCENARIO 4 CONVENIENCE ENDPOINTS
     // ========================
 
-    /**
-     * Get the current Scenario 4 lot size threshold.
-     * 
-     * Returns: { "threshold": 3, "description": "..." }
-     */
+    @Operation(summary = "Get Scenario 4 lot size threshold", 
+               description = "Get the threshold for direct production (bypassing warehouse)")
+    @ApiResponse(responseCode = "200", description = "Current threshold value")
     @GetMapping("/scenario4/threshold")
     public ResponseEntity<Map<String, Object>> getLotSizeThreshold() {
         int threshold = configService.getLotSizeThreshold();
@@ -113,11 +111,12 @@ public class SystemConfigController {
         ));
     }
 
-    /**
-     * Set the Scenario 4 lot size threshold.
-     * 
-     * Request body: { "threshold": 5, "updatedBy": "admin" }
-     */
+    @Operation(summary = "Set Scenario 4 lot size threshold", 
+               description = "Configure threshold for direct production orders")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Threshold updated"),
+        @ApiResponse(responseCode = "400", description = "Invalid threshold value")
+    })
     @PutMapping("/scenario4/threshold")
     public ResponseEntity<Map<String, Object>> setLotSizeThreshold(@RequestBody Map<String, Object> request) {
         Object thresholdObj = request.get("threshold");
@@ -153,9 +152,8 @@ public class SystemConfigController {
     // CACHE MANAGEMENT
     // ========================
 
-    /**
-     * Refresh the configuration cache.
-     */
+    @Operation(summary = "Refresh configuration cache", description = "Force reload of all cached configurations")
+    @ApiResponse(responseCode = "200", description = "Cache refreshed")
     @PostMapping("/cache/refresh")
     public ResponseEntity<Map<String, String>> refreshCache() {
         configService.refreshCache();

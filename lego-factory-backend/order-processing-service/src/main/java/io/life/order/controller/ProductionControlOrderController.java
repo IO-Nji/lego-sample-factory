@@ -8,6 +8,11 @@ import io.life.order.dto.request.NotesRequest;
 import io.life.order.dto.request.ProductionControlOrderCreateRequest;
 import io.life.order.dto.request.RequestPartsRequest;
 import io.life.order.service.ProductionControlOrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,12 +25,11 @@ import java.util.Optional;
 /**
  * REST Controller for ProductionControlOrder management.
  * Exposes endpoints for Production Control workstations to view and manage their assigned orders.
- * 
- * Error handling: Exceptions propagate to GlobalExceptionHandler for consistent responses.
  */
 @RestController
 @RequestMapping("/api/production-control-orders")
 @CrossOrigin(origins = "*", maxAge = 3600)
+@Tag(name = "Production Control Orders", description = "Production Control - Manage manufacturing orders for WS-1, WS-2, WS-3")
 public class ProductionControlOrderController {
 
     private final ProductionControlOrderService productionControlOrderService;
@@ -34,112 +38,120 @@ public class ProductionControlOrderController {
         this.productionControlOrderService = productionControlOrderService;
     }
 
-    /**
-     * Get all control orders
-     */
+    @Operation(summary = "Get all production control orders", 
+               description = "Retrieve all production control orders in the system")
+    @ApiResponse(responseCode = "200", description = "List of production control orders")
     @GetMapping
     public ResponseEntity<List<ProductionControlOrderDTO>> getAllOrders() {
         List<ProductionControlOrderDTO> orders = productionControlOrderService.getAllOrders();
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get all control orders for a workstation
-     */
+    @Operation(summary = "Get orders by workstation", 
+               description = "Retrieve production control orders assigned to a specific workstation")
+    @ApiResponse(responseCode = "200", description = "List of orders for workstation")
     @GetMapping("/workstation/{workstationId}")
     public ResponseEntity<List<ProductionControlOrderDTO>> getOrdersByWorkstation(
-            @PathVariable Long workstationId) {
+            @Parameter(description = "Workstation ID") @PathVariable Long workstationId) {
         List<ProductionControlOrderDTO> orders = productionControlOrderService.getOrdersByWorkstation(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get active (in progress) control orders for a workstation
-     */
+    @Operation(summary = "Get active orders by workstation", 
+               description = "Retrieve in-progress production control orders for a workstation")
+    @ApiResponse(responseCode = "200", description = "List of active orders")
     @GetMapping("/workstation/{workstationId}/active")
     public ResponseEntity<List<ProductionControlOrderDTO>> getActiveOrdersByWorkstation(
-            @PathVariable Long workstationId) {
+            @Parameter(description = "Workstation ID") @PathVariable Long workstationId) {
         List<ProductionControlOrderDTO> orders = productionControlOrderService.getActiveOrdersByWorkstation(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get unassigned (status=ASSIGNED) control orders for a workstation
-     */
+    @Operation(summary = "Get unassigned orders", 
+               description = "Retrieve orders with ASSIGNED status waiting to be started at a workstation")
+    @ApiResponse(responseCode = "200", description = "List of unassigned orders")
     @GetMapping("/workstation/{workstationId}/unassigned")
     public ResponseEntity<List<ProductionControlOrderDTO>> getUnassignedOrders(
-            @PathVariable Long workstationId) {
+            @Parameter(description = "Workstation ID") @PathVariable Long workstationId) {
         List<ProductionControlOrderDTO> orders = productionControlOrderService.getUnassignedOrders(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get control order by ID
-     */
+    @Operation(summary = "Get order by ID", 
+               description = "Retrieve a production control order by its ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order found"),
+        @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<ProductionControlOrderDTO> getOrderById(@PathVariable Long id) {
+    public ResponseEntity<ProductionControlOrderDTO> getOrderById(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         Optional<ProductionControlOrderDTO> order = productionControlOrderService.getOrderById(id);
         return order.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Get control order by control order number
-     */
+    @Operation(summary = "Get order by number", 
+               description = "Retrieve a production control order by its order number")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order found"),
+        @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     @GetMapping("/number/{controlOrderNumber}")
     public ResponseEntity<ProductionControlOrderDTO> getOrderByNumber(
-            @PathVariable String controlOrderNumber) {
+            @Parameter(description = "Control order number (e.g., PCO-00001)") @PathVariable String controlOrderNumber) {
         Optional<ProductionControlOrderDTO> order = productionControlOrderService.getOrderByNumber(controlOrderNumber);
         return order.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Confirm receipt of a production control order.
-     * Changes status from PENDING to CONFIRMED.
-     * This is the first step in the control order workflow.
-     */
+    @Operation(summary = "Confirm receipt", 
+               description = "Confirm receipt of a production control order (PENDING -> CONFIRMED)")
+    @ApiResponse(responseCode = "200", description = "Order confirmed")
     @PutMapping("/{id}/confirm")
-    public ResponseEntity<ProductionControlOrderDTO> confirmReceipt(@PathVariable Long id) {
+    public ResponseEntity<ProductionControlOrderDTO> confirmReceipt(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         ProductionControlOrderDTO order = productionControlOrderService.confirmReceipt(id);
         return ResponseEntity.ok(order);
     }
 
-    /**
-     * Start production on a control order
-     */
+    @Operation(summary = "Start production", 
+               description = "Start production on a control order (CONFIRMED -> IN_PROGRESS)")
+    @ApiResponse(responseCode = "200", description = "Production started")
     @PostMapping("/{id}/start")
-    public ResponseEntity<ProductionControlOrderDTO> startProduction(@PathVariable Long id) {
+    public ResponseEntity<ProductionControlOrderDTO> startProduction(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         ProductionControlOrderDTO order = productionControlOrderService.startProduction(id);
         return ResponseEntity.ok(order);
     }
 
-    /**
-     * Complete production on a control order
-     */
+    @Operation(summary = "Complete production", 
+               description = "Complete production on a control order and propagate status upward")
+    @ApiResponse(responseCode = "200", description = "Production completed")
     @PostMapping("/{id}/complete")
-    public ResponseEntity<ProductionControlOrderDTO> completeProduction(@PathVariable Long id) {
+    public ResponseEntity<ProductionControlOrderDTO> completeProduction(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         ProductionControlOrderDTO order = productionControlOrderService.completeProduction(id);
         return ResponseEntity.ok(order);
     }
 
-    /**
-     * Halt production on a control order
-     */
+    @Operation(summary = "Halt production", 
+               description = "Halt production on a control order with a reason")
+    @ApiResponse(responseCode = "200", description = "Production halted")
     @PostMapping("/{id}/halt")
     public ResponseEntity<ProductionControlOrderDTO> haltProduction(
-            @PathVariable Long id,
+            @Parameter(description = "Order ID") @PathVariable Long id,
             @RequestBody HaltRequest request) {
         ProductionControlOrderDTO order = productionControlOrderService.haltProduction(id, request.getReason());
         return ResponseEntity.ok(order);
     }
 
-    /**
-     * Update operator notes
-     */
+    @Operation(summary = "Update operator notes", 
+               description = "Update the operator notes for a control order")
+    @ApiResponse(responseCode = "200", description = "Notes updated")
     @PatchMapping("/{id}/notes")
     public ResponseEntity<ProductionControlOrderDTO> updateNotes(
-            @PathVariable Long id,
+            @Parameter(description = "Order ID") @PathVariable Long id,
             @RequestBody NotesRequest request) {
         ProductionControlOrderDTO order = productionControlOrderService.updateOperatorNotes(id, request.getNotes());
         return ResponseEntity.ok(order);

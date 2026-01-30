@@ -5,6 +5,11 @@ import io.life.order.dto.SupplyOrderDTO;
 import io.life.order.dto.request.AssemblyControlOrderCreateRequest;
 import io.life.order.dto.request.RequestPartsRequest;
 import io.life.order.service.AssemblyControlOrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +26,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/assembly-control-orders")
 @CrossOrigin(origins = "*", maxAge = 3600)
+@Tag(name = "Assembly Control Orders", description = "Assembly Control - Manage assembly orders for WS-4, WS-5, WS-6")
 public class AssemblyControlOrderController {
 
     private final AssemblyControlOrderService assemblyControlOrderService;
@@ -29,115 +35,123 @@ public class AssemblyControlOrderController {
         this.assemblyControlOrderService = assemblyControlOrderService;
     }
 
-    /**
-     * Get all control orders
-     */
+    @Operation(summary = "Get all assembly control orders", 
+               description = "Retrieve all assembly control orders in the system")
+    @ApiResponse(responseCode = "200", description = "List of assembly control orders")
     @GetMapping
     public ResponseEntity<List<AssemblyControlOrderDTO>> getAllOrders() {
         List<AssemblyControlOrderDTO> orders = assemblyControlOrderService.getAllOrders();
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get all control orders for a workstation
-     */
+    @Operation(summary = "Get orders by workstation", 
+               description = "Retrieve assembly control orders assigned to a specific workstation")
+    @ApiResponse(responseCode = "200", description = "List of orders for workstation")
     @GetMapping("/workstation/{workstationId}")
     public ResponseEntity<List<AssemblyControlOrderDTO>> getOrdersByWorkstation(
-            @PathVariable Long workstationId) {
+            @Parameter(description = "Workstation ID") @PathVariable Long workstationId) {
         List<AssemblyControlOrderDTO> orders = assemblyControlOrderService.getOrdersByWorkstation(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get active (in progress) control orders for a workstation
-     */
+    @Operation(summary = "Get active orders by workstation", 
+               description = "Retrieve in-progress assembly control orders for a workstation")
+    @ApiResponse(responseCode = "200", description = "List of active orders")
     @GetMapping("/workstation/{workstationId}/active")
     public ResponseEntity<List<AssemblyControlOrderDTO>> getActiveOrdersByWorkstation(
-            @PathVariable Long workstationId) {
+            @Parameter(description = "Workstation ID") @PathVariable Long workstationId) {
         List<AssemblyControlOrderDTO> orders = assemblyControlOrderService.getActiveOrdersByWorkstation(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get unassigned (status=ASSIGNED) control orders for a workstation
-     */
+    @Operation(summary = "Get unassigned orders", 
+               description = "Retrieve orders with ASSIGNED status waiting to be started at a workstation")
+    @ApiResponse(responseCode = "200", description = "List of unassigned orders")
     @GetMapping("/workstation/{workstationId}/unassigned")
     public ResponseEntity<List<AssemblyControlOrderDTO>> getUnassignedOrders(
-            @PathVariable Long workstationId) {
+            @Parameter(description = "Workstation ID") @PathVariable Long workstationId) {
         List<AssemblyControlOrderDTO> orders = assemblyControlOrderService.getUnassignedOrders(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get control order by ID
-     */
+    @Operation(summary = "Get order by ID", 
+               description = "Retrieve an assembly control order by its ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order found"),
+        @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<AssemblyControlOrderDTO> getOrderById(@PathVariable Long id) {
+    public ResponseEntity<AssemblyControlOrderDTO> getOrderById(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         Optional<AssemblyControlOrderDTO> order = assemblyControlOrderService.getOrderById(id);
         return order.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Get control order by control order number
-     */
+    @Operation(summary = "Get order by number", 
+               description = "Retrieve an assembly control order by its order number")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order found"),
+        @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     @GetMapping("/number/{controlOrderNumber}")
     public ResponseEntity<AssemblyControlOrderDTO> getOrderByNumber(
-            @PathVariable String controlOrderNumber) {
+            @Parameter(description = "Control order number (e.g., ACO-00001)") @PathVariable String controlOrderNumber) {
         Optional<AssemblyControlOrderDTO> order = assemblyControlOrderService.getOrderByNumber(controlOrderNumber);
         return order.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Confirm receipt of an assembly control order.
-     * Changes status from PENDING to CONFIRMED.
-     * This is the first step in the control order workflow.
-     */
+    @Operation(summary = "Confirm receipt", 
+               description = "Confirm receipt of an assembly control order (PENDING -> CONFIRMED)")
+    @ApiResponse(responseCode = "200", description = "Order confirmed")
     @PutMapping("/{id}/confirm")
-    public ResponseEntity<AssemblyControlOrderDTO> confirmReceipt(@PathVariable Long id) {
+    public ResponseEntity<AssemblyControlOrderDTO> confirmReceipt(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         AssemblyControlOrderDTO order = assemblyControlOrderService.confirmReceipt(id);
         return ResponseEntity.ok(order);
     }
 
-    /**
-     * Start assembly on a control order
-     */
+    @Operation(summary = "Start assembly", 
+               description = "Start assembly on a control order (CONFIRMED -> IN_PROGRESS)")
+    @ApiResponse(responseCode = "200", description = "Assembly started")
     @PostMapping("/{id}/start")
-    public ResponseEntity<AssemblyControlOrderDTO> startAssembly(@PathVariable Long id) {
+    public ResponseEntity<AssemblyControlOrderDTO> startAssembly(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         AssemblyControlOrderDTO order = assemblyControlOrderService.startAssembly(id);
         return ResponseEntity.ok(order);
     }
 
-    /**
-     * Update control order status
-     */
+    @Operation(summary = "Update operator notes", 
+               description = "Update the operator notes for a control order")
+    @ApiResponse(responseCode = "200", description = "Notes updated")
     @PatchMapping("/{id}/status")
     public ResponseEntity<AssemblyControlOrderDTO> updateOperatorNotes(
-            @PathVariable Long id,
-            @RequestParam String notes) {
+            @Parameter(description = "Order ID") @PathVariable Long id,
+            @Parameter(description = "Operator notes") @RequestParam String notes) {
         AssemblyControlOrderDTO order = assemblyControlOrderService.updateOperatorNotes(id, notes);
         return ResponseEntity.ok(order);
     }
 
-    /**
-     * Complete assembly on a control order
-     */
+    @Operation(summary = "Complete assembly", 
+               description = "Complete assembly on a control order and propagate status upward")
+    @ApiResponse(responseCode = "200", description = "Assembly completed")
     @PostMapping("/{id}/complete")
-    public ResponseEntity<AssemblyControlOrderDTO> completeAssembly(@PathVariable Long id) {
+    public ResponseEntity<AssemblyControlOrderDTO> completeAssembly(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         AssemblyControlOrderDTO order = assemblyControlOrderService.completeAssembly(id);
         return ResponseEntity.ok(order);
     }
 
-    /**
-     * Update defects found during assembly
-     */
+    @Operation(summary = "Update defects", 
+               description = "Update defects found during assembly")
+    @ApiResponse(responseCode = "200", description = "Defects updated")
     @PatchMapping("/{id}/defects")
     public ResponseEntity<AssemblyControlOrderDTO> updateDefects(
-            @PathVariable Long id,
-            @RequestParam Integer defectsFound,
-            @RequestParam(required = false) Integer defectsReworked,
-            @RequestParam(required = false) Boolean reworkRequired) {
+            @Parameter(description = "Order ID") @PathVariable Long id,
+            @Parameter(description = "Number of defects found") @RequestParam Integer defectsFound,
+            @Parameter(description = "Number of defects reworked") @RequestParam(required = false) Integer defectsReworked,
+            @Parameter(description = "Whether rework is required") @RequestParam(required = false) Boolean reworkRequired) {
         AssemblyControlOrderDTO order = assemblyControlOrderService.updateDefects(id, defectsFound, defectsReworked, reworkRequired);
         return ResponseEntity.ok(order);
     }
