@@ -44,7 +44,6 @@ function ProductionControlOrderCard({
   onStart,
   onComplete,
   onHalt,
-  onConfirm,
   onRequestParts,
   onDispatch,
   onViewDetails
