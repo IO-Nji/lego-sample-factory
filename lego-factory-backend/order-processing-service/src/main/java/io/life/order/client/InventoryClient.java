@@ -1,5 +1,7 @@
 package io.life.order.client;
 
+import io.life.order.dto.inventory.StockAdjustmentRequest;
+import io.life.order.dto.inventory.StockLevelResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -7,8 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.Map;
 
 /**
  * InventoryClient
@@ -72,14 +72,14 @@ public class InventoryClient {
                                 Integer delta, String reasonCode, String notes) {
         try {
             String url = inventoryServiceUrl + "/api/stock/adjust";
-            Map<String, Object> request = Map.of(
-                    "workstationId", workstationId,
-                    "itemType", itemType,
-                    "itemId", itemId,
-                    "delta", delta,
-                    "reasonCode", reasonCode,
-                    "notes", notes != null ? notes : ""
-            );
+            StockAdjustmentRequest request = StockAdjustmentRequest.builder()
+                    .workstationId(workstationId)
+                    .itemType(itemType)
+                    .itemId(itemId)
+                    .delta(delta)
+                    .reasonCode(reasonCode)
+                    .notes(notes != null ? notes : "")
+                    .build();
 
             restTemplate.postForObject(url, request, Void.class);
             log.info("Stock adjusted: {} {} {} (delta: {}) at workstation {}", 
@@ -226,13 +226,11 @@ public class InventoryClient {
             String url = inventoryServiceUrl + "/api/inventory?workstationId=" + workstationId 
                     + "&itemType=" + itemType + "&itemId=" + itemId;
             
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            ResponseEntity<StockLevelResponse> response = restTemplate.getForEntity(url, StockLevelResponse.class);
             
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                Object quantity = response.getBody().get("quantity");
-                if (quantity instanceof Number) {
-                    return ((Number) quantity).intValue();
-                }
+                Integer quantity = response.getBody().getQuantity();
+                return quantity != null ? quantity : 0;
             }
             return 0;
 

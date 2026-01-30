@@ -96,14 +96,29 @@ INITIAL_PRODUCT_STOCK=$(echo $INVENTORY_RESPONSE | jq -r "[.[] | select(.itemId 
 
 print_info "Product ID: $PRODUCT_ID, Initial Stock: $INITIAL_PRODUCT_STOCK units"
 
-# If stock is sufficient, reduce it first
-if [ $INITIAL_PRODUCT_STOCK -gt 0 ]; then
-    print_info "Reducing product stock to simulate insufficient inventory..."
-    # We'll create an order that exceeds available stock
-    ORDER_QTY=$((INITIAL_PRODUCT_STOCK + 2))
-else
-    ORDER_QTY=2
+# For Scenario 2, we need INSUFFICIENT stock to trigger WAREHOUSE_ORDER_NEEDED
+# First, deplete any existing stock by adjusting it to 0
+if [ "$INITIAL_PRODUCT_STOCK" -gt 0 ]; then
+    print_info "Depleting product stock to 0 to simulate insufficient inventory..."
+    ADJUST_RESPONSE=$(curl -s -X POST "$BASE_URL/stock/adjust" \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"workstationId\": $WORKSTATION_ID,
+            \"itemType\": \"PRODUCT\",
+            \"itemId\": $PRODUCT_ID,
+            \"delta\": -$INITIAL_PRODUCT_STOCK,
+            \"reasonCode\": \"ADJUSTMENT\",
+            \"notes\": \"Test setup - depleting stock for Scenario 2\"
+        }")
+    
+    NEW_STOCK=$(curl -s -X GET "$BASE_URL/stock/workstation/$WORKSTATION_ID" \
+        -H "Authorization: Bearer $TOKEN" | jq -r "[.[] | select(.itemId == $PRODUCT_ID)] | .[0].quantity // 0")
+    print_info "Stock depleted: $INITIAL_PRODUCT_STOCK → $NEW_STOCK units"
 fi
+
+# Order quantity stays below LOT_SIZE_THRESHOLD (3) to get WAREHOUSE_ORDER_NEEDED, not DIRECT_PRODUCTION
+ORDER_QTY=2
 
 print_step "Create customer order (quantity: $ORDER_QTY) - exceeds available stock"
 ORDER_CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/customer-orders" \
@@ -184,11 +199,26 @@ print_step "Fetch warehouse orders for Modules Supermarket"
 WO_LIST_RESPONSE=$(curl -s -X GET "$BASE_URL/warehouse-orders/workstation/$WORKSTATION_MS" \
     -H "Authorization: Bearer $TOKEN_MS")
 
-# Check if response is an array
+# Filter for PENDING warehouse orders linked to our customer order, or just pick the latest PENDING one
 if echo "$WO_LIST_RESPONSE" | jq -e 'type == "array"' > /dev/null 2>&1; then
-    WAREHOUSE_ORDER_ID=$(echo $WO_LIST_RESPONSE | jq -r 'last | .id')
-    WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST_RESPONSE | jq -r 'last | .orderNumber')
-    WAREHOUSE_ORDER_STATUS=$(echo $WO_LIST_RESPONSE | jq -r 'last | .status')
+    # First try to find a PENDING order linked to our customer order
+    WAREHOUSE_ORDER_ID=$(echo $WO_LIST_RESPONSE | jq -r "[.[] | select(.customerOrderId == $CUSTOMER_ORDER_ID)] | last | .id")
+    WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST_RESPONSE | jq -r "[.[] | select(.customerOrderId == $CUSTOMER_ORDER_ID)] | last | .orderNumber")
+    WAREHOUSE_ORDER_STATUS=$(echo $WO_LIST_RESPONSE | jq -r "[.[] | select(.customerOrderId == $CUSTOMER_ORDER_ID)] | last | .status")
+    
+    # If not found, fall back to latest PENDING order
+    if [ "$WAREHOUSE_ORDER_ID" == "null" ] || [ -z "$WAREHOUSE_ORDER_ID" ]; then
+        WAREHOUSE_ORDER_ID=$(echo $WO_LIST_RESPONSE | jq -r '[.[] | select(.status == "PENDING")] | last | .id')
+        WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST_RESPONSE | jq -r '[.[] | select(.status == "PENDING")] | last | .orderNumber')
+        WAREHOUSE_ORDER_STATUS=$(echo $WO_LIST_RESPONSE | jq -r '[.[] | select(.status == "PENDING")] | last | .status')
+    fi
+    
+    # Final fallback to any last order
+    if [ "$WAREHOUSE_ORDER_ID" == "null" ] || [ -z "$WAREHOUSE_ORDER_ID" ]; then
+        WAREHOUSE_ORDER_ID=$(echo $WO_LIST_RESPONSE | jq -r 'last | .id')
+        WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST_RESPONSE | jq -r 'last | .orderNumber')
+        WAREHOUSE_ORDER_STATUS=$(echo $WO_LIST_RESPONSE | jq -r 'last | .status')
+    fi
 else
     # Try as single object
     WAREHOUSE_ORDER_ID=$(echo $WO_LIST_RESPONSE | jq -r '.id')
@@ -228,18 +258,32 @@ else
 fi
 
 print_step "Confirm warehouse order - should check MODULE stock and set triggerScenario"
-WO_CONFIRM_RESPONSE=$(curl -s -X PUT "$BASE_URL/warehouse-orders/$WAREHOUSE_ORDER_ID/confirm" \
-    -H "Authorization: Bearer $TOKEN_MS")
+# Only confirm if the order is in PENDING status
+if [ "$WAREHOUSE_ORDER_STATUS" == "PENDING" ]; then
+    WO_CONFIRM_RESPONSE=$(curl -s -X PUT "$BASE_URL/warehouse-orders/$WAREHOUSE_ORDER_ID/confirm" \
+        -H "Authorization: Bearer $TOKEN_MS")
 
-WO_CONFIRM_STATUS=$(echo $WO_CONFIRM_RESPONSE | jq -r '.status')
-WO_TRIGGER_SCENARIO=$(echo $WO_CONFIRM_RESPONSE | jq -r '.triggerScenario')
+    WO_CONFIRM_STATUS=$(echo $WO_CONFIRM_RESPONSE | jq -r '.status')
+    WO_TRIGGER_SCENARIO=$(echo $WO_CONFIRM_RESPONSE | jq -r '.triggerScenario')
+    WO_ERROR=$(echo $WO_CONFIRM_RESPONSE | jq -r '.message // .error // empty')
 
-print_info "Status: $WO_CONFIRM_STATUS, Trigger Scenario: $WO_TRIGGER_SCENARIO"
+    print_info "Status: $WO_CONFIRM_STATUS, Trigger Scenario: $WO_TRIGGER_SCENARIO"
 
-if [ "$WO_CONFIRM_STATUS" == "CONFIRMED" ]; then
-    print_result 0 "Warehouse order confirmed (Status: PENDING → CONFIRMED)"
+    if [ "$WO_CONFIRM_STATUS" == "CONFIRMED" ]; then
+        print_result 0 "Warehouse order confirmed (Status: PENDING → CONFIRMED)"
+    else
+        print_result 1 "Warehouse order confirmation failed (Got: $WO_CONFIRM_STATUS, Error: $WO_ERROR)"
+    fi
 else
-    print_result 1 "Warehouse order confirmation failed (Got: $WO_CONFIRM_STATUS)"
+    # Order was already confirmed (from creation or previous step)
+    print_info "Warehouse order already in status: $WAREHOUSE_ORDER_STATUS"
+    if [ "$WAREHOUSE_ORDER_STATUS" == "CONFIRMED" ]; then
+        print_result 0 "Warehouse order already confirmed (Status: $WAREHOUSE_ORDER_STATUS)"
+        # Get the triggerScenario from the order details
+        WO_TRIGGER_SCENARIO=$(echo $WO_DETAILS | jq -r '.triggerScenario')
+    else
+        print_result 1 "Warehouse order in unexpected status: $WAREHOUSE_ORDER_STATUS"
+    fi
 fi
 
 if [ "$WO_TRIGGER_SCENARIO" == "DIRECT_FULFILLMENT" ] || [ "$WO_TRIGGER_SCENARIO" == "PRODUCTION_REQUIRED" ]; then

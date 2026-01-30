@@ -1,19 +1,29 @@
 package io.life.order.controller;
 
 import io.life.order.dto.ProductionOrderDTO;
+import io.life.order.dto.request.ControlCompletionRequest;
+import io.life.order.dto.request.CreateFromCustomerOrderRequest;
+import io.life.order.dto.request.CreateProductionOrderFromWarehouseRequest;
+import io.life.order.dto.request.CreateProductionOrderRequest;
+import io.life.order.dto.request.LinkSimalRequest;
+import io.life.order.dto.request.ScheduleProductionRequest;
+import io.life.order.dto.request.ScheduleRequest;
+import io.life.order.dto.request.UpdateStatusRequest;
 import io.life.order.service.ProductionOrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * REST Controller for ProductionOrder management.
  * Exposes endpoints for creating, retrieving, and updating production orders.
- * Production orders are created when WarehouseOrders cannot be fully fulfilled (Scenario 3).
+ * Production orders are created when WarehouseOrders cannot be fully fulfilled (Scenario 3)
+ * or when high-volume orders bypass warehouse entirely (Scenario 4).
+ * 
+ * Request DTOs are located in io.life.order.dto.request package.
  */
 @RestController
 @RequestMapping("/api/production-orders")
@@ -295,162 +305,13 @@ public class ProductionOrderController {
         return ResponseEntity.ok(order);
     }
 
-    /**
-     * Request class for creating production orders
-     */
-    public static class CreateProductionOrderRequest {
-        private Long sourceCustomerOrderId;
-        private String priority;
-        private LocalDateTime dueDate;
-        private String notes;
-        private Long createdByWorkstationId;
-
-        // Getters and Setters
-        public Long getSourceCustomerOrderId() { return sourceCustomerOrderId; }
-        public void setSourceCustomerOrderId(Long sourceCustomerOrderId) { this.sourceCustomerOrderId = sourceCustomerOrderId; }
-
-        public String getPriority() { return priority; }
-        public void setPriority(String priority) { this.priority = priority; }
-
-        public LocalDateTime getDueDate() { return dueDate; }
-        public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
-
-        public String getNotes() { return notes; }
-        public void setNotes(String notes) { this.notes = notes; }
-
-        public Long getCreatedByWorkstationId() { return createdByWorkstationId; }
-        public void setCreatedByWorkstationId(Long createdByWorkstationId) { this.createdByWorkstationId = createdByWorkstationId; }
-    }
-
-    /**
-     * Request class for creating production orders from warehouse orders
-     */
-    public static class CreateProductionOrderFromWarehouseRequest {
-        private Long sourceCustomerOrderId;
-        private Long sourceWarehouseOrderId;
-        private String priority;
-        private LocalDateTime dueDate;
-        private String notes;
-        private Long createdByWorkstationId;
-        private Long assignedWorkstationId;
-
-        // Getters and Setters
-        public Long getSourceCustomerOrderId() { return sourceCustomerOrderId; }
-        public void setSourceCustomerOrderId(Long sourceCustomerOrderId) { this.sourceCustomerOrderId = sourceCustomerOrderId; }
-
-        public Long getSourceWarehouseOrderId() { return sourceWarehouseOrderId; }
-        public void setSourceWarehouseOrderId(Long sourceWarehouseOrderId) { this.sourceWarehouseOrderId = sourceWarehouseOrderId; }
-
-        public String getPriority() { return priority; }
-        public void setPriority(String priority) { this.priority = priority; }
-
-        public LocalDateTime getDueDate() { return dueDate; }
-        public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
-
-        public String getNotes() { return notes; }
-        public void setNotes(String notes) { this.notes = notes; }
-
-        public Long getCreatedByWorkstationId() { return createdByWorkstationId; }
-        public void setCreatedByWorkstationId(Long createdByWorkstationId) { this.createdByWorkstationId = createdByWorkstationId; }
-
-        public Long getAssignedWorkstationId() { return assignedWorkstationId; }
-        public void setAssignedWorkstationId(Long assignedWorkstationId) { this.assignedWorkstationId = assignedWorkstationId; }
-    }
-
-    /**
-     * Request class for creating production orders directly from customer orders (Scenario 4)
-     */
-    public static class CreateFromCustomerOrderRequest {
-        private Long customerOrderId;
-        private String priority;
-        private LocalDateTime dueDate;
-        private String notes;
-        private Long createdByWorkstationId;
-
-        // Getters and Setters
-        public Long getCustomerOrderId() { return customerOrderId; }
-        public void setCustomerOrderId(Long customerOrderId) { this.customerOrderId = customerOrderId; }
-
-        public String getPriority() { return priority; }
-        public void setPriority(String priority) { this.priority = priority; }
-
-        public LocalDateTime getDueDate() { return dueDate; }
-        public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
-
-        public String getNotes() { return notes; }
-        public void setNotes(String notes) { this.notes = notes; }
-
-        public Long getCreatedByWorkstationId() { return createdByWorkstationId; }
-        public void setCreatedByWorkstationId(Long createdByWorkstationId) { this.createdByWorkstationId = createdByWorkstationId; }
-    }
-
-    /**
-     * Request class for updating production order status
-     */
-    public static class UpdateStatusRequest {
-        private String status;
-
-        public String getStatus() { return status; }
-        public void setStatus(String status) { this.status = status; }
-    }
-
-    /**
-     * Request class for linking to SimAL schedule
-     */
-    public static class LinkSimalRequest {
-        private String simalScheduleId;
-        private Integer estimatedDuration;
-        private LocalDateTime expectedCompletionTime;
-
-        public String getSimalScheduleId() { return simalScheduleId; }
-        public void setSimalScheduleId(String simalScheduleId) { this.simalScheduleId = simalScheduleId; }
-
-        public Integer getEstimatedDuration() { return estimatedDuration; }
-        public void setEstimatedDuration(Integer estimatedDuration) { this.estimatedDuration = estimatedDuration; }
-
-        public LocalDateTime getExpectedCompletionTime() { return expectedCompletionTime; }
-        public void setExpectedCompletionTime(LocalDateTime expectedCompletionTime) { this.expectedCompletionTime = expectedCompletionTime; }
-    }
-
-    /**
-     * Request class for scheduling with SimAL
-     */
-    public static class ScheduleRequest {
-        private String simalScheduleId;
-        private String status;
-
-        public String getSimalScheduleId() { return simalScheduleId; }
-        public void setSimalScheduleId(String simalScheduleId) { this.simalScheduleId = simalScheduleId; }
-
-        public String getStatus() { return status; }
-        public void setStatus(String status) { this.status = status; }
-    }
-
-    /**
-     * Request class for scheduling production (Scenario 3 flow)
-     */
-    public static class ScheduleProductionRequest {
-        private LocalDateTime scheduledStartTime;
-        private LocalDateTime scheduledEndTime;
-        private String ganttChartId;
-
-        public LocalDateTime getScheduledStartTime() { return scheduledStartTime; }
-        public void setScheduledStartTime(LocalDateTime scheduledStartTime) { this.scheduledStartTime = scheduledStartTime; }
-
-        public LocalDateTime getScheduledEndTime() { return scheduledEndTime; }
-        public void setScheduledEndTime(LocalDateTime scheduledEndTime) { this.scheduledEndTime = scheduledEndTime; }
-
-        public String getGanttChartId() { return ganttChartId; }
-        public void setGanttChartId(String ganttChartId) { this.ganttChartId = ganttChartId; }
-    }
-
-    /**
-     * Request class for control order completion notification
-     */
-    public static class ControlCompletionRequest {
-        private Long controlOrderId;
-
-        public Long getControlOrderId() { return controlOrderId; }
-        public void setControlOrderId(Long controlOrderId) { this.controlOrderId = controlOrderId; }
-    }
+    // All request DTOs have been extracted to io.life.order.dto.request package:
+    // - CreateProductionOrderRequest
+    // - CreateProductionOrderFromWarehouseRequest
+    // - CreateFromCustomerOrderRequest
+    // - UpdateStatusRequest
+    // - LinkSimalRequest
+    // - ScheduleRequest
+    // - ScheduleProductionRequest
+    // - ControlCompletionRequest
 }

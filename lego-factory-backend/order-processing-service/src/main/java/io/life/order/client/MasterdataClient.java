@@ -1,5 +1,10 @@
 package io.life.order.client;
 
+import io.life.order.dto.masterdata.BomEntryDTO;
+import io.life.order.dto.masterdata.ModuleDTO;
+import io.life.order.dto.masterdata.PartDTO;
+import io.life.order.dto.masterdata.ProductDTO;
+import io.life.order.dto.masterdata.WorkstationDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -11,7 +16,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -48,11 +52,12 @@ public class MasterdataClient {
     /**
      * Get all products.
      */
-    @SuppressWarnings("unchecked")
-    public List<Map<String, Object>> getAllProducts() {
+    public List<ProductDTO> getAllProducts() {
         try {
             String url = masterdataServiceUrl + "/api/products";
-            ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
+            ResponseEntity<List<ProductDTO>> response = restTemplate.exchange(
+                url, HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<ProductDTO>>() {});
             return response.getBody() != null ? response.getBody() : Collections.emptyList();
         } catch (RestClientException e) {
             log.error("Failed to fetch products: {}", e.getMessage());
@@ -63,11 +68,10 @@ public class MasterdataClient {
     /**
      * Get product by ID.
      */
-    @SuppressWarnings("unchecked")
-    public Optional<Map<String, Object>> getProductById(Long productId) {
+    public Optional<ProductDTO> getProductById(Long productId) {
         try {
             String url = masterdataServiceUrl + "/api/products/" + productId;
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            ResponseEntity<ProductDTO> response = restTemplate.getForEntity(url, ProductDTO.class);
             return Optional.ofNullable(response.getBody());
         } catch (RestClientException e) {
             log.warn("Failed to fetch product {}: {}", productId, e.getMessage());
@@ -80,7 +84,7 @@ public class MasterdataClient {
      */
     public String getProductName(Long productId) {
         return getProductById(productId)
-                .map(p -> (String) p.get("name"))
+                .map(ProductDTO::getName)
                 .orElse("Unknown Product " + productId);
     }
 
@@ -91,11 +95,12 @@ public class MasterdataClient {
     /**
      * Get all modules.
      */
-    @SuppressWarnings("unchecked")
-    public List<Map<String, Object>> getAllModules() {
+    public List<ModuleDTO> getAllModules() {
         try {
             String url = masterdataServiceUrl + "/api/modules";
-            ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
+            ResponseEntity<List<ModuleDTO>> response = restTemplate.exchange(
+                url, HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<ModuleDTO>>() {});
             return response.getBody() != null ? response.getBody() : Collections.emptyList();
         } catch (RestClientException e) {
             log.error("Failed to fetch modules: {}", e.getMessage());
@@ -106,11 +111,10 @@ public class MasterdataClient {
     /**
      * Get module by ID.
      */
-    @SuppressWarnings("unchecked")
-    public Optional<Map<String, Object>> getModuleById(Long moduleId) {
+    public Optional<ModuleDTO> getModuleById(Long moduleId) {
         try {
             String url = masterdataServiceUrl + "/api/modules/" + moduleId;
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            ResponseEntity<ModuleDTO> response = restTemplate.getForEntity(url, ModuleDTO.class);
             return Optional.ofNullable(response.getBody());
         } catch (RestClientException e) {
             log.warn("Failed to fetch module {}: {}", moduleId, e.getMessage());
@@ -123,7 +127,7 @@ public class MasterdataClient {
      */
     public String getModuleName(Long moduleId) {
         return getModuleById(moduleId)
-                .map(m -> (String) m.get("name"))
+                .map(ModuleDTO::getName)
                 .orElse("Unknown Module " + moduleId);
     }
 
@@ -134,11 +138,12 @@ public class MasterdataClient {
     /**
      * Get all parts.
      */
-    @SuppressWarnings("unchecked")
-    public List<Map<String, Object>> getAllParts() {
+    public List<PartDTO> getAllParts() {
         try {
             String url = masterdataServiceUrl + "/api/parts";
-            ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
+            ResponseEntity<List<PartDTO>> response = restTemplate.exchange(
+                url, HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<PartDTO>>() {});
             return response.getBody() != null ? response.getBody() : Collections.emptyList();
         } catch (RestClientException e) {
             log.error("Failed to fetch parts: {}", e.getMessage());
@@ -149,11 +154,10 @@ public class MasterdataClient {
     /**
      * Get part by ID.
      */
-    @SuppressWarnings("unchecked")
-    public Optional<Map<String, Object>> getPartById(Long partId) {
+    public Optional<PartDTO> getPartById(Long partId) {
         try {
             String url = masterdataServiceUrl + "/api/parts/" + partId;
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            ResponseEntity<PartDTO> response = restTemplate.getForEntity(url, PartDTO.class);
             return Optional.ofNullable(response.getBody());
         } catch (RestClientException e) {
             log.warn("Failed to fetch part {}: {}", partId, e.getMessage());
@@ -166,7 +170,7 @@ public class MasterdataClient {
      */
     public String getPartName(Long partId) {
         return getPartById(partId)
-                .map(p -> (String) p.get("name"))
+                .map(PartDTO::getName)
                 .orElse("Unknown Part " + partId);
     }
 
@@ -178,11 +182,12 @@ public class MasterdataClient {
      * Get modules required for a product.
      * Returns list of module requirements with quantities.
      */
-    @SuppressWarnings("unchecked")
-    public List<Map<String, Object>> getModulesForProduct(Long productId) {
+    public List<BomEntryDTO> getModulesForProduct(Long productId) {
         try {
             String url = masterdataServiceUrl + "/api/products/" + productId + "/modules";
-            ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
+            ResponseEntity<List<BomEntryDTO>> response = restTemplate.exchange(
+                url, HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<BomEntryDTO>>() {});
             return response.getBody() != null ? response.getBody() : Collections.emptyList();
         } catch (RestClientException e) {
             log.error("Failed to fetch modules for product {}: {}", productId, e.getMessage());
@@ -194,11 +199,12 @@ public class MasterdataClient {
      * Get parts required for a module.
      * Returns list of part requirements with quantities.
      */
-    @SuppressWarnings("unchecked")
-    public List<Map<String, Object>> getPartsForModule(Long moduleId) {
+    public List<BomEntryDTO> getPartsForModule(Long moduleId) {
         try {
             String url = masterdataServiceUrl + "/api/modules/" + moduleId + "/parts";
-            ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
+            ResponseEntity<List<BomEntryDTO>> response = restTemplate.exchange(
+                url, HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<BomEntryDTO>>() {});
             return response.getBody() != null ? response.getBody() : Collections.emptyList();
         } catch (RestClientException e) {
             log.error("Failed to fetch parts for module {}: {}", moduleId, e.getMessage());
@@ -210,11 +216,12 @@ public class MasterdataClient {
      * Get full BOM (all parts required) for a product.
      * Aggregates parts from all required modules.
      */
-    @SuppressWarnings("unchecked")
-    public List<Map<String, Object>> getFullBomForProduct(Long productId) {
+    public List<BomEntryDTO> getFullBomForProduct(Long productId) {
         try {
             String url = masterdataServiceUrl + "/api/products/" + productId + "/bom";
-            ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
+            ResponseEntity<List<BomEntryDTO>> response = restTemplate.exchange(
+                url, HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<BomEntryDTO>>() {});
             return response.getBody() != null ? response.getBody() : Collections.emptyList();
         } catch (RestClientException e) {
             log.error("Failed to fetch BOM for product {}: {}", productId, e.getMessage());
@@ -229,11 +236,12 @@ public class MasterdataClient {
     /**
      * Get all workstations.
      */
-    @SuppressWarnings("unchecked")
-    public List<Map<String, Object>> getAllWorkstations() {
+    public List<WorkstationDTO> getAllWorkstations() {
         try {
             String url = masterdataServiceUrl + "/api/workstations";
-            ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
+            ResponseEntity<List<WorkstationDTO>> response = restTemplate.exchange(
+                url, HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<WorkstationDTO>>() {});
             return response.getBody() != null ? response.getBody() : Collections.emptyList();
         } catch (RestClientException e) {
             log.error("Failed to fetch workstations: {}", e.getMessage());
@@ -244,11 +252,10 @@ public class MasterdataClient {
     /**
      * Get workstation by ID.
      */
-    @SuppressWarnings("unchecked")
-    public Optional<Map<String, Object>> getWorkstationById(Long workstationId) {
+    public Optional<WorkstationDTO> getWorkstationById(Long workstationId) {
         try {
             String url = masterdataServiceUrl + "/api/workstations/" + workstationId;
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            ResponseEntity<WorkstationDTO> response = restTemplate.getForEntity(url, WorkstationDTO.class);
             return Optional.ofNullable(response.getBody());
         } catch (RestClientException e) {
             log.warn("Failed to fetch workstation {}: {}", workstationId, e.getMessage());
@@ -261,7 +268,7 @@ public class MasterdataClient {
      */
     public String getWorkstationName(Long workstationId) {
         return getWorkstationById(workstationId)
-                .map(w -> (String) w.get("name"))
+                .map(WorkstationDTO::getName)
                 .orElse("Unknown Workstation " + workstationId);
     }
 

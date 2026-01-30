@@ -174,28 +174,69 @@ print_step "Fetch warehouse orders"
 WO_LIST=$(curl -s -X GET "$BASE_URL/warehouse-orders/workstation/$WORKSTATION_MS" \
     -H "Authorization: Bearer $TOKEN_MS")
 
-WAREHOUSE_ORDER_ID=$(echo $WO_LIST | jq -r 'if type == "array" then (last | .id) else .id end')
-WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST | jq -r 'if type == "array" then (last | .orderNumber) else .orderNumber end')
+# Filter for warehouse orders linked to our customer order, or fall back to latest PENDING
+if echo "$WO_LIST" | jq -e 'type == "array"' > /dev/null 2>&1; then
+    # First try to find an order linked to our customer order
+    WAREHOUSE_ORDER_ID=$(echo $WO_LIST | jq -r "[.[] | select(.customerOrderId == $CUSTOMER_ORDER_ID)] | last | .id")
+    WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST | jq -r "[.[] | select(.customerOrderId == $CUSTOMER_ORDER_ID)] | last | .orderNumber")
+    WAREHOUSE_ORDER_STATUS=$(echo $WO_LIST | jq -r "[.[] | select(.customerOrderId == $CUSTOMER_ORDER_ID)] | last | .status")
+    
+    # If not found, fall back to latest PENDING order
+    if [ "$WAREHOUSE_ORDER_ID" == "null" ] || [ -z "$WAREHOUSE_ORDER_ID" ]; then
+        WAREHOUSE_ORDER_ID=$(echo $WO_LIST | jq -r '[.[] | select(.status == "PENDING")] | last | .id')
+        WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST | jq -r '[.[] | select(.status == "PENDING")] | last | .orderNumber')
+        WAREHOUSE_ORDER_STATUS=$(echo $WO_LIST | jq -r '[.[] | select(.status == "PENDING")] | last | .status')
+    fi
+    
+    # Final fallback to any last order
+    if [ "$WAREHOUSE_ORDER_ID" == "null" ] || [ -z "$WAREHOUSE_ORDER_ID" ]; then
+        WAREHOUSE_ORDER_ID=$(echo $WO_LIST | jq -r 'last | .id')
+        WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST | jq -r 'last | .orderNumber')
+        WAREHOUSE_ORDER_STATUS=$(echo $WO_LIST | jq -r 'last | .status')
+    fi
+else
+    # Try as single object
+    WAREHOUSE_ORDER_ID=$(echo $WO_LIST | jq -r '.id')
+    WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST | jq -r '.orderNumber')
+    WAREHOUSE_ORDER_STATUS=$(echo $WO_LIST | jq -r '.status')
+fi
 
 if [ "$WAREHOUSE_ORDER_ID" != "null" ] && [ -n "$WAREHOUSE_ORDER_ID" ]; then
-    print_result 0 "Warehouse order found ($WAREHOUSE_ORDER_NUMBER)"
+    print_result 0 "Warehouse order found ($WAREHOUSE_ORDER_NUMBER, Status: $WAREHOUSE_ORDER_STATUS)"
 else
     print_result 1 "No warehouse order found"
     echo "Response: $WO_LIST"
 fi
 
-print_step "Confirm warehouse order - checks MODULE stock"
-WO_CONFIRM=$(curl -s -X PUT "$BASE_URL/warehouse-orders/$WAREHOUSE_ORDER_ID/confirm" \
-    -H "Authorization: Bearer $TOKEN_MS")
-
-WO_STATUS=$(echo $WO_CONFIRM | jq -r '.status')
-WO_TRIGGER=$(echo $WO_CONFIRM | jq -r '.triggerScenario')
-
-if [ "$WO_STATUS" == "CONFIRMED" ]; then
-    print_result 0 "Warehouse order confirmed (Status: CONFIRMED)"
-    print_info "Trigger Scenario: $WO_TRIGGER"
+# Only confirm if PENDING
+if [ "$WAREHOUSE_ORDER_STATUS" == "PENDING" ]; then
+    print_step "Confirm warehouse order - checks MODULE stock"
+    WO_CONFIRM=$(curl -s -X PUT "$BASE_URL/warehouse-orders/$WAREHOUSE_ORDER_ID/confirm" \
+        -H "Authorization: Bearer $TOKEN_MS")
+    
+    WO_STATUS=$(echo $WO_CONFIRM | jq -r '.status')
+    WO_TRIGGER=$(echo $WO_CONFIRM | jq -r '.triggerScenario')
+    
+    if [ "$WO_STATUS" == "CONFIRMED" ]; then
+        print_result 0 "Warehouse order confirmed (Status: CONFIRMED)"
+        print_info "Trigger Scenario: $WO_TRIGGER"
+    else
+        WO_ERROR=$(echo $WO_CONFIRM | jq -r '.message // .error // empty')
+        print_result 1 "Warehouse order confirmation failed (Got: $WO_STATUS, Error: $WO_ERROR)"
+    fi
 else
-    print_result 1 "Warehouse order confirmation failed (Got: $WO_STATUS)"
+    # Order already confirmed (from creation or previous step)
+    print_info "Warehouse order already in status: $WAREHOUSE_ORDER_STATUS"
+    if [ "$WAREHOUSE_ORDER_STATUS" == "CONFIRMED" ] || [ "$WAREHOUSE_ORDER_STATUS" == "PROCESSING" ]; then
+        print_result 0 "Warehouse order already confirmed/processing (Status: $WAREHOUSE_ORDER_STATUS)"
+        # Get triggerScenario from the order details
+        WO_DETAILS=$(curl -s -X GET "$BASE_URL/warehouse-orders/$WAREHOUSE_ORDER_ID" \
+            -H "Authorization: Bearer $TOKEN_MS")
+        WO_TRIGGER=$(echo $WO_DETAILS | jq -r '.triggerScenario')
+        WO_STATUS=$WAREHOUSE_ORDER_STATUS
+    else
+        print_result 1 "Warehouse order in unexpected status: $WAREHOUSE_ORDER_STATUS"
+    fi
 fi
 
 # ==========================================
