@@ -193,3 +193,8 @@ pull-from-registry.sh
 push-to-registry.sh
 troubleshoot-masterdata.sh
 .github/copilot-instructions.md
+diagnose-frontend-cache.sh
+diagnose-server-git-state.sh
+fix-server-docker-compose.sh
+restart-docker-for-registry.sh
+check-server-state.sh

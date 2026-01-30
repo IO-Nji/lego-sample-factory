@@ -83,7 +83,7 @@ echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}SERVER RUNNING CONTAINERS${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-ssh ${SERVER} "cd ${SERVER_DIR} && docker-compose ps"
+ssh ${SERVER} "cd ${SERVER_DIR} && docker compose ps"
 echo ""
 
 # Get local image IDs
@@ -137,14 +137,14 @@ if [ "$LOCAL_COMMIT" != "$SERVER_COMMIT" ]; then
     echo "   ssh ${SERVER} 'cd ${SERVER_DIR} && ./update-from-registry.sh'"
     echo ""
     echo "3. Restart containers:"
-    echo "   ssh ${SERVER} 'cd ${SERVER_DIR} && docker-compose down && docker-compose up -d --force-recreate'"
+    echo "   ssh ${SERVER} 'cd ${SERVER_DIR} && docker compose down && docker compose up -d --force-recreate'"
     echo ""
 elif [ "$LOCAL_FRONTEND_ID" != "$SERVER_FRONTEND_ID" ] || [ "$LOCAL_ORDER_ID" != "$SERVER_ORDER_ID" ]; then
     echo -e "${YELLOW}Git matches, but images differ${NC}"
     echo ""
     echo "Server has old images. Fix:"
     echo "   ssh ${SERVER} 'cd ${SERVER_DIR} && ./update-from-registry.sh'"
-    echo "   ssh ${SERVER} 'cd ${SERVER_DIR} && docker-compose down && docker-compose up -d --force-recreate'"
+    echo "   ssh ${SERVER} 'cd ${SERVER_DIR} && docker compose down && docker compose up -d --force-recreate'"
     echo ""
 else
     echo -e "${GREEN}✓ Git commits match${NC}"

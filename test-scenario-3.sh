@@ -64,7 +64,7 @@ print_substep() {
 echo -e "${BOLD}Pre-flight Check:${NC}"
 if ! curl -s -f "$BASE_URL/health" > /dev/null 2>&1; then
     echo -e "${RED}❌ System not accessible at $BASE_URL${NC}"
-    echo "   Please ensure docker-compose is running: docker-compose up -d"
+    echo "   Please ensure docker-compose is running: docker compose up -d"
     exit 1
 fi
 echo -e "${GREEN}✅ System is running${NC}\n"

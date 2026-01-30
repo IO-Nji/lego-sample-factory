@@ -20,7 +20,7 @@ fi
 
 echo ""
 echo "[1/4] Stopping LIFE containers..."
-docker-compose down
+docker compose down
 
 echo ""
 echo "[2/4] Restarting Docker daemon..."
@@ -32,7 +32,7 @@ sleep 5
 
 echo ""
 echo "[4/4] Starting LIFE containers..."
-docker-compose up -d
+docker compose up -d
 
 echo ""
 echo "==========================================="
