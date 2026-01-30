@@ -38,7 +38,6 @@ public class AssemblyControlOrderService implements WorkstationOrderOperations<A
     private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
     private static final String STATUS_ASSIGNED = "ASSIGNED";
-    private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String STATUS_HALTED = "HALTED";
 

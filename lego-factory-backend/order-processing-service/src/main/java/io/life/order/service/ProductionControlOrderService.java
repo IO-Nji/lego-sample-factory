@@ -37,7 +37,6 @@ public class ProductionControlOrderService implements WorkstationOrderOperations
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_ASSIGNED = "ASSIGNED";
-    private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String ERROR_CONTROL_ORDER_NOT_FOUND = "Control order not found: ";

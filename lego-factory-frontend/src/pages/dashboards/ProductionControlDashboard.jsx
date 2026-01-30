@@ -169,19 +169,6 @@ function ProductionControlDashboard() {
     }
   };
 
-  // Confirm receipt of a control order (PENDING → CONFIRMED)
-  const handleConfirmOrder = async (orderId) => {
-    try {
-      await api.put(`/production-control-orders/${orderId}/confirm`);
-      setSuccess("Order receipt confirmed");
-      addNotification("Order receipt confirmed", "success");
-      fetchControlOrders();
-    } catch (err) {
-      setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
-      addNotification("Failed to confirm order", "error");
-    }
-  };
-
   // Dispatch order to workstation (CONFIRMED → ASSIGNED)
   const handleDispatchToWorkstation = async (orderId) => {
     try {
