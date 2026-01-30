@@ -26,6 +26,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
+                // OpenAPI / Swagger UI endpoints
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
+                .requestMatchers("/swagger-resources/**", "/webjars/**").permitAll()
                 .requestMatchers("/api/stock/workstation/**").permitAll()
                 .requestMatchers("/api/stock/adjust").permitAll()
                 .requestMatchers("/api/stock/credit").permitAll()
