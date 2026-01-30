@@ -165,7 +165,8 @@ function AssemblyControlDashboard() {
     console.log("Order assignedWorkstationId:", order.assignedWorkstationId);
     setSelectedOrder(order);
     setSupplyOrderForm({
-      parts: [{ partId: "7", quantityRequested: 10, unit: "piece", notes: "Assembly parts" }],
+      // Start with empty partId - operator must select actual required parts (IDs 10-12)
+      parts: [{ partId: "", quantityRequested: 10, unit: "piece", notes: "Assembly parts" }],
       priority: order.priority || "MEDIUM",
       notes: `Parts for Assembly Control Order ${order.controlOrderNumber}`
     });
