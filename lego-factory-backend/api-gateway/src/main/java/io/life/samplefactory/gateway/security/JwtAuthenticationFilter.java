@@ -54,7 +54,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         "/api/health",
         "/actuator/health",
         "/actuator/info",
-        "/error"
+        "/error",
+        // Swagger/OpenAPI documentation (public access)
+        "/api/docs/**",
+        "/swagger-ui/**",
+        "/swagger-ui.html",
+        "/v3/api-docs/**",
+        "/swagger-resources/**",
+        "/webjars/**"
     );
 
     public JwtAuthenticationFilter(GatewayJwtProperties properties) {
