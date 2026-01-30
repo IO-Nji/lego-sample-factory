@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../api/api";
-import { StandardDashboardLayout, CompactScheduleTimeline, OrdersSection, StatisticsGrid, Button } from "../../components";
+import { StandardDashboardLayout, CompactScheduleTimeline, OrdersSection, StatisticsGrid, Button, Card } from "../../components";
 import ProductionOrderCard from "../../components/ProductionOrderCard";
 import "../../styles/DashboardLayout.css";
 
@@ -460,11 +460,13 @@ function ProductionPlanningDashboard() {
 
   // Render Production Schedule Timeline
   const renderScheduleTimeline = () => (
-    <CompactScheduleTimeline
-      scheduledTasks={scheduledTasks}
-      onTaskClick={handleTaskClick}
-      title="Production Schedule Timeline"
-    />
+    <Card variant="framed" title="PRODUCTION SCHEDULE TIMELINE" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CompactScheduleTimeline
+        scheduledTasks={scheduledTasks}
+        onTaskClick={handleTaskClick}
+        showTitle={false}
+      />
+    </Card>
   );
 
   // Render Statistics

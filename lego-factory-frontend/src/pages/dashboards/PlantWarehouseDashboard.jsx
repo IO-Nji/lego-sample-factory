@@ -8,7 +8,8 @@ import {
   OrdersSection,
   InventoryTable,
   FormCard,
-  ActivityLog
+  ActivityLog,
+  Card
 } from "../../components";
 import CustomerOrderCard from "../../components/CustomerOrderCard";
 import { getProductDisplayName, getInventoryStatusColor } from "../../utils/dashboardHelpers";
@@ -305,14 +306,13 @@ function PlantWarehouseDashboard() {
 
   // Render Activity/Notifications using ActivityLog component
   const renderActivity = () => (
-    <ActivityLog
-      title="Warehouse Activity"
-      icon="📢"
-      notifications={notifications}
-      onClear={clearNotifications}
-      maxVisible={50}
-      emptyMessage="No recent activity"
-    />
+    <Card variant="framed" title="WAREHOUSE ACTIVITY" style={{ height: '100%' }}>
+      <ActivityLog
+        notifications={notifications}
+        onClear={clearNotifications}
+        showTitle={false}
+      />
+    </Card>
   );
 
   // Render Statistics Grid for new layout

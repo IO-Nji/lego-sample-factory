@@ -190,10 +190,13 @@ function PartsSupplyWarehouseDashboard() {
 
   // Activity log rendering
   const renderActivity = () => (
-    <ActivityLog 
-      notifications={notifications}
-      onClear={clearNotifications}
-    />
+    <Card variant="framed" title="WAREHOUSE ACTIVITY" style={{ height: '100%' }}>
+      <ActivityLog 
+        notifications={notifications}
+        onClear={clearNotifications}
+        showTitle={false}
+      />
+    </Card>
   );
 
   // Render Supply Orders using OrdersSection

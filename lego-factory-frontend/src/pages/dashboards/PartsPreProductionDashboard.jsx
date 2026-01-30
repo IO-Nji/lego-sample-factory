@@ -3,7 +3,8 @@ import {
   OrdersSection,
   ActivityLog,
   StatisticsGrid,
-  WorkstationOrderCard
+  WorkstationOrderCard,
+  Card
 } from "../../components";
 import { useWorkstationOrders } from "../../hooks/useWorkstationOrders";
 import { STANDARD_FILTER_OPTIONS, STANDARD_SORT_OPTIONS } from "../../config/workstationConfig";
@@ -30,10 +31,13 @@ function PartsPreProductionDashboard() {
   } = useWorkstationOrders(2);
 
   const renderActivity = () => (
-    <ActivityLog 
-      notifications={notifications}
-      onClear={clearNotifications}
-    />
+    <Card variant="framed" title="STATION ACTIVITY" style={{ height: '100%' }}>
+      <ActivityLog 
+        notifications={notifications}
+        onClear={clearNotifications}
+        showTitle={false}
+      />
+    </Card>
   );
 
   const renderOrders = () => (

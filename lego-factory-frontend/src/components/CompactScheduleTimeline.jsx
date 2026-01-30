@@ -16,8 +16,9 @@ import '../styles/GanttChart.css';
  * @param {Array} scheduledTasks - Array of task objects with workstation, duration, status, start/end times
  * @param {Function} onTaskClick - Handler when a task bar is clicked
  * @param {string} title - Optional title override
+ * @param {boolean} showTitle - Whether to show the internal title (default: true, set false when inside Card with title)
  */
-function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Production Schedule Timeline" }) {
+function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Production Schedule Timeline", showTitle = true }) {
   const [viewStart, setViewStart] = useState(null);
   const [viewEnd, setViewEnd] = useState(null);
   const [hoveredTask, setHoveredTask] = useState(null);
@@ -172,31 +173,33 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
       fontSize: '0.75rem',
       overflow: 'hidden'
     }}>
-      {/* Header - Compact */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingBottom: '0.5rem',
-        borderBottom: '2px solid #e5e7eb',
-        flexShrink: 0
-      }}>
-        <h3 style={{ 
-          margin: 0, 
-          fontSize: '0.875rem', 
-          fontWeight: 'bold', 
-          color: '#1f2937' 
+      {/* Header - Compact (only show if showTitle is true) */}
+      {showTitle && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingBottom: '0.5rem',
+          borderBottom: '2px solid #e5e7eb',
+          flexShrink: 0
         }}>
-          📅 {title}
-        </h3>
-        <span style={{ 
-          fontSize: '0.7rem', 
-          color: '#6b7280',
-          whiteSpace: 'nowrap'
-        }}>
-          {viewStart.toLocaleDateString()} - {viewEnd.toLocaleDateString()}
-        </span>
-      </div>
+          <h3 style={{ 
+            margin: 0, 
+            fontSize: '0.875rem', 
+            fontWeight: 'bold', 
+            color: '#1f2937' 
+          }}>
+            📅 {title}
+          </h3>
+          <span style={{ 
+            fontSize: '0.7rem', 
+            color: '#6b7280',
+            whiteSpace: 'nowrap'
+          }}>
+            {viewStart.toLocaleDateString()} - {viewEnd.toLocaleDateString()}
+          </span>
+        </div>
+      )}
 
       {/* Status Legend - Matches GanttChart */}
       <div style={{
@@ -477,7 +480,8 @@ CompactScheduleTimeline.propTypes = {
     manuallyAdjusted: PropTypes.bool
   })),
   onTaskClick: PropTypes.func,
-  title: PropTypes.string
+  title: PropTypes.string,
+  showTitle: PropTypes.bool
 };
 
 export default CompactScheduleTimeline;

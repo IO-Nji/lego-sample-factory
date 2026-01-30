@@ -32,22 +32,31 @@ import styles from './Card.module.css';
  * <Card interactive onClick={handleClick}>
  *   <p>Click me!</p>
  * </Card>
+ * 
+ * // Framed card (double-border style for dashboard panels)
+ * <Card variant="framed" title="ORDER STATUS">
+ *   <PieChart data={data} />
+ * </Card>
  */
 function Card({
   children,
   variant = 'default',
   header = null,
   footer = null,
+  title = null,
   interactive = false,
   onClick,
   className = '',
   padding = 'normal',
+  style = {},
   ...props
 }) {
+  const isFramed = variant === 'framed';
+  
   const cardClasses = [
     styles.card,
     styles[variant],
-    styles[`padding-${padding}`],
+    !isFramed && styles[`padding-${padding}`],
     interactive && styles.interactive,
     onClick && styles.clickable,
     className
@@ -66,6 +75,28 @@ function Card({
     }
   };
 
+  // Framed variant: outer frame + inner content panel with double border effect
+  if (isFramed) {
+    return (
+      <div
+        className={cardClasses}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        style={style}
+        {...props}
+      >
+        {title && <h3 className={styles.framedTitle}>{title}</h3>}
+        <div className={styles.framedInner}>
+          {header && <div className={styles.header}>{header}</div>}
+          <div className={styles.framedBody}>{children}</div>
+          {footer && <div className={styles.footer}>{footer}</div>}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cardClasses}
@@ -73,6 +104,7 @@ function Card({
       onKeyDown={handleKeyDown}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
+      style={style}
       {...props}
     >
       {header && <div className={styles.header}>{header}</div>}
@@ -86,14 +118,17 @@ Card.propTypes = {
   /** Card content */
   children: PropTypes.node.isRequired,
   
-  /** Visual style variant */
-  variant: PropTypes.oneOf(['default', 'elevated', 'outlined']),
+  /** Visual style variant: 'default', 'elevated', 'outlined', or 'framed' (double-border dashboard style) */
+  variant: PropTypes.oneOf(['default', 'elevated', 'outlined', 'framed']),
   
   /** Optional header content */
   header: PropTypes.node,
   
   /** Optional footer content */
   footer: PropTypes.node,
+  
+  /** Title for framed variant (displayed above inner panel) */
+  title: PropTypes.string,
   
   /** Enable hover effects */
   interactive: PropTypes.bool,
@@ -104,8 +139,11 @@ Card.propTypes = {
   /** Additional CSS classes */
   className: PropTypes.string,
   
-  /** Padding size */
+  /** Padding size (not applicable to framed variant) */
   padding: PropTypes.oneOf(['none', 'small', 'normal', 'large']),
+  
+  /** Inline styles */
+  style: PropTypes.object,
 };
 
 export default Card;

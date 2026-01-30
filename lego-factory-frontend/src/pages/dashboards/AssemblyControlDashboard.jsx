@@ -330,10 +330,13 @@ function AssemblyControlDashboard() {
 
   // Activity log rendering
   const renderActivity = () => (
-    <ActivityLog 
-      notifications={notifications}
-      onClear={clearNotifications}
-    />
+    <Card variant="framed" title="CONTROL ACTIVITY" style={{ height: '100%' }}>
+      <ActivityLog 
+        notifications={notifications}
+        onClear={clearNotifications}
+        showTitle={false}
+      />
+    </Card>
   );
 
   // Control orders display using OrdersSection

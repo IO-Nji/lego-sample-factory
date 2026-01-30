@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
-import { StandardDashboardLayout, StatisticsGrid, InventoryTable, ActivityLog, OrdersSection } from "../../components";
+import { StandardDashboardLayout, StatisticsGrid, InventoryTable, ActivityLog, OrdersSection, Card } from "../../components";
 import WarehouseOrderCard from "../../components/WarehouseOrderCard";
 import { getInventoryStatusColor, generateAcronym } from "../../utils/dashboardHelpers";
 import { useInventoryDisplay } from "../../hooks/useInventoryDisplay";
@@ -424,14 +424,13 @@ function ModulesSupermarketDashboard() {
 
   // Render Activity Log using standardized ActivityLog component
   const renderActivity = () => (
-    <ActivityLog
-      title="Supermarket Activity"
-      icon="📢"
-      notifications={notifications}
-      onClear={clearNotifications}
-      maxVisible={50}
-      emptyMessage="No recent activity"
-    />
+    <Card variant="framed" title="SUPERMARKET ACTIVITY" style={{ height: '100%' }}>
+      <ActivityLog
+        notifications={notifications}
+        onClear={clearNotifications}
+        showTitle={false}
+      />
+    </Card>
   );
 
   // Render Statistics

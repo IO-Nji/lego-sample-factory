@@ -303,6 +303,36 @@ export const getWorkstationConfig = (workstationId) => {
 };
 
 /**
+ * Get workstation icon by ID
+ * @param {number} workstationId - The workstation ID (1-9)
+ * @returns {string} Emoji icon for the workstation
+ */
+export const getWorkstationIcon = (workstationId) => {
+  const config = WORKSTATION_CONFIG[workstationId];
+  return config?.icon || '⚙️';
+};
+
+/**
+ * Get workstation short name by ID
+ * @param {number} workstationId - The workstation ID (1-9)
+ * @returns {string} Short name for the workstation
+ */
+export const getWorkstationShortName = (workstationId) => {
+  const config = WORKSTATION_CONFIG[workstationId];
+  if (!config) return `WS-${workstationId}`;
+  
+  // Return abbreviated name for compact displays
+  return config.name
+    .replace('Workstation', 'WS')
+    .replace('Station', 'Stn')
+    .replace('Assembly', 'Assy')
+    .replace('Production', 'Prod')
+    .replace('Manufacturing', 'Mfg')
+    .replace('Warehouse', 'WH')
+    .replace('Control', 'Ctrl');
+};
+
+/**
  * Get all workstations of a specific type
  * @param {string} type - 'MANUFACTURING', 'ASSEMBLY', or 'WAREHOUSE'
  * @returns {Array} Array of workstation configs

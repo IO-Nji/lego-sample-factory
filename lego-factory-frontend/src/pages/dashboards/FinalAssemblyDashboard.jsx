@@ -3,7 +3,8 @@ import {
   OrdersSection,
   ActivityLog,
   StatisticsGrid,
-  FinalAssemblyOrderCard
+  FinalAssemblyOrderCard,
+  Card
 } from "../../components";
 import { useWorkstationOrders } from "../../hooks/useWorkstationOrders";
 import { getProductDisplayName } from "../../utils/dashboardHelpers";
@@ -39,10 +40,13 @@ function FinalAssemblyDashboard() {
   } = useWorkstationOrders(6);
 
   const renderActivity = () => (
-    <ActivityLog 
-      notifications={notifications}
-      onClear={clearNotifications}
-    />
+    <Card variant="framed" title="STATION ACTIVITY" style={{ height: '100%' }}>
+      <ActivityLog 
+        notifications={notifications}
+        onClear={clearNotifications}
+        showTitle={false}
+      />
+    </Card>
   );
 
   const renderOrders = () => (

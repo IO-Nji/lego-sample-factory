@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../../api/api";
-import { StatCard, Button, ActivityLog, PageHeader, WorkstationCard, StatisticsGrid, CompactScheduleTimeline, Footer, AdminSettingsPanel } from "../../components";
+import { StatCard, Button, ActivityLog, PageHeader, WorkstationCard, StatisticsGrid, CompactScheduleTimeline, Footer, AdminSettingsPanel, Card } from "../../components";
 import PieChart from "../../components/PieChart";
 import BarChart from "../../components/BarChart";
+import { getWorkstationIcon } from "../../config/workstationConfig";
 import "../../styles/Chart.css";
 import "../../styles/DashboardLayout.css";
 
@@ -371,60 +372,44 @@ function AdminDashboard() {
         height: '400px'
       }}>
         {/* Column 1: System Activity Log */}
-        <div style={{ 
-          flex: '1',
-          minWidth: '0',
-          height: '100%',
-          backgroundColor: 'white',
-          borderRadius: '0.5rem',
-          border: '1px solid var(--color-border)',
-          padding: '1rem',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
+        <Card 
+          variant="framed" 
+          title="SYSTEM ACTIVITY LOG"
+          style={{ flex: '1', minWidth: '0', height: '100%' }}
+        >
           <ActivityLog 
             notifications={notifications}
-            title="SYSTEM ACTIVITY LOG"
             maxVisible={10}
             onClear={clearNotifications}
-            titleStyle={{ textAlign: 'left' }}
+            showTitle={false}
           />
-        </div>
+        </Card>
 
         {/* Column 2: Order Status Distribution */}
-        <div style={{ 
-          flexShrink: 0,
-          width: '260px',
-          height: '100%',
-          backgroundColor: 'white',
-          borderRadius: '0.5rem',
-          border: '1px solid var(--color-border)',
-          padding: '1rem'
-        }}>
+        <Card 
+          variant="framed" 
+          title="ORDER STATUS"
+          style={{ flexShrink: 0, width: '260px', height: '100%' }}
+        >
           <PieChart 
-            title="ORDER STATUS DISTRIBUTION"
             data={orderStatusData}
             size={135}
+            noContainer
           />
-        </div>
+        </Card>
 
         {/* Column 3: Production by Type */}
-        <div style={{ 
-          flexShrink: 0,
-          width: '260px',
-          height: '100%',
-          backgroundColor: 'white',
-          borderRadius: '0.5rem',
-          border: '1px solid var(--color-border)',
-          padding: '1rem'
-        }}>
+        <Card 
+          variant="framed" 
+          title="PRODUCTION STATUS"
+          style={{ flexShrink: 0, width: '260px', height: '100%' }}
+        >
           <PieChart 
-            title="PRODUCTION STATUS TYPE"
             data={productionTypeData}
             size={135}
+            noContainer
           />
-        </div>
+        </Card>
       </div>
 
       {/* Row 2: Statistics Grid | Gantt Chart */}
@@ -433,163 +418,124 @@ function AdminDashboard() {
         gap: '1.25rem',
         marginBottom: '1.5rem',
         alignItems: 'stretch',
-        height: '360px'
+        minHeight: '320px'
       }}>
         {/* Column 1: Statistics Grid */}
-        <div style={{ 
-          flexShrink: 0,
-          height: '100%',
-          backgroundColor: 'white',
-          borderRadius: '0.5rem',
-          border: '1px solid var(--color-border)',
-          padding: '1rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
+        <Card 
+          variant="framed" 
+          title="SYSTEM STATISTICS"
+          style={{ flexShrink: 0 }}
+        >
           <StatisticsGrid 
             stats={[
               { value: dashboardData.totalOrders, label: "TOTAL", variant: "primary", icon: "📦" },
               { value: dashboardData.pendingOrders, label: "PENDING", variant: "warning", icon: "⏳" },
               { value: dashboardData.processingOrders, label: "PROCESSING", variant: "info", icon: "⚙️" },
               { value: dashboardData.completedOrders, label: "COMPLETED", variant: "success", icon: "✓" },
-              { value: dashboardData.activeWorkstations, label: "WORKSTATIONS", variant: "primary", icon: "🏭" },
+              { value: dashboardData.activeWorkstations, label: "STATIONS", variant: "primary", icon: "🏭" },
               { value: dashboardData.totalUsers, label: "USERS", variant: "info", icon: "👥" },
               { value: dashboardData.totalProducts, label: "PRODUCTS", variant: "success", icon: "🎨" },
               { value: dashboardData.lowStockItems, label: "LOW STOCK", variant: "danger", icon: "⚠️" },
             ]}
           />
-        </div>
+        </Card>
 
         {/* Column 2: Gantt Chart */}
-        <div style={{ 
-          flex: '1',
-          minWidth: '0',
-          height: '100%',
-          backgroundColor: 'white',
-          borderRadius: '0.5rem',
-          border: '1px solid var(--color-border)',
-          padding: '1rem',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
+        <Card 
+          variant="framed" 
+          title="PRODUCTION SCHEDULE TIMELINE"
+          style={{ flex: '1', minWidth: '0', display: 'flex', flexDirection: 'column' }}
+        >
           <CompactScheduleTimeline
             scheduledTasks={scheduledTasks}
+            showTitle={false}
             onTaskClick={(task) => {
               console.log('Task clicked:', task);
               addNotification(`Viewing task: ${task.taskType || task.operationType || 'Task'}`, 'info');
             }}
-            title="Production Schedule Timeline"
           />
-        </div>
+        </Card>
       </div>
 
       {/* Row 3: Workstation Monitor + User Roles + Recent Orders */}
-      <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'stretch' }}>
-        {/* Workstation Status Monitor */}
-        <div style={{ 
-          flex: '0 0 calc(40% - 0.83rem)',
-          minWidth: 0,
-          backgroundColor: 'white',
-          borderRadius: '0.5rem',
-          border: '1px solid var(--color-border)',
-          padding: '1rem'
-        }}>
-          <h3 className="component-title" style={{ marginBottom: '1rem' }}>WORKSTATION STATUS MONITOR</h3>
+      <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'stretch', marginBottom: '1.5rem', minHeight: '220px' }}>
+        {/* Workstation Status Monitor - Uses standardized WorkstationCard component */}
+        <Card 
+          variant="framed" 
+          title="STATION STATUS"
+          style={{ flex: '0 0 calc(35% - 0.83rem)', minWidth: 0 }}
+        >
           <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '0.6rem',
+            display: 'flex', 
+            flexWrap: 'wrap',
+            gap: '0.5rem',
             padding: '0',
-            justifyItems: 'center',
-            alignItems: 'center',
-            justifyContent: 'center',
-            alignContent: 'center'
+            justifyContent: 'flex-start',
+            alignItems: 'flex-start'
           }}>
-                {dashboardData.workstations.map((ws) => {
-                  // Determine status based on actual orders at workstation
-                  // 'active' (yellow) only when workstation has pending/processing orders
-                  // 'idle' (blue) when no active orders
-                  const status = ws.hasActiveOrders ? 'active' : 'idle';
-                  
-                  // Get icon based on workstation name
-                  const getWorkstationIcon = (name) => {
-                    const nameLower = (name || '').toLowerCase();
-                    if (nameLower.includes('plant') && nameLower.includes('wh')) return '🏭';
-                    if (nameLower.includes('modules') || nameLower.includes('mods')) return '🏢';
-                    if (nameLower.includes('parts')) return '📦';
-                    if (nameLower.includes('final') && nameLower.includes('assy')) return '🔨';
-                    if (nameLower.includes('gear')) return '⚙️';
-                    if (nameLower.includes('motor')) return '🔧';
-                    if (nameLower.includes('injection')) return '💉';
-                    if (nameLower.includes('pre')) return '⚡';
-                    if (nameLower.includes('finishing')) return '✨';
-                    return '⚙️';
-                  };
-                  
-                  return (
-                    <WorkstationCard
-                      key={ws.id}
-                      icon={getWorkstationIcon(ws.name)}
-                      name={ws.name}
-                      tooltip={`${ws.details || 'Workstation details'} | Status: ${ws.status || 'ACTIVE'}`}
-                      status={status}
-                      onClick={() => {}}
-                    />
-                  );
-                })}
-                {dashboardData.workstations.length === 0 && (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
-                    No workstations available
-                  </div>
-                )}
+            {dashboardData.workstations.map((ws) => {
+              // Determine status based on actual orders at workstation
+              // 'active' (yellow) only when workstation has pending/processing orders
+              // 'idle' (blue) when no active orders
+              const status = ws.hasActiveOrders ? 'active' : 'idle';
+              
+              return (
+                <WorkstationCard
+                  key={ws.id}
+                  icon={getWorkstationIcon(ws.id)}
+                  name={ws.name}
+                  tooltip={{ 
+                    description: ws.details || 'Workstation details', 
+                    username: `Status: ${ws.status || 'ACTIVE'}` 
+                  }}
+                  status={status}
+                  layout="horizontal"
+                  onClick={() => {}}
+                />
+              );
+            })}
+            {dashboardData.workstations.length === 0 && (
+              <div style={{ width: '100%', textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
+                No workstations available
               </div>
-        </div>
+            )}
+          </div>
+        </Card>
           
-        {/* User Roles Distribution - Horizontal Layout */}
-        <div style={{ 
-          flex: '1',
-          minWidth: 0,
-          backgroundColor: 'white',
-          borderRadius: '0.5rem',
-          border: '1px solid var(--color-border)',
-          padding: '1rem',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
+        {/* User Roles Distribution - Compact Horizontal Layout */}
+        <Card 
+          variant="framed" 
+          title="USER ROLES"
+          style={{ flex: '0 0 auto', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+        >
           <PieChart 
-            title="USER ROLES DISTRIBUTION"
             data={userRoleData}
-            size={120}
-            layout="horizontal"
+            size={140}
+            layout="compact"
+            noContainer
           />
-        </div>
+        </Card>
           
-        {/* Recent Orders */}
-        <div style={{ 
-          flex: '0 0 calc(30% - 0.83rem)',
-          minWidth: 0,
-          backgroundColor: 'white',
-          borderRadius: '0.5rem',
-          border: '1px solid var(--color-border)',
-          padding: '1rem'
-        }}>
-          <h3 className="component-title" style={{ marginBottom: '1rem' }}>RECENT ORDERS</h3>
+        {/* Recent Orders - Takes remaining width */}
+        <Card 
+          variant="framed" 
+          title="RECENT ORDERS"
+          style={{ flex: '1', minWidth: 0, display: 'flex', flexDirection: 'column' }}
+        >
           {dashboardData.recentOrders.length > 0 ? (
-            <div style={{ overflowY: 'auto', maxHeight: '280px' }}>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
                 <table style={{ 
                   width: '100%', 
                   borderCollapse: 'collapse',
-                  fontSize: '0.7rem',
+                  fontSize: '0.65rem',
                   tableLayout: 'fixed'
                 }}>
                   <thead style={{ position: 'sticky', top: 0, background: 'white', zIndex: 1 }}>
                     <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                      <th style={{ padding: '0.3rem 0.2rem', textAlign: 'left', fontWeight: 600, fontSize: '0.65rem', width: '35px' }}>ID</th>
-                      <th style={{ padding: '0.3rem 0.2rem', textAlign: 'left', fontWeight: 600, fontSize: '0.65rem', width: '90px' }}>Order No.</th>
-                      <th style={{ padding: '0.3rem 0.2rem', textAlign: 'left', fontWeight: 600, fontSize: '0.65rem', width: '70px' }}>Type</th>
-                      <th style={{ padding: '0.3rem 0.2rem', textAlign: 'left', fontWeight: 600, fontSize: '0.65rem', width: '85px' }}>Status</th>
+                      <th style={{ padding: '0.2rem', textAlign: 'left', fontWeight: 600, fontSize: '0.6rem', width: '28px' }}>ID</th>
+                      <th style={{ padding: '0.2rem', textAlign: 'left', fontWeight: 600, fontSize: '0.6rem' }}>Order No.</th>
+                      <th style={{ padding: '0.2rem', textAlign: 'left', fontWeight: 600, fontSize: '0.6rem', width: '55px' }}>Type</th>
+                      <th style={{ padding: '0.2rem', textAlign: 'left', fontWeight: 600, fontSize: '0.6rem', width: '65px' }}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -639,7 +585,7 @@ function AdminDashboard() {
           ) : (
             <div className="chart-empty">No recent orders</div>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Row 4: System Settings Panel */}
@@ -650,35 +596,34 @@ function AdminDashboard() {
         alignItems: 'stretch'
       }}>
         {/* Settings Panel */}
-        <div style={{ 
-          flex: '0 0 350px',
-          backgroundColor: 'white',
-          borderRadius: '0.5rem',
-          border: '1px solid var(--color-border)',
-          padding: '1rem'
-        }}>
+        <Card 
+          variant="framed" 
+          title="SYSTEM SETTINGS"
+          style={{ flex: '0 0 350px' }}
+        >
           <AdminSettingsPanel onNotify={addNotification} />
-        </div>
+        </Card>
         
         {/* Placeholder for additional admin panels */}
-        <div style={{ 
-          flex: '1',
-          minWidth: 0,
-          backgroundColor: 'white',
-          borderRadius: '0.5rem',
-          border: '1px solid var(--color-border)',
-          padding: '1rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#9ca3af',
-          fontSize: '0.875rem'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
-            <div>Additional admin panels coming soon</div>
+        <Card 
+          variant="framed" 
+          title="COMING SOON"
+          style={{ flex: '1', minWidth: 0 }}
+        >
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            color: '#9ca3af',
+            fontSize: '0.875rem'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
+              <div>Additional admin panels coming soon</div>
+            </div>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Footer */}

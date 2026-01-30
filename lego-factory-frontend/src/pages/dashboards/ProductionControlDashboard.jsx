@@ -329,14 +329,13 @@ function ProductionControlDashboard() {
 
   // Render activity log using ActivityLog component
   const renderActivity = () => (
-    <ActivityLog
-      title="Production Activity"
-      icon="📢"
-      notifications={notifications}
-      onClear={clearNotifications}
-      maxVisible={50}
-      emptyMessage="No recent activity"
-    />
+    <Card variant="framed" title="CONTROL ACTIVITY" style={{ height: '100%' }}>
+      <ActivityLog
+        notifications={notifications}
+        onClear={clearNotifications}
+        showTitle={false}
+      />
+    </Card>
   );
 
   // Render control orders using OrdersSection
