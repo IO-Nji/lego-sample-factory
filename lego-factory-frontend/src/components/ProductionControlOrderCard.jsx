@@ -16,16 +16,20 @@ import '../styles/CustomerOrderCard.css';
  * - Target and actual timing (TS, TC, AS, AF)
  * - Workstation information
  * - Supply order status checking (auto-fetch on mount)
- * - Status-aware actions (Request Parts, Dispatch, Start, Complete)
+ * - Status-aware actions following the confirm → [operations] → dispatch sequence
  * 
- * Button Logic:
- * - PENDING status:
- *   - If no supply order: Show "Request Parts"
- *   - If supply order PENDING/IN_PROGRESS: Show disabled "Waiting for Parts..."
- *   - If supply order FULFILLED: Show "Dispatch to Workstation"
- * - IN_PROGRESS status: Show "Start Production" → "Complete Production"
+ * Button Sequence:
+ * - PENDING: Show "✓ Confirm" button
+ * - CONFIRMED: 
+ *   - If no supply order: Show "📦 Request Parts"
+ *   - If supply order PENDING/IN_PROGRESS: Show disabled "⏳ Awaiting Parts..."
+ *   - If supply order FULFILLED: Show "🚀 Dispatch"
+ * - ASSIGNED (dispatched to workstation): Show "▶️ Start Production"
+ * - IN_PROGRESS: Show "✅ Complete" and "⏸️ Halt"
+ * - COMPLETED/HALTED: No action buttons (just Details)
  * 
  * @param {Object} order - Production control order object
+ * @param {Function} onConfirm - Handler for confirming order
  * @param {Function} onStart - Handler for starting production
  * @param {Function} onComplete - Handler for completing production
  * @param {Function} onHalt - Handler for halting production
@@ -36,6 +40,7 @@ import '../styles/CustomerOrderCard.css';
  */
 function ProductionControlOrderCard({ 
   order, 
+  onConfirm,
   onStart,
   onComplete,
   onHalt,
@@ -47,17 +52,21 @@ function ProductionControlOrderCard({
   const [supplyOrders, setSupplyOrders] = useState([]);
   const [loadingSupply, setLoadingSupply] = useState(false);
 
-  // Fetch supply orders when component mounts or order changes
+  // Fetch supply orders when component mounts, order changes, or periodically
   useEffect(() => {
-    if (order.id && (order.status === 'PENDING' || order.status === 'ASSIGNED')) {
+    if (order.id && (order.status === 'PENDING' || order.status === 'ASSIGNED' || order.status === 'CONFIRMED')) {
       fetchSupplyOrders();
+      
+      // Set up periodic refresh to catch new supply orders
+      const interval = setInterval(fetchSupplyOrders, 5000);
+      return () => clearInterval(interval);
     }
   }, [order.id, order.status]);
 
   const fetchSupplyOrders = async () => {
     try {
       setLoadingSupply(true);
-      const response = await api.get(`/production-control-orders/${order.id}/supply-orders`);
+      const response = await api.get(`/supply-orders/source/${order.id}?type=PRODUCTION`);
       setSupplyOrders(response.data || []);
     } catch (error) {
       console.error('Error fetching supply orders:', error);
@@ -142,46 +151,21 @@ function ProductionControlOrderCard({
   }
 
   // Determine which actions to show based on order status and supply order state
+  // TAXONOMY: Confirm=acknowledge, Request=ask for parts, Dispatch=send to workstation, Start/Complete=work actions
   const getActions = () => {
     const status = order.status;
     const actions = [];
     
     switch(status) {
       case 'PENDING':
-        // Check supply order status to determine button
-        if (loadingSupply) {
-          actions.push({
-            label: 'Loading...',
-            variant: 'outline',
-            size: 'small',
-            disabled: true,
-            show: true
-          });
-        } else if (hasFulfilledSupply) {
-          actions.push({
-            label: '🚀 Dispatch to Workstation',
-            variant: 'success',
-            size: 'small',
-            onClick: () => onDispatch(order.id),
-            show: !!onDispatch
-          });
-        } else if (hasActiveSupply) {
-          actions.push({
-            label: '⏳ Waiting for Parts...',
-            variant: 'outline',
-            size: 'small',
-            disabled: true,
-            show: true
-          });
-        } else {
-          actions.push({
-            label: '📦 Request Parts',
-            variant: 'primary',
-            size: 'small',
-            onClick: () => onRequestParts(order),
-            show: !!onRequestParts
-          });
-        }
+        // Step 1: Confirm the order first
+        actions.push({
+          label: '✓ Confirm',
+          variant: 'confirm',
+          size: 'small',
+          onClick: () => onConfirm(order.id),
+          show: !!onConfirm
+        });
         actions.push({
           label: 'Details',
           variant: 'ghost',
@@ -191,10 +175,72 @@ function ProductionControlOrderCard({
         });
         break;
 
+      case 'CONFIRMED':
+        // Step 2: After confirmation, check supply order status
+        if (loadingSupply) {
+          actions.push({
+            label: 'Loading...',
+            variant: 'outline',
+            size: 'small',
+            disabled: true,
+            show: true
+          });
+        } else if (hasFulfilledSupply) {
+          // Supply fulfilled - can dispatch to workstation
+          actions.push({
+            label: '→ Dispatch',
+            variant: 'success',
+            size: 'small',
+            onClick: () => onDispatch(order.id),
+            show: !!onDispatch
+          });
+          actions.push({
+            label: 'View Supply',
+            variant: 'outline',
+            size: 'small',
+            onClick: () => onViewDetails({ ...order, supplyOrders }),
+            show: !!onViewDetails
+          });
+        } else if (hasActiveSupply) {
+          // Waiting for supply order to be fulfilled
+          actions.push({
+            label: '⏳ Awaiting...',
+            variant: 'warning',
+            size: 'small',
+            disabled: true,
+            show: true
+          });
+          actions.push({
+            label: 'View Supply',
+            variant: 'outline',
+            size: 'small',
+            onClick: () => onViewDetails({ ...order, supplyOrders }),
+            show: !!onViewDetails
+          });
+        } else {
+          // No supply order yet - request parts
+          actions.push({
+            label: '↓ Request',
+            variant: 'primary',
+            size: 'small',
+            onClick: () => onRequestParts(order),
+            show: !!onRequestParts
+          });
+          actions.push({
+            label: 'Details',
+            variant: 'ghost',
+            size: 'small',
+            onClick: () => onViewDetails(order),
+            show: !!onViewDetails
+          });
+        }
+        break;
+
       case 'ASSIGNED':
+        // Step 5: Order dispatched to workstation - workstation can start
         actions.push({
-          label: '✅ Confirm Order',
-          variant: 'primary',
+          label: '▶ Start',
+          variant: 'success',
           size: 'small',
           onClick: () => onConfirm(order.id),
           show: !!onConfirm
@@ -253,15 +299,16 @@ function ProductionControlOrderCard({
         break;
       
       case 'IN_PROGRESS':
+        // Step 6: Work in progress - can complete or halt
         actions.push({
-          label: '✅ Complete Production',
+          label: '✓ Complete',
           variant: 'primary',
           size: 'small',
           onClick: () => onComplete(order.id),
           show: !!onComplete
         });
         actions.push({
-          label: '⏸️ Halt',
+          label: '⏸ Halt',
           variant: 'warning',
           size: 'small',
           onClick: () => onHalt(order.id),
@@ -278,7 +325,7 @@ function ProductionControlOrderCard({
       
       case 'HALTED':
         actions.push({
-          label: 'Resume',
+          label: '▶ Resume',
           variant: 'success',
           size: 'small',
           onClick: () => onStart(order.id),
@@ -349,6 +396,7 @@ ProductionControlOrderCard.propTypes = {
     actualFinishTime: PropTypes.string,
     notes: PropTypes.string
   }).isRequired,
+  onConfirm: PropTypes.func,
   onStart: PropTypes.func,
   onComplete: PropTypes.func,
   onHalt: PropTypes.func,
@@ -358,6 +406,7 @@ ProductionControlOrderCard.propTypes = {
 };
 
 ProductionControlOrderCard.defaultProps = {
+  onConfirm: () => {},
   onStart: () => {},
   onComplete: () => {},
   onHalt: () => {},

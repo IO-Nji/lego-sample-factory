@@ -49,7 +49,7 @@ function ProductionPlanningDashboard() {
     setSuccess(null);
     
     try {
-      await api.put(`/production-planning/${orderId}/confirm`);
+      await api.post(`/production-orders/${orderId}/confirm`);
       setSuccess("Production order confirmed - ready for scheduling");
       addNotification("Order confirmed and ready for scheduling", "success");
       await fetchProductionOrders();
@@ -224,6 +224,25 @@ function ProductionPlanningDashboard() {
       addNotification(errorMsg, "error");
     }
   };
+
+  /**
+   * Complete a production order with full orchestration:
+   * - Credits Modules Supermarket with produced modules
+   * - Notifies source WarehouseOrder that modules are ready
+   * - WarehouseOrder can then proceed to fulfill and create Final Assembly orders
+   */
+  const handleCompleteProductionOrder = async (orderId) => {
+    try {
+      await api.post(`/production-orders/${orderId}/complete-with-notification`);
+      setSuccess("Production order completed! Modules credited to Modules Supermarket and Warehouse Order notified.");
+      addNotification("Production completed - Modules Supermarket credited", "success");
+      await fetchProductionOrders();
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message || "Failed to complete production order";
+      setError(errorMsg);
+      addNotification(errorMsg, "error");
+    }
+  };
   
   const handleTaskClick = (task) => {
     // Find the related production order
@@ -314,7 +333,7 @@ function ProductionPlanningDashboard() {
             handleShowSchedulePreview(order);
           }}
           onStart={(orderId) => handleDispatchProduction(orderId)}
-          onComplete={(orderId) => handleUpdateStatus(orderId, "COMPLETED")}
+          onComplete={(orderId) => handleCompleteProductionOrder(orderId)}
           onCancel={handleCancelOrder}
           isScheduling={schedulingInProgress[order.id]}
         />

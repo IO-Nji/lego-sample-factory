@@ -27,6 +27,10 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/error").permitAll()
+                // OpenAPI / Swagger UI endpoints
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
+                .requestMatchers("/swagger-resources/**", "/webjars/**").permitAll()
                 .requestMatchers("/api/masterdata/products/**").permitAll()
                 .requestMatchers("/api/masterdata/modules/**").permitAll()
                 .requestMatchers("/api/masterdata/parts/**").permitAll()

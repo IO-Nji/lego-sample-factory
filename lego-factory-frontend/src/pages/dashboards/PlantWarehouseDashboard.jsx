@@ -246,6 +246,29 @@ function PlantWarehouseDashboard() {
     return handleFulfillOrder(orderId);
   };
 
+  // Scenario 4: Order Production Directly (large orders bypass warehouse)
+  const handleOrderProduction = async (orderId) => {
+    setError(null);
+    try {
+      // Create production order directly from customer order
+      await api.post('/production-orders/from-customer-order', {
+        customerOrderId: orderId,
+        priority: 'NORMAL',
+        notes: 'Scenario 4: Direct production (large order bypasses warehouse)',
+        createdByWorkstationId: session?.user?.workstationId || 7
+      });
+      
+      const order = orders.find(o => o.id === orderId);
+      const orderNum = order?.orderNumber || `Order #${orderId}`;
+      addNotification(`${orderNum} sent to production`, 'success', { orderNumber: orderNum });
+      
+      await fetchOrders();
+    } catch (err) {
+      setError("Failed to create production order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to create production order", 'error');
+    }
+  };
+
   const handleComplete = async (orderId) => {
     setError(null);
     try {
@@ -370,6 +393,7 @@ function PlantWarehouseDashboard() {
           onConfirm={handleConfirm}
           onFulfill={handleFulfillOrder}
           onProcess={handleProcessing}
+          onOrderProduction={handleOrderProduction}
           onComplete={handleComplete}
           onCancel={handleCancel}
           isProcessing={fulfillingOrderId === order.id}

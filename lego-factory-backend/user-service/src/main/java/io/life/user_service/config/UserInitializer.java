@@ -43,10 +43,10 @@ public class UserInitializer implements CommandLineRunner {
         // Create planning users
         createUserIfNotExists("production_planning", DEFAULT_PASSWORD, UserRole.PRODUCTION_PLANNING, null);
         
-        // Create control users (coordination roles, no specific workstation)
+        // Create control users (no workstation - they coordinate across multiple stations)
         createUserIfNotExists("production_control", DEFAULT_PASSWORD, UserRole.PRODUCTION_CONTROL, null);
         
-        // Create assembly control users (coordination role, no specific workstation)
+        // Create assembly control users (no workstation - they coordinate across multiple assembly stations)
         createUserIfNotExists("assembly_control", DEFAULT_PASSWORD, UserRole.ASSEMBLY_CONTROL, null);
         createUserIfNotExists("gear_assembly", DEFAULT_PASSWORD, UserRole.ASSEMBLY_CONTROL, 4L);
         createUserIfNotExists("motor_assembly", DEFAULT_PASSWORD, UserRole.ASSEMBLY_CONTROL, 5L);

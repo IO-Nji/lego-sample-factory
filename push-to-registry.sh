@@ -81,11 +81,7 @@ if [[ "$1" == "--all" ]]; then
     BUILD_ALL=true
 fi
 
-# Check if --all flag is provided
-BUILD_ALL=false
-if [[ "$1" == "--all" ]]; then
-    BUILD_ALL=true
-fi
+
 
 # Function to check if service was modified
 service_modified() {

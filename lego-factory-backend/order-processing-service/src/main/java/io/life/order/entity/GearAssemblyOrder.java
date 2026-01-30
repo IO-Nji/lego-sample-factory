@@ -73,16 +73,16 @@ public class GearAssemblyOrder {
     private LocalDateTime actualFinishTime;
 
     // Assembly specifications
-    @Column(length = 500)
+    @Column(length = 2000)
     private String assemblyInstructions;
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String gearRatioRequirements;
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String qualityChecks; // Gear mesh, torque testing
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String operatorNotes;
 
     // Audit fields

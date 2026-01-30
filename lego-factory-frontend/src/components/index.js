@@ -56,9 +56,13 @@ export { default as FinalAssemblyOrderCard } from './FinalAssemblyOrderCard';
 export { default as ProductionControlOrderCard } from './ProductionControlOrderCard';
 export { default as AssemblyControlOrderCard } from './AssemblyControlOrderCard';
 export { default as SupplyOrderCard } from './SupplyOrderCard';
+export { default as WorkstationOrderCard } from './WorkstationOrderCard';
 
 // Feedback & Interaction
 export { default as Tooltip } from './Tooltip';
 
 // Workstation Components
 export { default as WorkstationCard } from './WorkstationCard';
+
+// Admin Components
+export { default as AdminSettingsPanel } from './AdminSettingsPanel';

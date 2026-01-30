@@ -3,7 +3,7 @@ import {
   OrdersSection,
   ActivityLog,
   StatisticsGrid,
-  ProductionControlOrderCard
+  WorkstationOrderCard
 } from "../../components";
 import { useWorkstationOrders } from "../../hooks/useWorkstationOrders";
 import { STANDARD_FILTER_OPTIONS, STANDARD_SORT_OPTIONS } from "../../config/workstationConfig";
@@ -46,7 +46,7 @@ function PartsPreProductionDashboard() {
       searchKeys={['orderNumber']}
       sortKey="orderNumber"
       renderCard={(order) => (
-        <ProductionControlOrderCard
+        <WorkstationOrderCard
           key={order.id}
           order={order}
           onStart={handleStartOrder}

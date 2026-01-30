@@ -15,4 +15,8 @@ public interface FinalAssemblyOrderRepository extends JpaRepository<FinalAssembl
     List<FinalAssemblyOrder> findByWarehouseOrderId(Long warehouseOrderId);
     List<FinalAssemblyOrder> findByAssemblyControlOrderId(Long assemblyControlOrderId);
     List<FinalAssemblyOrder> findByOutputProductId(Long outputProductId);
+    
+    // For OrderOrchestrationService
+    List<FinalAssemblyOrder> findByAssemblyControlOrderIdAndStatus(Long assemblyControlOrderId, String status);
+    long countByAssemblyControlOrderIdAndStatus(Long assemblyControlOrderId, String status);
 }

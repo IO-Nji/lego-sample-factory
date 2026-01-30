@@ -27,22 +27,31 @@ public class CustomerOrderService {
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String STATUS_PROCESSING = "PROCESSING";
     private static final String ORDER_TYPE_CUSTOMER = "CUSTOMER";
+    
+    // Trigger scenario constants
+    private static final String SCENARIO_DIRECT_FULFILLMENT = "DIRECT_FULFILLMENT";
+    private static final String SCENARIO_WAREHOUSE_ORDER_NEEDED = "WAREHOUSE_ORDER_NEEDED";
+    private static final String SCENARIO_DIRECT_PRODUCTION = "DIRECT_PRODUCTION";
+    
     private final CustomerOrderRepository customerOrderRepository;
     private final WarehouseOrderRepository warehouseOrderRepository;
     private final FinalAssemblyOrderService finalAssemblyOrderService;
     private final OrderAuditService orderAuditService;
     private final InventoryService inventoryService;
+    private final SystemConfigService systemConfigService;
 
     public CustomerOrderService(CustomerOrderRepository customerOrderRepository, 
                                 WarehouseOrderRepository warehouseOrderRepository,
                                 FinalAssemblyOrderService finalAssemblyOrderService,
                                 OrderAuditService orderAuditService,
-                                InventoryService inventoryService) {
+                                InventoryService inventoryService,
+                                SystemConfigService systemConfigService) {
         this.customerOrderRepository = customerOrderRepository;
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.finalAssemblyOrderService = finalAssemblyOrderService;
         this.orderAuditService = orderAuditService;
         this.inventoryService = inventoryService;
+        this.systemConfigService = systemConfigService;
         // Custom exception for mapping errors is now a static nested class below
     }
 
@@ -163,9 +172,18 @@ public class CustomerOrderService {
         }
         
         // STOCK CHECK DURING CONFIRMATION: Check PRODUCT stock at Plant Warehouse (WS-7)
-        // This determines the scenario path: direct fulfillment or warehouse order needed
+        // This determines the scenario path: direct fulfillment, warehouse order, or direct production
         logger.info("=== CUSTOMER ORDER CONFIRMATION: Checking stock for order {} at workstation {} ===", 
             order.getOrderNumber(), order.getWorkstationId());
+        
+        // Calculate total order quantity for Scenario 4 threshold check
+        int totalQuantity = order.getOrderItems().stream()
+            .mapToInt(OrderItem::getQuantity)
+            .sum();
+        
+        int lotSizeThreshold = systemConfigService.getLotSizeThreshold();
+        logger.info("Order {} total quantity: {}, Scenario 4 threshold: {}", 
+            order.getOrderNumber(), totalQuantity, lotSizeThreshold);
         
         boolean hasAllStock = order.getOrderItems().stream()
             .allMatch(item -> {
@@ -175,13 +193,19 @@ public class CustomerOrderService {
                 return stockAvailable;
             });
         
-        // Set triggerScenario based on stock check
+        // Determine trigger scenario based on stock availability AND lot size threshold
         if (hasAllStock) {
-            order.setTriggerScenario("DIRECT_FULFILLMENT");
+            order.setTriggerScenario(SCENARIO_DIRECT_FULFILLMENT);
             logger.info("Customer order {} confirmed - DIRECT_FULFILLMENT (sufficient PRODUCT stock)", order.getOrderNumber());
+        } else if (totalQuantity >= lotSizeThreshold) {
+            // SCENARIO 4: Large order with insufficient stock → bypass warehouse, go direct to production
+            order.setTriggerScenario(SCENARIO_DIRECT_PRODUCTION);
+            logger.info("Customer order {} confirmed - DIRECT_PRODUCTION (qty {} >= threshold {}, insufficient stock)", 
+                order.getOrderNumber(), totalQuantity, lotSizeThreshold);
         } else {
-            order.setTriggerScenario("WAREHOUSE_ORDER_NEEDED");
-            logger.info("Customer order {} confirmed - WAREHOUSE_ORDER_NEEDED (insufficient PRODUCT stock)", order.getOrderNumber());
+            order.setTriggerScenario(SCENARIO_WAREHOUSE_ORDER_NEEDED);
+            logger.info("Customer order {} confirmed - WAREHOUSE_ORDER_NEEDED (insufficient PRODUCT stock, qty {} < threshold {})", 
+                order.getOrderNumber(), totalQuantity, lotSizeThreshold);
         }
         
         order.setStatus(STATUS_CONFIRMED);
@@ -218,9 +242,10 @@ public class CustomerOrderService {
     /**
      * Check the current triggerScenario for a CONFIRMED order based on real-time stock.
      * This dynamically re-evaluates stock availability, accounting for changes since confirmation.
+     * Also considers the Scenario 4 lot size threshold.
      * 
      * @param id Customer order ID
-     * @return Current trigger scenario ("DIRECT_FULFILLMENT" or "WAREHOUSE_ORDER_NEEDED")
+     * @return Current trigger scenario ("DIRECT_FULFILLMENT", "WAREHOUSE_ORDER_NEEDED", or "DIRECT_PRODUCTION")
      */
     @Transactional(readOnly = true)
     public String checkCurrentTriggerScenario(Long id) {
@@ -235,6 +260,12 @@ public class CustomerOrderService {
         // Re-check stock availability in real-time
         logger.info("=== DYNAMIC STOCK CHECK: Re-evaluating stock for order {} ===", order.getOrderNumber());
         
+        // Calculate total quantity for Scenario 4 threshold
+        int totalQuantity = order.getOrderItems().stream()
+            .mapToInt(OrderItem::getQuantity)
+            .sum();
+        int lotSizeThreshold = systemConfigService.getLotSizeThreshold();
+        
         boolean hasAllStock = order.getOrderItems().stream()
             .allMatch(item -> {
                 boolean stockAvailable = inventoryService.checkStock(order.getWorkstationId(), item.getItemId(), item.getQuantity());
@@ -243,7 +274,15 @@ public class CustomerOrderService {
                 return stockAvailable;
             });
         
-        String currentScenario = hasAllStock ? "DIRECT_FULFILLMENT" : "WAREHOUSE_ORDER_NEEDED";
+        // Determine current scenario based on stock and threshold
+        String currentScenario;
+        if (hasAllStock) {
+            currentScenario = SCENARIO_DIRECT_FULFILLMENT;
+        } else if (totalQuantity >= lotSizeThreshold) {
+            currentScenario = SCENARIO_DIRECT_PRODUCTION;
+        } else {
+            currentScenario = SCENARIO_WAREHOUSE_ORDER_NEEDED;
+        }
         
         // Log if scenario has changed since confirmation
         if (!currentScenario.equals(order.getTriggerScenario())) {

@@ -3,7 +3,7 @@ import {
   OrdersSection,
   ActivityLog,
   StatisticsGrid,
-  AssemblyControlOrderCard
+  WorkstationOrderCard
 } from "../../components";
 import { useWorkstationOrders } from "../../hooks/useWorkstationOrders";
 import { STANDARD_FILTER_OPTIONS, STANDARD_SORT_OPTIONS } from "../../config/workstationConfig";
@@ -47,7 +47,7 @@ function MotorAssemblyDashboard() {
       searchKeys={['orderNumber']}
       sortKey="orderNumber"
       renderCard={(order) => (
-        <AssemblyControlOrderCard
+        <WorkstationOrderCard
           key={order.id}
           order={order}
           onStart={handleStartOrder}

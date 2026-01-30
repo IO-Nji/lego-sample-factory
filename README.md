@@ -35,9 +35,6 @@
 
 This system addresses critical challenges in traditional manufacturing:
 
-### 💼 Business Value
-
-This system addresses critical challenges in traditional manufacturing:
 
 | **Problem** | **Solution** |
 |-------------|--------------|
@@ -167,10 +164,10 @@ Product Variants (Final Products) → Stored in Plant Warehouse (WS-7)
 
 Implements 4 distinct fulfillment workflows from thesis research:
 
-1. **Scenario 1: Sunny Day** - Direct fulfillment from warehouse stock
-2. **Scenario 2: Warehouse Order** - Missing products trigger module assembly
-3. **Scenario 3: Full Production** - Missing modules trigger manufacturing chain
-4. **Scenario 4: High Volume** - Large orders bypass warehouse, go direct to production
+1. **Scenario 1: Sunny Day** ✅ - Direct fulfillment from warehouse stock
+2. **Scenario 2: Warehouse Order** ✅ - Missing products trigger module assembly
+3. **Scenario 3: Full Production** ✅ - Missing modules trigger manufacturing chain
+4. **Scenario 4: High Volume** ✅ - Large orders (≥ LOT_SIZE_THRESHOLD) bypass warehouse, go direct to production
 
 **Order State Machines:**
 ```
@@ -251,18 +248,41 @@ docker-compose up -d
 | `production_planning` | `password` | PRODUCTION_PLANNING | - | Factory-wide scheduling |
 | `production_control` | `password` | PRODUCTION_CONTROL | Injection Molding (WS-1) | Manufacturing oversight |
 | `assembly_control` | `password` | ASSEMBLY_CONTROL | Gear Assembly (WS-4) | Assembly coordination |
-
+| 'motor_assembly'  | `password` | 
+| 'gear_assembly'  | `password` | 
+| 'parts_preproduction'  | `password` | 
+| 'part_finishing'  | `password` | 
+| 'injection_molding'  | `password` | 
+| 'part_supply'  | `password` | 
 ---
 
 ## 📚 Documentation
 
+### Core Documentation
+
 | Document | Purpose |
 |----------|---------|
-| [PROJECT_TECHNICAL_OVERVIEW.md](_dev-docs/PROJECT_TECHNICAL_OVERVIEW.md) | Academic research context, thesis background, PhD proposal material |
-| [README.architecture.md](_dev-docs/README.architecture.md) | System architecture diagrams, data models, API specifications |
+| [copilot-instructions.md](.github/copilot-instructions.md) | AI agent onboarding and quick start guide |
 | [BusinessScenarios.md](_dev-docs/BusinessScenarios.md) | 4 order fulfillment scenarios with step-by-step workflows |
-| [SCENARIO_IMPLEMENTATION_ROADMAP.md](_dev-docs/SCENARIO_IMPLEMENTATION_ROADMAP.md) | Feature development plan and implementation guide |
-| [copilot-instructions.md](.github/copilot-instructions.md) | AI agent onboarding for development assistance |
+| [README.architecture.md](_dev-docs/README.architecture.md) | System architecture diagrams, data models, API specifications |
+
+### Development Guides
+
+| Document | Purpose |
+|----------|---------|
+| [CARD_SYSTEM.md](_dev-docs/CARD_SYSTEM.md) | Order card UI components and styling architecture |
+| [Dashboard-Component-Standardization-Guide.md](_dev-docs/Dashboard-Component-Standardization-Guide.md) | Dashboard layout patterns and component usage |
+| [ORDER_BUTTON_SEQUENCES.md](_dev-docs/ORDER_BUTTON_SEQUENCES.md) | Button action flows per order type and status |
+| [UI-Workflow-Guide-Business-Scenarios.md](_dev-docs/UI-Workflow-Guide-Business-Scenarios.md) | User interface workflows mapped to business scenarios |
+
+### Planning & Technical
+
+| Document | Purpose |
+|----------|---------|
+| [PROJECT_TECHNICAL_OVERVIEW.md](_dev-docs/PROJECT_TECHNICAL_OVERVIEW.md) | Academic research context, thesis background |
+| [SCENARIO_IMPLEMENTATION_ROADMAP.md](_dev-docs/SCENARIO_IMPLEMENTATION_ROADMAP.md) | Feature development plan and implementation status |
+| [DEVELOPMENT_STRATEGY.md](_dev-docs/DEVELOPMENT_STRATEGY.md) | Coding patterns and development workflow |
+| [API_OPTIMIZATION_PLAN.md](_dev-docs/API_OPTIMIZATION_PLAN.md) | API performance improvements and optimizations |
 
 ---
 

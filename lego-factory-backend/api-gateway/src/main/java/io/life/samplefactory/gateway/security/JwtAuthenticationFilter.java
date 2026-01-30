@@ -41,11 +41,27 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         "/api/masterdata/modules/**",
         "/api/masterdata/parts/**",
         "/api/production-control-orders",
+        "/api/production-control-orders/**",
         "/api/assembly-control-orders",
+        "/api/assembly-control-orders/**",
+        "/api/supply-orders/**",
+        // Workstation-specific order endpoints (WS-1 to WS-5)
+        "/api/injection-molding-orders/**",
+        "/api/part-preproduction-orders/**",
+        "/api/part-finishing-orders/**",
+        "/api/gear-assembly-orders/**",
+        "/api/motor-assembly-orders/**",
         "/api/health",
         "/actuator/health",
         "/actuator/info",
-        "/error"
+        "/error",
+        // Swagger/OpenAPI documentation (public access)
+        "/api/docs/**",
+        "/swagger-ui/**",
+        "/swagger-ui.html",
+        "/v3/api-docs/**",
+        "/swagger-resources/**",
+        "/webjars/**"
     );
 
     public JwtAuthenticationFilter(GatewayJwtProperties properties) {

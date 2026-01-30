@@ -1,6 +1,6 @@
 # LIFE System – Copilot Instructions
 
-> **Last Updated:** January 27, 2026  
+> **Last Updated:** January 30, 2026  
 > This file guides AI coding agents through the LIFE (LEGO Integrated Factory Execution) microservice architecture. It captures critical patterns, domain logic, and workflows required for productive contribution.
 
 ---
@@ -24,9 +24,11 @@ cd lego-factory-frontend && npm run dev
 # Rebuild + restart a single service after code changes
 docker-compose build --no-cache order-processing-service && docker-compose up -d order-processing-service
 
-# Validate business scenarios
-./test-scenario-2.sh  # Customer order → warehouse stock check → production trigger
-./verify-scenarios-1-2.sh  # Full scenario 1 & 2 validation
+# Validate business scenarios (All 4 scenarios complete)
+./test-scenario-1.sh  # Direct fulfillment from stock
+./test-scenario-2.sh  # Warehouse order + final assembly
+./test-scenario-3.sh  # Full production pipeline (all 9 workstations)
+./test-scenario-4.sh  # High volume direct production (qty ≥ LOT_SIZE_THRESHOLD)
 ```
 
 ---
@@ -78,18 +80,18 @@ Product (WS-7 Plant Warehouse)
 
 ## 9 Roles × 9 Workstations: Role-Based UI Routing
 
-**Roles** (in [UserRole.java](lego-factory-backend/user-service/src/main/java/io/life/user_service/entity/UserRole.java)):
-- `ADMIN` - System administration (no workstation)
+**Roles** (in [UserRole.java](../lego-factory-backend/user-service/src/main/java/io/life/user_service/entity/UserRole.java)):
+- `ADMIN` - System administration (no specific workstation)
 - `PLANT_WAREHOUSE` - Customer order fulfillment (WS-7)
-- `MODULES_SUPERMARKET` - Internal warehouse (WS-8)
-- `PRODUCTION_PLANNING` - Factory scheduling (no workstation)
-- `PRODUCTION_CONTROL` - Manufacturing oversight (typically WS-1)
-- `ASSEMBLY_CONTROL` - Assembly coordination (typically WS-4)
-- `PARTS_SUPPLY` - Raw material distribution (WS-9)
-- `MANUFACTURING` - Production line execution (WS-1, WS-2, WS-3)
+- `MODULES_SUPERMARKET` - Internal warehouse operations (WS-8)
+- `PRODUCTION_PLANNING` - Factory scheduling and production orders (no specific workstation)
+- `PRODUCTION_CONTROL` - Manufacturing oversight and control orders (no specific workstation)
+- `ASSEMBLY_CONTROL` - Assembly coordination and control orders (no specific workstation)
+- `PARTS_SUPPLY` - Raw materials warehouse operations (WS-9)
+- `MANUFACTURING` - Production line execution (WS-1, WS-2, WS-3 - workstation assigned per user)
 - `VIEWER` - Read-only monitoring (no workstation)
 
-**Workstations** and their dashboards in [src/pages/dashboards/](lego-factory-frontend/src/pages/dashboards/):
+**Workstations** and their dashboards in [src/pages/dashboards/](../lego-factory-frontend/src/pages/dashboards/):
 - **WS-1:** Injection Molding (Manufacturing) → `InjectionMoldingDashboard.jsx`
 - **WS-2:** Parts Pre-Production (Manufacturing) → `PartsPreProductionDashboard.jsx`
 - **WS-3:** Part Finishing (Manufacturing) → `PartFinishingDashboard.jsx`
@@ -100,7 +102,19 @@ Product (WS-7 Plant Warehouse)
 - **WS-8:** Modules Supermarket (Internal warehouse) → `ModulesSupermarketDashboard.jsx`
 - **WS-9:** Parts Supply Warehouse (Raw materials) → `PartsSupplyWarehouseDashboard.jsx`
 
-**Frontend routing** ([DashboardPage.jsx](lego-factory-frontend/src/pages/DashboardPage.jsx)): Uses `session?.user?.workstationId` (flat field, not nested) to dispatch to correct workstation dashboard.
+**Workstation Access Control:**
+- **Backend**: [UserRole.java](../lego-factory-backend/user-service/src/main/java/io/life/user_service/entity/UserRole.java) defines `accessibleWorkstations` and `primaryWorkstation` per role
+- **Backend Service**: [WorkstationAccessService.java](../lego-factory-backend/user-service/src/main/java/io/life/user_service/service/WorkstationAccessService.java) provides centralized access validation
+- **Frontend**: [workstationConfig.js](../lego-factory-frontend/src/config/workstationConfig.js) mirrors the access rules with `ROLE_WORKSTATION_ACCESS`
+- Use `UserRole.canAccessWorkstation(wsId)` or `WorkstationAccessService.canAccessWorkstation(user, wsId)` for access checks
+- Use `getRolePrimaryWorkstation(role)` in frontend for dashboard routing
+
+**Frontend routing** ([DashboardPage.jsx](../lego-factory-frontend/src/pages/DashboardPage.jsx)):
+1. Admin → AdminDashboard
+2. User's explicit `workstationId` → Workstation-specific dashboard
+3. Role's `primaryWorkstation` → Workstation-specific dashboard (via `getRolePrimaryWorkstation()`)
+4. Role-specific dashboard (for control/planning roles with no workstation)
+5. Fallback for unknown configuration
 
 ## Order Processing Domain Rules - CRITICAL SEQUENCE
 
@@ -110,27 +124,39 @@ Product (WS-7 Plant Warehouse)
 - `DIRECT_FULFILLMENT` - Stock available at current workstation, can fulfill immediately
 - `WAREHOUSE_ORDER_NEEDED` - Insufficient stock; must create WarehouseOrder (WS-7 only)
 - `PRODUCTION_REQUIRED` - Must trigger production workflow (WS-8 only)
+- `DIRECT_PRODUCTION` - (Scenario 4) Large lot size (≥ LOT_SIZE_THRESHOLD) bypasses warehouse, goes directly to production
 
-**Order Hierarchy (flow & stock credit points):**
+**Order Hierarchy (full Scenario 3 flow with control orders):**
 ```
 CustomerOrder (WS-7, Plant Warehouse)
   ↓ (if WAREHOUSE_ORDER_NEEDED)
 WarehouseOrder (WS-8, Modules Supermarket)
   ↓ (if PRODUCTION_REQUIRED)
 ProductionOrder (Production Planning)
-  ↓ (creates via SimAL integration)
-Control Orders (ProductionControlOrder, AssemblyControlOrder)
-  ↓ (each spawns)
-Supply Orders (ProductionPartSupplyOrder, AssemblyPartSupplyOrder from WS-9)
-  ↓ (materials staged, then)
-Workstation Orders (execute production/assembly)
-  ├─ WS-1: Injection Molding → parts complete, WS-9 credited
-  ├─ WS-2: Parts Pre-Production → ready for finishing
-  ├─ WS-3: Part Finishing → ready for assembly, WS-9 credited
-  ├─ WS-4: Gear Assembly → module complete, WS-8 credited
-  ├─ WS-5: Motor Assembly → module complete, WS-8 credited
-  └─ WS-6: Final Assembly → ONLY point where WS-7 is credited
+  ├─ ProductionControlOrder (manages WS-1, WS-2, WS-3)
+  │     ├─ SupplyOrder → WS-9 fulfills parts
+  │     ├─ InjectionMoldingOrder (WS-1) → passes to WS-2
+  │     ├─ PartPreProductionOrder (WS-2) → passes to WS-3
+  │     └─ PartFinishingOrder (WS-3) → credits WS-9
+  │
+  └─ AssemblyControlOrder (manages WS-4, WS-5, WS-6)
+        ├─ SupplyOrder → WS-9 fulfills parts
+        ├─ GearAssemblyOrder (WS-4) → credits WS-8
+        ├─ MotorAssemblyOrder (WS-5) → credits WS-8
+        └─ FinalAssemblyOrder (WS-6) → credits WS-7
 ```
+
+**Scenario 3 Gating Logic (CRITICAL):**
+- **Supply must be fulfilled first:** Workstation orders stay in `PENDING` until their `SupplyOrder` status = `FULFILLED`
+- **All workstations must complete:** Control order cannot complete until ALL child workstation orders are `COMPLETED`
+- **All control orders must complete:** ProductionOrder cannot complete until ALL control orders are `COMPLETED`
+- **Upward propagation:** Use `OrderOrchestrationService.notifyWorkstationOrderComplete()` to cascade status updates
+
+**Scenario 4 (IMPLEMENTED - High Volume):**
+- When total order quantity ≥ `LOT_SIZE_THRESHOLD` (default: 3, configurable via Admin panel), skip WarehouseOrder entirely
+- CustomerOrder spawns ProductionOrder directly via `ProductionOrderService.createFromCustomerOrder()`
+- Frontend shows "Order Production" button when `triggerScenario = "DIRECT_PRODUCTION"`
+- Admin can configure threshold via Admin Dashboard > Settings > LOT_SIZE_THRESHOLD`
 
 **CRITICAL: ProductId Tracking Through Order Chain:**
 - `WarehouseOrderItem` has `productId` field to track which product modules belong to
@@ -163,7 +189,7 @@ Workstation Orders (execute production/assembly)
 ### Package Structure & New Endpoints
 - Packages follow `io.life.<service>` with folders: `controller/`, `service/`, `entity/`, `dto/`, `repository/`, `exception/`
 - Keep DTOs service-local (e.g., `OrderProcessingCreateOrderDTO` in order-processing-service)
-- Any new REST endpoint requires: controller + service logic + gateway route in [application.properties](lego-factory-backend/api-gateway/src/main/resources/application.properties) + RestTemplate calls using Docker hostnames
+- Any new REST endpoint requires: controller + service logic + gateway route in [application.properties](../lego-factory-backend/api-gateway/src/main/resources/application.properties) + RestTemplate calls using Docker hostnames
 - Workstation-specific controllers already exist (e.g., `/injection-molding-orders`, `/final-assembly-orders`, `/customer-orders`); extend those instead of adding generic endpoints
 
 ### Order Entities & Domain Objects
@@ -173,10 +199,15 @@ Workstation Orders (execute production/assembly)
 - Entity DTOs transform to/from JSON; keep conversion logic in service, not controller
 
 ### Service Layer Orchestration
-- Service methods drive all business logic: stock checks, status transitions, event publishing, inter-service calls
-- Controllers inject service + other microservice clients (RestTemplate), call service methods, return DTOs
-- Use RestTemplate bean to call other services: `restTemplate.postForObject("http://inventory-service:8014/api/inventory/debit", ...)` (use Docker hostname)
-- Example: FulfillmentService (order-processing) checks if production needed, calls inventory-service to verify stock
+- **OrderOrchestrationService** ([OrderOrchestrationService.java](../lego-factory-backend/order-processing-service/src/main/java/io/life/order/service/OrderOrchestrationService.java)) centralizes all order status propagation:
+  - `notifyWorkstationOrderComplete(WorkstationOrderType, controlOrderId)` - Workstation → Control Order
+  - `notifyControlOrderComplete(ControlOrderType, productionOrderId)` - Control Order → Production Order
+  - Use `OrderOrchestrationService.STATUS_COMPLETED` constants instead of magic strings
+- **Inter-service clients** in `io.life.order.client/`:
+  - `InventoryClient` - Stock adjustments via `/api/stock/adjust` with `delta` field
+  - `MasterdataClient` - BOM lookups and product/module queries
+- Controllers inject service + clients, call service methods, return DTOs
+- Example: `InjectionMoldingOrderService.completeOrder()` calls `orchestrationService.notifyWorkstationOrderComplete()`
 
 ### Database & H2 Console
 - Each service has isolated H2 in-memory database; schema created by Spring/JPA, seeded by DataInitializer in main() chain
@@ -192,11 +223,11 @@ Workstation Orders (execute production/assembly)
 
 ### Dashboard Architecture (Standardized January 2026)
 - Each workstation has a **dedicated** dashboard file (no generic dashboards): `InjectionMoldingDashboard.jsx`, `FinalAssemblyDashboard.jsx`, etc.
-- All dashboards wrap content with [StandardDashboardLayout.jsx](lego-factory-frontend/src/components/StandardDashboardLayout.jsx) component for consistent UI
-- [DashboardPage.jsx](lego-factory-frontend/src/pages/DashboardPage.jsx) routes users based on `session?.user?.workstationId` (flat field, NOT nested `workstation.id`)
+- All dashboards wrap content with [StandardDashboardLayout.jsx](../lego-factory-frontend/src/components/StandardDashboardLayout.jsx) component for consistent UI
+- [DashboardPage.jsx](../lego-factory-frontend/src/pages/DashboardPage.jsx) routes users based on `session?.user?.workstationId` (flat field, NOT nested `workstation.id`)
 
 ### Manufacturing/Assembly Dashboards (WS-1 to WS-6)
-- Use shared config from [src/config/workstationConfig.js](lego-factory-frontend/src/config/workstationConfig.js) for messages, titles, API endpoints
+- Use shared config from [src/config/workstationConfig.js](../lego-factory-frontend/src/config/workstationConfig.js) for messages, titles, API endpoints
 - Import `useWorkstationOrders` hook to fetch workstation-specific orders: `useWorkstationOrders(workstationId)`
 - Each dashboard receives from hook: orders list, loading/error states, handlers (startOrder, completeOrder, haltOrder)
 - Hook provides auto-refresh (default 30s), notification management, and order statistics calculation
@@ -208,21 +239,21 @@ Workstation Orders (execute production/assembly)
 - Always import from `src/hooks/index.js` for future-proofing
 
 ### Order Cards & triggerScenario
-- Import reusable cards from [src/components/index.js](lego-factory-frontend/src/components/index.js): `Button`, `StatCard`, `BaseOrderCard`, `OrdersSection`
+- Import reusable cards from [src/components/index.js](../lego-factory-frontend/src/components/index.js): `Button`, `StatCard`, `BaseOrderCard`, `OrdersSection`
 - Order cards check `triggerScenario` field to display appropriate action buttons:
   - `DIRECT_FULFILLMENT` → Show "Fulfill" button (stock available)
   - `WAREHOUSE_ORDER_NEEDED` → Show "Process" button (create WO)
   - `PRODUCTION_REQUIRED` → Show "Order Production" button
-- See [WarehouseOrderCard.jsx](lego-factory-frontend/src/components/WarehouseOrderCard.jsx) for example implementation
+- See [WarehouseOrderCard.jsx](../lego-factory-frontend/src/components/WarehouseOrderCard.jsx) for example implementation
 
 ### API Integration & State Management
-- Keep API helpers in [src/api/api.js](lego-factory-frontend/src/api/api.js); axios interceptor automatically injects JWT
+- Keep API helpers in [src/api/api.js](../lego-factory-frontend/src/api/api.js); axios interceptor automatically injects JWT
 - Frontend calls are relative paths (`/api/...`); nginx proxy_pass routes to api-gateway without trailing slash
 - Session context provides `session?.user?.workstationId`, roles, and auth state
 - Use React hooks for component state; avoid prop drilling across 3+ levels
 
 ### Design System & Styling
-- Reuse design-system components: `Button`, `StatCard`, `BaseOrderCard`, `OrdersSection` (imported via [src/components/index.js](lego-factory-frontend/src/components/index.js))
+- Reuse design-system components: `Button`, `StatCard`, `BaseOrderCard`, `OrdersSection` (imported via [src/components/index.js](../lego-factory-frontend/src/components/index.js))
 - Do NOT create inline styles or bespoke UI elements; extend CSS Modules in component folders
 - DEPRECATED: `DashboardLayout.jsx` in `src/components/` - always use `StandardDashboardLayout` for new dashboards
 
@@ -250,10 +281,11 @@ Workstation Orders (execute production/assembly)
 - **Component patterns**: Always use StandardDashboardLayout wrapper; import hooks from `src/hooks/index.js`
 
 ### Scenario Validation Scripts
-- `./test-scenario-1.sh` - Validates Scenario 1 flow: Direct fulfillment from Plant Warehouse
-- `./test-scenario-2.sh` - Validates Scenario 2 flow: CustomerOrder → WarehouseOrder → Final Assembly
-- `./verify-scenarios-1-2.sh` - Full validation of both scenarios 1 & 2
-- **Note:** `test-scenario-3.sh` not yet created; Scenario 3 (full production) currently in development on `feature/scenario-3-production-orders` branch
+- `./test-scenario-1.sh` - Validates Scenario 1 flow: CustomerOrder with sufficient stock (direct fulfillment)
+- `./test-scenario-2.sh` - Validates Scenario 2 flow: CustomerOrder → WarehouseOrder → FinalAssemblyOrder
+- `./test-scenario-3.sh` - Validates Scenario 3 flow: Full production pipeline (Control Orders → Supply Orders → Workstation Orders)
+- `./verify-scenarios-1-2.sh` - Full validation of scenarios 1 & 2 end-to-end
+- `./verify-code-in-images.sh` - Verifies Docker images contain expected code changes
 - Read scripts to understand expected sequencing; modify them when adding new endpoints
 - Scripts use bash with colored output, jq for JSON parsing, and provide detailed test results
 
@@ -282,7 +314,7 @@ docker-compose build --no-cache order-processing-service
 
 **Frontend shows 404 for API:**
 - Check nginx-root-proxy logs: `docker-compose logs -f nginx-root-proxy`
-- Verify route exists in [api-gateway/application.properties](lego-factory-backend/api-gateway/src/main/resources/application.properties)
+- Verify route exists in [api-gateway/application.properties](../lego-factory-backend/api-gateway/src/main/resources/application.properties)
 - Test endpoint directly: `curl http://localhost:1011/api/...`
 
 **H2 database "lost" data:**
@@ -312,17 +344,20 @@ git push origin feature/your-feature  # Push to remote
 # OR force build all:
 ./push-to-registry.sh --all
 
-# Live server: Pull and deploy latest images
+# Live server: Pull and deploy latest images (recommended - automatic)
+./update-from-registry.sh  # Auto-pull, stop, start, verify
+
+# Alternative: Manual pull with confirmation
 ./pull-from-registry.sh && docker-compose up -d
 
-# Diagnose live server issues
-./diagnose-live-server.sh  # Checks services, logs, and network
+# Diagnose server issues
+./check-server-state.sh  # Checks services, logs, and network
+./diagnose-server-git-state.sh  # Verifies git state and sync issues
 ```
 
 **Registry:** `192.168.1.237:5000` (local)  
-**Images auto-tagged:** Both `latest` and versioned tags `{branch}-{commit}-{timestamp}` for rollback capability  
-**Smart builds:** push-to-registry detects modified services automatically (Jan 2026 update)  
-**See:** [DOCKER_REGISTRY_DEPLOYMENT.md](../DOCKER_REGISTRY_DEPLOYMENT.md) for detailed deployment workflows
+**Images auto-tagged:** Both `latest` and versioned tags for rollback capability  
+**See:** [SERVER_UPDATE_GUIDE.md](../SERVER_UPDATE_GUIDE.md) for detailed deployment workflows
 
 ---
 
@@ -330,7 +365,7 @@ git push origin feature/your-feature  # Push to remote
 
 1. **Stock timing**: Do NOT credit/debit inventory on confirmation. Only on completion endpoints. Never check stock BEFORE confirmation—stock checks must happen DURING the confirm operation.
 2. **ProductId tracking**: WarehouseOrderItem must have BOTH `itemId` (module) AND `productId` (target product). FinalAssemblyOrder uses `productId` to credit correct inventory.
-3. **Endpoint routing**: Always add gateway routes in [api-gateway/application.properties](lego-factory-backend/api-gateway/src/main/resources/application.properties) when creating new endpoints; never assume a service is accessible directly.
+3. **Endpoint routing**: Always add gateway routes in [api-gateway/application.properties](../lego-factory-backend/api-gateway/src/main/resources/application.properties) when creating new endpoints; never assume a service is accessible directly.
 4. **Frontend paths**: Use `session?.user?.workstationId` (flat field, NOT `session?.user?.workstation?.id`).
 5. **JWT synchronization**: If you change `SECURITY_JWT_SECRET`, update `.env`, gateway `application.properties`, AND user-service `application.properties`.
 6. **Order status transitions**: Validate state transitions in the service layer, not the controller. WarehouseOrder status goes PENDING → CONFIRMED (not PROCESSING) after confirmation.
@@ -340,3 +375,5 @@ git push origin feature/your-feature  # Push to remote
 10. **Docker hostnames**: Use service DNS names (`http://user-service:8012`), not `localhost`. These only resolve inside the Docker network.
 11. **Cache invalidation**: Restart services with `--no-cache` when changing code. Vite handles JS versioning, but Docker layers may cache old JARs.
 12. **BOM conversions**: When converting products to modules, preserve original productId through order chain to ensure correct final inventory crediting.
+13. **Status magic strings**: Use `OrderOrchestrationService.STATUS_COMPLETED` constants instead of hardcoded `"COMPLETED"` strings.
+14. **Inter-service calls**: Use `InventoryClient`/`MasterdataClient` instead of raw RestTemplate calls for centralized error handling.

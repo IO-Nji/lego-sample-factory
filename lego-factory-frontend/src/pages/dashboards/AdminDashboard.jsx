@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../../api/api";
-import { StatCard, Button, ActivityLog, PageHeader, WorkstationCard, StatisticsGrid, CompactScheduleTimeline, Footer } from "../../components";
+import { StatCard, Button, ActivityLog, PageHeader, WorkstationCard, StatisticsGrid, CompactScheduleTimeline, Footer, AdminSettingsPanel } from "../../components";
 import PieChart from "../../components/PieChart";
 import BarChart from "../../components/BarChart";
 import "../../styles/Chart.css";
@@ -639,6 +639,45 @@ function AdminDashboard() {
           ) : (
             <div className="chart-empty">No recent orders</div>
           )}
+        </div>
+      </div>
+
+      {/* Row 4: System Settings Panel */}
+      <div style={{ 
+        display: 'flex',
+        gap: '1.25rem',
+        marginBottom: '1.5rem',
+        alignItems: 'stretch'
+      }}>
+        {/* Settings Panel */}
+        <div style={{ 
+          flex: '0 0 350px',
+          backgroundColor: 'white',
+          borderRadius: '0.5rem',
+          border: '1px solid var(--color-border)',
+          padding: '1rem'
+        }}>
+          <AdminSettingsPanel onNotify={addNotification} />
+        </div>
+        
+        {/* Placeholder for additional admin panels */}
+        <div style={{ 
+          flex: '1',
+          minWidth: 0,
+          backgroundColor: 'white',
+          borderRadius: '0.5rem',
+          border: '1px solid var(--color-border)',
+          padding: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#9ca3af',
+          fontSize: '0.875rem'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
+            <div>Additional admin panels coming soon</div>
+          </div>
         </div>
       </div>
 
