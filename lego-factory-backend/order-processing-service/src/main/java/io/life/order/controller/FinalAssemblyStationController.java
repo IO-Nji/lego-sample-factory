@@ -49,7 +49,7 @@ public class FinalAssemblyStationController
      * completes the entire product and triggers customer order fulfillment.
      */
     @Override
-    @PutMapping("/{id}/complete")
+    @PostMapping("/{id}/complete")
     public ResponseEntity<AssemblyControlOrderDTO> completeWork(@PathVariable Long id) {
         // Use special final assembly completion that credits Plant Warehouse
         AssemblyControlOrderDTO order = assemblyControlOrderService.completeFinalAssembly(id);

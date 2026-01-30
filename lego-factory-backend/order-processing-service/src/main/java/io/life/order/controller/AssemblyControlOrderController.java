@@ -103,7 +103,7 @@ public class AssemblyControlOrderController {
     /**
      * Start assembly on a control order
      */
-    @PutMapping("/{id}/start")
+    @PostMapping("/{id}/start")
     public ResponseEntity<AssemblyControlOrderDTO> startAssembly(@PathVariable Long id) {
         AssemblyControlOrderDTO order = assemblyControlOrderService.startAssembly(id);
         return ResponseEntity.ok(order);
@@ -123,7 +123,7 @@ public class AssemblyControlOrderController {
     /**
      * Complete assembly on a control order
      */
-    @PutMapping("/{id}/complete")
+    @PostMapping("/{id}/complete")
     public ResponseEntity<AssemblyControlOrderDTO> completeAssembly(@PathVariable Long id) {
         AssemblyControlOrderDTO order = assemblyControlOrderService.completeAssembly(id);
         return ResponseEntity.ok(order);

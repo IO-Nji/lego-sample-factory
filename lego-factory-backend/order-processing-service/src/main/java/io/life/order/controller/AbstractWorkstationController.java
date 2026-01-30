@@ -101,7 +101,7 @@ public abstract class AbstractWorkstationController<T, S extends WorkstationOrde
      * Handles inventory credits and SimAL notifications.
      * Exceptions propagate to GlobalExceptionHandler for consistent error responses.
      */
-    @PutMapping("/{id}/complete")
+    @PostMapping("/{id}/complete")
     public ResponseEntity<T> completeWork(@PathVariable Long id) {
         T order = service.completeWork(id);
         return ResponseEntity.ok(order);

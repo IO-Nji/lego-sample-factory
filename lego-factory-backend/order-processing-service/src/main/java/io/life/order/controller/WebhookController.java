@@ -1,5 +1,6 @@
 package io.life.order.controller;
 
+import io.life.order.dto.request.CreateWebhookRequest;
 import io.life.order.entity.WebhookSubscription;
 import io.life.order.service.WebhookService;
 import org.springframework.http.ResponseEntity;
@@ -15,8 +16,6 @@ public class WebhookController {
     public WebhookController(WebhookService webhookService) {
         this.webhookService = webhookService;
     }
-
-    public static record CreateWebhookRequest(String eventType, String targetUrl, String secret) {}
 
     @PostMapping
     public ResponseEntity<WebhookSubscription> create(@RequestBody CreateWebhookRequest req) {

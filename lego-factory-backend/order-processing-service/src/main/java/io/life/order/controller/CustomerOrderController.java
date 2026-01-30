@@ -123,12 +123,12 @@ public class CustomerOrderController {
         return ResponseEntity.ok(customerOrderService.markProcessing(id));
     }
 
-    @PutMapping("/{id}/complete")
+    @PostMapping("/{id}/complete")
     public ResponseEntity<CustomerOrderDTO> complete(@PathVariable Long id) {
         return ResponseEntity.ok(customerOrderService.completeOrder(id));
     }
 
-    @PutMapping("/{id}/cancel")
+    @PostMapping("/{id}/cancel")
     public ResponseEntity<CustomerOrderDTO> cancel(@PathVariable Long id) {
         return ResponseEntity.ok(customerOrderService.cancelOrder(id));
     }
