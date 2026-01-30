@@ -44,7 +44,6 @@ function AssemblyControlOrderCard({
   onStart,
   onComplete,
   onHalt,
-  onConfirm,
   onRequestParts,
   onDispatch,
   onViewDetails
