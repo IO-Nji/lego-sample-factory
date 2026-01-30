@@ -37,6 +37,7 @@ public class ProductionControlOrderService implements WorkstationOrderOperations
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_ASSIGNED = "ASSIGNED";
+    private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String ERROR_CONTROL_ORDER_NOT_FOUND = "Control order not found: ";
@@ -261,7 +262,8 @@ public class ProductionControlOrderService implements WorkstationOrderOperations
         ProductionControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + id));
 
-        if (!STATUS_ASSIGNED.equals(order.getStatus())) {
+        // Can start from ASSIGNED or CONFIRMED status
+        if (!STATUS_ASSIGNED.equals(order.getStatus()) && !STATUS_CONFIRMED.equals(order.getStatus())) {
             throw new IllegalStateException("Cannot start production - order status is " + order.getStatus());
         }
 

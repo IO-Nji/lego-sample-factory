@@ -468,6 +468,7 @@ public class WarehouseOrderService {
 
     /**
      * Map WarehouseOrder entity to DTO
+     * DYNAMICALLY calculates triggerScenario based on CURRENT MODULE stock levels
      */
     private WarehouseOrderDTO mapToDTO(WarehouseOrder order) {
         WarehouseOrderDTO dto = new WarehouseOrderDTO();
@@ -477,7 +478,28 @@ public class WarehouseOrderService {
         dto.setWorkstationId(order.getWorkstationId());
         dto.setOrderDate(order.getOrderDate());
         dto.setStatus(order.getStatus());
-        dto.setTriggerScenario(order.getTriggerScenario());
+        
+        // DYNAMIC triggerScenario calculation - recalculate based on CURRENT MODULE stock
+        // Only recalculate for CONFIRMED orders (not PENDING, FULFILLED, etc.)
+        String dynamicTriggerScenario = order.getTriggerScenario();
+        if ("CONFIRMED".equals(order.getStatus()) && order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
+            boolean hasAllModules = order.getOrderItems().stream()
+                .allMatch(item -> inventoryService.checkStock(
+                    order.getWorkstationId(), // Modules Supermarket (WS-8)
+                    item.getItemId(),
+                    item.getRequestedQuantity()
+                ));
+            
+            dynamicTriggerScenario = hasAllModules ? "DIRECT_FULFILLMENT" : "PRODUCTION_REQUIRED";
+            
+            // Log if scenario changed from stored value
+            if (!dynamicTriggerScenario.equals(order.getTriggerScenario())) {
+                logger.info("Warehouse order {} triggerScenario recalculated: {} -> {} (stock changed)", 
+                    order.getOrderNumber(), order.getTriggerScenario(), dynamicTriggerScenario);
+            }
+        }
+        
+        dto.setTriggerScenario(dynamicTriggerScenario);
         dto.setNotes(order.getNotes());
         dto.setCreatedAt(order.getCreatedAt());
         dto.setUpdatedAt(order.getUpdatedAt());

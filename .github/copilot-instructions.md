@@ -3,6 +3,8 @@
 > **Last Updated:** January 30, 2026  
 > This file guides AI coding agents through the LIFE (LEGO Integrated Factory Execution) microservice architecture. It captures critical patterns, domain logic, and workflows required for productive contribution.
 
+---
+
 ## Quick Start
 
 ```bash
@@ -29,6 +31,8 @@ docker-compose build --no-cache order-processing-service && docker-compose up -d
 ./test-scenario-4.sh  # High volume direct production (qty ≥ LOT_SIZE_THRESHOLD)
 ```
 
+---
+
 ## Architecture: Six Microservices + Single Entry Point
 
 ```
@@ -48,6 +52,8 @@ api-gateway routes to 5 microservices:
 **Service communication:** REST over Docker DNS (e.g., `http://inventory-service:8014`). No direct DB access between services.  
 **Database isolation:** Each service has independent H2 in-memory database, seeded by `DataInitializer`.  
 **JWT:** Issued by user-service, validated by gateway. Keep `SECURITY_JWT_SECRET` synchronized across `.env` and all `application.properties` files.
+
+---
 
 ## Data Model: Products, Modules, and Parts
 
@@ -69,6 +75,8 @@ Product (WS-7 Plant Warehouse)
 - Each workstation has isolated inventory (no shared stock pools)
 - Stock queries: `GET /api/inventory?workstationId={id}&variantId={id}`
 - Credit/debit operations ONLY happen on order completion (not confirmation)
+
+---
 
 ## 9 Roles × 9 Workstations: Role-Based UI Routing
 
@@ -164,7 +172,17 @@ ProductionOrder (Production Planning)
 4. **Frontend shows:** "Fulfill" button (DIRECT_FULFILLMENT) or "Order Production" button (PRODUCTION_REQUIRED)
 5. **FinalAssembly (WS-6) - Submit Order:** Credits Plant Warehouse with PRODUCT using `productId` from warehouse order items
 
-**Key:** Stock checks DURING confirmation, not before or after. Never credit earlier in flow than designed above.
+**Scenario 3 Workflow (Full Production - IN DEVELOPMENT):**
+1. **ProductionOrder created** when WarehouseOrder finds insufficient modules
+2. **Production Planning** integrates with SimAL scheduling service for task optimization
+3. **SimAL generates schedule** and creates Control Orders via [ControlOrderIntegrationService](lego-factory-backend/simal-integration-service/src/main/java/io/life/simal_integration_service/service/ControlOrderIntegrationService.java):
+   - `ProductionControlOrder` - Manufacturing tasks (WS-1, WS-2, WS-3)
+   - `AssemblyControlOrder` - Assembly tasks (WS-4, WS-5, WS-6)
+4. **Each Control Order spawns Supply Orders** to stage materials at target workstation from Parts Supply (WS-9)
+5. **Workstation orders execute** after supply orders complete, crediting inventory at appropriate points
+6. **Final flow:** ProductionOrder → ControlOrders → SupplyOrders → WorkstationOrders → Inventory Credits
+
+**Key:** Stock checks DURING confirmation, not before or after. Never credit earlier in flow than designed above. Supply orders MUST complete before workstation orders can start.
 
 ## Backend Patterns & Implementation
 
@@ -212,6 +230,13 @@ ProductionOrder (Production Planning)
 - Use shared config from [src/config/workstationConfig.js](../lego-factory-frontend/src/config/workstationConfig.js) for messages, titles, API endpoints
 - Import `useWorkstationOrders` hook to fetch workstation-specific orders: `useWorkstationOrders(workstationId)`
 - Each dashboard receives from hook: orders list, loading/error states, handlers (startOrder, completeOrder, haltOrder)
+- Hook provides auto-refresh (default 30s), notification management, and order statistics calculation
+
+### Custom Hooks Pattern (Available in src/hooks/)
+- `useWorkstationOrders(workstationId, options)` - Order fetching, state management, CRUD handlers
+- `useActivityLog(workstationId)` - Activity feed with real-time updates
+- `useInventoryDisplay(workstationId)` - Stock levels with auto-refresh
+- Always import from `src/hooks/index.js` for future-proofing
 
 ### Order Cards & triggerScenario
 - Import reusable cards from [src/components/index.js](../lego-factory-frontend/src/components/index.js): `Button`, `StatCard`, `BaseOrderCard`, `OrdersSection`
@@ -246,12 +271,14 @@ ProductionOrder (Production Planning)
 - **H2 database console**: `http://localhost:8015/h2-console` (or service port). JDBC URL: `jdbc:h2:mem:orderdb`
 - **View logs**: `docker-compose logs -f order-processing-service` (or use IDE debugger)
 - **Port references**: See `.env` for all ports. Each service has its own Spring application.properties overriding defaults.
+- **Entity best practices**: All entities use `@PrePersist`/`@PreUpdate` for audit timestamps; never set `createdAt`/`updatedAt` manually
 
 ### Frontend Development (React/Vite)
 - **Local dev server** with auto-reload: Start docker services, then `cd lego-factory-frontend && npm run dev` (proxy to :5173)
 - **Build production frontend**: `npm run build` (or Docker builds automatically)
 - **Clear browser cache**: Vite handles JS hashing, but test in incognito mode if unsure
 - **API debugging**: Open DevTools → Network tab → inspect `/api/...` requests to verify auth headers and response codes
+- **Component patterns**: Always use StandardDashboardLayout wrapper; import hooks from `src/hooks/index.js`
 
 ### Scenario Validation Scripts
 - `./test-scenario-1.sh` - Validates Scenario 1 flow: CustomerOrder with sufficient stock (direct fulfillment)
@@ -260,6 +287,7 @@ ProductionOrder (Production Planning)
 - `./verify-scenarios-1-2.sh` - Full validation of scenarios 1 & 2 end-to-end
 - `./verify-code-in-images.sh` - Verifies Docker images contain expected code changes
 - Read scripts to understand expected sequencing; modify them when adding new endpoints
+- Scripts use bash with colored output, jq for JSON parsing, and provide detailed test results
 
 ### Common Debugging Scenarios
 **Service won't start:**
@@ -302,16 +330,19 @@ git add . && git commit -m "Implement X feature"
 git push origin feature/your-feature  # Push to remote
 # Create PR, get review, merge to dev when ready
 ```
-- NEVER commit directly to `master`; keep it as last-known-good state
-- Use `dev` as active development branch (current)
+- **NEVER commit directly to `master`**; keep it as last-known-good state
+- **Active branch:** `dev` (current development), `feature/scenario-3-production-orders` (Scenario 3 in progress)
 - `prod` branch is for production-ready releases
 - Each feature should have its own branch
+- **Commit message format:** `feat(component): description` or `fix(component): description`
 
 ### Docker Registry Deployment (Production)
 **For deploying to live servers:**
 ```bash
 # Development machine: Build, tag, and push to local registry
-./push-to-registry.sh  # Tags with {branch}-{commit}-{timestamp}
+./push-to-registry.sh  # Auto-detects changes vs origin/prod (smart builds)
+# OR force build all:
+./push-to-registry.sh --all
 
 # Live server: Pull and deploy latest images (recommended - automatic)
 ./update-from-registry.sh  # Auto-pull, stop, start, verify
@@ -327,6 +358,8 @@ git push origin feature/your-feature  # Push to remote
 **Registry:** `192.168.1.237:5000` (local)  
 **Images auto-tagged:** Both `latest` and versioned tags for rollback capability  
 **See:** [SERVER_UPDATE_GUIDE.md](../SERVER_UPDATE_GUIDE.md) for detailed deployment workflows
+
+---
 
 ## Pitfalls to Avoid
 

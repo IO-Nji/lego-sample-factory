@@ -122,6 +122,18 @@ function AssemblyControlDashboard() {
     }
   };
 
+  const handleConfirmOrder = async (orderId) => {
+    try {
+      await api.post(`/assembly-control-orders/${orderId}/confirm`);
+      setSuccess("Order confirmed successfully");
+      addNotification("Order confirmed - ready to request parts", "success");
+      fetchControlOrders();
+    } catch (err) {
+      setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to confirm order", "error");
+    }
+  };
+
   const handleStartAssembly = async (orderId) => {
     try {
       await api.put(`/assembly-control-orders/${orderId}/start`);
@@ -405,12 +417,11 @@ function AssemblyControlDashboard() {
     if (!showDetailsModal || !selectedOrder) return null;
 
     return (
-      <div className="modal">
-        <div className="modal-overlay" onClick={() => setShowDetailsModal(false)} />
-        <div className="modal-content">
+      <div className="modal-overlay" onClick={() => setShowDetailsModal(false)}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h2>Assembly Control Order: {selectedOrder.controlOrderNumber}</h2>
-            <button onClick={() => setShowDetailsModal(false)} className="modal-close">×</button>
+            <Button variant="ghost" size="small" onClick={() => setShowDetailsModal(false)} ariaLabel="Close modal">×</Button>
           </div>
           <div className="modal-body">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem" }}>

@@ -1,13 +1,28 @@
 /**
- * CustomerOrderCard.css (January 2026)
+ * CustomerOrderCard.css (January 2026 - Standardized)
  * 
- * ROLE: Customer order card (WS-7: Plant Warehouse) color theming and styling
+ * ROLE: Base card styling + color theming for ALL order card types
  * 
  * ARCHITECTURE:
  * - Inherits all STRUCTURAL layout from CardBase.css
- * - Defines ONLY color theme for customer orders (blue/gray tones)
+ * - Defines base .customer-order-card class (used by all card types via BaseOrderCard)
+ * - Card type variants with distinctive color themes
  * - Status badge variants with color-specific gradients
- * - Simple item display: ACRONYM + QUANTITY
+ * 
+ * CARD TYPE VARIANTS (color themes only):
+ * - customer-order-card (default): Blue/gray (Plant Warehouse - WS-7)
+ * - production-control-order-card: Orange/amber (Manufacturing control)
+ * - assembly-control-order-card: Purple/indigo (Assembly control)
+ * - supply-order-card: Teal/cyan (Supply chain logistics)
+ * - production-order-card: Deep orange (Production planning)
+ * - warehouse-order-card: Amber/yellow (Warehouse operations - WS-8)
+ * - final-assembly-order-card: Green/emerald (Final assembly - WS-6)
+ * 
+ * STANDARDIZATION RULES:
+ * - All order cards MUST use BaseOrderCard component
+ * - All order cards MUST set cardType prop for color theming
+ * - All buttons MUST use Button component with variant/size props
+ * - Color themes ONLY - no structural/layout changes in card type variants
  * 
  * DO NOT ADD:
  * - Display/flexbox properties (inherited from CardBase.css)
@@ -17,8 +32,9 @@
  * 
  * RELATED FILES:
  * - CardBase.css: Universal layout structure
- * - CustomerOrderCard.jsx: Component logic
+ * - BaseOrderCard.jsx: Reusable card component
  * - OrderCardButtons.css: Button color system
+ * - Button.jsx: Standard button component
  */
 
 @import './CardBase.css';
@@ -258,6 +274,94 @@
   background: linear-gradient(135deg, #f8d7da 0%, #f5bcc6 100%);
   color: #842029;
   border-color: #dc3545;
+}
+
+/* ============================================================================
+   CARD TYPE VARIANTS - Distinct color themes for different order types
+   ============================================================================ */
+
+/* Production Control Orders - Orange/Amber theme (manufacturing focus) */
+.customer-order-card.production-control-order-card {
+  background: linear-gradient(135deg, #fff8f0, #fff);
+  border-color: #ff9800;
+}
+
+.customer-order-card.production-control-order-card:hover {
+  box-shadow: 0 4px 8px rgba(255, 152, 0, 0.2);
+}
+
+.customer-order-card.production-control-order-card .order-number {
+  color: #e65100;
+}
+
+/* Assembly Control Orders - Purple/Indigo theme (assembly focus) */
+.customer-order-card.assembly-control-order-card {
+  background: linear-gradient(135deg, #f3f0ff, #fff);
+  border-color: #673ab7;
+}
+
+.customer-order-card.assembly-control-order-card:hover {
+  box-shadow: 0 4px 8px rgba(103, 58, 183, 0.2);
+}
+
+.customer-order-card.assembly-control-order-card .order-number {
+  color: #4527a0;
+}
+
+/* Supply Orders - Teal/Cyan theme (logistics/supply chain focus) */
+.customer-order-card.supply-order-card {
+  background: linear-gradient(135deg, #e0f7fa, #fff);
+  border-color: #00bcd4;
+}
+
+.customer-order-card.supply-order-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 188, 212, 0.2);
+}
+
+.customer-order-card.supply-order-card .order-number {
+  color: #006064;
+}
+
+/* Production Orders - Deep Orange theme (production planning focus) */
+.customer-order-card.production-order-card {
+  background: linear-gradient(135deg, #fff3e0, #fff);
+  border-color: #ff5722;
+}
+
+.customer-order-card.production-order-card:hover {
+  box-shadow: 0 4px 8px rgba(255, 87, 34, 0.2);
+}
+
+.customer-order-card.production-order-card .order-number {
+  color: #bf360c;
+}
+
+/* Warehouse Orders - Amber/Yellow theme (warehouse operations focus) */
+.customer-order-card.warehouse-order-card {
+  background: linear-gradient(135deg, #fffbf0, #fff);
+  border-color: #ffc107;
+}
+
+.customer-order-card.warehouse-order-card:hover {
+  box-shadow: 0 4px 8px rgba(255, 193, 7, 0.2);
+}
+
+.customer-order-card.warehouse-order-card .order-number {
+  color: #ff6f00;
+}
+
+/* Final Assembly Orders - Green/Emerald theme (final production step) */
+.customer-order-card.final-assembly-order-card {
+  background: linear-gradient(135deg, #e8f5e9, #fff);
+  border-color: #4caf50;
+}
+
+.customer-order-card.final-assembly-order-card:hover {
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
+}
+
+.customer-order-card.final-assembly-order-card .order-number {
+  color: #1b5e20;
 }
 
 
