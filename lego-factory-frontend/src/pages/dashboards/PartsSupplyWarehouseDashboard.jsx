@@ -318,7 +318,7 @@ function PartsSupplyWarehouseDashboard() {
         <div className="modal-content-custom" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header-custom">
             <h2>Supply Order Details</h2>
-            <button onClick={() => setShowDetailsModal(false)} className="modal-close-custom">×</button>
+            <Button variant="ghost" size="small" onClick={() => setShowDetailsModal(false)} ariaLabel="Close modal">×</Button>
           </div>
           <div className="modal-body-custom">
             <div style={{ marginBottom: "1rem" }}>
@@ -392,7 +392,7 @@ function PartsSupplyWarehouseDashboard() {
         <div className="modal-content-custom" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header-custom">
             <h2>Adjust Parts Stock</h2>
-            <button onClick={() => setShowStockAdjustModal(false)} className="modal-close-custom">×</button>
+            <Button variant="ghost" size="small" onClick={() => setShowStockAdjustModal(false)} ariaLabel="Close modal">×</Button>
           </div>
           <div className="modal-body-custom">
             <div style={{ marginBottom: "1rem" }}>

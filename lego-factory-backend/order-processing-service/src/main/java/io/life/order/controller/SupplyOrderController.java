@@ -21,7 +21,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/supply-orders")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
+@CrossOrigin(origins = "*", maxAge = 3600)
 public class SupplyOrderController {
 
     private final SupplyOrderService supplyOrderService;
