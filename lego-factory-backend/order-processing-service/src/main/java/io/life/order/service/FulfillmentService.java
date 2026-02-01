@@ -6,6 +6,7 @@ import io.life.order.entity.CustomerOrder;
 import io.life.order.entity.OrderItem;
 import io.life.order.entity.WarehouseOrder;
 import io.life.order.entity.WarehouseOrderItem;
+import io.life.order.exception.OrderProcessingException;
 import io.life.order.repository.CustomerOrderRepository;
 import io.life.order.repository.WarehouseOrderRepository;
 import org.slf4j.Logger;
@@ -153,100 +154,223 @@ public class FulfillmentService {
     }
 
     /**
-     * Scenario 2: Warehouse Order
-     * No items available locally. Create a warehouse order for all items.
-     * Also automatically create a production order for the shortfall.
-     * Order status changes to PROCESSING.
+     * Scenario 2: Warehouse Order (via Modules Supermarket)
+     * When products are not available in Plant Warehouse, create a WarehouseOrder
+     * that will be routed to Modules Supermarket (WS-8).
+     * 
+     * BOM INTEGRATION: Converts products to modules using Bill of Materials lookup.
+     * Tracks productId in WarehouseOrderItem for Final Assembly.
+     * 
+     * ENHANCED WITH DEFENSIVE ERROR HANDLING (Feb 2026):
+     * - Try-catch around entire method
+     * - Null checks for all masterdataService responses
+     * - Fallback values for product/module names if service fails
+     * - Empty map validation after BOM lookup
+     * - Invalid moduleId/quantity filtering
+     * - Detailed logging at each step
      */
     private CustomerOrderDTO scenario2_WarehouseOrder(CustomerOrder order) {
         logger.info("Scenario 2: Warehouse Order for order {}", order.getOrderNumber());
 
-        // Create a new WarehouseOrder
-        WarehouseOrder warehouseOrder = new WarehouseOrder();
-        warehouseOrder.setOrderNumber("WO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        warehouseOrder.setCustomerOrderId(order.getId());
-        warehouseOrder.setWorkstationId(MODULES_SUPERMARKET_WORKSTATION_ID); // Modules Supermarket (8)
-        warehouseOrder.setOrderDate(LocalDateTime.now());
-        warehouseOrder.setStatus("PENDING");
-        warehouseOrder.setTriggerScenario("SCENARIO_2");
-        warehouseOrder.setNotes("Auto-generated from customer order " + order.getOrderNumber());
+        try {
+            // Create a new WarehouseOrder
+            WarehouseOrder warehouseOrder = new WarehouseOrder();
+            warehouseOrder.setOrderNumber("WO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            warehouseOrder.setCustomerOrderId(order.getId());
+            warehouseOrder.setWorkstationId(MODULES_SUPERMARKET_WORKSTATION_ID); // Modules Supermarket (8)
+            warehouseOrder.setOrderDate(LocalDateTime.now());
+            warehouseOrder.setStatus("PENDING");
+            warehouseOrder.setTriggerScenario("SCENARIO_2");
+            warehouseOrder.setNotes("Auto-generated from customer order " + order.getOrderNumber());
 
-        // BOM INTEGRATION: Convert products to modules using Bill of Materials
-        // Track which product each module group belongs to (for Final Assembly)
-        List<WarehouseOrderItem> warehouseOrderItems = new ArrayList<>();
-        
-        // Process each customer order item separately to preserve product-to-module mapping
-        for (OrderItem item : order.getOrderItems()) {
-            if ("PRODUCT".equalsIgnoreCase(item.getItemType())) {
-                Long productId = item.getItemId();
-                Integer productQty = item.getQuantity();
-                
-                // Fetch product name from masterdata-service
-                String productName = masterdataService.getItemName("PRODUCT", productId);
-                
-                // Use BOM to get module requirements for this specific product
-                logger.info("BOM Lookup: Converting product {} ({}) qty {} to modules", productId, productName, productQty);
-                java.util.Map<Long, Integer> productModules = masterdataService.getModuleRequirementsForProduct(
-                    productId, 
-                    productQty
-                );
-                
-                // Create warehouse order items for each module, tracking the product ID
-                for (java.util.Map.Entry<Long, Integer> entry : productModules.entrySet()) {
-                    Long moduleId = entry.getKey();
-                    Integer requiredQty = entry.getValue();
-                    
-                    WarehouseOrderItem woItem = new WarehouseOrderItem();
-                    woItem.setWarehouseOrder(warehouseOrder);
-                    woItem.setItemId(moduleId);
-                    woItem.setProductId(productId); // Track which product this module is for
-                    
-                    // Fetch module name from masterdata-service
-                    String moduleName = masterdataService.getItemName("MODULE", moduleId);
-                    woItem.setItemName(moduleName);
-                    woItem.setRequestedQuantity(requiredQty);
-                    woItem.setFulfilledQuantity(0);
-                    woItem.setItemType("MODULE");
-                    woItem.setNotes("For product: " + productName + " (ID: " + productId + ")");
-                    warehouseOrderItems.add(woItem);
-                    
-                    logger.info("  - Module {} ({}) qty {} for product {} ({})", moduleId, moduleName, requiredQty, productId, productName);
+            // BOM INTEGRATION: Convert products to modules using Bill of Materials
+            // Track which product each module group belongs to (for Final Assembly)
+            List<WarehouseOrderItem> warehouseOrderItems = new ArrayList<>();
+            
+            // Process each customer order item separately to preserve product-to-module mapping
+            for (OrderItem item : order.getOrderItems()) {
+                try {
+                    if ("PRODUCT".equalsIgnoreCase(item.getItemType())) {
+                        Long productId = item.getItemId();
+                        Integer productQty = item.getQuantity();
+                        
+                        logger.info("Processing PRODUCT item: productId={}, qty={}", productId, productQty);
+                        
+                        // Fetch product name from masterdata-service with null check
+                        String productName;
+                        try {
+                            productName = masterdataService.getItemName("PRODUCT", productId);
+                            if (productName == null || productName.trim().isEmpty()) {
+                                logger.warn("Product name returned null/empty for productId={}. Using fallback.", productId);
+                                productName = "Product-" + productId;
+                            }
+                            logger.info("✓ Product name retrieved: {}", productName);
+                        } catch (Exception e) {
+                            logger.error("Failed to fetch product name for productId={}: {}", productId, e.getMessage());
+                            productName = "Product-" + productId;
+                        }
+                        
+                        // Use BOM to get module requirements for this specific product
+                        logger.info("BOM Lookup: Converting product {} ({}) qty {} to modules", productId, productName, productQty);
+                        
+                        java.util.Map<Long, Integer> productModules;
+                        try {
+                            productModules = masterdataService.getModuleRequirementsForProduct(productId, productQty);
+                            
+                            // Validate BOM response is not null or empty
+                            if (productModules == null) {
+                                logger.error("❌ BOM lookup returned null for productId={} qty={}. Cannot convert to modules.", productId, productQty);
+                                throw new OrderProcessingException(
+                                    "BOM lookup failed: getModuleRequirementsForProduct returned null for product " + productId
+                                );
+                            }
+                            
+                            if (productModules.isEmpty()) {
+                                logger.error("❌ BOM lookup returned empty map for productId={} qty={}. No modules defined for this product.", productId, productQty);
+                                throw new OrderProcessingException(
+                                    "BOM lookup failed: No modules found for product " + productId + " (" + productName + ")"
+                                );
+                            }
+                            
+                            logger.info("✓ BOM lookup successful: {} modules required", productModules.size());
+                        } catch (OrderProcessingException ope) {
+                            throw ope; // Re-throw our own exceptions
+                        } catch (Exception e) {
+                            logger.error("❌ BOM lookup failed for productId={}: {}", productId, e.getMessage(), e);
+                            throw new OrderProcessingException(
+                                "BOM lookup failed for product " + productId + " (" + productName + "): " + e.getMessage(),
+                                e
+                            );
+                        }
+                        
+                        // Create warehouse order items for each module, tracking the product ID
+                        for (java.util.Map.Entry<Long, Integer> entry : productModules.entrySet()) {
+                            Long moduleId = entry.getKey();
+                            Integer requiredQty = entry.getValue();
+                            
+                            // Validate module data
+                            if (moduleId == null || requiredQty == null || requiredQty <= 0) {
+                                logger.warn("Skipping invalid module entry: moduleId={}, qty={}. This indicates BOM data issue.", moduleId, requiredQty);
+                                continue;
+                            }
+                            
+                            // Fetch module name from masterdata-service with null check
+                            String moduleName;
+                            try {
+                                moduleName = masterdataService.getItemName("MODULE", moduleId);
+                                if (moduleName == null || moduleName.trim().isEmpty()) {
+                                    logger.warn("Module name returned null/empty for moduleId={}. Using fallback.", moduleId);
+                                    moduleName = "Module-" + moduleId;
+                                }
+                            } catch (Exception e) {
+                                logger.warn("Failed to fetch module name for moduleId={}: {}. Using fallback.", moduleId, e.getMessage());
+                                moduleName = "Module-" + moduleId;
+                            }
+                            
+                            WarehouseOrderItem woItem = new WarehouseOrderItem();
+                            woItem.setWarehouseOrder(warehouseOrder);
+                            woItem.setItemId(moduleId);
+                            woItem.setProductId(productId); // Track which product this module is for
+                            woItem.setItemName(moduleName);
+                            woItem.setRequestedQuantity(requiredQty);
+                            woItem.setFulfilledQuantity(0);
+                            woItem.setItemType("MODULE");
+                            woItem.setNotes("For product: " + productName + " (ID: " + productId + ")");
+                            warehouseOrderItems.add(woItem);
+                            
+                            logger.info("  ✓ Module {} ({}) qty {} for product {} ({})", moduleId, moduleName, requiredQty, productId, productName);
+                        }
+                    } else {
+                        // For non-products, add directly (fallback for legacy data)
+                        logger.info("Processing non-PRODUCT item: type={}, id={}, qty={}", item.getItemType(), item.getItemId(), item.getQuantity());
+                        
+                        String itemName;
+                        try {
+                            itemName = masterdataService.getItemName(item.getItemType(), item.getItemId());
+                            if (itemName == null || itemName.trim().isEmpty()) {
+                                logger.warn("Item name returned null/empty. Using fallback.");
+                                itemName = item.getItemType() + "-" + item.getItemId();
+                            }
+                        } catch (Exception e) {
+                            logger.warn("Failed to fetch item name: {}. Using fallback.", e.getMessage());
+                            itemName = item.getItemType() + "-" + item.getItemId();
+                        }
+                        
+                        WarehouseOrderItem woItem = new WarehouseOrderItem();
+                        woItem.setWarehouseOrder(warehouseOrder);
+                        woItem.setItemId(item.getItemId());
+                        woItem.setProductId(null); // No product mapping for non-product items
+                        woItem.setItemName(itemName);
+                        woItem.setRequestedQuantity(item.getQuantity());
+                        woItem.setFulfilledQuantity(0);
+                        woItem.setItemType(item.getItemType());
+                        warehouseOrderItems.add(woItem);
+                        
+                        logger.info("  ✓ Added non-product item: {} ({})", itemName, item.getItemType());
+                    }
+                } catch (OrderProcessingException ope) {
+                    // Log and re-throw processing exceptions
+                    logger.error("❌ Failed to process order item: {}", ope.getMessage());
+                    throw ope;
+                } catch (Exception e) {
+                    // Wrap unexpected exceptions
+                    logger.error("❌ Unexpected error processing order item {}: {}", item.getItemId(), e.getMessage(), e);
+                    throw new OrderProcessingException(
+                        "Failed to process order item " + item.getItemId() + ": " + e.getMessage(),
+                        e
+                    );
                 }
-            } else {
-                // For non-products, add directly (fallback for legacy data)
-                String itemName = masterdataService.getItemName(item.getItemType(), item.getItemId());
-                
-                WarehouseOrderItem woItem = new WarehouseOrderItem();
-                woItem.setWarehouseOrder(warehouseOrder);
-                woItem.setItemId(item.getItemId());
-                woItem.setProductId(null); // No product mapping for non-product items
-                woItem.setItemName(itemName);
-                woItem.setRequestedQuantity(item.getQuantity());
-                woItem.setFulfilledQuantity(0);
-                woItem.setItemType(item.getItemType());
-                warehouseOrderItems.add(woItem);
             }
+            
+            // Validate that we have at least one warehouse order item
+            if (warehouseOrderItems.isEmpty()) {
+                logger.error("❌ No warehouse order items created for customer order {}. Cannot proceed.", order.getOrderNumber());
+                throw new OrderProcessingException(
+                    "Failed to create warehouse order: No valid items after BOM conversion"
+                );
+            }
+            
+            warehouseOrder.setOrderItems(warehouseOrderItems);
+
+            // Persist warehouse order
+            warehouseOrderRepository.save(warehouseOrder);
+            logger.info("✓ Created warehouse order {} with {} items for customer order {}", 
+                       warehouseOrder.getOrderNumber(), warehouseOrderItems.size(), order.getOrderNumber());
+            orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "WAREHOUSE_ORDER_CREATED",
+                "Warehouse order " + warehouseOrder.getOrderNumber() + " created (Scenario 2)");
+
+            // NOTE: Production order is NOT auto-triggered.
+            // Modules Supermarket will confirm the order and manually decide:
+            // - Fulfill directly if modules are in stock
+            // - Request production if modules are not available
+
+            // Update customer order status
+            order.setStatus(PROCESSING);
+            order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + 
+                          "Scenario 2: Warehouse order " + warehouseOrder.getOrderNumber() + 
+                          " created (awaiting Modules Supermarket confirmation)");
+            orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "STATUS_PROCESSING", 
+                                             "Scenario 2 processing (waiting on warehouse)");
+
+            logger.info("✓ Scenario 2 completed successfully for order {}", order.getOrderNumber());
+            return mapToDTO(customerOrderRepository.save(order));
+            
+        } catch (OrderProcessingException ope) {
+            // Log business logic errors
+            logger.error("❌ Scenario 2 failed for order {}: {}", order.getOrderNumber(), ope.getMessage());
+            orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "FULFILLMENT_ERROR",
+                "Scenario 2 failed: " + ope.getMessage());
+            throw ope;
+        } catch (Exception e) {
+            // Log unexpected errors with full stack trace
+            logger.error("❌ Unexpected error in Scenario 2 for order {}: {}", order.getOrderNumber(), e.getMessage(), e);
+            orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "FULFILLMENT_ERROR",
+                "Scenario 2 unexpected error: " + e.getMessage());
+            throw new OrderProcessingException(
+                "Failed to create warehouse order for customer order " + order.getOrderNumber() + ": " + e.getMessage(),
+                e
+            );
         }
-        
-        warehouseOrder.setOrderItems(warehouseOrderItems);
-
-        // Persist warehouse order
-        warehouseOrderRepository.save(warehouseOrder);
-        logger.info("Created warehouse order {} for customer order {}", warehouseOrder.getOrderNumber(), order.getOrderNumber());
-        orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "WAREHOUSE_ORDER_CREATED",
-            "Warehouse order " + warehouseOrder.getOrderNumber() + " created (Scenario 2)");
-
-        // NOTE: Production order is NOT auto-triggered.
-        // Modules Supermarket will confirm the order and manually decide:
-        // - Fulfill directly if modules are in stock
-        // - Request production if modules are not available
-
-        // Update customer order status
-        order.setStatus(PROCESSING);
-        order.setNotes((order.getNotes() != null ? order.getNotes() + " | " : "") + "Scenario 2: Warehouse order " + warehouseOrder.getOrderNumber() + " created (awaiting Modules Supermarket confirmation)");
-        orderAuditService.recordOrderEvent(CUSTOMER, order.getId(), "STATUS_PROCESSING", "Scenario 2 processing (waiting on warehouse)");
-
-        return mapToDTO(customerOrderRepository.save(order));
     }
 
     /**

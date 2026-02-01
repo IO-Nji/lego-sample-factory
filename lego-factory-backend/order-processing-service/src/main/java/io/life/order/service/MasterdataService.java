@@ -195,11 +195,13 @@ public class MasterdataService {
 
     /**
      * DTO for ProductModule data from masterdata-service.
+     * Handles both old format (moduleId) and new format (componentId).
      */
     public static class ProductModuleDTO {
         private Long id;
         private Long productId;
         private Long moduleId;
+        private Long componentId;  // New format from masterdata-service
         private Integer quantity;
 
         public ProductModuleDTO() {}
@@ -221,11 +223,20 @@ public class MasterdataService {
         }
 
         public Long getModuleId() {
-            return moduleId;
+            // Return componentId if moduleId is null (new API format)
+            return moduleId != null ? moduleId : componentId;
         }
 
         public void setModuleId(Long moduleId) {
             this.moduleId = moduleId;
+        }
+
+        public Long getComponentId() {
+            return componentId;
+        }
+
+        public void setComponentId(Long componentId) {
+            this.componentId = componentId;
         }
 
         public Integer getQuantity() {
