@@ -36,6 +36,11 @@ public class CustomerOrderController {
     })
     @PostMapping
     public ResponseEntity<CustomerOrderDTO> createOrder(@RequestBody CustomerOrderDTO orderDTO) {
+        // Customer orders are always created at Plant Warehouse (WS-7)
+        // If workstationId is not provided, default to WS-7
+        if (orderDTO.getWorkstationId() == null) {
+            orderDTO.setWorkstationId(7L);
+        }
         CustomerOrderDTO createdOrder = customerOrderService.createOrder(orderDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
     }

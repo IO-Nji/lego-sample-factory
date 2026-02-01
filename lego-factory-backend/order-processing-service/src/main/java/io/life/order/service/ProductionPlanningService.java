@@ -118,7 +118,14 @@ public class ProductionPlanningService {
                 Map<String, Object> responseBody = response.getBody();
                 if (responseBody != null) {
                     String scheduleId = (String) responseBody.get("scheduleId");
-                    Integer estimatedDuration = ((Number) responseBody.get("estimatedDuration")).intValue();
+                    
+                    // Handle estimatedDuration safely - it might be null
+                    Integer estimatedDuration = null;
+                    Object durationObj = responseBody.get("estimatedDuration");
+                    if (durationObj instanceof Number) {
+                        estimatedDuration = ((Number) durationObj).intValue();
+                    }
+                    
                     String estimatedCompletionStr = (String) responseBody.get("estimatedCompletion");
 
                     // Update production order with schedule information

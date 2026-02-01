@@ -416,7 +416,12 @@ public class ControlOrderIntegrationService {
                 }
                 
                 lineItem.setItemName(actualItemName != null ? actualItemName : (String) item.get("itemName"));
-                lineItem.setQuantity(getIntValue(item.get("quantity")));
+                // Try both 'quantity' and 'requestedQuantity' for compatibility
+                Integer quantity = getIntValue(item.get("quantity"));
+                if (quantity == null) {
+                    quantity = getIntValue(item.get("requestedQuantity"));
+                }
+                lineItem.setQuantity(quantity);
                 lineItem.setEstimatedDuration(getIntValue(item.get("estimatedTimeMinutes")) != null ? 
                         getIntValue(item.get("estimatedTimeMinutes")) : 30);
                 lineItem.setWorkstationType(workstationType != null ? workstationType : "MANUFACTURING");
