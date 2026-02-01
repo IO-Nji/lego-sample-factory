@@ -160,7 +160,7 @@ public class ProductController {
         @ApiResponse(responseCode = "404", description = "Product not found")
     })
     @GetMapping("/{id}/modules")
-    public ResponseEntity<List<ProductModule>> getProductModules(
+    public ResponseEntity<List<io.life.masterdata.dto.BomEntryDTO>> getProductModules(
             @Parameter(description = "Product ID") @PathVariable Long id) {
         log.debug("Fetching modules for product ID: {}", id);
         
@@ -173,7 +173,26 @@ public class ProductController {
         List<ProductModule> productModules = productModuleService.findByProductId(id);
         log.debug("Found {} modules for product ID: {}", productModules.size(), id);
         
-        return ResponseEntity.ok(productModules);
+        // Transform to BomEntryDTO for proper API contract
+        List<io.life.masterdata.dto.BomEntryDTO> bomEntries = new ArrayList<>();
+        for (ProductModule pm : productModules) {
+            Optional<Module> moduleOpt = moduleService.findById(pm.getModuleId());
+            if (moduleOpt.isEmpty()) {
+                log.warn("Module {} not found for product {}", pm.getModuleId(), id);
+                continue;
+            }
+            Module module = moduleOpt.get();
+            
+            io.life.masterdata.dto.BomEntryDTO entry = io.life.masterdata.dto.BomEntryDTO.builder()
+                    .componentId(module.getId())
+                    .componentName(module.getName())
+                    .componentType("MODULE")
+                    .quantity(pm.getQuantity())
+                    .build();
+            bomEntries.add(entry);
+        }
+        
+        return ResponseEntity.ok(bomEntries);
     }
 
     @Operation(summary = "Get product composition (full BOM)", 

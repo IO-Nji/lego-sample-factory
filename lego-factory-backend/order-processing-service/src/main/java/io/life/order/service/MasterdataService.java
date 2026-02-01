@@ -240,36 +240,46 @@ public class MasterdataService {
     /**
      * DTO for ModulePart data from masterdata-service.
      */
+    /**
+     * DTO matching BomEntryDTO structure from masterdata-service.
+     * Used for deserializing module BOM responses.
+     * 
+     * Fields match masterdata-service/dto/BomEntryDTO:
+     * - componentId: The part/module ID
+     * - componentName: The part/module name
+     * - componentType: "PART" or "MODULE"
+     * - quantity: Quantity required per parent item
+     */
     public static class ModulePartDTO {
-        private Long id;
-        private Long moduleId;
-        private Long partId;
+        private Long componentId;
+        private String componentName;
+        private String componentType;
         private Integer quantity;
 
         public ModulePartDTO() {}
 
-        public Long getId() {
-            return id;
+        public Long getComponentId() {
+            return componentId;
         }
 
-        public void setId(Long id) {
-            this.id = id;
+        public void setComponentId(Long componentId) {
+            this.componentId = componentId;
         }
 
-        public Long getModuleId() {
-            return moduleId;
+        public String getComponentName() {
+            return componentName;
         }
 
-        public void setModuleId(Long moduleId) {
-            this.moduleId = moduleId;
+        public void setComponentName(String componentName) {
+            this.componentName = componentName;
         }
 
-        public Long getPartId() {
-            return partId;
+        public String getComponentType() {
+            return componentType;
         }
 
-        public void setPartId(Long partId) {
-            this.partId = partId;
+        public void setComponentType(String componentType) {
+            this.componentType = componentType;
         }
 
         public Integer getQuantity() {
@@ -278,6 +288,14 @@ public class MasterdataService {
 
         public void setQuantity(Integer quantity) {
             this.quantity = quantity;
+        }
+        
+        /**
+         * Convenience method for backward compatibility.
+         * Returns componentId as partId for supply order logic.
+         */
+        public Long getPartId() {
+            return componentId;
         }
     }
 }

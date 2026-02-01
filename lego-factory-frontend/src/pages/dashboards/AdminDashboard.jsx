@@ -124,7 +124,7 @@ function AdminDashboard() {
               workstationName: task.workstationName,
               startTime: task.startTime,
               endTime: task.endTime,
-              status: order.status || 'SCHEDULED',
+              status: task.status || 'SCHEDULED', // Use task's own status, not order status
               orderId: order.id,
               scheduleId: order.scheduleId
             });

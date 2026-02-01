@@ -1,5 +1,6 @@
 package io.life.masterdata.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -73,14 +74,29 @@ public class MasterdataController {
         @ApiResponse(responseCode = "404", description = "Module not found")
     })
     @GetMapping("/modules/{id}/parts")
-    public ResponseEntity<List<ModulePart>> getModuleParts(
+    public ResponseEntity<List<io.life.masterdata.dto.BomEntryDTO>> getModuleParts(
             @Parameter(description = "Module ID") @PathVariable Long id) {
         log.debug("Fetching parts for module ID: {}", id);
         return moduleService.findById(id)
             .map(module -> {
                 List<ModulePart> moduleParts = modulePartService.findByModuleId(id);
                 log.debug("Found {} parts for module ID: {}", moduleParts.size(), id);
-                return ResponseEntity.ok(moduleParts);
+                
+                // Transform to BomEntryDTO for proper API contract
+                List<io.life.masterdata.dto.BomEntryDTO> bomEntries = new ArrayList<>();
+                for (ModulePart mp : moduleParts) {
+                    partService.findById(mp.getPartId()).ifPresent(part -> {
+                        io.life.masterdata.dto.BomEntryDTO entry = io.life.masterdata.dto.BomEntryDTO.builder()
+                                .componentId(part.getId())
+                                .componentName(part.getName())
+                                .componentType("PART")
+                                .quantity(mp.getQuantity())
+                                .build();
+                        bomEntries.add(entry);
+                    });
+                }
+                
+                return ResponseEntity.ok(bomEntries);
             })
             .orElseGet(() -> {
                 log.warn("Module not found with ID: {}", id);

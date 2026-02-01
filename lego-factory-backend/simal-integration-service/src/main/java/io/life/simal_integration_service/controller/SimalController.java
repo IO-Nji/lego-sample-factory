@@ -825,6 +825,42 @@ public class SimalController {
         return ResponseEntity.ok(responses);
     }
 
+    /**
+     * Update scheduled task status from workstation order.
+     * Called by order-processing-service when workstation orders change status.
+     * 
+     * @param taskId The task ID (format: workstation-{wsId}-{orderNumber})
+     * @param request Status update request with new status
+     * @return Updated task
+     */
+    @PatchMapping("/tasks/{taskId}/status")
+    public ResponseEntity<ScheduledTaskResponse> updateTaskStatus(
+            @PathVariable String taskId,
+            @RequestBody Map<String, String> request) {
+        
+        String newStatus = request.get("status");
+        if (newStatus == null || newStatus.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status is required");
+        }
+
+        log.info("Updating task {} status to {}", taskId, newStatus);
+
+        ScheduledTask task = scheduledTaskRepository.findByTaskId(taskId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, 
+                        "Task not found: " + taskId));
+
+        // Update status
+        task.setStatus(newStatus);
+        ScheduledTask savedTask = scheduledTaskRepository.save(task);
+
+        log.info("✓ Updated task {} status from {} to {}", 
+                taskId, task.getStatus(), newStatus);
+
+        ScheduledTaskResponse response = convertToTaskResponse(savedTask);
+        return ResponseEntity.ok(response);
+    }
+
     // ========================================================================
     // Helper Methods
     // ========================================================================

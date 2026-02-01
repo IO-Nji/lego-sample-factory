@@ -54,7 +54,7 @@ public class MasterdataClient {
      */
     public List<ProductDTO> getAllProducts() {
         try {
-            String url = masterdataServiceUrl + "/api/products";
+            String url = masterdataServiceUrl + "/api/masterdata/products";
             ResponseEntity<List<ProductDTO>> response = restTemplate.exchange(
                 url, HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<ProductDTO>>() {});
@@ -70,7 +70,7 @@ public class MasterdataClient {
      */
     public Optional<ProductDTO> getProductById(Long productId) {
         try {
-            String url = masterdataServiceUrl + "/api/products/" + productId;
+            String url = masterdataServiceUrl + "/api/masterdata/products/" + productId;
             ResponseEntity<ProductDTO> response = restTemplate.getForEntity(url, ProductDTO.class);
             return Optional.ofNullable(response.getBody());
         } catch (RestClientException e) {
@@ -97,7 +97,7 @@ public class MasterdataClient {
      */
     public List<ModuleDTO> getAllModules() {
         try {
-            String url = masterdataServiceUrl + "/api/modules";
+            String url = masterdataServiceUrl + "/api/masterdata/modules";
             ResponseEntity<List<ModuleDTO>> response = restTemplate.exchange(
                 url, HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<ModuleDTO>>() {});
@@ -113,7 +113,7 @@ public class MasterdataClient {
      */
     public Optional<ModuleDTO> getModuleById(Long moduleId) {
         try {
-            String url = masterdataServiceUrl + "/api/modules/" + moduleId;
+            String url = masterdataServiceUrl + "/api/masterdata/modules/" + moduleId;
             ResponseEntity<ModuleDTO> response = restTemplate.getForEntity(url, ModuleDTO.class);
             return Optional.ofNullable(response.getBody());
         } catch (RestClientException e) {
@@ -140,7 +140,7 @@ public class MasterdataClient {
      */
     public List<PartDTO> getAllParts() {
         try {
-            String url = masterdataServiceUrl + "/api/parts";
+            String url = masterdataServiceUrl + "/api/masterdata/parts";
             ResponseEntity<List<PartDTO>> response = restTemplate.exchange(
                 url, HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<PartDTO>>() {});
@@ -156,7 +156,7 @@ public class MasterdataClient {
      */
     public Optional<PartDTO> getPartById(Long partId) {
         try {
-            String url = masterdataServiceUrl + "/api/parts/" + partId;
+            String url = masterdataServiceUrl + "/api/masterdata/parts/" + partId;
             ResponseEntity<PartDTO> response = restTemplate.getForEntity(url, PartDTO.class);
             return Optional.ofNullable(response.getBody());
         } catch (RestClientException e) {
@@ -184,7 +184,7 @@ public class MasterdataClient {
      */
     public List<BomEntryDTO> getModulesForProduct(Long productId) {
         try {
-            String url = masterdataServiceUrl + "/api/products/" + productId + "/modules";
+            String url = masterdataServiceUrl + "/api/masterdata/products/" + productId + "/modules";
             ResponseEntity<List<BomEntryDTO>> response = restTemplate.exchange(
                 url, HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<BomEntryDTO>>() {});
@@ -201,7 +201,7 @@ public class MasterdataClient {
      */
     public List<BomEntryDTO> getPartsForModule(Long moduleId) {
         try {
-            String url = masterdataServiceUrl + "/api/modules/" + moduleId + "/parts";
+            String url = masterdataServiceUrl + "/api/masterdata/modules/" + moduleId + "/parts";
             ResponseEntity<List<BomEntryDTO>> response = restTemplate.exchange(
                 url, HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<BomEntryDTO>>() {});
@@ -218,7 +218,7 @@ public class MasterdataClient {
      */
     public List<BomEntryDTO> getFullBomForProduct(Long productId) {
         try {
-            String url = masterdataServiceUrl + "/api/products/" + productId + "/bom";
+            String url = masterdataServiceUrl + "/api/masterdata/products/" + productId + "/bom";
             ResponseEntity<List<BomEntryDTO>> response = restTemplate.exchange(
                 url, HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<BomEntryDTO>>() {});
@@ -238,7 +238,7 @@ public class MasterdataClient {
      */
     public List<WorkstationDTO> getAllWorkstations() {
         try {
-            String url = masterdataServiceUrl + "/api/workstations";
+            String url = masterdataServiceUrl + "/api/masterdata/workstations";
             ResponseEntity<List<WorkstationDTO>> response = restTemplate.exchange(
                 url, HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<WorkstationDTO>>() {});
@@ -254,7 +254,7 @@ public class MasterdataClient {
      */
     public Optional<WorkstationDTO> getWorkstationById(Long workstationId) {
         try {
-            String url = masterdataServiceUrl + "/api/workstations/" + workstationId;
+            String url = masterdataServiceUrl + "/api/masterdata/workstations/" + workstationId;
             ResponseEntity<WorkstationDTO> response = restTemplate.getForEntity(url, WorkstationDTO.class);
             return Optional.ofNullable(response.getBody());
         } catch (RestClientException e) {

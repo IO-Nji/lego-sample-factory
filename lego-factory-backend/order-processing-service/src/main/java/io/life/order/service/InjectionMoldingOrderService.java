@@ -1,6 +1,7 @@
 package io.life.order.service;
 
 import io.life.order.client.InventoryClient;
+import io.life.order.client.SimalClient;
 import io.life.order.entity.InjectionMoldingOrder;
 import io.life.order.repository.InjectionMoldingOrderRepository;
 import io.life.order.service.OrderOrchestrationService.WorkstationOrderType;
@@ -27,6 +28,7 @@ public class InjectionMoldingOrderService {
 
     private final InjectionMoldingOrderRepository injectionMoldingOrderRepository;
     private final InventoryClient inventoryClient;
+    private final SimalClient simalClient;
     private final OrderOrchestrationService orchestrationService;
 
     public List<InjectionMoldingOrder> getOrdersForWorkstation(Long workstationId) {
@@ -56,6 +58,10 @@ public class InjectionMoldingOrderService {
         InjectionMoldingOrder saved = injectionMoldingOrderRepository.save(order);
         log.info("Started injection molding order: {} at WS-1", order.getOrderNumber());
         
+        // Update task status in SimAL
+        String taskId = SimalClient.generateTaskId(1L, order.getOrderNumber());
+        simalClient.updateTaskStatus(taskId, "IN_PROGRESS");
+        
         return saved;
     }
 
@@ -78,6 +84,10 @@ public class InjectionMoldingOrderService {
         log.info("Completed injection molding order: {} - {} {} produced", 
                 order.getOrderNumber(), order.getQuantity(), order.getOutputPartName());
 
+        // Update task status in SimAL
+        String taskId = SimalClient.generateTaskId(1L, order.getOrderNumber());
+        simalClient.updateTaskStatus(taskId, "COMPLETED");
+
         // Propagate status to parent control order
         propagateStatusToParent(order.getProductionControlOrderId());
 
@@ -96,6 +106,11 @@ public class InjectionMoldingOrderService {
         InjectionMoldingOrder saved = injectionMoldingOrderRepository.save(order);
         
         log.info("Halted injection molding order: {}", order.getOrderNumber());
+        
+        // Update task status in SimAL
+        String taskId = SimalClient.generateTaskId(1L, order.getOrderNumber());
+        simalClient.updateTaskStatus(taskId, "HALTED");
+        
         return saved;
     }
 

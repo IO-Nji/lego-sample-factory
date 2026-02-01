@@ -384,6 +384,13 @@ public class ControlOrderIntegrationService {
         }
 
         log.info("Retrieved production order: {}", productionOrder.get("productionOrderNumber"));
+        log.info("Production order data - triggerScenario: {}, sourceWarehouseOrderId: {}, sourceCustomerOrderId: {}", 
+                productionOrder.get("triggerScenario"), 
+                productionOrder.get("sourceWarehouseOrderId"),
+                productionOrder.get("sourceCustomerOrderId"));
+        log.info("Production order items count: {}", 
+                productionOrder.get("productionOrderItems") != null ? 
+                        ((List<?>) productionOrder.get("productionOrderItems")).size() : "null");
 
         // 2. Check if production order has its own items first
         @SuppressWarnings("unchecked")

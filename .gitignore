@@ -198,3 +198,4 @@ diagnose-server-git-state.sh
 fix-server-docker-compose.sh
 restart-docker-for-registry.sh
 check-server-state.sh
+PRE_COMMIT_CHECKLIST.md

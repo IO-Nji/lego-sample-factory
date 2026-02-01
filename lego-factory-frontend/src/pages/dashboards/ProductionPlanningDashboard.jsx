@@ -99,26 +99,31 @@ function ProductionPlanningDashboard() {
     try {
       const response = await api.get("/simal/scheduled-orders");
       const orders = Array.isArray(response.data) ? response.data : [];
+      console.log('Fetched scheduled orders:', orders.length, 'orders');
       setScheduledOrders(orders);
       
       // Extract and format all tasks for timeline
       const allTasks = [];
       orders.forEach(order => {
+        console.log('Processing order:', order.orderNumber, 'status:', order.status, 'tasks:', order.scheduledTasks?.length || 0);
         if (order.scheduledTasks && Array.isArray(order.scheduledTasks)) {
           order.scheduledTasks.forEach(task => {
-            allTasks.push({
+            const formattedTask = {
               ...task,
               id: task.taskId,
               workstationName: task.workstationName,
               startTime: task.startTime,
               endTime: task.endTime,
-              status: order.status || 'SCHEDULED',
+              status: task.status || 'SCHEDULED', // Use task's own status, not order status
               orderId: order.id,
               scheduleId: order.scheduleId
-            });
+            };
+            console.log('  Task:', task.taskId, 'ws:', task.workstationName, 'status:', task.status);
+            allTasks.push(formattedTask);
           });
         }
       });
+      console.log('Total tasks extracted:', allTasks.length);
       setScheduledTasks(allTasks);
     } catch (err) {
       console.error("Failed to load scheduled orders:", err);
@@ -154,7 +159,9 @@ function ProductionPlanningDashboard() {
 
     try {
       // Call SimAL to schedule the production order
+      console.log('Scheduling production order:', order.id, order.productionOrderNumber);
       const response = await api.post(`/simal/schedule-production-order/${order.id}`);
+      console.log('SimAL schedule response:', response.data);
       
       // Update production order with SimAL schedule ID and set status to SCHEDULED
       try {
@@ -170,9 +177,16 @@ function ProductionPlanningDashboard() {
         addNotification(`Schedule created: ${response.data.scheduleId}`, "success");
       }
       
+      // Allow a brief moment for backend to finalize the data
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Refresh both order lists and scheduled tasks
+      console.log('Refreshing production orders and scheduled data...');
       await fetchProductionOrders();
       await fetchScheduledOrders();
+      console.log('Data refresh complete');
     } catch (err) {
+      console.error('Scheduling error:', err);
       const errorMsg = err.response?.data?.message || err.message || "Failed to schedule with SimAL";
       setError(errorMsg);
       addNotification(errorMsg, "error");

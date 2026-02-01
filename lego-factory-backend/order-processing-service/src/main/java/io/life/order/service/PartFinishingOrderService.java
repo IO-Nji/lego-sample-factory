@@ -1,6 +1,7 @@
 package io.life.order.service;
 
 import io.life.order.client.InventoryClient;
+import io.life.order.client.SimalClient;
 import io.life.order.entity.PartFinishingOrder;
 import io.life.order.repository.PartFinishingOrderRepository;
 import io.life.order.service.OrderOrchestrationService.WorkstationOrderType;
@@ -27,6 +28,7 @@ public class PartFinishingOrderService {
 
     private final PartFinishingOrderRepository partFinishingOrderRepository;
     private final InventoryClient inventoryClient;
+    private final SimalClient simalClient;
     private final OrderOrchestrationService orchestrationService;
 
     public List<PartFinishingOrder> getOrdersForWorkstation(Long workstationId) {
@@ -54,6 +56,7 @@ public class PartFinishingOrderService {
         order.setActualStartTime(LocalDateTime.now());
         
         PartFinishingOrder saved = partFinishingOrderRepository.save(order);
+        simalClient.updateTaskStatus(SimalClient.generateTaskId(3L, order.getOrderNumber()), "IN_PROGRESS");
         log.info("Started part finishing order: {} at WS-3", order.getOrderNumber());
         
         return saved;
@@ -75,6 +78,7 @@ public class PartFinishingOrderService {
         order.setActualFinishTime(LocalDateTime.now());
         PartFinishingOrder saved = partFinishingOrderRepository.save(order);
 
+        simalClient.updateTaskStatus(SimalClient.generateTaskId(3L, order.getOrderNumber()), "COMPLETED");
         log.info("Completed part finishing order: {} - {} {} produced", 
                 order.getOrderNumber(), order.getQuantity(), order.getOutputPartName());
 
@@ -94,6 +98,7 @@ public class PartFinishingOrderService {
 
         order.setStatus("HALTED");
         PartFinishingOrder saved = partFinishingOrderRepository.save(order);
+        simalClient.updateTaskStatus(SimalClient.generateTaskId(3L, order.getOrderNumber()), "HALTED");
         
         log.info("Halted part finishing order: {}", order.getOrderNumber());
         return saved;

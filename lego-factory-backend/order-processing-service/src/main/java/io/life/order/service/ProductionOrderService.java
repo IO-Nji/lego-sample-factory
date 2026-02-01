@@ -105,6 +105,10 @@ public class ProductionOrderService {
                 .notes(notes != null ? notes : "Scenario 4: Direct production from customer order (high volume)")
                 .build();
 
+        // Save production order FIRST to get the ID for item relationships
+        ProductionOrder saved = productionOrderRepository.save(productionOrder);
+        logger.info("Created production order {} with ID {}", productionOrderNumber, saved.getId());
+
         // Create production order items from customer order items
         // Convert PRODUCTS to MODULES for production scheduling (same as Scenario 3)
         List<ProductionOrderItem> productionOrderItems = new ArrayList<>();
@@ -165,7 +169,7 @@ public class ProductionOrderService {
                     }
                     
                     ProductionOrderItem poItem = ProductionOrderItem.builder()
-                            .productionOrder(productionOrder)
+                            .productionOrder(saved)  // Use SAVED production order with ID
                             .itemType("MODULE")  // Production orders always contain MODULES
                             .itemId(module.getId())
                             .itemName(module.getName())
@@ -181,9 +185,10 @@ public class ProductionOrderService {
                 }
             }
         }
-        productionOrder.setProductionOrderItems(productionOrderItems);
+        saved.setProductionOrderItems(productionOrderItems);
 
-        ProductionOrder saved = productionOrderRepository.save(productionOrder);
+        // Save again to persist items with CASCADE
+        ProductionOrder finalSaved = productionOrderRepository.save(saved);
         logger.info("Created Scenario 4 production order {} from customer order {} with {} items", 
                 productionOrderNumber, customerOrder.getOrderNumber(), productionOrderItems.size());
 
@@ -194,7 +199,7 @@ public class ProductionOrderService {
         customerOrderRepository.save(customerOrder);
         logger.info("Updated customer order {} status to PROCESSING", customerOrder.getOrderNumber());
 
-        return mapToDTO(saved);
+        return mapToDTO(finalSaved);
     }
 
     /**
@@ -242,12 +247,15 @@ public class ProductionOrderService {
                 .notes(notes)
                 .build();
 
+        // Save production order FIRST to get the ID for item relationships
+        ProductionOrder saved = productionOrderRepository.save(productionOrder);
+        logger.info("Created production order {} with ID {}", productionOrderNumber, saved.getId());
+
         // Create production order items from warehouse order items
         // WarehouseOrders contain MODULES that need to be produced
         // Each module has a productionWorkstationId indicating where it's produced
+        List<ProductionOrderItem> productionOrderItems = new ArrayList<>();
         if (warehouseOrder != null && warehouseOrder.getOrderItems() != null) {
-            List<ProductionOrderItem> productionOrderItems = new ArrayList<>();
-            
             for (WarehouseOrderItem woItem : warehouseOrder.getOrderItems()) {
                 // WarehouseOrderItems contain MODULES
                 if (!"MODULE".equals(woItem.getItemType())) {
@@ -288,7 +296,7 @@ public class ProductionOrderService {
                 }
                 
                 ProductionOrderItem poItem = ProductionOrderItem.builder()
-                        .productionOrder(productionOrder)
+                        .productionOrder(saved)  // Use SAVED production order with ID
                         .itemType("MODULE") // Production orders contain MODULES
                         .itemId(moduleId)
                         .itemName(module.getName())
@@ -302,28 +310,28 @@ public class ProductionOrderService {
                         module.getName(), moduleId, woItem.getRequestedQuantity(), 
                         workstationType, productionWorkstationId);
             }
-            
-            productionOrder.setProductionOrderItems(productionOrderItems);
         }
+        saved.setProductionOrderItems(productionOrderItems);
 
+        // Save again to persist items with CASCADE
         @SuppressWarnings("null")
-        ProductionOrder saved = productionOrderRepository.save(productionOrder);
+        ProductionOrder finalSaved = productionOrderRepository.save(saved);
         logger.info("Created production order {} from warehouse order {} with {} items", 
                 productionOrderNumber, sourceWarehouseOrderId, 
-                saved.getProductionOrderItems() != null ? saved.getProductionOrderItems().size() : 0);
+                finalSaved.getProductionOrderItems() != null ? finalSaved.getProductionOrderItems().size() : 0);
 
         // Update warehouse order status to AWAITING_PRODUCTION and link to this production order
         // This prevents other production runs from interfering with this order's fulfillment
         if (warehouseOrder != null) {
             warehouseOrder.setStatus("AWAITING_PRODUCTION");
             warehouseOrder.setTriggerScenario("PRODUCTION_CREATED");
-            warehouseOrder.setProductionOrderId(saved.getId()); // Link to production order
+            warehouseOrder.setProductionOrderId(finalSaved.getId()); // Link to production order
             warehouseOrderRepository.save(warehouseOrder);
             logger.info("Updated warehouse order {} status to AWAITING_PRODUCTION with production order {} linked", 
-                    sourceWarehouseOrderId, saved.getId());
+                    sourceWarehouseOrderId, finalSaved.getId());
         }
 
-        return mapToDTO(saved);
+        return mapToDTO(finalSaved);
     }
 
     /**
@@ -670,17 +678,18 @@ public class ProductionOrderService {
         logger.info("Received completion notification from control order {} for production order {}", 
                     controlOrderId, id);
 
-        // TODO: Feature 3.2 - Check if ALL control orders are complete
-        // For now, we'll mark as IN_PROGRESS on first completion, COMPLETED when all done
+        // ✅ IMPLEMENTED (Feb 2026): OrderOrchestrationService automatically checks all control orders
+        // and completes production order when all control orders are done.
+        // See: OrderOrchestrationService.notifyControlOrderComplete()
         
         if ("DISPATCHED".equals(productionOrder.getStatus())) {
             productionOrder.setStatus("IN_PROGRESS");
             logger.info("Production order {} transitioned to IN_PROGRESS", id);
         }
 
-        // TODO: Add logic to check if all control orders are complete
-        // If all complete, transition to COMPLETED and notify warehouse order
-        // For now, manual completion via completeProductionOrder()
+        // Note: Production auto-completion is handled by OrderOrchestrationService
+        // which monitors all control orders and triggers submitProductionOrderCompletion()
+        // when everything is complete.
 
         ProductionOrder updated = productionOrderRepository.save(productionOrder);
         return mapToDTO(updated);

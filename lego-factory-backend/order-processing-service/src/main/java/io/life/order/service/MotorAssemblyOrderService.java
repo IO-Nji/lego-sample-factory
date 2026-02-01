@@ -1,6 +1,7 @@
 package io.life.order.service;
 
 import io.life.order.client.InventoryClient;
+import io.life.order.client.SimalClient;
 import io.life.order.entity.MotorAssemblyOrder;
 import io.life.order.repository.MotorAssemblyOrderRepository;
 import io.life.order.service.OrderOrchestrationService.WorkstationOrderType;
@@ -27,6 +28,7 @@ public class MotorAssemblyOrderService {
 
     private final MotorAssemblyOrderRepository motorAssemblyOrderRepository;
     private final InventoryClient inventoryClient;
+    private final SimalClient simalClient;
     private final OrderOrchestrationService orchestrationService;
 
     public List<MotorAssemblyOrder> getOrdersForWorkstation(Long workstationId) {
@@ -54,6 +56,7 @@ public class MotorAssemblyOrderService {
         order.setActualStartTime(LocalDateTime.now());
         
         MotorAssemblyOrder saved = motorAssemblyOrderRepository.save(order);
+        simalClient.updateTaskStatus(SimalClient.generateTaskId(5L, order.getOrderNumber()), "IN_PROGRESS");
         log.info("Started motor assembly order: {} at WS-5", order.getOrderNumber());
         
         return saved;
@@ -75,6 +78,7 @@ public class MotorAssemblyOrderService {
         order.setActualFinishTime(LocalDateTime.now());
         MotorAssemblyOrder saved = motorAssemblyOrderRepository.save(order);
 
+        simalClient.updateTaskStatus(SimalClient.generateTaskId(5L, order.getOrderNumber()), "COMPLETED");
         log.info("Completed motor assembly order: {} - {} {} produced", 
                 order.getOrderNumber(), order.getQuantity(), order.getOutputModuleName());
 
@@ -94,6 +98,7 @@ public class MotorAssemblyOrderService {
 
         order.setStatus("HALTED");
         MotorAssemblyOrder saved = motorAssemblyOrderRepository.save(order);
+        simalClient.updateTaskStatus(SimalClient.generateTaskId(5L, order.getOrderNumber()), "HALTED");
         
         log.info("Halted motor assembly order: {}", order.getOrderNumber());
         return saved;
