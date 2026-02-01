@@ -3,6 +3,8 @@ package io.life.order.service;
 import io.life.order.dto.ProductionControlOrderDTO;
 import io.life.order.dto.AssemblyControlOrderDTO;
 import io.life.order.dto.ProductionOrderDTO;
+import io.life.order.dto.masterdata.BomEntryDTO;
+import io.life.order.dto.masterdata.ModuleDTO;
 import io.life.order.entity.CustomerOrder;
 import io.life.order.entity.OrderItem;
 import io.life.order.entity.ProductionOrder;
@@ -12,6 +14,7 @@ import io.life.order.entity.WarehouseOrderItem;
 import io.life.order.repository.CustomerOrderRepository;
 import io.life.order.repository.ProductionOrderRepository;
 import io.life.order.repository.WarehouseOrderRepository;
+import io.life.order.client.MasterdataClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -44,19 +47,22 @@ public class ProductionOrderService {
     private final ProductionControlOrderService productionControlOrderService;
     private final AssemblyControlOrderService assemblyControlOrderService;
     private final InventoryService inventoryService;
+    private final MasterdataClient masterdataClient;
 
     public ProductionOrderService(ProductionOrderRepository productionOrderRepository,
                                  WarehouseOrderRepository warehouseOrderRepository,
                                  CustomerOrderRepository customerOrderRepository,
                                  ProductionControlOrderService productionControlOrderService,
                                  AssemblyControlOrderService assemblyControlOrderService,
-                                 InventoryService inventoryService) {
+                                 InventoryService inventoryService,
+                                 MasterdataClient masterdataClient) {
         this.productionOrderRepository = productionOrderRepository;
         this.warehouseOrderRepository = warehouseOrderRepository;
         this.customerOrderRepository = customerOrderRepository;
         this.productionControlOrderService = productionControlOrderService;
         this.assemblyControlOrderService = assemblyControlOrderService;
         this.inventoryService = inventoryService;
+        this.masterdataClient = masterdataClient;
     }
 
     /**
@@ -100,24 +106,79 @@ public class ProductionOrderService {
                 .build();
 
         // Create production order items from customer order items
+        // Convert PRODUCTS to MODULES for production scheduling (same as Scenario 3)
         List<ProductionOrderItem> productionOrderItems = new ArrayList<>();
         if (customerOrder.getOrderItems() != null) {
             for (OrderItem coItem : customerOrder.getOrderItems()) {
                 // Customer orders contain PRODUCT items
-                // Products need to go through the full production pipeline
-                ProductionOrderItem poItem = ProductionOrderItem.builder()
-                        .productionOrder(productionOrder)
-                        .itemType(coItem.getItemType())
-                        .itemId(coItem.getItemId())
-                        .itemName("Product " + coItem.getItemId())  // Will be enriched by masterdata
-                        .quantity(coItem.getQuantity())
-                        .estimatedTimeMinutes(60)  // Default estimate for full product
-                        .workstationType("FULL_PRODUCTION")  // Requires both manufacturing and assembly
-                        .build();
-                productionOrderItems.add(poItem);
+                // Must convert to MODULES for production planning
+                Long productId = coItem.getItemId();
+                Integer productQuantity = coItem.getQuantity();
                 
-                logger.info("  Added production order item: Product {} qty {} - full production", 
-                        coItem.getItemId(), coItem.getQuantity());
+                logger.info("Converting product {} (qty {}) to modules for Scenario 4 production", 
+                        productId, productQuantity);
+                
+                // Get product modules via masterdata service (BOM lookup)
+                List<BomEntryDTO> productModuleBom = masterdataClient.getModulesForProduct(productId);
+                
+                if (productModuleBom == null || productModuleBom.isEmpty()) {
+                    logger.error("No modules found for product {} - cannot create production order", productId);
+                    continue;
+                }
+                
+                logger.info("Product {} requires {} modules", productId, productModuleBom.size());
+                
+                // For each module in the product BOM, create a production order item
+                for (BomEntryDTO bomEntry : productModuleBom) {
+                    Long moduleId = bomEntry.getComponentId();
+                    Integer moduleQuantityPerProduct = bomEntry.getQuantity() != null ? 
+                            bomEntry.getQuantity() : 1;
+                    Integer totalModuleQuantity = moduleQuantityPerProduct * productQuantity;
+                    
+                    // Fetch full module details to get production workstation
+                    Optional<ModuleDTO> moduleOpt = masterdataClient.getModuleById(moduleId);
+                    if (moduleOpt.isEmpty()) {
+                        logger.error("Module {} not found - skipping", moduleId);
+                        continue;
+                    }
+                    
+                    ModuleDTO module = moduleOpt.get();
+                    Integer productionWorkstationId = module.getProductionWorkstationId();
+                    
+                    if (productionWorkstationId == null) {
+                        logger.error("Module {} has no productionWorkstationId - skipping", moduleId);
+                        continue;
+                    }
+                    
+                    // Determine workstation type based on production workstation ID
+                    // WS-1, WS-2, WS-3 = MANUFACTURING (produces parts/modules)
+                    // WS-4, WS-5 = ASSEMBLY (assembles modules from parts)
+                    String workstationType;
+                    if (productionWorkstationId >= 1 && productionWorkstationId <= 3) {
+                        workstationType = "MANUFACTURING";
+                    } else if (productionWorkstationId >= 4 && productionWorkstationId <= 5) {
+                        workstationType = "ASSEMBLY";
+                    } else {
+                        logger.error("Invalid productionWorkstationId {} for module {} - skipping", 
+                                productionWorkstationId, moduleId);
+                        continue;
+                    }
+                    
+                    ProductionOrderItem poItem = ProductionOrderItem.builder()
+                            .productionOrder(productionOrder)
+                            .itemType("MODULE")  // Production orders always contain MODULES
+                            .itemId(module.getId())
+                            .itemName(module.getName())
+                            .quantity(totalModuleQuantity)
+                            .estimatedTimeMinutes(30)  // Default estimate per module
+                            .workstationType(workstationType)
+                            .build();
+                    productionOrderItems.add(poItem);
+                    
+                    logger.info("  Added production order item: {} (MODULE ID: {}) qty {} - workstation type: {} (WS-{})", 
+                            module.getName(), module.getId(), totalModuleQuantity, 
+                            workstationType, productionWorkstationId);
+                }
             }
         }
         productionOrder.setProductionOrderItems(productionOrderItems);
@@ -182,28 +243,66 @@ public class ProductionOrderService {
                 .build();
 
         // Create production order items from warehouse order items
+        // WarehouseOrders contain MODULES that need to be produced
+        // Each module has a productionWorkstationId indicating where it's produced
         if (warehouseOrder != null && warehouseOrder.getOrderItems() != null) {
             List<ProductionOrderItem> productionOrderItems = new ArrayList<>();
+            
             for (WarehouseOrderItem woItem : warehouseOrder.getOrderItems()) {
-                // Determine workstation type based on item type
-                // MODULE items require ASSEMBLY (workstations WS-4, WS-5, WS-6)
-                // PART items require MANUFACTURING (workstations WS-1, WS-2, WS-3)
-                String workstationType = "MODULE".equals(woItem.getItemType()) ? "ASSEMBLY" : "MANUFACTURING";
+                // WarehouseOrderItems contain MODULES
+                if (!"MODULE".equals(woItem.getItemType())) {
+                    logger.warn("WarehouseOrderItem has unexpected type: {} - should be MODULE", 
+                            woItem.getItemType());
+                    continue;
+                }
+                
+                // Fetch module details to get production workstation
+                Long moduleId = woItem.getItemId();
+                Optional<ModuleDTO> moduleOpt = masterdataClient.getModuleById(moduleId);
+                
+                if (moduleOpt.isEmpty()) {
+                    logger.error("Module not found: {} - skipping", moduleId);
+                    continue;
+                }
+                
+                ModuleDTO module = moduleOpt.get();
+                Integer productionWorkstationId = module.getProductionWorkstationId();
+                
+                if (productionWorkstationId == null) {
+                    logger.error("Module {} has no productionWorkstationId - skipping", moduleId);
+                    continue;
+                }
+                
+                // Determine workstation type based on production workstation ID
+                // WS-1, WS-2, WS-3 = MANUFACTURING (produces parts/modules)
+                // WS-4, WS-5 = ASSEMBLY (assembles modules from parts)
+                String workstationType;
+                if (productionWorkstationId >= 1 && productionWorkstationId <= 3) {
+                    workstationType = "MANUFACTURING";
+                } else if (productionWorkstationId >= 4 && productionWorkstationId <= 5) {
+                    workstationType = "ASSEMBLY";
+                } else {
+                    logger.error("Invalid productionWorkstationId {} for module {} - skipping", 
+                            productionWorkstationId, moduleId);
+                    continue;
+                }
                 
                 ProductionOrderItem poItem = ProductionOrderItem.builder()
                         .productionOrder(productionOrder)
-                        .itemType(woItem.getItemType())
-                        .itemId(woItem.getItemId())
-                        .itemName(woItem.getItemName())
+                        .itemType("MODULE") // Production orders contain MODULES
+                        .itemId(moduleId)
+                        .itemName(module.getName())
                         .quantity(woItem.getRequestedQuantity())
-                        .estimatedTimeMinutes(30) // Default estimate, could be fetched from masterdata
+                        .estimatedTimeMinutes(30) // Default estimate
                         .workstationType(workstationType)
                         .build();
                 productionOrderItems.add(poItem);
                 
-                logger.info("  Added production order item: {} (ID: {}) qty {} - workstation type: {}", 
-                        woItem.getItemName(), woItem.getItemId(), woItem.getRequestedQuantity(), workstationType);
+                logger.info("Added production order item: {} (MODULE ID: {}) qty {} - workstation type: {} (WS-{})", 
+                        module.getName(), moduleId, woItem.getRequestedQuantity(), 
+                        workstationType, productionWorkstationId);
             }
+            
             productionOrder.setProductionOrderItems(productionOrderItems);
         }
 
@@ -213,13 +312,15 @@ public class ProductionOrderService {
                 productionOrderNumber, sourceWarehouseOrderId, 
                 saved.getProductionOrderItems() != null ? saved.getProductionOrderItems().size() : 0);
 
-        // Update warehouse order status to AWAITING_PRODUCTION and triggerScenario to PRODUCTION_CREATED
+        // Update warehouse order status to AWAITING_PRODUCTION and link to this production order
+        // This prevents other production runs from interfering with this order's fulfillment
         if (warehouseOrder != null) {
             warehouseOrder.setStatus("AWAITING_PRODUCTION");
             warehouseOrder.setTriggerScenario("PRODUCTION_CREATED");
+            warehouseOrder.setProductionOrderId(saved.getId()); // Link to production order
             warehouseOrderRepository.save(warehouseOrder);
-            logger.info("Updated warehouse order {} status to AWAITING_PRODUCTION with triggerScenario PRODUCTION_CREATED", 
-                    sourceWarehouseOrderId);
+            logger.info("Updated warehouse order {} status to AWAITING_PRODUCTION with production order {} linked", 
+                    sourceWarehouseOrderId, saved.getId());
         }
 
         return mapToDTO(saved);

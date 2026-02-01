@@ -72,26 +72,27 @@ public class DataInitializer implements CommandLineRunner {
         // Seed modules (Sub-assemblies made from parts)
         if (moduleService.findAll().isEmpty()) {
             // Truck modules (used by both Technic Trucks)
-            moduleService.save(new Module(null, "Truck Chassis", "Heavy-duty frame with axle mounts", TYPE_MECHANICAL));
-            moduleService.save(new Module(null, "Truck Drive System", "Motorized drivetrain with gearbox", TYPE_MECHANICAL));
-            moduleService.save(new Module(null, "Truck Wheel Assembly", "Complete wheel set with tires and axles", TYPE_MECHANICAL));
-            moduleService.save(new Module(null, "Truck Steering Unit", "Front wheel steering mechanism", TYPE_MECHANICAL));
-            moduleService.save(new Module(null, "Truck Light System", "LED headlights and taillights", TYPE_ELECTRICAL));
-            moduleService.save(new Module(null, "Truck Cab Unit", "Driver cabin with windshield", TYPE_STRUCTURAL));
+            // WS-4 = Gear Assembly, WS-5 = Motor Assembly, WS-2 = Parts Pre-Production, WS-1 = Injection Molding
+            moduleService.save(new Module(null, "Truck Chassis", "Heavy-duty frame with axle mounts", TYPE_MECHANICAL, 2)); // WS-2
+            moduleService.save(new Module(null, "Truck Drive System", "Motorized drivetrain with gearbox", TYPE_MECHANICAL, 5)); // WS-5 Motor
+            moduleService.save(new Module(null, "Truck Wheel Assembly", "Complete wheel set with tires and axles", TYPE_MECHANICAL, 2)); // WS-2
+            moduleService.save(new Module(null, "Truck Steering Unit", "Front wheel steering mechanism", TYPE_MECHANICAL, 4)); // WS-4 Gear
+            moduleService.save(new Module(null, "Truck Light System", "LED headlights and taillights", TYPE_ELECTRICAL, 2)); // WS-2
+            moduleService.save(new Module(null, "Truck Cab Unit", "Driver cabin with windshield", TYPE_STRUCTURAL, 1)); // WS-1 Injection
             
             // House modules (used by Creator House)
-            moduleService.save(new Module(null, "House Wall Panel", "Pre-assembled wall section with studs", TYPE_STRUCTURAL));
-            moduleService.save(new Module(null, "House Roof Assembly", "Pitched roof with tiles", TYPE_STRUCTURAL));
-            moduleService.save(new Module(null, "House Window Frame", "Window with opening shutters", TYPE_STRUCTURAL));
-            moduleService.save(new Module(null, "House Door Unit", "Entry door with hinges", TYPE_STRUCTURAL));
-            moduleService.save(new Module(null, "House Floor Base", "Foundation platform with connectors", TYPE_STRUCTURAL));
+            moduleService.save(new Module(null, "House Wall Panel", "Pre-assembled wall section with studs", TYPE_STRUCTURAL, 1)); // WS-1 Injection
+            moduleService.save(new Module(null, "House Roof Assembly", "Pitched roof with tiles", TYPE_STRUCTURAL, 3)); // WS-3 Finishing
+            moduleService.save(new Module(null, "House Window Frame", "Window with opening shutters", TYPE_STRUCTURAL, 1)); // WS-1 Injection
+            moduleService.save(new Module(null, "House Door Unit", "Entry door with hinges", TYPE_STRUCTURAL, 2)); // WS-2
+            moduleService.save(new Module(null, "House Floor Base", "Foundation platform with connectors", TYPE_STRUCTURAL, 1)); // WS-1 Injection
             
             // Castle modules (used by Castle Set)
-            moduleService.save(new Module(null, "Castle Tower Section", "Round tower segment with battlements", TYPE_STRUCTURAL));
-            moduleService.save(new Module(null, "Castle Wall Section", "Fortified wall segment", TYPE_STRUCTURAL));
-            moduleService.save(new Module(null, "Castle Gate Assembly", "Working drawbridge mechanism", TYPE_MECHANICAL));
-            moduleService.save(new Module(null, "Castle Flag Post", "Tower flag with pole", TYPE_DECORATIVE));
-            moduleService.save(new Module(null, "Castle Throne Room", "Interior decoration set", TYPE_DECORATIVE));
+            moduleService.save(new Module(null, "Castle Tower Section", "Round tower segment with battlements", TYPE_STRUCTURAL, 1)); // WS-1 Injection
+            moduleService.save(new Module(null, "Castle Wall Section", "Fortified wall segment", TYPE_STRUCTURAL, 1)); // WS-1 Injection
+            moduleService.save(new Module(null, "Castle Gate Assembly", "Working drawbridge mechanism", TYPE_MECHANICAL, 4)); // WS-4 Gear
+            moduleService.save(new Module(null, "Castle Flag Post", "Tower flag with pole", TYPE_DECORATIVE, 3)); // WS-3 Finishing
+            moduleService.save(new Module(null, "Castle Throne Room", "Interior decoration set", TYPE_DECORATIVE, 2)); // WS-2
         }
 
         // Seed parts (Basic components - raw materials)

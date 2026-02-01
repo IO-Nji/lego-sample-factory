@@ -34,8 +34,11 @@ public class FinalAssemblyOrder {
     @Column(name = "warehouse_order_id")
     private Long warehouseOrderId; // Scenario 2: Direct from warehouse order
 
+    @Column(name = "production_order_id")
+    private Long productionOrderId; // Scenario 4: Direct production (high volume bypass)
+
     @Column(name = "assembly_control_order_id")
-    private Long assemblyControlOrderId; // Scenario 3/4: From production flow
+    private Long assemblyControlOrderId; // Scenario 3: From production flow via control order
 
     @Column(nullable = false)
     private Long workstationId; // Always 6L (Final Assembly)

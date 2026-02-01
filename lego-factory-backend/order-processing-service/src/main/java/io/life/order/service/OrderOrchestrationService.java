@@ -1,5 +1,6 @@
 package io.life.order.service;
 
+import io.life.order.client.InventoryClient;
 import io.life.order.entity.*;
 import io.life.order.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,8 @@ public class OrderOrchestrationService {
     private final ProductionOrderRepository productionOrderRepository;
     private final WarehouseOrderRepository warehouseOrderRepository;
     private final CustomerOrderRepository customerOrderRepository;
+    private final InventoryClient inventoryClient;
+    private final FinalAssemblyOrderService finalAssemblyOrderService;
     
     // Workstation order repositories for counting completion
     private final InjectionMoldingOrderRepository injectionMoldingOrderRepository;
@@ -293,7 +296,10 @@ public class OrderOrchestrationService {
     }
 
     /**
-     * Mark a Production Order as complete and propagate to Warehouse Order.
+     * Mark a Production Order as complete and AUTOMATICALLY proceed with downstream processing.
+     * 
+     * SCENARIO 3 (Via Warehouse): Production → Credit WS-8 → Update Warehouse Order → Ready for fulfillment
+     * SCENARIO 4 (Direct): Production → Credit WS-6 → Create Final Assembly orders → Ready for assembly
      */
     @Transactional
     public void completeProductionOrder(Long productionOrderId) {
@@ -312,15 +318,64 @@ public class OrderOrchestrationService {
         log.info("Auto-completed ProductionOrder {} - all control orders finished",
                 productionOrder.getProductionOrderNumber());
 
-        // Propagate to Warehouse Order if linked
+        // AUTOMATICALLY proceed with downstream processing
+        log.info("ProductionOrder {} completed. Automatically proceeding with downstream processing...", 
+                productionOrder.getProductionOrderNumber());
+        
+        try {
+            submitProductionOrderCompletion(productionOrderId);
+        } catch (Exception e) {
+            log.error("Failed to automatically submit production order completion {}: {}",
+                    productionOrderId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Submit a completed production order to proceed with next steps.
+     * SCENARIO 3: Credits Modules Supermarket inventory and updates Warehouse Order
+     * SCENARIO 4: Creates Final Assembly orders for the customer order
+     * 
+     * This is a MANUAL step performed by Production Planning after production completes.
+     * 
+     * @param productionOrderId The completed production order ID
+     * @throws RuntimeException if production order not found or not in COMPLETED status
+     */
+    @Transactional
+    public void submitProductionOrderCompletion(Long productionOrderId) {
+        ProductionOrder productionOrder = productionOrderRepository.findById(productionOrderId)
+                .orElseThrow(() -> new RuntimeException("Production order not found: " + productionOrderId));
+
+        if (!STATUS_COMPLETED.equals(productionOrder.getStatus())) {
+            throw new RuntimeException("Production order must be COMPLETED before submission. Current status: " + 
+                    productionOrder.getStatus());
+        }
+
+        log.info("Submitting completed ProductionOrder {} for downstream processing",
+                productionOrder.getProductionOrderNumber());
+
+        // SCENARIO 3: Credit Modules Supermarket (WS-8) and update Warehouse Order
         if (productionOrder.getSourceWarehouseOrderId() != null) {
+            log.info("Scenario 3 flow: Crediting Modules Supermarket (WS-8) and updating warehouse order {}", 
+                    productionOrder.getSourceWarehouseOrderId());
+            creditModulesSupermarketFromProduction(productionOrder);
             notifyProductionOrderComplete(productionOrder.getSourceWarehouseOrderId());
+        } 
+        // SCENARIO 4: Credit Final Assembly (WS-6) directly - bypasses Modules Supermarket
+        else if (productionOrder.getSourceCustomerOrderId() != null) {
+            log.info("Scenario 4 flow: Crediting Final Assembly (WS-6) directly for customer order {}", 
+                    productionOrder.getSourceCustomerOrderId());
+            // Scenario 4 bypasses Modules Supermarket - credit Final Assembly (WS-6) directly
+            creditFinalAssemblyFromProduction(productionOrder);
+            // Then create Final Assembly orders
+            createFinalAssemblyOrdersFromProductionOrder(productionOrder);
+        } else {
+            throw new RuntimeException("ProductionOrder has neither warehouse nor customer order source");
         }
     }
 
     /**
      * Notify that production has completed for a Warehouse Order.
-     * The Warehouse Order can now be fulfilled.
+     * Credits Modules Supermarket and updates Warehouse Order to ready for fulfillment.
      */
     @Transactional
     public void notifyProductionOrderComplete(Long warehouseOrderId) {
@@ -330,15 +385,25 @@ public class OrderOrchestrationService {
             WarehouseOrder warehouseOrder = warehouseOrderRepository.findById(warehouseOrderId)
                     .orElseThrow(() -> new RuntimeException("Warehouse order not found: " + warehouseOrderId));
 
+            String currentStatus = warehouseOrder.getStatus();
+            log.info("WarehouseOrder {} current status: {}", warehouseOrder.getOrderNumber(), currentStatus);
+
             // Update warehouse order status to indicate production complete
-            // Note: Actual fulfillment still requires manual action at Modules Supermarket
-            if (STATUS_AWAITING_PRODUCTION.equals(warehouseOrder.getStatus())) {
+            // Accept AWAITING_PRODUCTION, PROCESSING, or CONFIRMED status
+            if (STATUS_AWAITING_PRODUCTION.equals(currentStatus) || 
+                "PROCESSING".equals(currentStatus) || 
+                STATUS_CONFIRMED.equals(currentStatus)) {
+                
                 warehouseOrder.setStatus(STATUS_CONFIRMED);
                 warehouseOrder.setTriggerScenario("DIRECT_FULFILLMENT");
+                warehouseOrder.setUpdatedAt(LocalDateTime.now());
                 warehouseOrderRepository.save(warehouseOrder);
 
-                log.info("WarehouseOrder {} updated - production complete, ready for fulfillment",
-                        warehouseOrder.getOrderNumber());
+                log.info("✓ WarehouseOrder {} updated - production complete, status changed {} → CONFIRMED (DIRECT_FULFILLMENT)",
+                        warehouseOrder.getOrderNumber(), currentStatus);
+            } else {
+                log.warn("WarehouseOrder {} has unexpected status: {}. Cannot update.", 
+                        warehouseOrder.getOrderNumber(), currentStatus);
             }
 
             // Notify Customer Order if exists
@@ -444,6 +509,149 @@ public class OrderOrchestrationService {
                 asmControlOrders.stream().filter(o -> STATUS_COMPLETED.equals(o.getStatus())).count();
 
         return new OrderProgress(total, completed);
+    }
+
+    // ========================
+    // SCENARIO COMPLETION HELPERS
+    // ========================
+
+    /**
+     * Credit Modules Supermarket (WS-8) with produced modules from completed production.
+     * Called when Scenario 3 production completes.
+     */
+    @Transactional
+    public void creditModulesSupermarketFromProduction(ProductionOrder productionOrder) {
+        try {
+            List<ProductionOrderItem> items = productionOrder.getProductionOrderItems();
+            if (items == null || items.isEmpty()) {
+                log.warn("No items to credit for ProductionOrder {}", productionOrder.getProductionOrderNumber());
+                return;
+            }
+
+            log.info("Crediting Modules Supermarket (WS-8) with {} items from ProductionOrder {}",
+                    items.size(), productionOrder.getProductionOrderNumber());
+
+            // Credit each module to Modules Supermarket (WS-8)
+            for (ProductionOrderItem item : items) {
+                inventoryClient.creditStock(
+                        8L, // Modules Supermarket workstation ID
+                        InventoryClient.ITEM_TYPE_MODULE,
+                        item.getItemId(),
+                        item.getQuantity(),
+                        InventoryClient.REASON_PRODUCTION,
+                        "Production completed: " + productionOrder.getProductionOrderNumber()
+                );
+                log.info("Credited WS-8 with {} x {} (module ID: {})",
+                        item.getQuantity(), item.getItemName(), item.getItemId());
+            }
+
+            log.info("✓ All modules credited to Modules Supermarket from ProductionOrder {}",
+                    productionOrder.getProductionOrderNumber());
+
+        } catch (Exception e) {
+            log.error("Failed to credit Modules Supermarket from ProductionOrder {}: {}",
+                    productionOrder.getProductionOrderNumber(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Credit Final Assembly (WS-6) directly with produced modules from completed production.
+     * Called when Scenario 4 production completes (bypasses Modules Supermarket).
+     */
+    @Transactional
+    public void creditFinalAssemblyFromProduction(ProductionOrder productionOrder) {
+        try {
+            List<ProductionOrderItem> items = productionOrder.getProductionOrderItems();
+            if (items == null || items.isEmpty()) {
+                log.warn("No items to credit for ProductionOrder {}", productionOrder.getProductionOrderNumber());
+                return;
+            }
+
+            log.info("Crediting Final Assembly (WS-6) directly with {} items from ProductionOrder {}",
+                    items.size(), productionOrder.getProductionOrderNumber());
+
+            // Credit each module to Final Assembly (WS-6) - Scenario 4 bypasses Modules Supermarket
+            for (ProductionOrderItem item : items) {
+                inventoryClient.creditStock(
+                        6L, // Final Assembly workstation ID
+                        InventoryClient.ITEM_TYPE_MODULE,
+                        item.getItemId(),
+                        item.getQuantity(),
+                        InventoryClient.REASON_PRODUCTION,
+                        "Production completed (direct): " + productionOrder.getProductionOrderNumber()
+                );
+                log.info("Credited WS-6 with {} x {} (module ID: {})",
+                        item.getQuantity(), item.getItemName(), item.getItemId());
+            }
+
+            log.info("✓ All modules credited to Final Assembly (WS-6) from ProductionOrder {}",
+                    productionOrder.getProductionOrderNumber());
+
+        } catch (Exception e) {
+            log.error("Failed to credit Final Assembly from ProductionOrder {}: {}",
+                    productionOrder.getProductionOrderNumber(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create Final Assembly orders from completed Production Order (Scenario 4).
+     * Groups modules by target product and creates assembly orders.
+     */
+    @Transactional
+    public void createFinalAssemblyOrdersFromProductionOrder(ProductionOrder productionOrder) {
+        try {
+            log.info("Creating Final Assembly orders from ProductionOrder {}",
+                    productionOrder.getProductionOrderNumber());
+
+            // Get the source customer order to determine which products to assemble
+            Long customerOrderId = productionOrder.getSourceCustomerOrderId();
+            if (customerOrderId == null) {
+                log.error("ProductionOrder {} has no source customer order",
+                        productionOrder.getProductionOrderNumber());
+                return;
+            }
+
+            // Fetch customer order to get product information
+            CustomerOrder customerOrder = customerOrderRepository.findById(customerOrderId)
+                    .orElseThrow(() -> new RuntimeException("Customer order not found: " + customerOrderId));
+
+            // Get customer order items (these are PRODUCTS)
+            List<OrderItem> customerItems = customerOrder.getOrderItems();
+            if (customerItems == null || customerItems.isEmpty()) {
+                log.warn("No items in customer order {} to create Final Assembly orders",
+                        customerOrder.getOrderNumber());
+                return;
+            }
+
+            log.info("Creating Final Assembly orders for {} products from customer order {}",
+                    customerItems.size(), customerOrder.getOrderNumber());
+
+            // Create a Final Assembly order for each product in the customer order
+            for (OrderItem customerItem : customerItems) {
+                try {
+                    // Create Final Assembly order using the production order entity
+                    finalAssemblyOrderService.createFromProductionOrder(
+                            productionOrder,
+                            customerItem.getItemId(), // Product ID
+                            customerItem.getQuantity() // Product quantity
+                    );
+
+                    log.info("✓ Final Assembly order created for product {} qty {}",
+                            customerItem.getItemId(), customerItem.getQuantity());
+
+                } catch (Exception e) {
+                    log.error("Failed to create Final Assembly order for product {}: {}",
+                            customerItem.getItemId(), e.getMessage());
+                }
+            }
+
+            log.info("✓ All Final Assembly orders created from ProductionOrder {}",
+                    productionOrder.getProductionOrderNumber());
+
+        } catch (Exception e) {
+            log.error("Failed to create Final Assembly orders from ProductionOrder {}: {}",
+                    productionOrder.getProductionOrderNumber(), e.getMessage(), e);
+        }
     }
 
     // ========================

@@ -249,7 +249,8 @@ public class MasterdataController {
             module.getId(),
             module.getName(),
             module.getDescription(),
-            module.getType()
+            module.getType(),
+            module.getProductionWorkstationId()
         );
     }
 

@@ -169,11 +169,17 @@ Implements 4 distinct fulfillment workflows from thesis research:
 3. **Scenario 3: Full Production** ✅ - Missing modules trigger manufacturing chain
 4. **Scenario 4: High Volume** ✅ - Large orders (≥ LOT_SIZE_THRESHOLD) bypass warehouse, go direct to production
 
+**Recent Enhancements (February 2026):**
+- ✅ **Production Order Linking**: Warehouse orders link to production via `productionOrderId` field, preventing cross-order interference
+- ✅ **Automatic Completion**: Production orders auto-complete and trigger downstream processing (no manual submission)
+- ✅ **Direct Fulfillment Bypass**: Orders with linked production skip stock checks (modules already reserved)
+- ✅ **Frontend Smart Buttons**: Status-aware action buttons based on backend `triggerScenario` field
+
 **Order State Machines:**
 ```
 CustomerOrder:  PENDING → CONFIRMED → PROCESSING → COMPLETED → DELIVERED
-WarehouseOrder: PENDING → PROCESSING → AWAITING_PRODUCTION → FULFILLED
-ProductionOrder: PENDING → PLANNED → IN_PRODUCTION → COMPLETED
+WarehouseOrder: PENDING → CONFIRMED → FULFILLED (with productionOrderId link if needed)
+ProductionOrder: PENDING → PLANNED → IN_PRODUCTION → COMPLETED (auto-triggers downstream)
 ```
 
 ### 📊 Real-Time Inventory Management

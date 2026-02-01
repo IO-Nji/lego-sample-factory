@@ -123,7 +123,7 @@ function ProductionControlDashboard() {
 
   const handleConfirmOrder = async (orderId) => {
     try {
-      await api.post(`/production-control-orders/${orderId}/confirm`);
+      await api.put(`/production-control-orders/${orderId}/confirm`);
       setSuccess("Order confirmed successfully");
       addNotification("Order confirmed - ready to request parts", "success");
       fetchControlOrders();

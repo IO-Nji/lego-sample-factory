@@ -273,11 +273,13 @@ function PlantWarehouseDashboard() {
   const handleComplete = async (orderId) => {
     setError(null);
     try {
-      await api.put(`/customer-orders/${orderId}/complete`);
+      await api.post(`/customer-orders/${orderId}/complete`);
+      addNotification("Order completed successfully", 'success');
       fetchOrders();
       fetchInventory();
     } catch (err) {
       setError("Failed to complete order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to complete order", 'error');
     }
   };
 
@@ -285,10 +287,12 @@ function PlantWarehouseDashboard() {
     if (!globalThis.confirm("Cancel this order?")) return;
     setError(null);
     try {
-      await api.put(`/customer-orders/${orderId}/cancel`);
+      await api.post(`/customer-orders/${orderId}/cancel`);
+      addNotification("Order cancelled successfully", 'warning');
       fetchOrders();
     } catch (err) {
       setError("Failed to cancel order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to cancel order", 'error');
     }
   };
 

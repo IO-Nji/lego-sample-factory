@@ -23,4 +23,11 @@ public class ModuleDTO {
     private String name;
     private String description;
     private String type;
+    
+    /** 
+     * Production workstation ID where this module is manufactured/assembled.
+     * 1 = Injection Molding, 2 = Parts Pre-Production, 3 = Part Finishing,
+     * 4 = Gear Assembly, 5 = Motor Assembly
+     */
+    private Integer productionWorkstationId;
 }

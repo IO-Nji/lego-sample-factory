@@ -29,4 +29,15 @@ public class Module {
 
     @Column(nullable = false)
     private String type;
+
+    /**
+     * Production workstation ID where this module is manufactured/assembled.
+     * 1 = Injection Molding (no parts required - injection molding from raw plastic)
+     * 2 = Parts Pre-Production (requires parts)
+     * 3 = Part Finishing (requires parts)
+     * 4 = Gear Assembly (assembled from parts)
+     * 5 = Motor Assembly (assembled from parts)
+     */
+    @Column(name = "production_workstation_id")
+    private Integer productionWorkstationId;
 }

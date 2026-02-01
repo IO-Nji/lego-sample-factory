@@ -165,6 +165,21 @@ ProductionOrder (Production Planning)
 - `FinalAssemblyOrder.outputProductId` must contain actual PRODUCT ID (1-4), never module IDs (7+)
 - This ensures Final Assembly credits Plant Warehouse with correct product inventory
 
+**CRITICAL: Production Order Linking (Feb 2026 Enhancement):**
+- `WarehouseOrder.productionOrderId` links warehouse order to its production order
+- When production created: `warehouseOrder.setProductionOrderId(productionOrder.getId())`
+- Purpose: Prevents multiple warehouse orders from fighting over same modules
+- **Fulfillment Logic:** Orders with `productionOrderId != null` bypass stock checks (modules are "reserved")
+- **Stock Check Logic:** Only recalculate triggerScenario if `productionOrderId == null`
+- Example: WO-1 triggers production → Modules credited to WS-8 → WO-2 arrives → WO-2 cannot "steal" WO-1's modules
+
+**AUTOMATIC Production Completion (Feb 2026):**
+- Production completes when all control orders complete
+- `OrderOrchestrationService.completeProductionOrder()` automatically calls `submitProductionOrderCompletion()`
+- No manual "submit" endpoint needed - completion is fully automatic
+- Scenario 3: Credits WS-8 → Updates warehouse order → Ready for fulfillment
+- Scenario 4: Credits WS-6 → Creates Final Assembly orders immediately
+
 **Scenario 2 Workflow (STRICT SEQUENCE):**
 1. **PlantWarehouse (WS-7) - Confirm CustomerOrder:** Stock check for PRODUCTS only → sets `triggerScenario`
 2. **Frontend shows:** "Fulfill" button (DIRECT_FULFILLMENT) or "Process" button (WAREHOUSE_ORDER_NEEDED)
@@ -172,17 +187,25 @@ ProductionOrder (Production Planning)
 4. **Frontend shows:** "Fulfill" button (DIRECT_FULFILLMENT) or "Order Production" button (PRODUCTION_REQUIRED)
 5. **FinalAssembly (WS-6) - Submit Order:** Credits Plant Warehouse with PRODUCT using `productId` from warehouse order items
 
-**Scenario 3 Workflow (Full Production - IN DEVELOPMENT):**
+**Scenario 3 Workflow (Full Production - ✅ WORKING):**
 1. **ProductionOrder created** when WarehouseOrder finds insufficient modules
-2. **Production Planning** integrates with SimAL scheduling service for task optimization
-3. **SimAL generates schedule** and creates Control Orders via [ControlOrderIntegrationService](lego-factory-backend/simal-integration-service/src/main/java/io/life/simal_integration_service/service/ControlOrderIntegrationService.java):
+2. **WarehouseOrder.productionOrderId set** to link warehouse order to its production (prevents interference)
+3. **Production Planning** integrates with SimAL scheduling service for task optimization
+4. **SimAL generates schedule** and creates Control Orders via [ControlOrderIntegrationService](lego-factory-backend/simal-integration-service/src/main/java/io/life/simal_integration_service/service/ControlOrderIntegrationService.java):
    - `ProductionControlOrder` - Manufacturing tasks (WS-1, WS-2, WS-3)
    - `AssemblyControlOrder` - Assembly tasks (WS-4, WS-5, WS-6)
-4. **Each Control Order spawns Supply Orders** to stage materials at target workstation from Parts Supply (WS-9)
-5. **Workstation orders execute** after supply orders complete, crediting inventory at appropriate points
-6. **Final flow:** ProductionOrder → ControlOrders → SupplyOrders → WorkstationOrders → Inventory Credits
+5. **Each Control Order spawns Supply Orders** to stage materials at target workstation from Parts Supply (WS-9)
+6. **Workstation orders execute** after supply orders complete, crediting inventory at appropriate points
+7. **Production auto-completes** → Credits WS-8 → Updates WarehouseOrder to CONFIRMED (DIRECT_FULFILLMENT)
+8. **User clicks Fulfill** → Bypasses stock checks (productionOrderId != null) → Creates Final Assembly orders
+9. **Final Assembly completes** → Credits WS-7 (Plant Warehouse) → CustomerOrder shows Complete button
+10. **Final flow:** ProductionOrder → ControlOrders → SupplyOrders → WorkstationOrders → Auto-completion → Warehouse fulfill → Final Assembly → Customer complete
 
-**Key:** Stock checks DURING confirmation, not before or after. Never credit earlier in flow than designed above. Supply orders MUST complete before workstation orders can start.
+**Key Changes (Feb 2026):**
+- Production completion is AUTOMATIC (no manual submission needed)
+- WarehouseOrders with linked production (`productionOrderId != null`) BYPASS stock checks during fulfillment
+- Stock checks ONLY for orders without linked production
+- Supply orders MUST complete before workstation orders can start
 
 ## Backend Patterns & Implementation
 

@@ -96,4 +96,17 @@ public class ProductionPlanningController {
         ProductionOrderDTO order = productionPlanningService.completeProduction(productionOrderId);
         return ResponseEntity.ok(order);
     }
+    
+    /**
+     * Submit a completed production order for Final Assembly creation (Scenario 4 workflow).
+     * This is a MANUAL step performed by Production Planning AFTER production completes.
+     * Creates Final Assembly orders for the products in the original customer order.
+     * 
+     * POST /api/production-planning/{id}/submit-for-final-assembly
+     */
+    @PostMapping("/{productionOrderId}/submit-for-final-assembly")
+    public ResponseEntity<ProductionOrderDTO> submitForFinalAssembly(@PathVariable Long productionOrderId) {
+        ProductionOrderDTO order = productionPlanningService.submitForFinalAssembly(productionOrderId);
+        return ResponseEntity.ok(order);
+    }
 }

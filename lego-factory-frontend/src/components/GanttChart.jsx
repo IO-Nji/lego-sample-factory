@@ -174,16 +174,38 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
     return markers;
   };
 
-  // Get status color
+  // Get status-based color (matches workstation order status)
+  // Maps actual production status to visual feedback colors
   const getStatusColor = (status) => {
     const statusColors = {
-      PENDING: '#f59e0b',
-      SCHEDULED: '#3b82f6',
-      IN_PROGRESS: '#10b981',
-      COMPLETED: '#6b7280',
-      CANCELLED: '#ef4444'
+      PENDING: {
+        base: '#f59e0b', // Orange - task not yet started
+        border: '#d97706',
+        text: '#ffffff'
+      },
+      SCHEDULED: {
+        base: '#3b82f6', // Blue - task scheduled but not confirmed
+        border: '#2563eb',
+        text: '#ffffff'
+      },
+      IN_PROGRESS: {
+        base: '#10b981', // Green - active work at workstation
+        border: '#059669',
+        text: '#ffffff'
+      },
+      COMPLETED: {
+        base: '#6b7280', // Gray - task finished
+        border: '#4b5563',
+        text: '#ffffff'
+      },
+      CANCELLED: {
+        base: '#ef4444', // Red - task cancelled
+        border: '#dc2626',
+        text: '#ffffff'
+      }
     };
-    return statusColors[status] || '#9ca3af';
+
+    return statusColors[status] || statusColors.PENDING;
   };
 
   // Format time for display
@@ -197,6 +219,18 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
 
   const groupedTasks = groupTasksByWorkstation();
   const timeMarkers = generateTimeMarkers();
+  
+  // Calculate dynamic height based on number of workstations
+  // Ensures all workstations are visible without scrolling
+  const workstationCount = Object.keys(groupedTasks).length;
+  const rowHeight = 60; // Base height per workstation row (matches .gantt-row min-height)
+  const headerHeight = 100; // Header + time axis height
+  const legendHeight = 50; // Legend at bottom
+  const minHeight = 300; // Minimum chart height
+  const maxHeight = 800; // Maximum chart height to prevent excessive vertical space
+  
+  const calculatedHeight = headerHeight + (workstationCount * rowHeight) + legendHeight;
+  const timelineHeight = Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
 
   if (!viewStart || !viewEnd) {
     return (
@@ -228,7 +262,7 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
       </div>
 
       {/* Timeline */}
-      <div className="gantt-timeline">
+      <div className="gantt-timeline" style={{ minHeight: `${timelineHeight}px` }}>
         {/* Time markers */}
         <div className="gantt-time-axis">
           {timeMarkers.map((marker, idx) => (
@@ -260,6 +294,7 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
                   {tasks.map((task, idx) => {
                     const position = calculateTaskPosition(task);
                     const isBeingDragged = draggedTask?.id === task.id || draggedTask?.taskId === task.taskId;
+                    const statusColors = getStatusColor(task.status);
                     
                     return (
                       <div
@@ -268,7 +303,9 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
                         style={{
                           left: `${position.left}%`,
                           width: `${position.width}%`,
-                          backgroundColor: getStatusColor(task.status),
+                          backgroundColor: statusColors.base,
+                          borderLeft: `4px solid ${statusColors.border}`,
+                          color: statusColors.text,
                           cursor: editable ? 'grab' : 'pointer',
                           opacity: isBeingDragged ? 0.6 : 1
                         }}
@@ -373,15 +410,21 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
       {/* Legend */}
       <div className="gantt-legend">
         <span className="legend-title">Status:</span>
-        {['PENDING', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].map(status => (
-          <div key={status} className="legend-item">
-            <div 
-              className="legend-color" 
-              style={{ backgroundColor: getStatusColor(status) }}
-            />
-            <span>{status.replace('_', ' ')}</span>
-          </div>
-        ))}
+        {['PENDING', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].map(status => {
+          const colors = getStatusColor(status);
+          return (
+            <div key={status} className="legend-item">
+              <div 
+                className="legend-color" 
+                style={{ 
+                  backgroundColor: colors.base,
+                  borderLeft: `4px solid ${colors.border}`
+                }}
+              />
+              <span>{status.replace('_', ' ')}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

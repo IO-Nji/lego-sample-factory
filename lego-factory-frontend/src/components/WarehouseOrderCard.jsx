@@ -185,8 +185,10 @@ function WarehouseOrderCard({
             show: true
           });
         } else {
-          // Normal fulfillment or production mode based on needsProduction or triggerScenario
-          if (needsProduction && onCreateProductionOrder) {
+          // Check triggerScenario from order data (set by backend after production)
+          // DIRECT_FULFILLMENT = modules available, show Fulfill button
+          // PRODUCTION_REQUIRED = modules not available, show Request button
+          if (order.triggerScenario === 'PRODUCTION_REQUIRED' && onCreateProductionOrder) {
             actions.push({
               label: '↓ Request',
               variant: getActionVariant('↓ Request'),
@@ -194,13 +196,13 @@ function WarehouseOrderCard({
               onClick: () => onCreateProductionOrder(order),
               show: true
             });
-          } else {
+          } else if (order.triggerScenario === 'DIRECT_FULFILLMENT' && onFulfill) {
             actions.push({
               label: isProcessing ? 'Fulfilling...' : '✓ Fulfill',
               variant: getActionVariant('✓ Fulfill'),
               size: 'small',
               onClick: () => onFulfill(order.id, order.warehouseOrderNumber),
-              show: !!onFulfill
+              show: true
             });
           }
           actions.push({
@@ -245,8 +247,8 @@ function WarehouseOrderCard({
             show: true
           });
         } else {
-          // Normal fulfillment or production mode
-          if (needsProduction && onCreateProductionOrder) {
+          // Check triggerScenario from order data
+          if (order.triggerScenario === 'PRODUCTION_REQUIRED' && onCreateProductionOrder) {
             actions.push({
               label: '↓ Request',
               variant: getActionVariant('↓ Request'),
@@ -254,13 +256,13 @@ function WarehouseOrderCard({
               onClick: () => onCreateProductionOrder(order),
               show: true
             });
-          } else {
+          } else if (order.triggerScenario === 'DIRECT_FULFILLMENT' && onFulfill) {
             actions.push({
               label: isProcessing ? 'Fulfilling...' : '✓ Fulfill',
               variant: getActionVariant('✓ Fulfill'),
               size: 'small',
               onClick: () => onFulfill(order.id, order.warehouseOrderNumber),
-              show: !!onFulfill
+              show: true
             });
           }
           actions.push({

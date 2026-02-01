@@ -124,7 +124,7 @@ function AssemblyControlDashboard() {
 
   const handleConfirmOrder = async (orderId) => {
     try {
-      await api.post(`/assembly-control-orders/${orderId}/confirm`);
+      await api.put(`/assembly-control-orders/${orderId}/confirm`);
       setSuccess("Order confirmed successfully");
       addNotification("Order confirmed - ready to request parts", "success");
       fetchControlOrders();

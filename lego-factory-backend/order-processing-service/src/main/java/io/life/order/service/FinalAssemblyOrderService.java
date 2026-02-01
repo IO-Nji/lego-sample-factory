@@ -2,6 +2,8 @@ package io.life.order.service;
 
 import io.life.order.dto.FinalAssemblyOrderDTO;
 import io.life.order.entity.FinalAssemblyOrder;
+import io.life.order.entity.ProductionOrder;
+import io.life.order.entity.ProductionOrderItem;
 import io.life.order.entity.WarehouseOrder;
 import io.life.order.repository.FinalAssemblyOrderRepository;
 import org.slf4j.Logger;
@@ -61,6 +63,61 @@ public class FinalAssemblyOrderService {
                 "Final Assembly order created from warehouse order " + warehouseOrder.getOrderNumber());
 
         return mapToDTO(saved);
+    }
+
+    /**
+     * Create Final Assembly order from Production Order (Scenario 4 - Direct Production)
+     * Called when ProductionOrder completes without a WarehouseOrder (high volume bypass)
+     * 
+     * @param productionOrder The completed production order
+     * @param productId The target product ID
+     * @param quantity The quantity to assemble
+     * @return Created Final Assembly order DTO
+     */
+    public FinalAssemblyOrderDTO createFromProductionOrder(ProductionOrder productionOrder, Long productId, Integer quantity) {
+        logger.info("Creating Final Assembly order from production order {} for product {} qty {}", 
+                productionOrder.getProductionOrderNumber(), productId, quantity);
+
+        FinalAssemblyOrder order = new FinalAssemblyOrder();
+        order.setOrderNumber("FA-" + generateOrderNumber());
+        order.setProductionOrderId(productionOrder.getId());
+        order.setWorkstationId(FINAL_ASSEMBLY_WORKSTATION_ID);
+        order.setOutputProductId(productId);
+        order.setOutputQuantity(quantity);
+        order.setOrderDate(LocalDateTime.now());
+        order.setStatus("PENDING");
+        order.setNotes("Auto-created from production order " + productionOrder.getProductionOrderNumber() + " (Scenario 4 - Direct Production)");
+
+        FinalAssemblyOrder saved = finalAssemblyOrderRepository.save(order);
+        logger.info("Final Assembly order {} created for direct production", saved.getOrderNumber());
+        
+        orderAuditService.recordOrderEvent(FINAL_ASSEMBLY_AUDIT_SOURCE, saved.getId(), "CREATED",
+                "Final Assembly order created from production order " + productionOrder.getProductionOrderNumber());
+
+        return mapToDTO(saved);
+    }
+    
+    /**
+     * Create Final Assembly orders from Production Order using Customer Order products.
+     * This overload fetches the production order and customer order, extracts products,
+     * and creates Final Assembly orders for each product.
+     * 
+     * @param productionOrderId The completed production order ID
+     * @param customerOrderId The source customer order ID
+     * @throws RuntimeException if orders not found or have no items
+     */
+    public void createFromProductionOrder(Long productionOrderId, Long customerOrderId) {
+        logger.info("Creating Final Assembly orders from production order {} for customer order {}", 
+                productionOrderId, customerOrderId);
+        
+        // For now, create a simple placeholder implementation
+        // A full implementation would:
+        // 1. Fetch production order
+        // 2. Fetch customer order to get product IDs
+        // 3. For each product, create Final Assembly order
+        
+        logger.warn("createFromProductionOrder(Long, Long) is a placeholder - needs full implementation");
+        throw new UnsupportedOperationException("This method requires full implementation with customer order lookup");
     }
 
     /**
