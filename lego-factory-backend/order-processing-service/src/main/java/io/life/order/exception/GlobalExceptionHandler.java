@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
+import java.util.Map;
+
 /**
  * Global exception handler for the Order Processing Service.
  * Provides consistent error response format across all endpoints.
@@ -25,9 +27,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleEntityNotFoundException(
             EntityNotFoundException ex,
             WebRequest request) {
+        logger.warn("Entity not found: {} (Code: {})", ex.getMessage(), ex.getErrorCode());
         return buildErrorResponse(
                 HttpStatus.NOT_FOUND,
+                ex.getErrorCode(),
                 ex.getMessage(),
+                ex.getDetails(),
                 request.getDescription(false)
         );
     }
@@ -39,9 +44,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleInvalidOrderStateException(
             InvalidOrderStateException ex,
             WebRequest request) {
+        logger.warn("Invalid order state: {} (Code: {})", ex.getMessage(), ex.getErrorCode());
         return buildErrorResponse(
                 HttpStatus.BAD_REQUEST,
+                ex.getErrorCode(),
                 ex.getMessage(),
+                ex.getDetails(),
                 request.getDescription(false)
         );
     }
@@ -53,9 +61,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleInvalidOperationException(
             InvalidOperationException ex,
             WebRequest request) {
+        logger.warn("Invalid operation: {} (Code: {})", ex.getMessage(), ex.getErrorCode());
         return buildErrorResponse(
                 HttpStatus.BAD_REQUEST,
+                ex.getErrorCode(),
                 ex.getMessage(),
+                ex.getDetails(),
                 request.getDescription(false)
         );
     }
@@ -67,9 +78,29 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleInsufficientQuantityException(
             InsufficientQuantityException ex,
             WebRequest request) {
+        logger.warn("Insufficient quantity: {} (Code: {})", ex.getMessage(), ex.getErrorCode());
         return buildErrorResponse(
                 HttpStatus.BAD_REQUEST,
+                ex.getErrorCode(),
                 ex.getMessage(),
+                ex.getDetails(),
+                request.getDescription(false)
+        );
+    }
+    
+    /**
+     * Handle production planning exceptions
+     */
+    @ExceptionHandler(ProductionPlanningException.class)
+    public ResponseEntity<ApiErrorResponse> handleProductionPlanningException(
+            ProductionPlanningException ex,
+            WebRequest request) {
+        logger.error("Production planning error: {} (Code: {})", ex.getMessage(), ex.getErrorCode(), ex);
+        return buildErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                ex.getErrorCode(),
+                ex.getMessage(),
+                ex.getDetails(),
                 request.getDescription(false)
         );
     }
@@ -81,9 +112,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleOrderProcessingException(
             OrderProcessingException ex,
             WebRequest request) {
+        logger.error("Order processing error: {} (Code: {})", ex.getMessage(), ex.getErrorCode(), ex);
         return buildErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
+                ex.getErrorCode(),
                 ex.getMessage(),
+                ex.getDetails(),
                 request.getDescription(false)
         );
     }
@@ -128,13 +162,15 @@ public class GlobalExceptionHandler {
         logger.error("Unexpected error occurred", ex);
         return buildErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
+                "INTERNAL_SERVER_ERROR",
                 "An unexpected error occurred: " + ex.getMessage(),
+                null,
                 request.getDescription(false)
         );
     }
 
     /**
-     * Build standard error response using ApiErrorResponse DTO
+     * Build standard error response using ApiErrorResponse DTO (backward compatible).
      */
     private ResponseEntity<ApiErrorResponse> buildErrorResponse(
             HttpStatus status,
@@ -145,6 +181,26 @@ public class GlobalExceptionHandler {
                 status.getReasonPhrase(),
                 message,
                 path
+        );
+        return new ResponseEntity<>(error, status);
+    }
+    
+    /**
+     * Build standard error response with full context (errorCode and details).
+     */
+    private ResponseEntity<ApiErrorResponse> buildErrorResponse(
+            HttpStatus status,
+            String errorCode,
+            String message,
+            Map<String, Object> details,
+            String path) {
+        ApiErrorResponse error = ApiErrorResponse.of(
+                status.value(),
+                status.getReasonPhrase(),
+                errorCode,
+                message,
+                path,
+                details
         );
         return new ResponseEntity<>(error, status);
     }
