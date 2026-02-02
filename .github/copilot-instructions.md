@@ -823,6 +823,94 @@ ProductionOrder (Production Planning)
 - Start/Complete/Halt workflow actions → POST (e.g., `POST /api/customer-orders/{id}/complete`)
 - Retrieve → GET; Create → POST; Update metadata/notes → PATCH
 
+### Exception Handling & Error Responses
+
+**Standardized Pattern** (Applied to all 5 microservices as of February 2, 2026):
+
+All services use consistent exception handling with machine-readable error codes and debugging context:
+
+```java
+// Base exception with errorCode + details
+public class [Service]Exception extends RuntimeException {
+    private final String errorCode;
+    private final Map<String, Object> details;
+    
+    public [Service]Exception addDetail(String key, Object value) {
+        this.details.put(key, value);
+        return this;  // Fluent API
+    }
+    
+    public String getErrorCode() { return errorCode; }
+    public Map<String, Object> getDetails() { return new HashMap<>(details); }
+}
+
+// Usage in service layer
+throw new EntityNotFoundException("Customer order not found")
+    .addDetail("orderId", orderId)
+    .addDetail("orderNumber", orderNumber)
+    .addDetail("operation", "confirmOrder");
+```
+
+**Error Code Format:** `SERVICE_DOMAIN_ERROR` (e.g., `ORDER_NOT_FOUND`, `INVENTORY_VALIDATION_ERROR`)
+
+**ApiErrorResponse Structure:**
+```json
+{
+  "timestamp": "2026-02-02T10:30:45.123",
+  "status": 404,
+  "error": "Not Found",
+  "errorCode": "ORDER_NOT_FOUND",
+  "message": "Customer order with number ORD-ABC123 not found",
+  "path": "/api/customer-orders/42",
+  "details": {
+    "orderNumber": "ORD-ABC123",
+    "orderId": 42,
+    "orderType": "CustomerOrder"
+  }
+}
+```
+
+**GlobalExceptionHandler Pattern:**
+```java
+@ExceptionHandler(EntityNotFoundException.class)
+public ResponseEntity<ApiErrorResponse> handleEntityNotFound(
+    EntityNotFoundException ex, HttpServletRequest request
+) {
+    String errorCode = ex.getErrorCode();
+    Map<String, Object> details = ex.getDetails();
+    
+    logger.warn("Entity not found: {} (Code: {})", ex.getMessage(), errorCode);
+    
+    ApiErrorResponse response = buildErrorResponse(
+        HttpStatus.NOT_FOUND, errorCode, ex.getMessage(), details, request.getRequestURI()
+    );
+    return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+}
+```
+
+**Error Codes by Service (30+ total):**
+- **order-processing**: ORDER_NOT_FOUND, ORDER_INVALID_STATE, ORDER_INVALID_OPERATION, ORDER_INSUFFICIENT_STOCK, ORDER_PRODUCTION_PLANNING_ERROR
+- **inventory**: INVENTORY_NOT_FOUND, INVENTORY_VALIDATION_ERROR, INVENTORY_UNAUTHORIZED, INVENTORY_ENDPOINT_NOT_FOUND, INVENTORY_SERVICE_ERROR, INVENTORY_INTERNAL_ERROR
+- **masterdata**: MASTERDATA_NOT_FOUND, MASTERDATA_VALIDATION_ERROR, MASTERDATA_UNAUTHORIZED, MASTERDATA_ENDPOINT_NOT_FOUND, MASTERDATA_SERVICE_ERROR, MASTERDATA_INTERNAL_ERROR
+- **user**: USER_NOT_FOUND, USER_VALIDATION_ERROR, USER_UNAUTHORIZED, USER_ENDPOINT_NOT_FOUND, USER_ENTITY_NOT_FOUND, USER_INVALID_ARGUMENT, USER_SERVICE_ERROR, USER_INTERNAL_ERROR
+- **simal-integration**: SIMAL_NOT_FOUND, SIMAL_VALIDATION_ERROR, SIMAL_UNAUTHORIZED, SIMAL_SERVICE_ERROR, SIMAL_INTERNAL_ERROR
+
+**HTTP Status Mapping:**
+- 400 Bad Request → Validation errors, invalid states, insufficient stock
+- 403 Forbidden → Unauthorized access
+- 404 Not Found → Resource or endpoint not found
+- 500 Internal Server Error → Service errors, unexpected exceptions
+
+**Best Practices:**
+- Always include error codes for programmatic error handling
+- Provide context in details map (entity IDs, names, states)
+- Use appropriate HTTP status codes
+- Log errors with error code and details
+- Document new error codes in [API_CONTRACTS.md](../API_CONTRACTS.md#error-handling)
+- Test error responses in integration tests
+
+**See Also:** [API_CONTRACTS.md - Error Handling](../API_CONTRACTS.md#error-handling) for complete error code reference
+
 ## Frontend Conventions & Component Patterns
 
 ### Dashboard Architecture (Standardized January 2026)

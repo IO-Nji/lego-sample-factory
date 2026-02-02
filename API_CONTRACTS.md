@@ -11,11 +11,12 @@ This document defines all external API contracts in the LIFE (LEGO Integrated Fa
 
 1. [Overview](#overview)
 2. [Contract Classification](#contract-classification)
-3. [Breaking Change Protocol](#breaking-change-protocol)
-4. [Frontend API Contracts](#frontend-api-contracts)
-5. [Cross-Service API Contracts](#cross-service-api-contracts)
-6. [Field Mapping Registry](#field-mapping-registry)
-7. [Versioning Strategy](#versioning-strategy)
+3. [Error Handling](#error-handling)
+4. [Breaking Change Protocol](#breaking-change-protocol)
+5. [Frontend API Contracts](#frontend-api-contracts)
+6. [Cross-Service API Contracts](#cross-service-api-contracts)
+7. [Field Mapping Registry](#field-mapping-registry)
+8. [Versioning Strategy](#versioning-strategy)
 
 ---
 
@@ -58,7 +59,272 @@ Consumed by React frontend via `/api/*` endpoints through nginx → api-gateway.
 - `OrderItemDTO` - Order line items
 - `StockRecordDto` - Inventory levels
 - `ScheduledTaskResponse` - Gantt chart tasks
+---
 
+## Error Handling
+
+**Last Updated:** February 2, 2026 (Phase 1 Step 1.2)
+
+All services return consistent error responses using the `ApiErrorResponse` DTO with machine-readable error codes and debugging context.
+
+### ApiErrorResponse Structure
+
+```json
+{
+  "timestamp": "2026-02-02T04:19:09.123456",
+  "status": 404,
+  "error": "Not Found",
+  "errorCode": "ORDER_NOT_FOUND",
+  "message": "Order with number ORD-12345 not found",
+  "path": "/api/customer-orders/123",
+  "details": {
+    "orderNumber": "ORD-12345",
+    "orderId": 123,
+    "requestedBy": "warehouse_operator"
+  }
+}
+```
+
+**Fields:**
+- `timestamp` (LocalDateTime) - When error occurred (ISO 8601 format)
+- `status` (int) - HTTP status code (404, 400, 500, etc.)
+- `error` (String) - HTTP status reason phrase
+- `errorCode` (String) - Machine-readable error code (see table below)
+- `message` (String) - Human-readable error description
+- `path` (String) - Request URI that caused the error
+- `details` (Map<String, Object>) - Debugging context (optional)
+
+### Error Code Reference
+
+All error codes follow the format: `SERVICE_DOMAIN_ERROR`
+
+#### order-processing-service (5 codes)
+
+| Error Code | HTTP Status | Description | Context Fields | Example Scenario |
+|-----------|------------|-------------|----------------|------------------|
+| `ORDER_NOT_FOUND` | 404 | Order does not exist in database | `orderNumber`, `orderId`, `orderType` | GET /api/customer-orders/999 |
+| `ORDER_INVALID_STATE` | 400 | Invalid status transition attempted | `currentState`, `requestedState`, `orderNumber` | Trying to complete a PENDING order |
+| `ORDER_INVALID_OPERATION` | 400 | Operation not allowed for this order | `operation`, `reason`, `orderNumber` | Confirming an already confirmed order |
+| `ORDER_INSUFFICIENT_STOCK` | 400 | Not enough inventory to fulfill | `required`, `available`, `shortage`, `itemId` | Order quantity exceeds stock |
+| `ORDER_PRODUCTION_PLANNING_ERROR` | 500 | SimAL scheduling or production error | `productionOrderId`, `reason`, `failedOperation` | SimAL service unavailable |
+
+#### inventory-service (6 codes)
+
+| Error Code | HTTP Status | Description | Context Fields | Example Scenario |
+|-----------|------------|-------------|----------------|------------------|
+| `INVENTORY_NOT_FOUND` | 404 | Stock record not found | `resourceName`, `fieldName`, `fieldValue`, `workstationId` | GET /api/stock?workstationId=99 |
+| `INVENTORY_VALIDATION_ERROR` | 400 | Invalid request parameters | `field`, `invalidValue`, `reason` | Negative quantity in adjust request |
+| `INVENTORY_UNAUTHORIZED` | 403 | User lacks permission | `requiredRole`, `userRole`, `operation` | Non-admin trying to adjust stock |
+| `INVENTORY_ENDPOINT_NOT_FOUND` | 404 | API route does not exist | `path`, `method` | GET /api/nonexistent |
+| `INVENTORY_SERVICE_ERROR` | 500 | General service error | `operation`, `reason` | Database connection failure |
+| `INVENTORY_INTERNAL_ERROR` | 500 | Unexpected error | `exception`, `stackTrace` | NullPointerException |
+
+#### masterdata-service (6 codes)
+
+| Error Code | HTTP Status | Description | Context Fields | Example Scenario |
+|-----------|------------|-------------|----------------|------------------|
+| `MASTERDATA_NOT_FOUND` | 404 | Product, module, or part not found | `resourceName`, `fieldName`, `fieldValue` | GET /api/masterdata/products/999 |
+| `MASTERDATA_VALIDATION_ERROR` | 400 | Invalid request data | `field`, `invalidValue`, `reason` | Invalid product ID format |
+| `MASTERDATA_UNAUTHORIZED` | 403 | Permission denied | `requiredRole`, `userRole`, `operation` | Non-admin modifying masterdata |
+| `MASTERDATA_ENDPOINT_NOT_FOUND` | 404 | Route not found | `path`, `method` | POST /api/invalid-endpoint |
+| `MASTERDATA_SERVICE_ERROR` | 500 | Service-level error | `operation`, `reason` | Cache invalidation failure |
+| `MASTERDATA_INTERNAL_ERROR` | 500 | Unhandled exception | `exception`, `message` | Unexpected runtime error |
+
+#### user-service (8 codes)
+
+| Error Code | HTTP Status | Description | Context Fields | Example Scenario |
+|-----------|------------|-------------|----------------|------------------|
+| `USER_NOT_FOUND` | 404 | User account not found | `resourceName`, `fieldName`, `fieldValue` | GET /api/users/999 |
+| `USER_VALIDATION_ERROR` | 400 | Invalid user data | `field`, `invalidValue`, `reason` | Username contains special chars |
+| `USER_UNAUTHORIZED` | 403 | Authentication failed | `username`, `reason` | Invalid credentials |
+| `USER_ENDPOINT_NOT_FOUND` | 404 | API route not found | `path`, `method` | DELETE /api/invalid |
+| `USER_ENTITY_NOT_FOUND` | 404 | JPA entity not found | `entityType`, `entityId` | User entity deleted during transaction |
+| `USER_INVALID_ARGUMENT` | 400 | Business logic validation failed | `argument`, `reason` | Duplicate username |
+| `USER_SERVICE_ERROR` | 500 | Service error | `operation`, `reason` | JWT generation failure |
+| `USER_INTERNAL_ERROR` | 500 | Unexpected error | `exception`, `message` | Uncaught exception |
+
+#### simal-integration-service (5 codes)
+
+| Error Code | HTTP Status | Description | Context Fields | Example Scenario |
+|-----------|------------|-------------|----------------|------------------|
+| `SIMAL_NOT_FOUND` | 404 | Schedule or task not found | `resourceName`, `fieldName`, `fieldValue` | GET /api/simal/schedules/999 |
+| `SIMAL_VALIDATION_ERROR` | 400 | Invalid scheduling parameters | `field`, `invalidValue`, `reason` | Invalid task duration |
+| `SIMAL_UNAUTHORIZED` | 403 | Permission denied | `requiredRole`, `userRole`, `operation` | Non-planner creating schedule |
+| `SIMAL_SERVICE_ERROR` | 500 | Scheduling algorithm error | `operation`, `reason`, `productionOrderId` | Gantt chart generation failed |
+| `SIMAL_INTERNAL_ERROR` | 500 | Unexpected error | `exception`, `message` | SimAL algorithm crash |
+
+### HTTP Status Code Mapping
+
+| HTTP Status | Usage | Example Error Codes |
+|------------|-------|-------------------|
+| **400 Bad Request** | Invalid input, validation errors | `*_VALIDATION_ERROR`, `*_INVALID_STATE`, `*_INVALID_OPERATION`, `*_INSUFFICIENT_STOCK`, `*_INVALID_ARGUMENT` |
+| **403 Forbidden** | Permission denied, unauthorized | `*_UNAUTHORIZED` |
+| **404 Not Found** | Resource or endpoint not found | `*_NOT_FOUND`, `*_ENDPOINT_NOT_FOUND`, `*_ENTITY_NOT_FOUND` |
+| **500 Internal Server Error** | Service errors, unexpected exceptions | `*_SERVICE_ERROR`, `*_INTERNAL_ERROR`, `*_PRODUCTION_PLANNING_ERROR` |
+
+### Error Response Examples
+
+**Example 1: Order Not Found**
+```json
+{
+  "timestamp": "2026-02-02T10:30:45.123",
+  "status": 404,
+  "error": "Not Found",
+  "errorCode": "ORDER_NOT_FOUND",
+  "message": "Customer order with number ORD-ABC123 not found",
+  "path": "/api/customer-orders/42",
+  "details": {
+    "orderNumber": "ORD-ABC123",
+    "orderId": 42,
+    "orderType": "CustomerOrder"
+  }
+}
+```
+
+**Example 2: Invalid Order State Transition**
+```json
+{
+  "timestamp": "2026-02-02T10:31:12.456",
+  "status": 400,
+  "error": "Bad Request",
+  "errorCode": "ORDER_INVALID_STATE",
+  "message": "Cannot transition order from COMPLETED to PENDING",
+  "path": "/api/customer-orders/15",
+  "details": {
+    "currentState": "COMPLETED",
+    "requestedState": "PENDING",
+    "orderNumber": "ORD-XYZ789"
+  }
+}
+```
+
+**Example 3: Insufficient Stock**
+```json
+{
+  "timestamp": "2026-02-02T10:32:33.789",
+  "status": 400,
+  "error": "Bad Request",
+  "errorCode": "ORDER_INSUFFICIENT_STOCK",
+  "message": "Insufficient stock to fulfill order",
+  "path": "/api/customer-orders/23/complete",
+  "details": {
+    "required": 50,
+    "available": 15,
+    "shortage": 35,
+    "itemId": 1,
+    "itemName": "LEGO Model Car",
+    "workstationId": 7
+  }
+}
+```
+
+**Example 4: Unauthorized Access**
+```json
+{
+  "timestamp": "2026-02-02T10:33:01.234",
+  "status": 403,
+  "error": "Forbidden",
+  "errorCode": "USER_UNAUTHORIZED",
+  "message": "User warehouse_operator does not have permission to access admin panel",
+  "path": "/api/admin/config",
+  "details": {
+    "username": "warehouse_operator",
+    "requiredRole": "ADMIN",
+    "userRole": "PLANT_WAREHOUSE"
+  }
+}
+```
+
+### Frontend Error Handling
+
+**Client-side error handling pattern:**
+
+```javascript
+try {
+  const response = await api.post('/api/customer-orders', orderData);
+  showSuccess('Order created successfully');
+} catch (error) {
+  if (error.response?.data?.errorCode) {
+    // Machine-readable error code
+    const { errorCode, message, details } = error.response.data;
+    
+    switch (errorCode) {
+      case 'ORDER_INSUFFICIENT_STOCK':
+        showWarning(`Not enough stock: ${details.shortage} units short`);
+        break;
+      case 'ORDER_INVALID_STATE':
+        showError(`Invalid operation: ${message}`);
+        break;
+      default:
+        showError(message || 'An error occurred');
+    }
+  } else {
+    // Network error or unexpected format
+    showError('Unable to connect to server');
+  }
+}
+```
+
+### Backend Exception Handling Pattern
+
+**Service layer example:**
+
+```java
+// order-processing-service
+public CustomerOrder confirmOrder(Long orderId) {
+    CustomerOrder order = customerOrderRepository.findById(orderId)
+        .orElseThrow(() -> new EntityNotFoundException("Customer order not found")
+            .addDetail("orderId", orderId)
+            .addDetail("operation", "confirmOrder"));
+    
+    if (!"PENDING".equals(order.getStatus())) {
+        throw new InvalidOrderStateException(
+            "Cannot confirm order in current state"
+        )
+            .addDetail("currentState", order.getStatus())
+            .addDetail("requestedState", "CONFIRMED")
+            .addDetail("orderNumber", order.getOrderNumber());
+    }
+    
+    // ... business logic
+}
+```
+
+**GlobalExceptionHandler extracts error codes:**
+
+```java
+@ExceptionHandler(InvalidOrderStateException.class)
+public ResponseEntity<ApiErrorResponse> handleInvalidOrderState(
+    InvalidOrderStateException ex,
+    HttpServletRequest request
+) {
+    String errorCode = ex.getErrorCode(); // "ORDER_INVALID_STATE"
+    Map<String, Object> details = ex.getDetails(); // {currentState, requestedState, orderNumber}
+    
+    logger.warn("Invalid order state: {} (Code: {})", ex.getMessage(), errorCode);
+    
+    ApiErrorResponse response = ApiErrorResponse.builder()
+        .status(HttpStatus.BAD_REQUEST.value())
+        .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+        .errorCode(errorCode)
+        .message(ex.getMessage())
+        .path(request.getRequestURI())
+        .details(details)
+        .build();
+    
+    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+}
+```
+
+### Best Practices
+
+1. **Always include error codes**: Machine-readable codes enable programmatic error handling
+2. **Provide context in details**: Include entity IDs, names, and relevant state for debugging
+3. **Use appropriate HTTP statuses**: 400 for client errors, 500 for server errors
+4. **Log errors with context**: Include error code and details in log statements
+5. **Document error codes**: Update this table when adding new error codes
+6. **Test error responses**: Verify error codes and details in integration tests
+7. **Avoid sensitive data**: Never include passwords, tokens, or PII in error details
 ### Cross-Service API Contracts (7 DTOs)
 Consumed by microservices via internal Docker DNS.
 
@@ -812,6 +1078,7 @@ Before deploying DTO changes:
 
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Generated:** February 2, 2026  
-**Next Review:** After Phase 1 Step 1.2 (Exception Handling)
+**Last Updated:** February 2, 2026 (Phase 1 Step 1.2 - Error Handling)  
+**Next Review:** After Phase 1 Step 1.3 (Service Layer Refactoring)
