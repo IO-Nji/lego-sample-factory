@@ -1,5 +1,6 @@
 package io.life.order.dto;
 
+import io.life.order.annotation.ApiContract;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +12,19 @@ import java.util.List;
 /**
  * DTO for ProductionOrder.
  * Represents a production order that has been submitted to SimAL for scheduling.
+ * 
+ * API Contract: Frontend Production Planning dashboard displays these orders.
+ * Integrates with SimAL service for task scheduling and Gantt chart generation.
+ * 
+ * Trigger Scenarios:
+ * - SCENARIO_3: Warehouse order needs production (has sourceWarehouseOrderId)
+ * - SCENARIO_4: Direct production from customer order (has sourceCustomerOrderId)
  */
+@ApiContract(
+    version = "v1",
+    externalSource = "frontend",
+    description = "Production orders with SimAL scheduling integration"
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

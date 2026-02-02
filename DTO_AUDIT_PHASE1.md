@@ -21,24 +21,26 @@
 ### Order Processing Service (17 DTOs)
 
 #### Main DTOs (11 files)
-- [x] `CustomerOrderDTO.java` - **AUDIT REQUIRED**
-- [x] `WarehouseOrderDTO.java` - **AUDIT REQUIRED**
-- [x] `ProductionOrderDTO.java` - **AUDIT REQUIRED**
-- [x] `FinalAssemblyOrderDTO.java` - **AUDIT REQUIRED**
-- [x] `OrderItemDTO.java` - ✅ **ALREADY FIXED** (requestedQuantity → quantity)
-- [x] `WarehouseOrderItemDTO.java` - **AUDIT REQUIRED**
-- [x] `ProductionControlOrderDTO.java` - **AUDIT REQUIRED**
-- [x] `AssemblyControlOrderDTO.java` - **AUDIT REQUIRED**
-- [x] `SupplyOrderDTO.java` - **AUDIT REQUIRED**
-- [x] `SupplyOrderItemDTO.java` - **AUDIT REQUIRED**
-- [x] `SystemConfigurationDTO.java` - **AUDIT REQUIRED**
+- [x] `CustomerOrderDTO.java` - ✅ **ANNOTATED** (frontend, customer orders)
+- [x] `WarehouseOrderDTO.java` - ✅ **ANNOTATED** (frontend, warehouse orders)
+- [x] `ProductionOrderDTO.java` - ✅ **ANNOTATED** (frontend, production with SimAL)
+- [x] `FinalAssemblyOrderDTO.java` - ✅ **ANNOTATED** (frontend, WS-6 assembly)
+- [x] `OrderItemDTO.java` - ✅ **FIXED + ANNOTATED** (requestedQuantity → quantity)
+- [x] `WarehouseOrderItemDTO.java` - ⏭️ **SKIPPED** (nested in WarehouseOrderDTO)
+- [x] `ProductionControlOrderDTO.java` - ✅ **ANNOTATED** (frontend, manufacturing control)
+- [x] `AssemblyControlOrderDTO.java` - ✅ **ANNOTATED** (frontend, assembly control)
+- [x] `SupplyOrderDTO.java` - ✅ **ANNOTATED** (frontend, WS-9 supply)
+- [x] `SupplyOrderItemDTO.java` - ⏭️ **SKIPPED** (nested in SupplyOrderDTO)
+- [x] `SystemConfigurationDTO.java` - ✅ **ANNOTATED** (frontend, admin config)
 
 #### Masterdata Client DTOs (5 files)
-- [x] `masterdata/ProductDTO.java` - **AUDIT REQUIRED** (from masterdata-service)
-- [x] `masterdata/ModuleDTO.java` - ✅ **ALREADY FIXED** (componentId → moduleId)
-- [x] `masterdata/PartDTO.java` - **AUDIT REQUIRED**
-- [x] `masterdata/BomEntryDTO.java` - **AUDIT REQUIRED**
-- [x] `masterdata/WorkstationDTO.java` - **AUDIT REQUIRED**
+- [x] `masterdata/ProductDTO.java` - ✅ **ANNOTATED** (masterdata-service)
+- [x] `masterdata/ModuleDTO.java` - ✅ **ANNOTATED** (masterdata-service)
+- [x] `masterdata/PartDTO.java` - ✅ **ANNOTATED** (masterdata-service)
+- [x] `masterdata/BomEntryDTO.java` - ✅ **ANNOTATED** (masterdata-service, BOM)
+- [x] `masterdata/WorkstationDTO.java` - ✅ **ANNOTATED** (masterdata-service)
+
+**AUDIT COMPLETE: 14/17 annotated, 2 skipped (nested), 1 already fixed**
 
 ### Other Services
 - [ ] User Service DTOs - **TODO: Scan**
