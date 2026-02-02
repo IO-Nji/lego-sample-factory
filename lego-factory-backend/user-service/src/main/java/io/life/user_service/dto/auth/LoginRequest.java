@@ -1,7 +1,18 @@
 package io.life.user_service.dto.auth;
 
+import io.life.user_service.annotation.ApiContract;
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * LoginRequest - Authentication credentials.
+ * 
+ * API Contract: Frontend sends this to POST /api/auth/login
+ */
+@ApiContract(
+    version = "v1",
+    externalSource = "frontend",
+    description = "User authentication credentials for login"
+)
 public class LoginRequest {
 
     @NotBlank
