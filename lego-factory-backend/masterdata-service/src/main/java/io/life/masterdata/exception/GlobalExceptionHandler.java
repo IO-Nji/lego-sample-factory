@@ -1,6 +1,6 @@
 package io.life.masterdata.exception;
 
-import io.life.masterdata.dto.ErrorResponse;
+import io.life.masterdata.dto.ApiErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -11,11 +11,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Global exception handler for consistent error responses across the user service.
- * Handles all exceptions and returns standardized error responses.
+ * Global exception handler for consistent error responses across the masterdata service.
+ * Handles all exceptions and returns standardized error responses with error codes and context.
  */
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -26,16 +28,20 @@ public class GlobalExceptionHandler {
      * Handle ResourceNotFoundException
      */
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
+    public ResponseEntity<ApiErrorResponse> handleResourceNotFoundException(
             ResourceNotFoundException ex,
             WebRequest request) {
         
-        logger.warn("Resource not found: {}", ex.getMessage());
+        String errorCode = ex.getErrorCode();
+        Map<String, Object> details = ex.getDetails();
         
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "Resource not found",
+        logger.warn("Resource not found: {} (Code: {})", ex.getMessage(), errorCode);
+        
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                errorCode,
                 ex.getMessage(),
+                details,
                 request.getDescription(false).replace("uri=", "")
         );
         
@@ -46,16 +52,20 @@ public class GlobalExceptionHandler {
      * Handle ValidationException
      */
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(
+    public ResponseEntity<ApiErrorResponse> handleValidationException(
             ValidationException ex,
             WebRequest request) {
         
-        logger.warn("Validation error: {}", ex.getMessage());
+        String errorCode = ex.getErrorCode();
+        Map<String, Object> details = ex.getDetails();
         
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Validation error",
+        logger.warn("Validation error: {} (Code: {})", ex.getMessage(), errorCode);
+        
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                errorCode,
                 ex.getMessage(),
+                details,
                 request.getDescription(false).replace("uri=", "")
         );
         
@@ -66,16 +76,20 @@ public class GlobalExceptionHandler {
      * Handle UnauthorizedException
      */
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ErrorResponse> handleUnauthorizedException(
+    public ResponseEntity<ApiErrorResponse> handleUnauthorizedException(
             UnauthorizedException ex,
             WebRequest request) {
         
-        logger.warn("Unauthorized access: {}", ex.getMessage());
+        String errorCode = ex.getErrorCode();
+        Map<String, Object> details = ex.getDetails();
         
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.UNAUTHORIZED.value(),
-                "Unauthorized",
+        logger.warn("Unauthorized access: {} (Code: {})", ex.getMessage(), errorCode);
+        
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.UNAUTHORIZED,
+                errorCode,
                 ex.getMessage(),
+                details,
                 request.getDescription(false).replace("uri=", "")
         );
         
@@ -86,24 +100,29 @@ public class GlobalExceptionHandler {
      * Handle MethodArgumentNotValidException (for @Valid annotation)
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
+    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex,
             WebRequest request) {
         
-        String details = ex.getBindingResult()
+        Map<String, Object> details = new HashMap<>();
+        ex.getBindingResult()
+                .getFieldErrors()
+                .forEach(error -> details.put(error.getField(), error.getDefaultMessage()));
+        
+        String detailsMessage = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
         
-        logger.warn("Validation failed: {}", details);
+        logger.warn("Validation failed: {}", detailsMessage);
         
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Validation failed",
-                "Invalid request parameters",
-                request.getDescription(false).replace("uri=", ""),
-                details
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                "MASTERDATA_VALIDATION_ERROR",
+                "Invalid request parameters: " + detailsMessage,
+                details,
+                request.getDescription(false).replace("uri=", "")
         );
         
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
@@ -113,16 +132,17 @@ public class GlobalExceptionHandler {
      * Handle NoHandlerFoundException (404 for endpoints)
      */
     @ExceptionHandler(NoHandlerFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNoHandlerFound(
+    public ResponseEntity<ApiErrorResponse> handleNoHandlerFound(
             NoHandlerFoundException ex,
             WebRequest request) {
         
         logger.warn("Endpoint not found: {} {}", ex.getHttpMethod(), ex.getRequestURL());
         
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "Endpoint not found",
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                "MASTERDATA_ENDPOINT_NOT_FOUND",
                 ex.getMessage(),
+                Map.of("method", ex.getHttpMethod(), "url", ex.getRequestURL()),
                 ex.getRequestURL()
         );
         
@@ -130,19 +150,44 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle generic UserServiceException
+     * Handle generic UserServiceException (legacy compatibility)
      */
     @ExceptionHandler(UserServiceException.class)
-    public ResponseEntity<ErrorResponse> handleUserServiceException(
+    public ResponseEntity<ApiErrorResponse> handleUserServiceException(
             UserServiceException ex,
             WebRequest request) {
         
         logger.error("Service error: {}", ex.getMessage(), ex);
         
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Service error",
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "MASTERDATA_SERVICE_ERROR",
                 ex.getMessage(),
+                Map.of("exceptionType", ex.getClass().getSimpleName()),
+                request.getDescription(false).replace("uri=", "")
+        );
+        
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Handle generic MasterdataException
+     */
+    @ExceptionHandler(MasterdataException.class)
+    public ResponseEntity<ApiErrorResponse> handleMasterdataException(
+            MasterdataException ex,
+            WebRequest request) {
+        
+        String errorCode = ex.getErrorCode();
+        Map<String, Object> details = ex.getDetails();
+        
+        logger.error("Masterdata error: {} (Code: {})", ex.getMessage(), errorCode, ex);
+        
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                errorCode,
+                ex.getMessage(),
+                details,
                 request.getDescription(false).replace("uri=", "")
         );
         
@@ -153,19 +198,46 @@ public class GlobalExceptionHandler {
      * Handle all other exceptions (catch-all)
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGlobalException(
+    public ResponseEntity<ApiErrorResponse> handleGlobalException(
             Exception ex,
             WebRequest request) {
         
         logger.error("Unexpected error occurred", ex);
         
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Internal server error",
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "MASTERDATA_INTERNAL_ERROR",
                 "An unexpected error occurred. Please try again later.",
+                Map.of("exceptionType", ex.getClass().getSimpleName()),
                 request.getDescription(false).replace("uri=", "")
         );
         
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Build standardized error response with full context
+     */
+    private ApiErrorResponse buildErrorResponse(HttpStatus status, String errorCode, String message, Map<String, Object> details, String path) {
+        return ApiErrorResponse.of(
+                status.value(),
+                status.getReasonPhrase(),
+                errorCode,
+                message,
+                path,
+                details
+        );
+    }
+
+    /**
+     * Build standardized error response (backward compatibility)
+     */
+    private ApiErrorResponse buildErrorResponse(HttpStatus status, String message, String path) {
+        return ApiErrorResponse.of(
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                path
+        );
     }
 }
