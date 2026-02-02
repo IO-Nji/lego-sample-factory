@@ -1,6 +1,7 @@
 package io.life.order.service;
 
 import io.life.order.client.InventoryClient;
+import io.life.order.config.OrderProcessingConfig;
 import io.life.order.entity.*;
 import io.life.order.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderOrchestrationService {
 
+    private final OrderProcessingConfig config;
     private final ProductionControlOrderRepository productionControlOrderRepository;
     private final AssemblyControlOrderRepository assemblyControlOrderRepository;
     private final ProductionOrderRepository productionOrderRepository;
@@ -534,7 +536,7 @@ public class OrderOrchestrationService {
             // Credit each module to Modules Supermarket (WS-8)
             for (ProductionOrderItem item : items) {
                 inventoryClient.creditStock(
-                        8L, // Modules Supermarket workstation ID
+                        config.getWorkstations().getModulesSupermarket(),
                         InventoryClient.ITEM_TYPE_MODULE,
                         item.getItemId(),
                         item.getQuantity(),
@@ -573,7 +575,7 @@ public class OrderOrchestrationService {
             // Credit each module to Final Assembly (WS-6) - Scenario 4 bypasses Modules Supermarket
             for (ProductionOrderItem item : items) {
                 inventoryClient.creditStock(
-                        6L, // Final Assembly workstation ID
+                        config.getWorkstations().getFinalAssembly(),
                         InventoryClient.ITEM_TYPE_MODULE,
                         item.getItemId(),
                         item.getQuantity(),

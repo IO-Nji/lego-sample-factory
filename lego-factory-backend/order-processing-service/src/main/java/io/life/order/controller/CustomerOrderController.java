@@ -1,5 +1,6 @@
 package io.life.order.controller;
 
+import io.life.order.config.OrderProcessingConfig;
 import io.life.order.dto.CustomerOrderDTO;
 import io.life.order.service.CustomerOrderService;
 import io.life.order.service.FulfillmentService;
@@ -23,10 +24,14 @@ public class CustomerOrderController {
 
     private final CustomerOrderService customerOrderService;
     private final FulfillmentService fulfillmentService;
+    private final OrderProcessingConfig config;
 
-    public CustomerOrderController(CustomerOrderService customerOrderService, FulfillmentService fulfillmentService) {
+    public CustomerOrderController(CustomerOrderService customerOrderService, 
+                                   FulfillmentService fulfillmentService,
+                                   OrderProcessingConfig config) {
         this.customerOrderService = customerOrderService;
         this.fulfillmentService = fulfillmentService;
+        this.config = config;
     }
 
     @Operation(summary = "Create a new customer order", description = "Creates a new customer order in PENDING status")
@@ -37,9 +42,9 @@ public class CustomerOrderController {
     @PostMapping
     public ResponseEntity<CustomerOrderDTO> createOrder(@RequestBody CustomerOrderDTO orderDTO) {
         // Customer orders are always created at Plant Warehouse (WS-7)
-        // If workstationId is not provided, default to WS-7
+        // If workstationId is not provided, default to configured Plant Warehouse
         if (orderDTO.getWorkstationId() == null) {
-            orderDTO.setWorkstationId(7L);
+            orderDTO.setWorkstationId(config.getWorkstations().getPlantWarehouse());
         }
         CustomerOrderDTO createdOrder = customerOrderService.createOrder(orderDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);

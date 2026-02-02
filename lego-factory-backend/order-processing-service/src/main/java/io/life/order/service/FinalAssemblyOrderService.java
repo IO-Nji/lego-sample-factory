@@ -1,5 +1,6 @@
 package io.life.order.service;
 
+import io.life.order.config.OrderProcessingConfig;
 import io.life.order.dto.FinalAssemblyOrderDTO;
 import io.life.order.entity.FinalAssemblyOrder;
 import io.life.order.entity.ProductionOrder;
@@ -26,10 +27,9 @@ import java.util.stream.Collectors;
 public class FinalAssemblyOrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(FinalAssemblyOrderService.class);
-    private static final Long FINAL_ASSEMBLY_WORKSTATION_ID = 6L;
-    private static final Long PLANT_WAREHOUSE_WORKSTATION_ID = 7L;
     private static final String FINAL_ASSEMBLY_AUDIT_SOURCE = "FINAL_ASSEMBLY";
 
+    private final OrderProcessingConfig config;
     private final FinalAssemblyOrderRepository finalAssemblyOrderRepository;
     private final ProductionOrderRepository productionOrderRepository;
     private final WarehouseOrderRepository warehouseOrderRepository;
@@ -37,12 +37,14 @@ public class FinalAssemblyOrderService {
     private final InventoryService inventoryService;
     private final OrderAuditService orderAuditService;
 
-    public FinalAssemblyOrderService(FinalAssemblyOrderRepository finalAssemblyOrderRepository,
+    public FinalAssemblyOrderService(OrderProcessingConfig config,
+                                    FinalAssemblyOrderRepository finalAssemblyOrderRepository,
                                     ProductionOrderRepository productionOrderRepository,
                                     WarehouseOrderRepository warehouseOrderRepository,
                                     CustomerOrderRepository customerOrderRepository,
                                     InventoryService inventoryService,
                                     OrderAuditService orderAuditService) {
+        this.config = config;
         this.finalAssemblyOrderRepository = finalAssemblyOrderRepository;
         this.productionOrderRepository = productionOrderRepository;
         this.warehouseOrderRepository = warehouseOrderRepository;
@@ -60,9 +62,9 @@ public class FinalAssemblyOrderService {
                 warehouseOrder.getOrderNumber(), productId, quantity);
 
         FinalAssemblyOrder order = new FinalAssemblyOrder();
-        order.setOrderNumber("FA-" + generateOrderNumber());
+        order.setOrderNumber(config.getOrderNumbers().getFinalAssemblyOrderPrefix() + generateOrderNumber());
         order.setWarehouseOrderId(warehouseOrder.getId());
-        order.setWorkstationId(FINAL_ASSEMBLY_WORKSTATION_ID);
+        order.setWorkstationId(config.getWorkstations().getFinalAssembly());
         order.setOutputProductId(productId);
         order.setOutputQuantity(quantity);
         order.setOrderDate(LocalDateTime.now());
@@ -92,9 +94,9 @@ public class FinalAssemblyOrderService {
                 productionOrder.getProductionOrderNumber(), productId, quantity);
 
         FinalAssemblyOrder order = new FinalAssemblyOrder();
-        order.setOrderNumber("FA-" + generateOrderNumber());
+        order.setOrderNumber(config.getOrderNumbers().getFinalAssemblyOrderPrefix() + generateOrderNumber());
         order.setProductionOrderId(productionOrder.getId());
-        order.setWorkstationId(FINAL_ASSEMBLY_WORKSTATION_ID);
+        order.setWorkstationId(config.getWorkstations().getFinalAssembly());
         order.setOutputProductId(productId);
         order.setOutputQuantity(quantity);
         order.setOrderDate(LocalDateTime.now());
@@ -313,7 +315,7 @@ public class FinalAssemblyOrderService {
 
         // Credit Plant Warehouse (WS-7) with finished products
         boolean credited = inventoryService.creditStock(
-                PLANT_WAREHOUSE_WORKSTATION_ID,
+                config.getWorkstations().getPlantWarehouse(),
                 order.getOutputProductId(),
                 order.getOutputQuantity()
         );

@@ -160,14 +160,34 @@ services:
       context: ./lego-factory-backend/order-processing-service
       dockerfile: Dockerfile
     environment:
+      # Core configuration
       - SERVER_PORT=${ORDER_PROCESSING_SERVICE_PORT}
       - SECURITY_JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      # Database configuration
       - SPRING_DATASOURCE_URL=${H2_DB_ORDER_PROCESSING_PATH}
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
       - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
       - H2_CONSOLE_ENABLED=true
+      # Service URLs
       - inventory.service.url=http://inventory-service:${INVENTORY_SERVICE_PORT}
       - simal.api.base-url=http://simal-integration-service:${SIMAL_INTEGRATION_SERVICE_PORT}/api
+      # Thresholds (externalized configuration)
+      - LOT_SIZE_THRESHOLD=${LOT_SIZE_THRESHOLD:-3}
+      - MAX_ORDER_ITEMS=${MAX_ORDER_ITEMS:-100}
+      - STOCK_RESERVE_MINUTES=${STOCK_RESERVE_MINUTES:-30}
+      - STOCK_SAFETY_MARGIN_PERCENT=${STOCK_SAFETY_MARGIN_PERCENT:-10}
+      - MAX_RETRIES=${MAX_RETRIES:-3}
+      # Timeouts (milliseconds)
+      - MASTERDATA_TIMEOUT_MS=${MASTERDATA_TIMEOUT_MS:-5000}
+      - INVENTORY_TIMEOUT_MS=${INVENTORY_TIMEOUT_MS:-10000}
+      - SIMAL_TIMEOUT_MS=${SIMAL_TIMEOUT_MS:-30000}
+      # Feature flags
+      - ENABLE_CACHING=${ENABLE_CACHING:-false}
+      - ENABLE_ASYNC_PROCESSING=${ENABLE_ASYNC_PROCESSING:-false}
+      - ENABLE_CIRCUIT_BREAKER=${ENABLE_CIRCUIT_BREAKER:-false}
+      - ENABLE_DETAILED_LOGGING=${ENABLE_DETAILED_LOGGING:-true}
+      - ENABLE_AUTO_STATUS_PROPAGATION=${ENABLE_AUTO_STATUS_PROPAGATION:-true}
     networks:
       - lego-network
     restart: unless-stopped

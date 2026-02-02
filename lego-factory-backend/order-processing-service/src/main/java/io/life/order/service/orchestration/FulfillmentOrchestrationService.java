@@ -1,5 +1,6 @@
 package io.life.order.service.orchestration;
 
+import io.life.order.config.OrderProcessingConfig;
 import io.life.order.dto.CustomerOrderDTO;
 import io.life.order.entity.CustomerOrder;
 import io.life.order.entity.OrderItem;
@@ -47,12 +48,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FulfillmentOrchestrationService {
 
-    private static final Long MODULES_SUPERMARKET_WORKSTATION_ID = 8L;
     private static final String STATUS_PROCESSING = "PROCESSING";
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String STATUS_CANCELLED = "CANCELLED";
     private static final String ORDER_TYPE_CUSTOMER = "CUSTOMER";
 
+    private final OrderProcessingConfig config;
     private final CustomerOrderRepository customerOrderRepository;
     private final WarehouseOrderRepository warehouseOrderRepository;
     private final InventoryService inventoryService;
@@ -282,9 +283,10 @@ public class FulfillmentOrchestrationService {
                                                  BomConversionService.BomConversionResult bomResult,
                                                  String triggerScenario) {
         WarehouseOrder warehouseOrder = new WarehouseOrder();
-        warehouseOrder.setOrderNumber("WO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        warehouseOrder.setOrderNumber(config.getOrderNumbers().getWarehouseOrderPrefix() + 
+                UUID.randomUUID().toString().substring(0, config.getOrderNumbers().getRandomSuffixLength()).toUpperCase());
         warehouseOrder.setCustomerOrderId(sourceOrder.getId());
-        warehouseOrder.setWorkstationId(MODULES_SUPERMARKET_WORKSTATION_ID);
+        warehouseOrder.setWorkstationId(config.getWorkstations().getModulesSupermarket());
         warehouseOrder.setOrderDate(LocalDateTime.now());
         warehouseOrder.setStatus("PENDING");
         warehouseOrder.setTriggerScenario(triggerScenario);
