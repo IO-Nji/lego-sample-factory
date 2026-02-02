@@ -1073,4 +1073,107 @@ git push origin feature/your-feature  # Push to remote
 12. **BOM conversions**: When converting products to modules, preserve original productId through order chain to ensure correct final inventory crediting.
 13. **Status magic strings**: Use `OrderOrchestrationService.STATUS_COMPLETED` constants instead of hardcoded `"COMPLETED"` strings.
 14. **Inter-service calls**: Use `InventoryClient`/`MasterdataClient` instead of raw RestTemplate calls for centralized error handling.
+15. **Configuration values**: Use `OrderProcessingConfig` properties instead of hardcoded values (thresholds, timeouts, workstation IDs).
+
+---
+
+## Configuration Externalization (Phase 4)
+
+All configuration is externalized via `@ConfigurationProperties` in `OrderProcessingConfig`:
+
+```java
+@Autowired
+private OrderProcessingConfig config;
+
+// Thresholds
+int threshold = config.getThresholds().getLotSizeThreshold();  // Default: 3
+int maxItems = config.getThresholds().getMaxOrderItems();      // Default: 100
+
+// Workstation IDs
+Long plantWarehouse = config.getWorkstations().getPlantWarehouse();        // 7L
+Long modulesSupermarket = config.getWorkstations().getModulesSupermarket(); // 8L
+Long partsSupply = config.getWorkstations().getPartsSupply();              // 9L
+Long finalAssembly = config.getWorkstations().getFinalAssembly();          // 6L
+
+// Timeouts
+int masterdataTimeout = config.getTimeouts().getMasterdataReadMs();  // 5000ms
+int inventoryTimeout = config.getTimeouts().getInventoryWriteMs();   // 10000ms
+```
+
+### Spring Profiles
+
+| Profile | Use Case | Logging | Timeouts |
+|---------|----------|---------|----------|
+| `dev` | Local development | DEBUG | Generous (10s+) |
+| `prod` | Production server | INFO | Standard (5s) |
+| `cloud` | Cloud deployment | INFO | Aggressive (3s) |
+
+Set via: `SPRING_PROFILES_ACTIVE=prod` in `.env`
+
+---
+
+## Service Layer Architecture (Phase 3)
+
+FulfillmentService was decomposed into focused services:
+
+```
+service/
+├── FulfillmentService.java          # Orchestrates fulfillment workflow
+├── domain/
+│   └── BomConversionService.java    # BOM lookup and module resolution
+├── orchestration/
+│   └── FulfillmentOrchestrationService.java  # High-level workflow coordination
+└── validation/
+    ├── OrderValidator.java          # Order validation rules
+    └── StockValidator.java          # Stock level validation
+```
+
+**Key Pattern:** Services inject `OrderProcessingConfig` for all configuration values:
+
+```java
+@Service
+@RequiredArgsConstructor
+public class FulfillmentService {
+    private final OrderProcessingConfig config;
+    private final BomConversionService bomService;
+    private final InventoryClient inventoryClient;
+    
+    public void processOrder(CustomerOrder order) {
+        // Use config for workstation IDs
+        Long wsId = config.getWorkstations().getPlantWarehouse();
+        // Use dedicated BOM service
+        List<ModuleDTO> modules = bomService.getModulesForProduct(productId);
+    }
+}
+```
+
+---
+
+## Server Deployment (192.168.1.237)
+
+**Prod branch deployment:**
+```bash
+# On server
+git clone -b prod https://github.com/IO-Nji/lego-sample-factory.git
+cd lego-sample-factory/deploy
+./setup.sh    # First-time setup
+./update.sh   # Pull images and start
+```
+
+**Key files in `deploy/` directory:**
+- `docker-compose.yml` - Uses `image:` (registry pull), not `build:`
+- `.env.example` - Pre-configured for 192.168.1.237
+- `update.sh` - Pull latest images and restart
+- `status.sh` - Health check all services
+
+**CRITICAL:** Server docker-compose.yml must use `image:` not `build:`
+```yaml
+# CORRECT (server)
+frontend:
+  image: 192.168.1.237:5000/lego-sample-factory-frontend:latest
+
+# WRONG (causes stale code)
+frontend:
+  build: ./lego-factory-frontend
+```
 
