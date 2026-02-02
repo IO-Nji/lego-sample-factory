@@ -169,14 +169,26 @@ public class WarehouseOrderService {
 
         WarehouseOrder order = orderOpt.get();
         
-        // Validate order can be fulfilled (must be CONFIRMED)
-        if (!"CONFIRMED".equals(order.getStatus())) {
-            throw new IllegalStateException("Only CONFIRMED warehouse orders can be fulfilled. Current status: " + order.getStatus() + ". Please confirm the order first.");
+        // Validate order can be fulfilled
+        // CONFIRMED = direct fulfillment from Modules Supermarket
+        // MODULES_READY = production completed, modules now available in Modules Supermarket
+        if (!"CONFIRMED".equals(order.getStatus()) && !"MODULES_READY".equals(order.getStatus())) {
+            throw new IllegalStateException("Only CONFIRMED or MODULES_READY warehouse orders can be fulfilled. Current status: " + order.getStatus());
         }
 
-        logger.info("Processing warehouse order {} from Modules Supermarket (WS-8)", order.getOrderNumber());
+        logger.info("Processing warehouse order {} from Modules Supermarket (WS-8) - Status: {}, ProductionOrderId: {}", 
+                order.getOrderNumber(), order.getStatus(), order.getProductionOrderId());
         orderAuditService.recordOrderEvent(WAREHOUSE_AUDIT_SOURCE, order.getId(), "FULFILLMENT_STARTED",
             "Warehouse order fulfillment started: " + order.getOrderNumber());
+
+        // SPECIAL CASE: If this order has a linked production order, FORCE fulfillment
+        // Production has already completed and credited modules to WS-8
+        // This order "owns" those modules - proceed with fulfillment regardless of stock check
+        if (order.getProductionOrderId() != null) {
+            logger.info("Warehouse order {} has linked production {} - FORCING fulfillment (modules reserved)", 
+                    order.getOrderNumber(), order.getProductionOrderId());
+            return fulfillAllItems(order);
+        }
 
         // STEP 1: Check which items are available at Modules Supermarket (workstation 8)
         boolean allItemsAvailable = order.getOrderItems().stream()
@@ -465,6 +477,8 @@ public class WarehouseOrderService {
 
     /**
      * Map WarehouseOrder entity to DTO
+     * DYNAMICALLY calculates triggerScenario based on CURRENT MODULE stock levels
+     * BUT: Do NOT recalculate for orders with linked production - they "own" those modules
      */
     private WarehouseOrderDTO mapToDTO(WarehouseOrder order) {
         WarehouseOrderDTO dto = new WarehouseOrderDTO();
@@ -474,7 +488,36 @@ public class WarehouseOrderService {
         dto.setWorkstationId(order.getWorkstationId());
         dto.setOrderDate(order.getOrderDate());
         dto.setStatus(order.getStatus());
-        dto.setTriggerScenario(order.getTriggerScenario());
+        
+        // DYNAMIC triggerScenario calculation - recalculate based on CURRENT MODULE stock
+        // BUT: Skip recalculation for orders with linked production (they "own" those modules)
+        String dynamicTriggerScenario = order.getTriggerScenario();
+        if ("CONFIRMED".equals(order.getStatus()) && 
+            order.getProductionOrderId() == null && // NO linked production - check stock
+            order.getOrderItems() != null && 
+            !order.getOrderItems().isEmpty()) {
+            
+            boolean hasAllModules = order.getOrderItems().stream()
+                .allMatch(item -> inventoryService.checkStock(
+                    order.getWorkstationId(), // Modules Supermarket (WS-8)
+                    item.getItemId(),
+                    item.getRequestedQuantity()
+                ));
+            
+            dynamicTriggerScenario = hasAllModules ? "DIRECT_FULFILLMENT" : "PRODUCTION_REQUIRED";
+            
+            // Log if scenario changed from stored value
+            if (!dynamicTriggerScenario.equals(order.getTriggerScenario())) {
+                logger.info("Warehouse order {} triggerScenario recalculated: {} -> {} (stock changed)", 
+                    order.getOrderNumber(), order.getTriggerScenario(), dynamicTriggerScenario);
+            }
+        } else if (order.getProductionOrderId() != null) {
+            // Order has linked production - use stored triggerScenario, don't recalculate
+            logger.debug("Warehouse order {} has linked production {} - using stored triggerScenario: {}",
+                order.getOrderNumber(), order.getProductionOrderId(), order.getTriggerScenario());
+        }
+        
+        dto.setTriggerScenario(dynamicTriggerScenario);
         dto.setNotes(order.getNotes());
         dto.setCreatedAt(order.getCreatedAt());
         dto.setUpdatedAt(order.getUpdatedAt());

@@ -73,16 +73,16 @@ public class PartFinishingOrder {
     private LocalDateTime actualFinishTime;
 
     // Finishing specifications
-    @Column(length = 500)
+    @Column(length = 2000)
     private String finishingOperations; // Polishing, coating, painting, inspection
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String surfaceQualityRequirements;
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String qualityChecks;
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String operatorNotes;
 
     // Audit fields

@@ -19,6 +19,7 @@ import java.util.List;
  */
 @Deprecated(since = "Phase 6", forRemoval = false)
 @Repository
+@SuppressWarnings("java:S1133") // Intentionally kept for backward compatibility
 public interface AssemblyOrderRepository extends JpaRepository<AssemblyOrder, Long> {
 
     /**

@@ -41,6 +41,10 @@ public class WarehouseOrder {
     // Fulfillment scenario that triggered this order
     private String triggerScenario; // DIRECT_FULFILLMENT, PRODUCTION_REQUIRED
 
+    // Link to production order if one was created for this warehouse order
+    // Used to prevent interference from other production runs
+    private Long productionOrderId;
+
     private String notes;
 
     @Column(name = "created_at", nullable = false, updatable = false)

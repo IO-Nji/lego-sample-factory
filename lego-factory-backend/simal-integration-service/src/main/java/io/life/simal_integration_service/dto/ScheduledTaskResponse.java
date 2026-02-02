@@ -1,5 +1,6 @@
 package io.life.simal_integration_service.dto;
 
+import io.life.simal_integration_service.annotation.ApiContract;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -7,6 +8,17 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * ScheduledTaskResponse - SimAL scheduled task for Gantt chart display.
+ * 
+ * API Contract: Frontend Production Planning dashboard displays these in Gantt chart.
+ * Contains task timing, status, and manual adjustment tracking.
+ */
+@ApiContract(
+    version = "v1",
+    externalSource = "frontend",
+    description = "SimAL scheduled task for Gantt chart visualization"
+)
 @Data
 @Builder
 @NoArgsConstructor

@@ -159,6 +159,106 @@ export const WORKSTATION_CONFIG = {
 };
 
 /**
+ * Role-based workstation access rules
+ * Mirrors backend UserRole.java for consistent access control
+ * 
+ * Each role defines:
+ * - accessibleWorkstations: Which workstations this role can view/interact with
+ * - primaryWorkstation: The default workstation for dashboard routing (0 = system/all)
+ * 
+ * @see backend: UserRole.java in user-service
+ */
+export const ROLE_WORKSTATION_ACCESS = {
+  ADMIN: {
+    accessibleWorkstations: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    primaryWorkstation: 0,
+    description: 'All workstations (WS-1 to WS-9)',
+  },
+  PLANT_WAREHOUSE: {
+    accessibleWorkstations: [7],
+    primaryWorkstation: 7,
+    description: 'WS-7 Plant Warehouse',
+  },
+  MODULES_SUPERMARKET: {
+    accessibleWorkstations: [8],
+    primaryWorkstation: 8,
+    description: 'WS-8 Modules Supermarket',
+  },
+  PRODUCTION_PLANNING: {
+    accessibleWorkstations: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    primaryWorkstation: 0,
+    description: 'All workstations (planning view)',
+  },
+  PRODUCTION_CONTROL: {
+    accessibleWorkstations: [1, 2, 3, 9],
+    primaryWorkstation: 0,
+    description: 'WS-1, WS-2, WS-3, WS-9 (Manufacturing + Parts Supply)',
+  },
+  ASSEMBLY_CONTROL: {
+    accessibleWorkstations: [4, 5, 6, 8],
+    primaryWorkstation: 0,
+    description: 'WS-4, WS-5, WS-6, WS-8 (Assembly + Modules Supermarket)',
+  },
+  PARTS_SUPPLY: {
+    accessibleWorkstations: [9],
+    primaryWorkstation: 9,
+    description: 'WS-9 Parts Supply Warehouse',
+  },
+  MANUFACTURING: {
+    accessibleWorkstations: [1, 2, 3],
+    primaryWorkstation: 0, // Specific WS assigned per user
+    description: 'WS-1, WS-2, or WS-3 (assigned per user)',
+  },
+  VIEWER: {
+    accessibleWorkstations: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    primaryWorkstation: 0,
+    description: 'All workstations (read-only)',
+  },
+};
+
+/**
+ * Check if a role can access a specific workstation
+ * @param {string} role - The user's role
+ * @param {number} workstationId - The workstation to check
+ * @returns {boolean} true if the role can access the workstation
+ */
+export const canRoleAccessWorkstation = (role, workstationId) => {
+  const access = ROLE_WORKSTATION_ACCESS[role];
+  if (!access) return false;
+  return access.accessibleWorkstations.includes(workstationId);
+};
+
+/**
+ * Get the primary workstation for a role
+ * @param {string} role - The user's role
+ * @returns {number} Primary workstation ID (0 = system-wide)
+ */
+export const getRolePrimaryWorkstation = (role) => {
+  const access = ROLE_WORKSTATION_ACCESS[role];
+  return access?.primaryWorkstation ?? 0;
+};
+
+/**
+ * Get all accessible workstations for a role
+ * @param {string} role - The user's role
+ * @returns {number[]} Array of accessible workstation IDs
+ */
+export const getRoleAccessibleWorkstations = (role) => {
+  const access = ROLE_WORKSTATION_ACCESS[role];
+  return access?.accessibleWorkstations ?? [];
+};
+
+/**
+ * Check if a role has system-wide access
+ * @param {string} role - The user's role
+ * @returns {boolean} true if the role can access all 9 workstations
+ */
+export const hasSystemWideAccess = (role) => {
+  const access = ROLE_WORKSTATION_ACCESS[role];
+  return access?.accessibleWorkstations?.length === 9;
+};
+
+/**
  * Standard filter options for order lists
  */
 export const STANDARD_FILTER_OPTIONS = [
@@ -200,6 +300,36 @@ export const calculateOrderStats = (orders) => [
  */
 export const getWorkstationConfig = (workstationId) => {
   return WORKSTATION_CONFIG[workstationId] || null;
+};
+
+/**
+ * Get workstation icon by ID
+ * @param {number} workstationId - The workstation ID (1-9)
+ * @returns {string} Emoji icon for the workstation
+ */
+export const getWorkstationIcon = (workstationId) => {
+  const config = WORKSTATION_CONFIG[workstationId];
+  return config?.icon || '⚙️';
+};
+
+/**
+ * Get workstation short name by ID
+ * @param {number} workstationId - The workstation ID (1-9)
+ * @returns {string} Short name for the workstation
+ */
+export const getWorkstationShortName = (workstationId) => {
+  const config = WORKSTATION_CONFIG[workstationId];
+  if (!config) return `WS-${workstationId}`;
+  
+  // Return abbreviated name for compact displays
+  return config.name
+    .replace('Workstation', 'WS')
+    .replace('Station', 'Stn')
+    .replace('Assembly', 'Assy')
+    .replace('Production', 'Prod')
+    .replace('Manufacturing', 'Mfg')
+    .replace('Warehouse', 'WH')
+    .replace('Control', 'Ctrl');
 };
 
 /**

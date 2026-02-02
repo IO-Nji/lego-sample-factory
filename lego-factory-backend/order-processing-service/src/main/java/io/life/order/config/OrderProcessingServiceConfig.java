@@ -9,6 +9,7 @@ import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -27,11 +28,18 @@ public class OrderProcessingServiceConfig {
 
     /**
      * RestTemplate bean for making HTTP requests to other microservices.
-     * Configured with interceptor to forward JWT authentication headers.
+     * Configured with:
+     * - Apache HttpClient for PATCH support (required for SimAL task updates)
+     * - Interceptor to forward JWT authentication headers
      */
     @Bean
     public RestTemplate restTemplate() {
-        RestTemplate restTemplate = new RestTemplate();
+        // Use HttpComponentsClientHttpRequestFactory for PATCH support
+        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(5000);
+        requestFactory.setConnectionRequestTimeout(5000);
+        
+        RestTemplate restTemplate = new RestTemplate(requestFactory);
         restTemplate.setInterceptors(Collections.singletonList(new ClientHttpRequestInterceptor() {
             @Override
             public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {

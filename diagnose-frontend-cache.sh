@@ -68,7 +68,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 NGINX_RUNNING=$(docker ps --format "{{.Names}}" | grep nginx-root-proxy || echo "")
 if [ -z "$NGINX_RUNNING" ]; then
     echo -e "${RED}✗ nginx-root-proxy container not running!${NC}"
-    echo "  Run: docker-compose up -d"
+    echo "  Run: docker compose up -d"
     exit 1
 fi
 
@@ -119,7 +119,7 @@ if [ -n "$CONTAINER_IMAGE" ]; then
         echo -e "${GREEN}✓ Container is running latest image${NC}"
     else
         echo -e "${YELLOW}⚠ Container is running old image!${NC}"
-        echo "  Action: docker-compose down && docker-compose up -d --force-recreate"
+        echo "  Action: docker compose down && docker compose up -d --force-recreate"
     fi
 else
     echo -e "${RED}✗ Cannot inspect nginx-root-proxy container${NC}"
@@ -141,8 +141,8 @@ if [ "$CURRENT_IMAGE_ID" != "$EXPECTED_IMAGE_ID" ]; then
 elif [ -n "$RUNNING_IMAGE_ID" ] && [ "$RUNNING_IMAGE_ID" != "$EXPECTED_IMAGE_ID" ]; then
     echo -e "${YELLOW}ACTION REQUIRED:${NC}"
     echo "1. Restart containers with latest image:"
-    echo "   docker-compose down"
-    echo "   docker-compose up -d --force-recreate"
+    echo "   docker compose down"
+    echo "   docker compose up -d --force-recreate"
     echo ""
 else
     echo -e "${GREEN}✓ Server has correct images and containers${NC}"

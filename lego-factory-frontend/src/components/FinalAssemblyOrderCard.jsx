@@ -61,15 +61,16 @@ function FinalAssemblyOrderCard({
   };
 
   // Map action labels to semantic button variants for consistent coloring
+  // TAXONOMY: Confirm=acknowledge, Start=begin work, Complete=finish work, Submit=credit inventory
   const getActionVariant = (actionLabel) => {
     const variantMap = {
-      'Confirm Order': 'confirm',
+      '✓ Confirm': 'confirm',
       'Confirming...': 'confirm',
-      'Start Assembly': 'process',
+      '▶ Start': 'process',
       'Starting...': 'process',
-      'Complete Assembly': 'complete',
+      '✓ Complete': 'complete',
       'Completing...': 'complete',
-      'Submit Product': 'submit',
+      '↑ Submit': 'submit',
       'Submitting...': 'submit'
     };
     return variantMap[actionLabel] || 'primary';  // Fallback to primary
@@ -152,8 +153,8 @@ function FinalAssemblyOrderCard({
     switch(status) {
       case 'PENDING':
         actions.push({
-          label: isProcessing ? 'Confirming...' : 'Confirm Order',
-          variant: getActionVariant('Confirm Order'),
+          label: isProcessing ? 'Confirming...' : '✓ Confirm',
+          variant: getActionVariant('✓ Confirm'),
           size: 'small',
           onClick: () => onConfirm(order.id, order.orderNumber),
           show: !!onConfirm,
@@ -163,8 +164,8 @@ function FinalAssemblyOrderCard({
       
       case 'CONFIRMED':
         actions.push({
-          label: isProcessing ? 'Starting...' : 'Start Assembly',
-          variant: getActionVariant('Start Assembly'),
+          label: isProcessing ? 'Starting...' : '▶ Start',
+          variant: getActionVariant('▶ Start'),
           size: 'small',
           onClick: () => onStart(order.id, order.orderNumber),
           show: !!onStart,
@@ -174,8 +175,8 @@ function FinalAssemblyOrderCard({
       
       case 'IN_PROGRESS':
         actions.push({
-          label: isProcessing ? 'Completing...' : 'Complete Assembly',
-          variant: getActionVariant('Complete Assembly'),
+          label: isProcessing ? 'Completing...' : '✓ Complete',
+          variant: getActionVariant('✓ Complete'),
           size: 'small',
           onClick: () => onComplete(order.id, order.orderNumber),
           show: !!onComplete,
@@ -185,8 +186,8 @@ function FinalAssemblyOrderCard({
       
       case 'COMPLETED':
         actions.push({
-          label: isProcessing ? 'Submitting...' : 'Submit Product',
-          variant: getActionVariant('Submit Product'),
+          label: isProcessing ? 'Submitting...' : '↑ Submit',
+          variant: getActionVariant('↑ Submit'),
           size: 'small',
           onClick: () => onSubmit(order.id, order.orderNumber),
           show: !!onSubmit,

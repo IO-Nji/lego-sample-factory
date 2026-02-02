@@ -35,7 +35,8 @@ function ActivityLog({
   maxVisible = 50,
   emptyMessage = 'No activity yet',
   enableColorCoding = true,
-  titleStyle = {}
+  titleStyle = {},
+  showTitle = true
 }) {
   const containerRef = useRef(null);
   const prevCountRef = useRef(notifications.length);
@@ -100,9 +101,22 @@ function ActivityLog({
 
   return (
     <div className={styles.activityLogContainer}>
-      <div className={styles.header}>
-        <h2 className={styles.title} style={titleStyle}>{icon} {title}</h2>
-        {onClear && notifications.length > 0 && (
+      {showTitle && (
+        <div className={styles.header}>
+          <h2 className={styles.title} style={titleStyle}>{icon} {title}</h2>
+          {onClear && notifications.length > 0 && (
+            <button 
+              onClick={onClear} 
+              className={styles.clearButton}
+              aria-label="Clear notifications"
+            >
+              Clear All
+            </button>
+          )}
+        </div>
+      )}
+      {!showTitle && onClear && notifications.length > 0 && (
+        <div className={styles.header} style={{ justifyContent: 'flex-end' }}>
           <button 
             onClick={onClear} 
             className={styles.clearButton}
@@ -110,8 +124,8 @@ function ActivityLog({
           >
             Clear All
           </button>
-        )}
-      </div>
+        </div>
+      )}
       
       <div 
         ref={containerRef}
@@ -178,7 +192,8 @@ ActivityLog.propTypes = {
   onClear: PropTypes.func,
   maxVisible: PropTypes.number,
   emptyMessage: PropTypes.string,
-  enableColorCoding: PropTypes.bool
+  enableColorCoding: PropTypes.bool,
+  showTitle: PropTypes.bool
 };
 
 export default ActivityLog;

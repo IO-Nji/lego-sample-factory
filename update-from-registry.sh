@@ -253,7 +253,7 @@ print_header "Restarting Services"
 echo ""
 
 print_step "Stopping all services..."
-if docker-compose down 2>&1 | grep -E "(Stopping|Stopped|Removing|Removed|done)"; then
+if docker compose down 2>&1 | grep -E "(Stopping|Stopped|Removing|Removed|done)"; then
     print_success "Services stopped"
 else
     print_warning "Some services may not have stopped cleanly"
@@ -261,7 +261,7 @@ fi
 
 echo ""
 print_step "Starting services with updated images..."
-if docker-compose up -d 2>&1 | grep -E "(Creating|Created|Starting|Started|done)"; then
+if docker compose up -d 2>&1 | grep -E "(Creating|Created|Starting|Started|done)"; then
     print_success "Services started"
 else
     print_warning "Some services may not have started properly"
@@ -284,12 +284,12 @@ echo ""
 
 # Get service status
 echo -e "${BOLD}Container Status:${NC}"
-docker-compose ps
+docker compose ps
 echo ""
 
 # Analyze running vs failed
-RUNNING=$(docker-compose ps --filter "status=running" --format "{{.Service}}" 2>/dev/null | wc -l)
-EXITED=$(docker-compose ps --filter "status=exited" --format "{{.Service}}" 2>/dev/null | wc -l)
+RUNNING=$(docker compose ps --filter "status=running" --format "{{.Service}}" 2>/dev/null | wc -l)
+EXITED=$(docker compose ps --filter "status=exited" --format "{{.Service}}" 2>/dev/null | wc -l)
 TOTAL_EXPECTED=${#SERVICES[@]}
 
 echo -e "${BOLD}Status Summary:${NC}"
@@ -298,21 +298,21 @@ echo -e "  ${RED}Failed:${NC} ${EXITED}"
 echo ""
 
 # Check for failed services
-FAILED_SERVICES=$(docker-compose ps --filter "status=exited" --format "{{.Service}}" 2>/dev/null)
+FAILED_SERVICES=$(docker compose ps --filter "status=exited" --format "{{.Service}}" 2>/dev/null)
 if [ -n "$FAILED_SERVICES" ]; then
     print_error "Some services failed to start:"
     echo ""
     for SERVICE in $FAILED_SERVICES; do
         echo -e "${RED}  ✗ ${SERVICE}${NC}"
         echo -e "${YELLOW}    Showing last 10 log lines:${NC}"
-        docker-compose logs --tail=10 "$SERVICE" 2>/dev/null | sed 's/^/      /'
+        docker compose logs --tail=10 "$SERVICE" 2>/dev/null | sed 's/^/      /'
         echo ""
     done
     
     echo -e "${YELLOW}${BOLD}Troubleshooting Commands:${NC}"
-    echo "  docker-compose logs -f <service>     # Watch logs"
-    echo "  docker-compose restart <service>      # Restart specific service"
-    echo "  docker-compose up -d <service>        # Recreate service"
+    echo "  docker compose logs -f <service>     # Watch logs"
+    echo "  docker compose restart <service>      # Restart specific service"
+    echo "  docker compose up -d <service>        # Recreate service"
     echo ""
 fi
 
@@ -336,10 +336,10 @@ fi
 echo ""
 
 echo -e "${BOLD}${BLUE}Quick Commands:${NC}"
-echo "  docker-compose logs -f                           # Watch all logs"
-echo "  docker-compose logs -f order-processing-service  # Watch specific service"
-echo "  docker-compose ps                                # Check status"
-echo "  docker-compose restart <service>                 # Restart a service"
+echo "  docker compose logs -f                           # Watch all logs"
+echo "  docker compose logs -f order-processing-service  # Watch specific service"
+echo "  docker compose ps                                # Check status"
+echo "  docker compose restart <service>                 # Restart a service"
 echo ""
 
 if [ $EXITED -gt 0 ] || [ ${PULL_FAILED} -gt 0 ]; then

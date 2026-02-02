@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import ErrorNotification from "../components/ErrorNotification";
-import { ControlPage } from "../components";
+import { ControlPage, Button } from "../components";
 import "../styles/StandardPage.css";
 import "../styles/DashboardStandard.css";
 import "../styles/AdminDashboard.css";
@@ -287,15 +287,16 @@ function InventoryManagementPage() {
                     <span className="quantity-badge low">{item.quantity}</span>
                   </td>
                   <td>
-                    <button
-                      className="edit-btn"
+                    <Button
+                      variant="primary"
+                      size="small"
                       onClick={() => {
                         setSelectedWorkstationId(item.workstationId);
                         setActiveTab("manage");
                       }}
                     >
                       ✎ Update
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -328,7 +329,7 @@ function InventoryManagementPage() {
                   <span className="ws-label">Item Types:</span>
                   <span className="ws-value">{wsInventory.length}</span>
                 </div>
-                <button className="secondary-link">View Details</button>
+                <Button variant="secondary" size="small">View Details</Button>
               </div>
             );
           })}
@@ -367,13 +368,13 @@ function InventoryManagementPage() {
               <option key={t} value={t}>{t}</option>
             ))}
           </select>
-          <button className="secondary-link" onClick={refreshLedger} disabled={ledgerLoading}>
+          <Button variant="secondary" size="small" onClick={refreshLedger} disabled={ledgerLoading}>
             {ledgerLoading ? 'Refreshing…' : 'Refresh'}
-          </button>
+          </Button>
           {ledgerMode === 'full' ? (
-            <button className="primary-link" onClick={fetchRecentLedger} disabled={ledgerLoading}>View recent</button>
+            <Button variant="primary" size="small" onClick={fetchRecentLedger} disabled={ledgerLoading}>View recent</Button>
           ) : (
-            <button className="primary-link" onClick={fetchFullLedger} disabled={ledgerLoading}>View full ledger</button>
+            <Button variant="primary" size="small" onClick={fetchFullLedger} disabled={ledgerLoading}>View full ledger</Button>
           )}
         </div>
       </div>

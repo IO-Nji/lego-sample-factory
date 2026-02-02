@@ -8,7 +8,8 @@ import {
   OrdersSection,
   InventoryTable,
   FormCard,
-  ActivityLog
+  ActivityLog,
+  Card
 } from "../../components";
 import CustomerOrderCard from "../../components/CustomerOrderCard";
 import { getProductDisplayName, getInventoryStatusColor } from "../../utils/dashboardHelpers";
@@ -246,14 +247,39 @@ function PlantWarehouseDashboard() {
     return handleFulfillOrder(orderId);
   };
 
+  // Scenario 4: Order Production Directly (large orders bypass warehouse)
+  const handleOrderProduction = async (orderId) => {
+    setError(null);
+    try {
+      // Create production order directly from customer order
+      await api.post('/production-orders/from-customer-order', {
+        customerOrderId: orderId,
+        priority: 'NORMAL',
+        notes: 'Scenario 4: Direct production (large order bypasses warehouse)',
+        createdByWorkstationId: session?.user?.workstationId || 7
+      });
+      
+      const order = orders.find(o => o.id === orderId);
+      const orderNum = order?.orderNumber || `Order #${orderId}`;
+      addNotification(`${orderNum} sent to production`, 'success', { orderNumber: orderNum });
+      
+      await fetchOrders();
+    } catch (err) {
+      setError("Failed to create production order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to create production order", 'error');
+    }
+  };
+
   const handleComplete = async (orderId) => {
     setError(null);
     try {
-      await api.put(`/customer-orders/${orderId}/complete`);
+      await api.post(`/customer-orders/${orderId}/complete`);
+      addNotification("Order completed successfully", 'success');
       fetchOrders();
       fetchInventory();
     } catch (err) {
       setError("Failed to complete order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to complete order", 'error');
     }
   };
 
@@ -261,10 +287,12 @@ function PlantWarehouseDashboard() {
     if (!globalThis.confirm("Cancel this order?")) return;
     setError(null);
     try {
-      await api.put(`/customer-orders/${orderId}/cancel`);
+      await api.post(`/customer-orders/${orderId}/cancel`);
+      addNotification("Order cancelled successfully", 'warning');
       fetchOrders();
     } catch (err) {
       setError("Failed to cancel order: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to cancel order", 'error');
     }
   };
 
@@ -282,14 +310,13 @@ function PlantWarehouseDashboard() {
 
   // Render Activity/Notifications using ActivityLog component
   const renderActivity = () => (
-    <ActivityLog
-      title="Warehouse Activity"
-      icon="📢"
-      notifications={notifications}
-      onClear={clearNotifications}
-      maxVisible={50}
-      emptyMessage="No recent activity"
-    />
+    <Card variant="framed" title="WAREHOUSE ACTIVITY" style={{ height: '100%' }}>
+      <ActivityLog
+        notifications={notifications}
+        onClear={clearNotifications}
+        showTitle={false}
+      />
+    </Card>
   );
 
   // Render Statistics Grid for new layout
@@ -370,6 +397,7 @@ function PlantWarehouseDashboard() {
           onConfirm={handleConfirm}
           onFulfill={handleFulfillOrder}
           onProcess={handleProcessing}
+          onOrderProduction={handleOrderProduction}
           onComplete={handleComplete}
           onCancel={handleCancel}
           isProcessing={fulfillingOrderId === order.id}

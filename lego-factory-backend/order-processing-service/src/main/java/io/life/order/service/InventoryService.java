@@ -224,6 +224,45 @@ public class InventoryService {
     }
 
     /**
+     * Credit stock with explicit item type (for production order items).
+     * Used when production orders complete and need to credit Modules Supermarket.
+     * 
+     * For Scenario 3, production orders contain only MODULEs (derived from warehouse order
+     * items after BOM conversion). The itemType parameter provides flexibility for future
+     * scenarios that may involve PART production.
+     *
+     * @param workstationId The workstation ID (8 for Modules Supermarket)
+     * @param itemType      The item type ("MODULE" or "PART") - typically "MODULE" for Scenario 3
+     * @param itemId        The module/part ID
+     * @param quantity      The quantity to add (positive number)
+     * @param notes         Description for the stock adjustment
+     * @return true if update was successful, false otherwise
+     */
+    public boolean creditProductionStock(Long workstationId, String itemType, Long itemId, 
+                                         Integer quantity, String notes) {
+        try {
+            String url = inventoryServiceUrl + "/api/stock/adjust";
+            
+            Map<String, Object> request = new HashMap<>();
+            request.put("workstationId", workstationId);
+            request.put("itemType", itemType);
+            request.put("itemId", itemId);
+            request.put("delta", Math.abs(quantity)); // Positive to credit stock
+            request.put("reasonCode", "PRODUCTION");
+            request.put("notes", notes);
+
+            restTemplate.postForObject(url, request, Map.class);
+            logger.info("Production stock credited: workstation={}, itemType={}, itemId={}, qty=+{}", 
+                    workstationId, itemType, itemId, Math.abs(quantity));
+            return true;
+        } catch (RestClientException e) {
+            logger.error("Failed to credit production stock for workstation {} item {} ({}): {}", 
+                    workstationId, itemId, itemType, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Get the inventory service base URL (for use by other services).
      */
     public String getInventoryServiceUrl() {

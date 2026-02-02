@@ -166,15 +166,15 @@ echo "✓ Updated docker-compose.yml to use registry images"
 
 # Pull latest images
 echo "Pulling latest images from registry..."
-docker-compose pull
+docker compose pull
 
 # Restart services
 echo "Restarting services..."
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 
 echo "✓ Services restarted with registry images"
-docker-compose ps
+docker compose ps
 
 ENDSSH
 

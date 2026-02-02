@@ -11,6 +11,11 @@ import io.life.masterdata.service.ModuleService;
 import io.life.masterdata.service.PartService;
 import io.life.masterdata.service.ProductModuleService;
 import io.life.masterdata.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -29,6 +34,7 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Products", description = "Product catalog and BOM (Bill of Materials) management")
 public class ProductController {
 
     private final ProductService productService;
@@ -37,10 +43,8 @@ public class ProductController {
     private final ModulePartService modulePartService;
     private final PartService partService;
 
-    /**
-     * GET /api/masterdata/products
-     * Get all products
-     */
+    @Operation(summary = "Get all products", description = "Retrieve all products in the catalog")
+    @ApiResponse(responseCode = "200", description = "List of products")
     @GetMapping
     public ResponseEntity<List<ProductDto>> getAllProducts() {
         log.debug("Fetching all products");
@@ -51,23 +55,25 @@ public class ProductController {
         return ResponseEntity.ok(products);
     }
 
-    /**
-     * GET /api/masterdata/products/{id}
-     * Get a specific product by ID
-     */
+    @Operation(summary = "Get product by ID", description = "Retrieve a specific product by its ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Product found"),
+        @ApiResponse(responseCode = "404", description = "Product not found")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
+    public ResponseEntity<ProductDto> getProductById(
+            @Parameter(description = "Product ID") @PathVariable Long id) {
         log.debug("Fetching product with ID: {}", id);
         return productService.findById(id)
                 .map(product -> ResponseEntity.ok(convertToDto(product)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * POST /api/masterdata/products
-     * Create a new product
-     * Request body: { "name", "description", "price", "estimatedTimeMinutes" }
-     */
+    @Operation(summary = "Create product", description = "Create a new product in the catalog")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Product created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
     @PostMapping
     public ResponseEntity<ProductDto> createProduct(@RequestBody ProductDto dto) {
         log.info("Creating new product: {}", dto.getName());
@@ -88,14 +94,15 @@ public class ProductController {
         }
     }
 
-    /**
-     * PUT /api/masterdata/products/{id}
-     * Update an existing product
-     * Request body: { "name", "description", "price", "estimatedTimeMinutes" }
-     */
+    @Operation(summary = "Update product", description = "Update an existing product")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Product updated"),
+        @ApiResponse(responseCode = "404", description = "Product not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
     @PutMapping("/{id}")
     public ResponseEntity<ProductDto> updateProduct(
-            @PathVariable Long id,
+            @Parameter(description = "Product ID") @PathVariable Long id,
             @RequestBody ProductDto dto) {
         log.info("Updating product with ID: {}", id);
 
@@ -121,12 +128,14 @@ public class ProductController {
         }
     }
 
-    /**
-     * DELETE /api/masterdata/products/{id}
-     * Delete a product
-     */
+    @Operation(summary = "Delete product", description = "Delete a product from the catalog")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Product deleted"),
+        @ApiResponse(responseCode = "404", description = "Product not found")
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteProduct(
+            @Parameter(description = "Product ID") @PathVariable Long id) {
         log.info("Deleting product with ID: {}", id);
 
         if (productService.findById(id).isPresent()) {
@@ -144,12 +153,15 @@ public class ProductController {
         }
     }
 
-    /**
-     * GET /api/masterdata/products/{id}/modules
-     * Get all modules (with quantities) for a specific product
-     */
+    @Operation(summary = "Get product modules (BOM)", 
+               description = "Get all modules with quantities required to build a product")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "List of product-module relationships"),
+        @ApiResponse(responseCode = "404", description = "Product not found")
+    })
     @GetMapping("/{id}/modules")
-    public ResponseEntity<List<ProductModule>> getProductModules(@PathVariable Long id) {
+    public ResponseEntity<List<io.life.masterdata.dto.BomEntryDTO>> getProductModules(
+            @Parameter(description = "Product ID") @PathVariable Long id) {
         log.debug("Fetching modules for product ID: {}", id);
         
         Optional<Product> productOpt = productService.findById(id);
@@ -161,15 +173,37 @@ public class ProductController {
         List<ProductModule> productModules = productModuleService.findByProductId(id);
         log.debug("Found {} modules for product ID: {}", productModules.size(), id);
         
-        return ResponseEntity.ok(productModules);
+        // Transform to BomEntryDTO for proper API contract
+        List<io.life.masterdata.dto.BomEntryDTO> bomEntries = new ArrayList<>();
+        for (ProductModule pm : productModules) {
+            Optional<Module> moduleOpt = moduleService.findById(pm.getModuleId());
+            if (moduleOpt.isEmpty()) {
+                log.warn("Module {} not found for product {}", pm.getModuleId(), id);
+                continue;
+            }
+            Module module = moduleOpt.get();
+            
+            io.life.masterdata.dto.BomEntryDTO entry = io.life.masterdata.dto.BomEntryDTO.builder()
+                    .componentId(module.getId())
+                    .componentName(module.getName())
+                    .componentType("MODULE")
+                    .quantity(pm.getQuantity())
+                    .build();
+            bomEntries.add(entry);
+        }
+        
+        return ResponseEntity.ok(bomEntries);
     }
 
-    /**
-     * GET /api/masterdata/products/{id}/composition
-     * Get the complete composition (modules and parts) for a specific product
-     */
+    @Operation(summary = "Get product composition (full BOM)", 
+               description = "Get the complete Bill of Materials including all modules and their parts with quantities")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Full product composition with nested modules and parts"),
+        @ApiResponse(responseCode = "404", description = "Product not found")
+    })
     @GetMapping("/{id}/composition")
-    public ResponseEntity<Map<String, Object>> getProductComposition(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> getProductComposition(
+            @Parameter(description = "Product ID") @PathVariable Long id) {
         log.debug("Fetching composition for product ID: {}", id);
         
         Optional<Product> productOpt = productService.findById(id);

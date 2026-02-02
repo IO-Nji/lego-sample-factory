@@ -81,11 +81,7 @@ if [[ "$1" == "--all" ]]; then
     BUILD_ALL=true
 fi
 
-# Check if --all flag is provided
-BUILD_ALL=false
-if [[ "$1" == "--all" ]]; then
-    BUILD_ALL=true
-fi
+
 
 # Function to check if service was modified
 service_modified() {
@@ -186,7 +182,7 @@ push_service() {
     
     # Build with docker-compose (allow warnings, only fail on actual errors)
     echo -e "${YELLOW}[1/5]${NC} Building ${SERVICE}..."
-    BUILD_OUTPUT=$(docker-compose build --no-cache "${SERVICE}" 2>&1)
+    BUILD_OUTPUT=$(docker compose build --no-cache "${SERVICE}" 2>&1)
     BUILD_EXIT_CODE=$?
     
     # Show relevant build output
@@ -204,8 +200,8 @@ push_service() {
     # Get the image ID - try multiple methods
     echo -e "${YELLOW}[2/5]${NC} Getting image ID..."
     
-    # Method 1: docker-compose images
-    LOCAL_IMAGE=$(docker-compose images -q "${SERVICE}" 2>/dev/null | head -n1)
+    # Method 1: docker compose images
+    LOCAL_IMAGE=$(docker compose images -q "${SERVICE}" 2>/dev/null | head -n1)
     
     # Method 2: If not found, try getting from docker images directly
     if [ -z "$LOCAL_IMAGE" ]; then
@@ -342,7 +338,7 @@ echo -e "${BLUE}Next steps on live server:${NC}"
 echo "  1. SSH to live server: ssh nji@io-surf"
 echo "  2. Navigate to project: cd ~/lego-sample-factory"
 echo "  3. Update docker-compose.yml to use registry images"
-echo "  4. Pull images: docker-compose pull"
-echo "  5. Restart services: docker-compose up -d"
+echo "  4. Pull images: docker compose pull"
+echo "  5. Restart services: docker compose up -d"
 echo ""
 echo -e "${GREEN}Done!${NC}"

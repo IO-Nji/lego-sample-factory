@@ -1,5 +1,7 @@
 package io.life.simal_integration_service.service;
 
+import io.life.simal_integration_service.dto.SimalAssemblyControlOrderRequest;
+import io.life.simal_integration_service.dto.SimalProductionControlOrderRequest;
 import io.life.simal_integration_service.dto.SimalScheduledOrderResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +20,9 @@ import java.util.*;
  * Service to integrate SimAL production schedules with Control Order system.
  * When SimAL produces a production schedule, this service creates ProductionControlOrder
  * and AssemblyControlOrder entities in the order-processing-service.
+ * 
+ * Uses typed DTOs (SimalProductionControlOrderRequest, SimalAssemblyControlOrderRequest)
+ * instead of Map<String, Object> for compile-time safety and better maintainability.
  */
 @Service
 @Slf4j
@@ -105,6 +110,7 @@ public class ControlOrderIntegrationService {
 
     /**
      * Create a ProductionControlOrder in the order-processing-service.
+     * Uses typed SimalProductionControlOrderRequest DTO for compile-time safety.
      */
     private String createProductionControlOrder(
             Long productionOrderId,
@@ -112,15 +118,32 @@ public class ControlOrderIntegrationService {
             SimalScheduledOrderResponse schedule,
             List<SimalScheduledOrderResponse.ScheduledTask> tasks) {
 
-        Map<String, Object> request = new HashMap<>();
-        request.put("sourceProductionOrderId", productionOrderId);
-        request.put("assignedWorkstationId", parseWorkstationId(workstationId));
-        request.put("simalScheduleId", schedule.getScheduleId());
-        request.put("targetStartTime", tasks.get(0).getStartTime());
-        request.put("targetCompletionTime", calculateCompletionTime(tasks));
-        request.put("priority", determinePriority(schedule.getOrderNumber()));
-        request.put("productionInstructions", buildProductionInstructions(tasks));
-        request.put("qualityCheckpoints", buildQualityCheckpoints(tasks));
+        SimalScheduledOrderResponse.ScheduledTask firstTask = tasks.get(0);
+        
+        // Parse itemId safely
+        Long itemId = null;
+        if (firstTask.getItemId() != null) {
+            try {
+                itemId = Long.parseLong(firstTask.getItemId());
+            } catch (NumberFormatException e) {
+                log.warn("Could not parse itemId: {}", firstTask.getItemId());
+            }
+        }
+
+        // Build typed request DTO
+        SimalProductionControlOrderRequest request = SimalProductionControlOrderRequest.builder()
+                .sourceProductionOrderId(productionOrderId)
+                .assignedWorkstationId(parseWorkstationId(workstationId))
+                .simalScheduleId(schedule.getScheduleId())
+                .targetStartTime(firstTask.getStartTime())
+                .targetCompletionTime(calculateCompletionTime(tasks))
+                .priority(determinePriority(schedule.getOrderNumber()))
+                .productionInstructions(buildProductionInstructions(tasks))
+                .qualityCheckpoints(buildQualityCheckpoints(tasks))
+                .itemId(itemId)
+                .itemType("PART") // Manufacturing workstations produce PARTs
+                .quantity(firstTask.getQuantity())
+                .build();
 
         String url = orderProcessingApiBaseUrl + "/production-control-orders";
         log.debug("Posting ProductionControlOrder to: {}", url);
@@ -129,7 +152,7 @@ public class ControlOrderIntegrationService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
+            HttpEntity<SimalProductionControlOrderRequest> entity = new HttpEntity<>(request, headers);
             Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
 
             if (response != null && response.containsKey("controlOrderNumber")) {
@@ -144,6 +167,7 @@ public class ControlOrderIntegrationService {
 
     /**
      * Create an AssemblyControlOrder in the order-processing-service.
+     * Uses typed SimalAssemblyControlOrderRequest DTO for compile-time safety.
      */
     private String createAssemblyControlOrder(
             Long productionOrderId,
@@ -151,15 +175,32 @@ public class ControlOrderIntegrationService {
             SimalScheduledOrderResponse schedule,
             List<SimalScheduledOrderResponse.ScheduledTask> tasks) {
 
-        Map<String, Object> request = new HashMap<>();
-        request.put("sourceProductionOrderId", productionOrderId);
-        request.put("assignedWorkstationId", parseWorkstationId(workstationId));
-        request.put("simalScheduleId", schedule.getScheduleId());
-        request.put("targetStartTime", tasks.get(0).getStartTime());
-        request.put("targetCompletionTime", calculateCompletionTime(tasks));
-        request.put("priority", determinePriority(schedule.getOrderNumber()));
-        request.put("assemblyInstructions", buildAssemblyInstructions(tasks));
-        request.put("qualityCheckpoints", buildQualityStandards(tasks));
+        SimalScheduledOrderResponse.ScheduledTask firstTask = tasks.get(0);
+        
+        // Parse itemId safely
+        Long itemId = null;
+        if (firstTask.getItemId() != null) {
+            try {
+                itemId = Long.parseLong(firstTask.getItemId());
+            } catch (NumberFormatException e) {
+                log.warn("Could not parse itemId: {}", firstTask.getItemId());
+            }
+        }
+
+        // Build typed request DTO
+        SimalAssemblyControlOrderRequest request = SimalAssemblyControlOrderRequest.builder()
+                .sourceProductionOrderId(productionOrderId)
+                .assignedWorkstationId(parseWorkstationId(workstationId))
+                .simalScheduleId(schedule.getScheduleId())
+                .targetStartTime(firstTask.getStartTime())
+                .targetCompletionTime(calculateCompletionTime(tasks))
+                .priority(determinePriority(schedule.getOrderNumber()))
+                .assemblyInstructions(buildAssemblyInstructions(tasks))
+                .qualityCheckpoints(buildQualityStandards(tasks))
+                .itemId(itemId)
+                .itemType("MODULE") // Assembly workstations produce MODULEs
+                .quantity(firstTask.getQuantity())
+                .build();
 
         String url = orderProcessingApiBaseUrl + "/assembly-control-orders";
         log.debug("Posting AssemblyControlOrder to: {}", url);
@@ -168,7 +209,7 @@ public class ControlOrderIntegrationService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
+            HttpEntity<SimalAssemblyControlOrderRequest> entity = new HttpEntity<>(request, headers);
             Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
 
             if (response != null && response.containsKey("controlOrderNumber")) {
@@ -343,6 +384,13 @@ public class ControlOrderIntegrationService {
         }
 
         log.info("Retrieved production order: {}", productionOrder.get("productionOrderNumber"));
+        log.info("Production order data - triggerScenario: {}, sourceWarehouseOrderId: {}, sourceCustomerOrderId: {}", 
+                productionOrder.get("triggerScenario"), 
+                productionOrder.get("sourceWarehouseOrderId"),
+                productionOrder.get("sourceCustomerOrderId"));
+        log.info("Production order items count: {}", 
+                productionOrder.get("productionOrderItems") != null ? 
+                        ((List<?>) productionOrder.get("productionOrderItems")).size() : "null");
 
         // 2. Check if production order has its own items first
         @SuppressWarnings("unchecked")
@@ -375,7 +423,12 @@ public class ControlOrderIntegrationService {
                 }
                 
                 lineItem.setItemName(actualItemName != null ? actualItemName : (String) item.get("itemName"));
-                lineItem.setQuantity(getIntValue(item.get("quantity")));
+                // Try both 'quantity' and 'requestedQuantity' for compatibility
+                Integer quantity = getIntValue(item.get("quantity"));
+                if (quantity == null) {
+                    quantity = getIntValue(item.get("requestedQuantity"));
+                }
+                lineItem.setQuantity(quantity);
                 lineItem.setEstimatedDuration(getIntValue(item.get("estimatedTimeMinutes")) != null ? 
                         getIntValue(item.get("estimatedTimeMinutes")) : 30);
                 lineItem.setWorkstationType(workstationType != null ? workstationType : "MANUFACTURING");

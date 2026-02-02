@@ -16,8 +16,9 @@ import '../styles/GanttChart.css';
  * @param {Array} scheduledTasks - Array of task objects with workstation, duration, status, start/end times
  * @param {Function} onTaskClick - Handler when a task bar is clicked
  * @param {string} title - Optional title override
+ * @param {boolean} showTitle - Whether to show the internal title (default: true, set false when inside Card with title)
  */
-function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Production Schedule Timeline" }) {
+function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Production Schedule Timeline", showTitle = true }) {
   const [viewStart, setViewStart] = useState(null);
   const [viewEnd, setViewEnd] = useState(null);
   const [hoveredTask, setHoveredTask] = useState(null);
@@ -58,16 +59,62 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
     }
   }, [scheduledTasks]);
 
-  // Group tasks by workstation
+  // Group tasks by workstation - ALWAYS show all 5 manufacturing/assembly workstations
   const groupTasksByWorkstation = () => {
-    const grouped = {};
-    scheduledTasks.forEach(task => {
-      const ws = task.workstationName || task.workstationId || 'Unassigned';
-      if (!grouped[ws]) {
-        grouped[ws] = [];
+    // Initialize with 5 manufacturing/assembly workstations only
+    const allWorkstations = [
+      'WS-1: Injection Molding',
+      'WS-2: Parts Pre-Production',
+      'WS-3: Part Finishing',
+      'WS-4: Gear Assembly',
+      'WS-5: Motor Assembly'
+    ];
+    
+    // Map backend workstation names/IDs to display format
+    const normalizeWorkstationName = (task) => {
+      const wsId = task.workstationId;
+      const wsName = task.workstationName;
+      
+      // Handle workstation ID (e.g., 1, "WS-1", "1")
+      if (wsId) {
+        const id = typeof wsId === 'string' ? parseInt(wsId.replace('WS-', '')) : wsId;
+        const mapping = {
+          1: 'WS-1: Injection Molding',
+          2: 'WS-2: Parts Pre-Production',
+          3: 'WS-3: Part Finishing',
+          4: 'WS-4: Gear Assembly',
+          5: 'WS-5: Motor Assembly'
+        };
+        if (mapping[id]) return mapping[id];
       }
-      grouped[ws].push(task);
+      
+      // Handle backend workstation name variations
+      if (wsName) {
+        if (wsName.includes('Injection') || wsName.includes('Molding')) return 'WS-1: Injection Molding';
+        if (wsName.includes('Pre-Production') || wsName.includes('PreProduction')) return 'WS-2: Parts Pre-Production';
+        if (wsName.includes('Finishing')) return 'WS-3: Part Finishing';
+        if (wsName.includes('Gear')) return 'WS-4: Gear Assembly';
+        if (wsName.includes('Motor')) return 'WS-5: Motor Assembly';
+      }
+      
+      return null; // Skip non-manufacturing/assembly workstations
+    };
+    
+    const grouped = {};
+    
+    // Initialize all workstations with empty arrays
+    allWorkstations.forEach(ws => {
+      grouped[ws] = [];
     });
+    
+    // Add tasks to appropriate workstations
+    scheduledTasks.forEach(task => {
+      const normalizedWs = normalizeWorkstationName(task);
+      if (normalizedWs && grouped[normalizedWs]) {
+        grouped[normalizedWs].push(task);
+      }
+    });
+    
     return grouped;
   };
 
@@ -172,31 +219,33 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
       fontSize: '0.75rem',
       overflow: 'hidden'
     }}>
-      {/* Header - Compact */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingBottom: '0.5rem',
-        borderBottom: '2px solid #e5e7eb',
-        flexShrink: 0
-      }}>
-        <h3 style={{ 
-          margin: 0, 
-          fontSize: '0.875rem', 
-          fontWeight: 'bold', 
-          color: '#1f2937' 
+      {/* Header - Compact (only show if showTitle is true) */}
+      {showTitle && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingBottom: '0.5rem',
+          borderBottom: '2px solid #e5e7eb',
+          flexShrink: 0
         }}>
-          📅 {title}
-        </h3>
-        <span style={{ 
-          fontSize: '0.7rem', 
-          color: '#6b7280',
-          whiteSpace: 'nowrap'
-        }}>
-          {viewStart.toLocaleDateString()} - {viewEnd.toLocaleDateString()}
-        </span>
-      </div>
+          <h3 style={{ 
+            margin: 0, 
+            fontSize: '0.875rem', 
+            fontWeight: 'bold', 
+            color: '#1f2937' 
+          }}>
+            📅 {title}
+          </h3>
+          <span style={{ 
+            fontSize: '0.7rem', 
+            color: '#6b7280',
+            whiteSpace: 'nowrap'
+          }}>
+            {viewStart.toLocaleDateString()} - {viewEnd.toLocaleDateString()}
+          </span>
+        </div>
+      )}
 
       {/* Status Legend - Matches GanttChart */}
       <div style={{
@@ -224,11 +273,12 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
         })}
       </div>
 
-      {/* Timeline Container - Scrollable */}
+      {/* Timeline Container - Fixed Height for 5 Manufacturing/Assembly Workstations */}
       <div style={{ 
-        flex: 1,
+        minHeight: '290px', // Fixed: 5 workstations × 48px + time markers 20px + padding 30px
+        maxHeight: '290px',
         position: 'relative',
-        overflowY: 'auto',
+        overflowY: 'hidden', // No vertical scrolling needed
         overflowX: 'visible',
         paddingTop: '0.5rem'
       }}>
@@ -269,29 +319,19 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
           })}
         </div>
 
-        {/* Workstation rows - Compact */}
-        {Object.keys(groupedTasks).length === 0 ? (
-          <div style={{ 
-            padding: '2rem', 
-            textAlign: 'center', 
-            color: '#9ca3af',
-            fontSize: '0.8rem'
-          }}>
-            <p style={{ margin: 0, fontWeight: 'bold' }}>No scheduled tasks</p>
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.7rem' }}>Tasks will appear when scheduled</p>
-          </div>
-        ) : (
-          <div>
-            {Object.entries(groupedTasks).map(([workstation, tasks]) => (
-              <div 
-                key={workstation}
-                style={{
-                  display: 'flex',
-                  marginBottom: '0.25rem',
-                  minHeight: '32px',
-                  borderBottom: '1px solid #f3f4f6'
-                }}
-              >
+        {/* Workstation rows - Always show all 5 workstations with fixed heights */}
+        <div>
+          {Object.entries(groupedTasks).map(([workstation, tasks]) => (
+            <div 
+              key={workstation}
+              style={{
+                display: 'flex',
+                marginBottom: '0.25rem',
+                minHeight: '48px', // Fixed height per workstation row
+                maxHeight: '48px',
+                borderBottom: '1px solid #f3f4f6'
+              }}
+            >
                 {/* Workstation label - Compact */}
                 <div style={{
                   width: '120px',
@@ -316,7 +356,8 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
                   position: 'relative',
                   backgroundColor: '#fafafa',
                   borderRadius: '3px',
-                  minHeight: '32px'
+                  minHeight: '40px',
+                  maxHeight: '40px'
                 }}>
                   {tasks.map((task, idx) => {
                     const position = calculateTaskPosition(task);
@@ -402,8 +443,7 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
                 </div>
               </div>
             ))}
-          </div>
-        )}
+        </div>
       </div>
       
       {/* Portal-rendered tooltip for proper z-index handling */}
@@ -477,7 +517,8 @@ CompactScheduleTimeline.propTypes = {
     manuallyAdjusted: PropTypes.bool
   })),
   onTaskClick: PropTypes.func,
-  title: PropTypes.string
+  title: PropTypes.string,
+  showTitle: PropTypes.bool
 };
 
 export default CompactScheduleTimeline;

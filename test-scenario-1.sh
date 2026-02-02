@@ -47,7 +47,7 @@ print_step() {
 echo -e "${BOLD}Pre-flight Check:${NC}"
 if ! curl -s -f "$BASE_URL/health" > /dev/null 2>&1; then
     echo -e "${RED}❌ System not accessible at $BASE_URL${NC}"
-    echo "   Please ensure docker-compose is running: docker-compose up -d"
+    echo "   Please ensure docker-compose is running: docker compose up -d"
     exit 1
 fi
 echo -e "${GREEN}✅ System is running${NC}\n"
@@ -84,8 +84,26 @@ PRODUCT_ID=$(echo $INVENTORY_RESPONSE | jq -r '.[0].itemId // 1')
 
 echo "   Product ID: $PRODUCT_ID, Initial Stock: $INITIAL_STOCK units"
 
-if [ $INITIAL_STOCK -lt 5 ]; then
-    echo -e "${YELLOW}   ⚠️  Warning: Low initial stock ($INITIAL_STOCK). Replenish for consistent testing.${NC}"
+# For Scenario 1 (Direct Fulfillment), we need SUFFICIENT stock
+# Ensure at least 5 units are available for testing
+if [ "$INITIAL_STOCK" -lt 5 ]; then
+    echo -e "${YELLOW}   ⚠️  Low stock detected ($INITIAL_STOCK). Replenishing to 10 units for Scenario 1 testing...${NC}"
+    REPLENISH_DELTA=$((10 - INITIAL_STOCK))
+    ADJUST_RESPONSE=$(curl -s -X POST "$BASE_URL/stock/adjust" \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"workstationId\": $WORKSTATION_ID,
+            \"itemType\": \"PRODUCT\",
+            \"itemId\": $PRODUCT_ID,
+            \"delta\": $REPLENISH_DELTA,
+            \"reasonCode\": \"ADJUSTMENT\",
+            \"notes\": \"Test setup - replenishing stock for Scenario 1\"
+        }")
+    
+    INITIAL_STOCK=$(curl -s -X GET "$BASE_URL/stock/workstation/$WORKSTATION_ID" \
+        -H "Authorization: Bearer $TOKEN" | jq -r "[.[] | select(.itemId == $PRODUCT_ID)] | .[0].quantity // 0")
+    echo "   Stock replenished to: $INITIAL_STOCK units"
 fi
 
 print_step "Create customer order (quantity: 2)"

@@ -122,16 +122,62 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
     setIsDragging(false);
   };
 
-  // Group tasks by workstation
+  // Group tasks by workstation - ALWAYS show all 5 manufacturing/assembly workstations
   const groupTasksByWorkstation = () => {
-    const grouped = {};
-    scheduledTasks.forEach(task => {
-      const ws = task.workstationName || task.workstationId || 'Unassigned';
-      if (!grouped[ws]) {
-        grouped[ws] = [];
+    // Initialize with 5 manufacturing/assembly workstations only
+    const allWorkstations = [
+      'WS-1: Injection Molding',
+      'WS-2: Parts Pre-Production',
+      'WS-3: Part Finishing',
+      'WS-4: Gear Assembly',
+      'WS-5: Motor Assembly'
+    ];
+    
+    // Map backend workstation names/IDs to display format
+    const normalizeWorkstationName = (task) => {
+      const wsId = task.workstationId;
+      const wsName = task.workstationName;
+      
+      // Handle workstation ID (e.g., 1, "WS-1", "1")
+      if (wsId) {
+        const id = typeof wsId === 'string' ? parseInt(wsId.replace('WS-', '')) : wsId;
+        const mapping = {
+          1: 'WS-1: Injection Molding',
+          2: 'WS-2: Parts Pre-Production',
+          3: 'WS-3: Part Finishing',
+          4: 'WS-4: Gear Assembly',
+          5: 'WS-5: Motor Assembly'
+        };
+        if (mapping[id]) return mapping[id];
       }
-      grouped[ws].push(task);
+      
+      // Handle backend workstation name variations
+      if (wsName) {
+        if (wsName.includes('Injection') || wsName.includes('Molding')) return 'WS-1: Injection Molding';
+        if (wsName.includes('Pre-Production') || wsName.includes('PreProduction')) return 'WS-2: Parts Pre-Production';
+        if (wsName.includes('Finishing')) return 'WS-3: Part Finishing';
+        if (wsName.includes('Gear')) return 'WS-4: Gear Assembly';
+        if (wsName.includes('Motor')) return 'WS-5: Motor Assembly';
+      }
+      
+      return null; // Skip non-manufacturing/assembly workstations
+    };
+    
+    const grouped = {};
+    
+    // Initialize all workstations with empty arrays
+    allWorkstations.forEach(ws => {
+      grouped[ws] = [];
     });
+    
+    // Add tasks to appropriate workstations
+    scheduledTasks.forEach(task => {
+      const normalizedWs = normalizeWorkstationName(task);
+      if (normalizedWs && grouped[normalizedWs]) {
+        grouped[normalizedWs].push(task);
+      }
+    });
+    
     return grouped;
   };
 
@@ -174,16 +220,38 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
     return markers;
   };
 
-  // Get status color
+  // Get status-based color (matches workstation order status)
+  // Maps actual production status to visual feedback colors
   const getStatusColor = (status) => {
     const statusColors = {
-      PENDING: '#f59e0b',
-      SCHEDULED: '#3b82f6',
-      IN_PROGRESS: '#10b981',
-      COMPLETED: '#6b7280',
-      CANCELLED: '#ef4444'
+      PENDING: {
+        base: '#f59e0b', // Orange - task not yet started
+        border: '#d97706',
+        text: '#ffffff'
+      },
+      SCHEDULED: {
+        base: '#3b82f6', // Blue - task scheduled but not confirmed
+        border: '#2563eb',
+        text: '#ffffff'
+      },
+      IN_PROGRESS: {
+        base: '#10b981', // Green - active work at workstation
+        border: '#059669',
+        text: '#ffffff'
+      },
+      COMPLETED: {
+        base: '#6b7280', // Gray - task finished
+        border: '#4b5563',
+        text: '#ffffff'
+      },
+      CANCELLED: {
+        base: '#ef4444', // Red - task cancelled
+        border: '#dc2626',
+        text: '#ffffff'
+      }
     };
-    return statusColors[status] || '#9ca3af';
+
+    return statusColors[status] || statusColors.PENDING;
   };
 
   // Format time for display
@@ -197,6 +265,16 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
 
   const groupedTasks = groupTasksByWorkstation();
   const timeMarkers = generateTimeMarkers();
+  
+  // Fixed height for 5 manufacturing/assembly workstations - no dynamic calculation
+  // This ensures consistent display regardless of active workstations
+  const WORKSTATION_COUNT = 5; // Always show 5 manufacturing/assembly workstations
+  const rowHeight = 60; // Base height per workstation row (matches .gantt-row min-height)
+  const headerHeight = 100; // Header + time axis height
+  const legendHeight = 50; // Legend at bottom
+  
+  // Fixed height: 5 workstations × 60px + header + legend = 450px
+  const timelineHeight = headerHeight + (WORKSTATION_COUNT * rowHeight) + legendHeight;
 
   if (!viewStart || !viewEnd) {
     return (
@@ -227,8 +305,8 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="gantt-timeline">
+      {/* Timeline - Fixed height for 5 manufacturing/assembly workstations */}
+      <div className="gantt-timeline" style={{ minHeight: `${timelineHeight}px`, maxHeight: `${timelineHeight}px` }}>
         {/* Time markers */}
         <div className="gantt-time-axis">
           {timeMarkers.map((marker, idx) => (
@@ -242,16 +320,10 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
           ))}
         </div>
 
-        {/* Workstation rows */}
-        <div className="gantt-rows">
-          {Object.keys(groupedTasks).length === 0 ? (
-            <div className="gantt-empty-state">
-              <p>No scheduled tasks to display</p>
-              <p className="gantt-empty-hint">Tasks will appear here when scheduled</p>
-            </div>
-          ) : (
-            Object.entries(groupedTasks).map(([workstation, tasks]) => (
-              <div key={workstation} className="gantt-row">
+        {/* Workstation rows - Always show all 5 workstations with fixed heights */}
+        <div className="gantt-rows" style={{ overflowY: 'hidden', minHeight: `${WORKSTATION_COUNT * rowHeight}px`, maxHeight: `${WORKSTATION_COUNT * rowHeight}px` }}>
+          {Object.entries(groupedTasks).map(([workstation, tasks]) => (
+            <div key={workstation} className="gantt-row" style={{ minHeight: `${rowHeight}px`, maxHeight: `${rowHeight}px` }}>
                 <div className="gantt-row-label">
                   <span className="workstation-name">{workstation}</span>
                   <span className="task-count">{tasks.length} tasks</span>
@@ -260,6 +332,7 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
                   {tasks.map((task, idx) => {
                     const position = calculateTaskPosition(task);
                     const isBeingDragged = draggedTask?.id === task.id || draggedTask?.taskId === task.taskId;
+                    const statusColors = getStatusColor(task.status);
                     
                     return (
                       <div
@@ -268,7 +341,9 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
                         style={{
                           left: `${position.left}%`,
                           width: `${position.width}%`,
-                          backgroundColor: getStatusColor(task.status),
+                          backgroundColor: statusColors.base,
+                          borderLeft: `4px solid ${statusColors.border}`,
+                          color: statusColors.text,
                           cursor: editable ? 'grab' : 'pointer',
                           opacity: isBeingDragged ? 0.6 : 1
                         }}
@@ -314,8 +389,7 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
                   })}
                 </div>
               </div>
-            ))
-          )}
+            ))}
         </div>
       </div>
 
@@ -373,15 +447,21 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
       {/* Legend */}
       <div className="gantt-legend">
         <span className="legend-title">Status:</span>
-        {['PENDING', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].map(status => (
-          <div key={status} className="legend-item">
-            <div 
-              className="legend-color" 
-              style={{ backgroundColor: getStatusColor(status) }}
-            />
-            <span>{status.replace('_', ' ')}</span>
-          </div>
-        ))}
+        {['PENDING', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].map(status => {
+          const colors = getStatusColor(status);
+          return (
+            <div key={status} className="legend-item">
+              <div 
+                className="legend-color" 
+                style={{ 
+                  backgroundColor: colors.base,
+                  borderLeft: `4px solid ${colors.border}`
+                }}
+              />
+              <span>{status.replace('_', ' ')}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

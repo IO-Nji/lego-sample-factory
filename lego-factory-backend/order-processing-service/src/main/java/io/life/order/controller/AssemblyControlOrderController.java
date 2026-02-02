@@ -2,8 +2,14 @@ package io.life.order.controller;
 
 import io.life.order.dto.AssemblyControlOrderDTO;
 import io.life.order.dto.SupplyOrderDTO;
-import io.life.order.dto.SupplyOrderItemDTO;
+import io.life.order.dto.request.AssemblyControlOrderCreateRequest;
+import io.life.order.dto.request.RequestPartsRequest;
 import io.life.order.service.AssemblyControlOrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +26,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/assembly-control-orders")
 @CrossOrigin(origins = "*", maxAge = 3600)
+@Tag(name = "Assembly Control Orders", description = "Assembly Control - Manage assembly orders for WS-4, WS-5, WS-6")
 public class AssemblyControlOrderController {
 
     private final AssemblyControlOrderService assemblyControlOrderService;
@@ -28,104 +35,123 @@ public class AssemblyControlOrderController {
         this.assemblyControlOrderService = assemblyControlOrderService;
     }
 
-    /**
-     * Get all control orders
-     */
+    @Operation(summary = "Get all assembly control orders", 
+               description = "Retrieve all assembly control orders in the system")
+    @ApiResponse(responseCode = "200", description = "List of assembly control orders")
     @GetMapping
     public ResponseEntity<List<AssemblyControlOrderDTO>> getAllOrders() {
         List<AssemblyControlOrderDTO> orders = assemblyControlOrderService.getAllOrders();
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get all control orders for a workstation
-     */
+    @Operation(summary = "Get orders by workstation", 
+               description = "Retrieve assembly control orders assigned to a specific workstation")
+    @ApiResponse(responseCode = "200", description = "List of orders for workstation")
     @GetMapping("/workstation/{workstationId}")
     public ResponseEntity<List<AssemblyControlOrderDTO>> getOrdersByWorkstation(
-            @PathVariable Long workstationId) {
+            @Parameter(description = "Workstation ID") @PathVariable Long workstationId) {
         List<AssemblyControlOrderDTO> orders = assemblyControlOrderService.getOrdersByWorkstation(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get active (in progress) control orders for a workstation
-     */
+    @Operation(summary = "Get active orders by workstation", 
+               description = "Retrieve in-progress assembly control orders for a workstation")
+    @ApiResponse(responseCode = "200", description = "List of active orders")
     @GetMapping("/workstation/{workstationId}/active")
     public ResponseEntity<List<AssemblyControlOrderDTO>> getActiveOrdersByWorkstation(
-            @PathVariable Long workstationId) {
+            @Parameter(description = "Workstation ID") @PathVariable Long workstationId) {
         List<AssemblyControlOrderDTO> orders = assemblyControlOrderService.getActiveOrdersByWorkstation(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get unassigned (status=ASSIGNED) control orders for a workstation
-     */
+    @Operation(summary = "Get unassigned orders", 
+               description = "Retrieve orders with ASSIGNED status waiting to be started at a workstation")
+    @ApiResponse(responseCode = "200", description = "List of unassigned orders")
     @GetMapping("/workstation/{workstationId}/unassigned")
     public ResponseEntity<List<AssemblyControlOrderDTO>> getUnassignedOrders(
-            @PathVariable Long workstationId) {
+            @Parameter(description = "Workstation ID") @PathVariable Long workstationId) {
         List<AssemblyControlOrderDTO> orders = assemblyControlOrderService.getUnassignedOrders(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get control order by ID
-     */
+    @Operation(summary = "Get order by ID", 
+               description = "Retrieve an assembly control order by its ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order found"),
+        @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<AssemblyControlOrderDTO> getOrderById(@PathVariable Long id) {
+    public ResponseEntity<AssemblyControlOrderDTO> getOrderById(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         Optional<AssemblyControlOrderDTO> order = assemblyControlOrderService.getOrderById(id);
         return order.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Get control order by control order number
-     */
+    @Operation(summary = "Get order by number", 
+               description = "Retrieve an assembly control order by its order number")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order found"),
+        @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     @GetMapping("/number/{controlOrderNumber}")
     public ResponseEntity<AssemblyControlOrderDTO> getOrderByNumber(
-            @PathVariable String controlOrderNumber) {
+            @Parameter(description = "Control order number (e.g., ACO-00001)") @PathVariable String controlOrderNumber) {
         Optional<AssemblyControlOrderDTO> order = assemblyControlOrderService.getOrderByNumber(controlOrderNumber);
         return order.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Start assembly on a control order
-     */
-    @PutMapping("/{id}/start")
-    public ResponseEntity<AssemblyControlOrderDTO> startAssembly(@PathVariable Long id) {
+    @Operation(summary = "Confirm receipt", 
+               description = "Confirm receipt of an assembly control order (PENDING -> CONFIRMED)")
+    @ApiResponse(responseCode = "200", description = "Order confirmed")
+    @PutMapping("/{id}/confirm")
+    public ResponseEntity<AssemblyControlOrderDTO> confirmReceipt(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
+        AssemblyControlOrderDTO order = assemblyControlOrderService.confirmReceipt(id);
+        return ResponseEntity.ok(order);
+    }
+
+    @Operation(summary = "Start assembly", 
+               description = "Start assembly on a control order (CONFIRMED -> IN_PROGRESS)")
+    @ApiResponse(responseCode = "200", description = "Assembly started")
+    @PostMapping("/{id}/start")
+    public ResponseEntity<AssemblyControlOrderDTO> startAssembly(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         AssemblyControlOrderDTO order = assemblyControlOrderService.startAssembly(id);
         return ResponseEntity.ok(order);
     }
 
-    /**
-     * Update control order status
-     */
+    @Operation(summary = "Update operator notes", 
+               description = "Update the operator notes for a control order")
+    @ApiResponse(responseCode = "200", description = "Notes updated")
     @PatchMapping("/{id}/status")
     public ResponseEntity<AssemblyControlOrderDTO> updateOperatorNotes(
-            @PathVariable Long id,
-            @RequestParam String notes) {
+            @Parameter(description = "Order ID") @PathVariable Long id,
+            @Parameter(description = "Operator notes") @RequestParam String notes) {
         AssemblyControlOrderDTO order = assemblyControlOrderService.updateOperatorNotes(id, notes);
         return ResponseEntity.ok(order);
     }
 
-    /**
-     * Complete assembly on a control order
-     */
-    @PutMapping("/{id}/complete")
-    public ResponseEntity<AssemblyControlOrderDTO> completeAssembly(@PathVariable Long id) {
+    @Operation(summary = "Complete assembly", 
+               description = "Complete assembly on a control order and propagate status upward")
+    @ApiResponse(responseCode = "200", description = "Assembly completed")
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<AssemblyControlOrderDTO> completeAssembly(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         AssemblyControlOrderDTO order = assemblyControlOrderService.completeAssembly(id);
         return ResponseEntity.ok(order);
     }
 
-    /**
-     * Update defects found during assembly
-     */
+    @Operation(summary = "Update defects", 
+               description = "Update defects found during assembly")
+    @ApiResponse(responseCode = "200", description = "Defects updated")
     @PatchMapping("/{id}/defects")
     public ResponseEntity<AssemblyControlOrderDTO> updateDefects(
-            @PathVariable Long id,
-            @RequestParam Integer defectsFound,
-            @RequestParam(required = false) Integer defectsReworked,
-            @RequestParam(required = false) Boolean reworkRequired) {
+            @Parameter(description = "Order ID") @PathVariable Long id,
+            @Parameter(description = "Number of defects found") @RequestParam Integer defectsFound,
+            @Parameter(description = "Number of defects reworked") @RequestParam(required = false) Integer defectsReworked,
+            @Parameter(description = "Whether rework is required") @RequestParam(required = false) Boolean reworkRequired) {
         AssemblyControlOrderDTO order = assemblyControlOrderService.updateDefects(id, defectsFound, defectsReworked, reworkRequired);
         return ResponseEntity.ok(order);
     }
@@ -149,17 +175,13 @@ public class AssemblyControlOrderController {
     public ResponseEntity<SupplyOrderDTO> requestParts(
             @PathVariable Long id,
             @RequestBody RequestPartsRequest request) {
-        try {
-            SupplyOrderDTO supplyOrder = assemblyControlOrderService.requestSupplies(
-                    id,
-                    request.getRequiredParts(),
-                    request.getNeededBy(),
-                    request.getNotes()
-            );
-            return ResponseEntity.ok(supplyOrder);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        SupplyOrderDTO supplyOrder = assemblyControlOrderService.requestSupplies(
+                id,
+                request.getRequiredParts(),
+                request.getNeededBy(),
+                request.getNotes()
+        );
+        return ResponseEntity.ok(supplyOrder);
     }
 
     /**
@@ -168,12 +190,8 @@ public class AssemblyControlOrderController {
      */
     @PostMapping("/{id}/dispatch")
     public ResponseEntity<AssemblyControlOrderDTO> dispatchToWorkstation(@PathVariable Long id) {
-        try {
-            AssemblyControlOrderDTO order = assemblyControlOrderService.dispatchToWorkstation(id);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        AssemblyControlOrderDTO order = assemblyControlOrderService.dispatchToWorkstation(id);
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -192,95 +210,27 @@ public class AssemblyControlOrderController {
      */
     @PostMapping
     public ResponseEntity<AssemblyControlOrderDTO> createControlOrder(
-            @RequestBody CreateControlOrderRequest request) {
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-            LocalDateTime targetStart = LocalDateTime.parse(request.getTargetStartTime(), formatter);
-            LocalDateTime targetCompletion = LocalDateTime.parse(request.getTargetCompletionTime(), formatter);
+            @RequestBody AssemblyControlOrderCreateRequest request) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        LocalDateTime targetStart = LocalDateTime.parse(request.getTargetStartTime(), formatter);
+        LocalDateTime targetCompletion = LocalDateTime.parse(request.getTargetCompletionTime(), formatter);
 
-            AssemblyControlOrderDTO order = assemblyControlOrderService.createControlOrder(
-                    request.getSourceProductionOrderId(),
-                    request.getAssignedWorkstationId(),
-                    request.getSimalScheduleId(),
-                    request.getPriority(),
-                    targetStart,
-                    targetCompletion,
-                    request.getAssemblyInstructions(),
-                    request.getQualityCheckpoints(),
-                    "Standard testing procedures apply",
-                    "Standard packaging requirements",
-                    90  // Default 90-minute estimate
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-    }
-
-    /**
-     * Request class for creating an assembly control order from SimAL
-     */
-    public static class CreateControlOrderRequest {
-        private Long sourceProductionOrderId;
-        private Long assignedWorkstationId;
-        private String simalScheduleId;
-        private String targetStartTime;
-        private String targetCompletionTime;
-        private String priority;
-        private String assemblyInstructions;
-        private String qualityCheckpoints;
-
-        // Getters and setters
-        public Long getSourceProductionOrderId() { return sourceProductionOrderId; }
-        public void setSourceProductionOrderId(Long sourceProductionOrderId) {
-            this.sourceProductionOrderId = sourceProductionOrderId;
-        }
-
-        public Long getAssignedWorkstationId() { return assignedWorkstationId; }
-        public void setAssignedWorkstationId(Long assignedWorkstationId) {
-            this.assignedWorkstationId = assignedWorkstationId;
-        }
-
-        public String getSimalScheduleId() { return simalScheduleId; }
-        public void setSimalScheduleId(String simalScheduleId) { this.simalScheduleId = simalScheduleId; }
-
-        public String getTargetStartTime() { return targetStartTime; }
-        public void setTargetStartTime(String targetStartTime) { this.targetStartTime = targetStartTime; }
-
-        public String getTargetCompletionTime() { return targetCompletionTime; }
-        public void setTargetCompletionTime(String targetCompletionTime) {
-            this.targetCompletionTime = targetCompletionTime;
-        }
-
-        public String getPriority() { return priority; }
-        public void setPriority(String priority) { this.priority = priority; }
-
-        public String getAssemblyInstructions() { return assemblyInstructions; }
-        public void setAssemblyInstructions(String assemblyInstructions) {
-            this.assemblyInstructions = assemblyInstructions;
-        }
-
-        public String getQualityCheckpoints() { return qualityCheckpoints; }
-        public void setQualityCheckpoints(String qualityCheckpoints) {
-            this.qualityCheckpoints = qualityCheckpoints;
-        }
-    }
-
-    // Request DTO for requesting parts
-    public static class RequestPartsRequest {
-        private List<SupplyOrderItemDTO> requiredParts;
-        private LocalDateTime neededBy;
-        private String notes;
-
-        public List<SupplyOrderItemDTO> getRequiredParts() { return requiredParts; }
-        public void setRequiredParts(List<SupplyOrderItemDTO> requiredParts) {
-            this.requiredParts = requiredParts;
-        }
-
-        public LocalDateTime getNeededBy() { return neededBy; }
-        public void setNeededBy(LocalDateTime neededBy) { this.neededBy = neededBy; }
-
-        public String getNotes() { return notes; }
-        public void setNotes(String notes) { this.notes = notes; }
+        AssemblyControlOrderDTO order = assemblyControlOrderService.createControlOrder(
+                request.getSourceProductionOrderId(),
+                request.getAssignedWorkstationId(),
+                request.getSimalScheduleId(),
+                request.getPriority(),
+                targetStart,
+                targetCompletion,
+                request.getAssemblyInstructions(),
+                request.getQualityCheckpoints(),
+                "Standard testing procedures apply",
+                "Standard packaging requirements",
+                90,  // Default 90-minute estimate
+                request.getItemId(),
+                request.getItemType(),
+                request.getQuantity()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 }

@@ -2,6 +2,11 @@ package io.life.order.controller;
 
 import io.life.order.dto.FinalAssemblyOrderDTO;
 import io.life.order.service.FinalAssemblyOrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,6 +15,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/final-assembly-orders")
+@Tag(name = "Final Assembly Orders", description = "WS-6 Final Assembly - Product assembly from modules")
 public class FinalAssemblyOrderController {
 
     private final FinalAssemblyOrderService finalAssemblyOrderService;
@@ -18,129 +24,119 @@ public class FinalAssemblyOrderController {
         this.finalAssemblyOrderService = finalAssemblyOrderService;
     }
 
-    /**
-     * GET /api/final-assembly-orders
-     * Retrieve all Final Assembly orders
-     */
+    @Operation(summary = "Get all final assembly orders", description = "Retrieve all orders for WS-6")
+    @ApiResponse(responseCode = "200", description = "List of orders")
     @GetMapping
     public ResponseEntity<List<FinalAssemblyOrderDTO>> getAllOrders() {
         List<FinalAssemblyOrderDTO> orders = finalAssemblyOrderService.getAllOrders();
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * GET /api/final-assembly-orders/{id}
-     * Retrieve a specific Final Assembly order by ID
-     */
+    @Operation(summary = "Get order by ID", description = "Retrieve a specific final assembly order")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order found"),
+        @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<FinalAssemblyOrderDTO> getOrderById(@PathVariable Long id) {
+    public ResponseEntity<FinalAssemblyOrderDTO> getOrderById(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         Optional<FinalAssemblyOrderDTO> order = finalAssemblyOrderService.getOrderById(id);
         return order.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * GET /api/final-assembly-orders/workstation/{workstationId}
-     * Retrieve Final Assembly orders for a specific workstation (typically WS-6)
-     */
+    @Operation(summary = "Get orders by workstation", description = "Retrieve orders for a specific workstation")
+    @ApiResponse(responseCode = "200", description = "List of orders")
     @GetMapping("/workstation/{workstationId}")
-    public ResponseEntity<List<FinalAssemblyOrderDTO>> getOrdersByWorkstationId(@PathVariable Long workstationId) {
+    public ResponseEntity<List<FinalAssemblyOrderDTO>> getOrdersByWorkstationId(
+            @Parameter(description = "Workstation ID (typically 6)") @PathVariable Long workstationId) {
         List<FinalAssemblyOrderDTO> orders = finalAssemblyOrderService.getOrdersByWorkstationId(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * GET /api/final-assembly-orders/status/{status}
-     * Retrieve Final Assembly orders by status
-     */
+    @Operation(summary = "Get orders by status", description = "Filter orders by status")
+    @ApiResponse(responseCode = "200", description = "List of orders")
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<FinalAssemblyOrderDTO>> getOrdersByStatus(@PathVariable String status) {
+    public ResponseEntity<List<FinalAssemblyOrderDTO>> getOrdersByStatus(
+            @Parameter(description = "Order status (PENDING, CONFIRMED, IN_PROGRESS, etc.)") @PathVariable String status) {
         List<FinalAssemblyOrderDTO> orders = finalAssemblyOrderService.getOrdersByStatus(status);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * GET /api/final-assembly-orders/warehouse-order/{warehouseOrderId}
-     * Retrieve Final Assembly orders created from a specific warehouse order
-     */
+    @Operation(summary = "Get orders by warehouse order", description = "Retrieve orders created from a warehouse order")
+    @ApiResponse(responseCode = "200", description = "List of orders")
     @GetMapping("/warehouse-order/{warehouseOrderId}")
-    public ResponseEntity<List<FinalAssemblyOrderDTO>> getOrdersByWarehouseOrderId(@PathVariable Long warehouseOrderId) {
+    public ResponseEntity<List<FinalAssemblyOrderDTO>> getOrdersByWarehouseOrderId(
+            @Parameter(description = "Source warehouse order ID") @PathVariable Long warehouseOrderId) {
         List<FinalAssemblyOrderDTO> orders = finalAssemblyOrderService.getOrdersByWarehouseOrderId(warehouseOrderId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * GET /api/final-assembly-orders/warehouse-order/{warehouseOrderId}/all-submitted
-     * Check if all Final Assembly orders for a warehouse order are submitted
-     * Used by frontend to enable customer order completion button
-     */
+    @Operation(summary = "Check all orders submitted", 
+               description = "Check if all final assembly orders for a warehouse order are submitted")
+    @ApiResponse(responseCode = "200", description = "Boolean result")
     @GetMapping("/warehouse-order/{warehouseOrderId}/all-submitted")
-    public ResponseEntity<Boolean> areAllOrdersSubmitted(@PathVariable Long warehouseOrderId) {
+    public ResponseEntity<Boolean> areAllOrdersSubmitted(
+            @Parameter(description = "Warehouse order ID") @PathVariable Long warehouseOrderId) {
         boolean allSubmitted = finalAssemblyOrderService.areAllOrdersSubmittedForWarehouseOrder(warehouseOrderId);
         return ResponseEntity.ok(allSubmitted);
     }
 
-    /**
-     * PUT /api/final-assembly-orders/{id}/confirm
-     * Confirm a Final Assembly order (Step 1 of 4-step workflow)
-     * Changes status from PENDING to CONFIRMED
-     */
+    @Operation(summary = "Confirm order", description = "Change status from PENDING to CONFIRMED")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order confirmed"),
+        @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     @PutMapping("/{id}/confirm")
-    public ResponseEntity<FinalAssemblyOrderDTO> confirmOrder(@PathVariable Long id) {
+    public ResponseEntity<FinalAssemblyOrderDTO> confirmOrder(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         FinalAssemblyOrderDTO confirmedOrder = finalAssemblyOrderService.confirmOrder(id);
         return ResponseEntity.ok(confirmedOrder);
     }
 
-    /**
-     * POST /api/final-assembly-orders/{id}/start
-     * Start a Final Assembly order (Step 2 of 4-step workflow)
-     * Changes status from CONFIRMED to IN_PROGRESS
-     */
+    @Operation(summary = "Start order", description = "Change status from CONFIRMED to IN_PROGRESS")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order started"),
+        @ApiResponse(responseCode = "400", description = "Invalid state transition")
+    })
     @PostMapping("/{id}/start")
-    public ResponseEntity<FinalAssemblyOrderDTO> startOrder(@PathVariable Long id) {
+    public ResponseEntity<FinalAssemblyOrderDTO> startOrder(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         FinalAssemblyOrderDTO startedOrder = finalAssemblyOrderService.startOrder(id);
         return ResponseEntity.ok(startedOrder);
     }
 
-    /**
-     * POST /api/final-assembly-orders/{id}/complete
-     * Complete a Final Assembly order (Step 3 of 4-step workflow)
-     * Prerequisites:
-     * - Order must be IN_PROGRESS
-     * Actions:
-     * - Records completion time
-     * - Updates order status to COMPLETED
-     */
+    @Operation(summary = "Complete order", description = "Complete assembly and update status to COMPLETED")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order completed"),
+        @ApiResponse(responseCode = "400", description = "Invalid state transition")
+    })
     @PostMapping("/{id}/complete")
-    public ResponseEntity<FinalAssemblyOrderDTO> completeOrder(@PathVariable Long id) {
+    public ResponseEntity<FinalAssemblyOrderDTO> completeOrder(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         FinalAssemblyOrderDTO completedOrder = finalAssemblyOrderService.completeOrder(id);
         return ResponseEntity.ok(completedOrder);
     }
 
-    /**
-     * POST /api/final-assembly-orders/{id}/submit
-     * Submit a Final Assembly order (Step 4 of 4-step workflow)
-     * Prerequisites:
-     * - Order must be COMPLETED
-     * Actions:
-     * - Credits Plant Warehouse (WS-7) with finished products
-     * - Updates order status to SUBMITTED
-     * - Checks if all related Final Assembly orders are submitted
-     */
+    @Operation(summary = "Submit order", 
+               description = "Submit completed order - credits Plant Warehouse with finished products")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order submitted, inventory credited"),
+        @ApiResponse(responseCode = "400", description = "Invalid state transition")
+    })
     @PostMapping("/{id}/submit")
-    public ResponseEntity<FinalAssemblyOrderDTO> submitOrder(@PathVariable Long id) {
+    public ResponseEntity<FinalAssemblyOrderDTO> submitOrder(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         FinalAssemblyOrderDTO submittedOrder = finalAssemblyOrderService.submitOrder(id);
         return ResponseEntity.ok(submittedOrder);
     }
 
-    /**
-     * PATCH /api/final-assembly-orders/{id}/status
-     * Update Final Assembly order status
-     */
+    @Operation(summary = "Update order status", description = "Manually update order status")
+    @ApiResponse(responseCode = "200", description = "Status updated")
     @PatchMapping("/{id}/status")
     public ResponseEntity<FinalAssemblyOrderDTO> updateOrderStatus(
-            @PathVariable Long id,
-            @RequestParam String status) {
+            @Parameter(description = "Order ID") @PathVariable Long id,
+            @Parameter(description = "New status") @RequestParam String status) {
         FinalAssemblyOrderDTO updatedOrder = finalAssemblyOrderService.updateOrderStatus(id, status);
         return ResponseEntity.ok(updatedOrder);
     }

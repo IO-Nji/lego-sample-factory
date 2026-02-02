@@ -42,6 +42,7 @@ public class ProductionPlanningService {
     private final ProductionOrderService productionOrderService;
     private final ProductionControlOrderService productionControlOrderService;
     private final AssemblyControlOrderService assemblyControlOrderService;
+    private final OrderOrchestrationService orderOrchestrationService;
     private final RestTemplate restTemplate;
 
     @Value("${simal.api.base-url:http://localhost:8016/api}")
@@ -54,10 +55,12 @@ public class ProductionPlanningService {
             ProductionOrderService productionOrderService,
             ProductionControlOrderService productionControlOrderService,
             AssemblyControlOrderService assemblyControlOrderService,
+            OrderOrchestrationService orderOrchestrationService,
             RestTemplate restTemplate) {
         this.productionOrderService = productionOrderService;
         this.productionControlOrderService = productionControlOrderService;
         this.assemblyControlOrderService = assemblyControlOrderService;
+        this.orderOrchestrationService = orderOrchestrationService;
         this.restTemplate = restTemplate;
     }
 
@@ -84,9 +87,8 @@ public class ProductionPlanningService {
         try {
             // Create request payload for SimAL
             SimalProductionOrderRequest request = new SimalProductionOrderRequest();
-            request.setProductionOrderNumber(order.getProductionOrderNumber());
-            request.setSourceCustomerOrderId(order.getSourceCustomerOrderId());
-            request.setDueDate(order.getDueDate());
+            request.setOrderNumber(order.getProductionOrderNumber());
+            request.setDueDate(order.getDueDate() != null ? order.getDueDate().toString().substring(0, 10) : null);
             request.setPriority(order.getPriority());
             request.setNotes(order.getNotes());
             
@@ -116,7 +118,14 @@ public class ProductionPlanningService {
                 Map<String, Object> responseBody = response.getBody();
                 if (responseBody != null) {
                     String scheduleId = (String) responseBody.get("scheduleId");
-                    Integer estimatedDuration = ((Number) responseBody.get("estimatedDuration")).intValue();
+                    
+                    // Handle estimatedDuration safely - it might be null
+                    Integer estimatedDuration = null;
+                    Object durationObj = responseBody.get("estimatedDuration");
+                    if (durationObj instanceof Number) {
+                        estimatedDuration = ((Number) durationObj).intValue();
+                    }
+                    
                     String estimatedCompletionStr = (String) responseBody.get("estimatedCompletion");
 
                     // Update production order with schedule information
@@ -236,10 +245,16 @@ public class ProductionPlanningService {
      * Control orders (ProductionControlOrder and AssemblyControlOrder) are automatically created.
      */
     public ProductionOrderDTO dispatchProduction(Long productionOrderId) {
+        logger.info("=== DISPATCH PRODUCTION REQUESTED FOR ORDER ID: {} ===", productionOrderId);
+        
         ProductionOrderDTO order = productionOrderService.getProductionOrderById(productionOrderId)
                 .orElseThrow(() -> new ProductionPlanningException(PRODUCTION_ORDER_NOT_FOUND + productionOrderId));
 
+        logger.info("Found production order: {} with status: {} and scheduleId: {}",
+                order.getProductionOrderNumber(), order.getStatus(), order.getSimalScheduleId());
+
         if (!STATUS_SCHEDULED.equals(order.getStatus())) {
+            logger.error("Cannot dispatch - wrong status. Expected SCHEDULED, got: {}", order.getStatus());
             throw new IllegalStateException("Cannot dispatch production - order must be SCHEDULED, current status: " + order.getStatus());
         }
 
@@ -248,21 +263,26 @@ public class ProductionPlanningService {
             String url = simalApiBaseUrl + "/simal/scheduled-orders/" + order.getSimalScheduleId() + "/create-control-orders";
             String fullUrl = url + "?productionOrderId=" + productionOrderId;
             
+            logger.info("Calling SimAL create-control-orders endpoint: {}", fullUrl);
+            
             @SuppressWarnings("rawtypes")
             ResponseEntity<Map> response = restTemplate.postForEntity(fullUrl, new HashMap<>(), Map.class);
+
+            logger.info("SimAL response status: {}, body: {}", response.getStatusCode(), response.getBody());
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 // Update status to DISPATCHED
                 order = productionOrderService.updateProductionOrderStatus(productionOrderId, STATUS_DISPATCHED);
-                logger.info("Dispatched production for order {} - control orders created", order.getProductionOrderNumber());
+                logger.info("✓ Dispatched production for order {} - control orders created", order.getProductionOrderNumber());
                 return order;
             } else {
+                logger.error("SimAL returned non-2xx status: {}", response.getStatusCode());
                 throw new ProductionPlanningException("SimAL API returned error: " + response.getStatusCode());
             }
         } catch (ProductionPlanningException e) {
             throw e;
         } catch (Exception e) {
-            logger.error("Error dispatching production for order {}: {}", order.getProductionOrderNumber(), e.getMessage(), e);
+            logger.error("❌ Error dispatching production for order {}: {}", order.getProductionOrderNumber(), e.getMessage(), e);
             throw new ProductionPlanningException("Failed to dispatch production for order " +
                     order.getProductionOrderNumber() + ": " + e.getMessage(), e);
         }
@@ -354,6 +374,45 @@ public class ProductionPlanningService {
     }
 
     /**
+     * Manually submit a completed production order for downstream processing.
+     * This is called by Production Planning AFTER production is complete.
+     * 
+     * SCENARIO 3: Credits Modules Supermarket inventory and updates Warehouse Order
+     * SCENARIO 4: Creates Final Assembly orders for the customer order
+     * 
+     * @param productionOrderId The completed production order ID
+     * @return Production order DTO with updated status
+     */
+    public ProductionOrderDTO submitForFinalAssembly(Long productionOrderId) {
+        ProductionOrderDTO order = productionOrderService.getProductionOrderById(productionOrderId)
+                .orElseThrow(() -> new ProductionPlanningException(PRODUCTION_ORDER_NOT_FOUND + productionOrderId));
+        
+        // Must be in COMPLETED status to submit
+        if (!STATUS_COMPLETED.equals(order.getStatus())) {
+            throw new ProductionPlanningException(
+                    "Production order must be COMPLETED before submission. Current status: " + order.getStatus());
+        }
+        
+        try {
+            // Delegate to OrderOrchestrationService for downstream processing
+            orderOrchestrationService.submitProductionOrderCompletion(productionOrderId);
+            
+            logger.info("Submitted production order {} for downstream processing", 
+                    order.getProductionOrderNumber());
+            
+            // Return the updated production order
+            return productionOrderService.getProductionOrderById(productionOrderId)
+                    .orElseThrow(() -> new ProductionPlanningException(PRODUCTION_ORDER_NOT_FOUND + productionOrderId));
+            
+        } catch (Exception e) {
+            logger.error("Error submitting production order {} for downstream processing: {}", 
+                    order.getProductionOrderNumber(), e.getMessage(), e);
+            throw new ProductionPlanningException(
+                    "Failed to submit production order: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Map SimAL status to production order status
      */
     private String mapSimalStatusToPOStatus(String simalStatus) {
@@ -368,24 +427,25 @@ public class ProductionPlanningService {
 
     /**
      * Inner class for SimAL Production Order Request
+     * Matches the format expected by simal-integration-service
      */
     public static class SimalProductionOrderRequest {
-        private String productionOrderNumber;
-        private Long sourceCustomerOrderId;
-        private LocalDateTime dueDate;
+        private String orderNumber;
+        private String customerName;
+        private String dueDate;  // ISO 8601 format: YYYY-MM-DD
         private String priority;
         private String notes;
         private List<SimalLineItem> lineItems;
 
         // Getters and Setters
-        public String getProductionOrderNumber() { return productionOrderNumber; }
-        public void setProductionOrderNumber(String productionOrderNumber) { this.productionOrderNumber = productionOrderNumber; }
+        public String getOrderNumber() { return orderNumber; }
+        public void setOrderNumber(String orderNumber) { this.orderNumber = orderNumber; }
 
-        public Long getSourceCustomerOrderId() { return sourceCustomerOrderId; }
-        public void setSourceCustomerOrderId(Long sourceCustomerOrderId) { this.sourceCustomerOrderId = sourceCustomerOrderId; }
+        public String getCustomerName() { return customerName; }
+        public void setCustomerName(String customerName) { this.customerName = customerName; }
 
-        public LocalDateTime getDueDate() { return dueDate; }
-        public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
+        public String getDueDate() { return dueDate; }
+        public void setDueDate(String dueDate) { this.dueDate = dueDate; }
 
         public String getPriority() { return priority; }
         public void setPriority(String priority) { this.priority = priority; }

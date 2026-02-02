@@ -3,32 +3,39 @@ package io.life.order.service;
 import io.life.order.dto.ProductionControlOrderDTO;
 import io.life.order.dto.SupplyOrderDTO;
 import io.life.order.dto.SupplyOrderItemDTO;
+import io.life.order.dto.request.ProductionControlOrderCreateRequest;
+import io.life.order.entity.InjectionMoldingOrder;
+import io.life.order.entity.PartFinishingOrder;
+import io.life.order.entity.PartPreProductionOrder;
 import io.life.order.entity.ProductionControlOrder;
-import io.life.order.repository.ProductionControlOrderRepository;
 import io.life.order.entity.SupplyOrder;
+import io.life.order.repository.InjectionMoldingOrderRepository;
+import io.life.order.repository.PartFinishingOrderRepository;
+import io.life.order.repository.PartPreProductionOrderRepository;
+import io.life.order.repository.ProductionControlOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
  * Service for managing ProductionControlOrder entities.
  * Handles control orders assigned to Production Control workstations.
+ * Implements WorkstationOrderOperations to support generic workstation controllers.
  */
 @Service
 @Transactional
-public class ProductionControlOrderService {
+public class ProductionControlOrderService implements WorkstationOrderOperations<ProductionControlOrderDTO> {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductionControlOrderService.class);
+    private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_CONFIRMED = "CONFIRMED";
     private static final String STATUS_ASSIGNED = "ASSIGNED";
     private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
     private static final String STATUS_COMPLETED = "COMPLETED";
@@ -36,28 +43,67 @@ public class ProductionControlOrderService {
 
     private final ProductionControlOrderRepository repository;
     private final SupplyOrderService supplyOrderService;
-    private final RestTemplate restTemplate;
     private final InventoryService inventoryService;
-
-    @Value("${simal.service.url:http://localhost:8018}")
-    private String simalServiceUrl;
+    private final SimALNotificationService simalNotificationService;
+    private final InjectionMoldingOrderRepository injectionMoldingOrderRepository;
+    private final PartPreProductionOrderRepository partPreProductionOrderRepository;
+    private final PartFinishingOrderRepository partFinishingOrderRepository;
 
     @Value("${modules.supermarket.workstation.id:8}")
     private Long modulesSupermarketWorkstationId;
 
     public ProductionControlOrderService(ProductionControlOrderRepository repository, 
                                         SupplyOrderService supplyOrderService,
-                                        RestTemplate restTemplate,
-                                        InventoryService inventoryService) {
+                                        InventoryService inventoryService,
+                                        SimALNotificationService simalNotificationService,
+                                        InjectionMoldingOrderRepository injectionMoldingOrderRepository,
+                                        PartPreProductionOrderRepository partPreProductionOrderRepository,
+                                        PartFinishingOrderRepository partFinishingOrderRepository) {
         this.repository = repository;
         this.supplyOrderService = supplyOrderService;
-        this.restTemplate = restTemplate;
         this.inventoryService = inventoryService;
+        this.simalNotificationService = simalNotificationService;
+        this.injectionMoldingOrderRepository = injectionMoldingOrderRepository;
+        this.partPreProductionOrderRepository = partPreProductionOrderRepository;
+        this.partFinishingOrderRepository = partFinishingOrderRepository;
     }
 
     /**
-     * Create a production control order from a production order.
+     * Create a production control order using a request DTO.
+     * This is the preferred method - eliminates parameter explosion.
+     * 
+     * @param request The request DTO containing all order details
+     * @return The created production control order DTO
      */
+    public ProductionControlOrderDTO createControlOrder(ProductionControlOrderCreateRequest request) {
+        LocalDateTime targetStart = request.getTargetStartTime() != null 
+                ? LocalDateTime.parse(request.getTargetStartTime()) : null;
+        LocalDateTime targetEnd = request.getTargetCompletionTime() != null 
+                ? LocalDateTime.parse(request.getTargetCompletionTime()) : null;
+
+        return createControlOrder(
+                request.getSourceProductionOrderId(),
+                request.getAssignedWorkstationId(),
+                request.getSimalScheduleId(),
+                request.getPriority(),
+                targetStart,
+                targetEnd,
+                request.getProductionInstructions(),
+                request.getQualityCheckpoints(),
+                request.getSafetyProcedures(),
+                request.getEstimatedDurationMinutes(),
+                request.getItemId(),
+                request.getItemType(),
+                request.getQuantity()
+        );
+    }
+
+    /**
+     * Create a production control order from a production order (backwards compatible version without item info).
+     * Uses default values for itemId (null), itemType (null), quantity (null).
+     * @deprecated Use {@link #createControlOrder(ProductionControlOrderCreateRequest)} instead
+     */
+    @Deprecated
     public ProductionControlOrderDTO createControlOrder(
             Long sourceProductionOrderId,
             Long assignedWorkstationId,
@@ -69,6 +115,36 @@ public class ProductionControlOrderService {
             String qualityCheckpoints,
             String safetyProcedures,
             Integer estimatedDurationMinutes) {
+        
+        // Call the full method with null item values for backwards compatibility
+        return createControlOrder(
+                sourceProductionOrderId, assignedWorkstationId, simalScheduleId,
+                priority, targetStartTime, targetCompletionTime,
+                productionInstructions, qualityCheckpoints, safetyProcedures,
+                estimatedDurationMinutes,
+                null, null, null  // Default values for backwards compatibility
+        );
+    }
+
+    /**
+     * Create a production control order from a production order (full version with item info).
+     * @deprecated Use {@link #createControlOrder(ProductionControlOrderCreateRequest)} instead
+     */
+    @Deprecated
+    public ProductionControlOrderDTO createControlOrder(
+            Long sourceProductionOrderId,
+            Long assignedWorkstationId,
+            String simalScheduleId,
+            String priority,
+            LocalDateTime targetStartTime,
+            LocalDateTime targetCompletionTime,
+            String productionInstructions,
+            String qualityCheckpoints,
+            String safetyProcedures,
+            Integer estimatedDurationMinutes,
+            Long itemId,
+            String itemType,
+            Integer quantity) {
 
         String controlOrderNumber = generateControlOrderNumber();
 
@@ -77,7 +153,7 @@ public class ProductionControlOrderService {
                 .sourceProductionOrderId(sourceProductionOrderId)
                 .assignedWorkstationId(assignedWorkstationId)
                 .simalScheduleId(simalScheduleId)
-                .status(STATUS_ASSIGNED)
+                .status(STATUS_PENDING)
                 .priority(priority)
                 .targetStartTime(targetStartTime)
                 .targetCompletionTime(targetCompletionTime)
@@ -85,11 +161,15 @@ public class ProductionControlOrderService {
                 .qualityCheckpoints(qualityCheckpoints)
                 .safetyProcedures(safetyProcedures)
                 .estimatedDurationMinutes(estimatedDurationMinutes)
+                .itemId(itemId)
+                .itemType(itemType)
+                .quantity(quantity)
                 .build();
 
         @SuppressWarnings("null")
         ProductionControlOrder saved = repository.save(order);
-        logger.info("Created production control order {} for workstation {}", controlOrderNumber, assignedWorkstationId);
+        logger.info("Created production control order {} (ID: {}) with status PENDING for production order {} - Item: {} (ID: {}) Qty: {}", 
+                    controlOrderNumber, saved.getId(), sourceProductionOrderId, itemType, itemId, quantity);
 
         return mapToDTO(saved);
     }
@@ -106,6 +186,7 @@ public class ProductionControlOrderService {
     /**
      * Get all control orders for a workstation.
      */
+    @Override
     public List<ProductionControlOrderDTO> getOrdersByWorkstation(Long workstationId) {
         return repository.findByAssignedWorkstationId(workstationId).stream()
                 .map(this::mapToDTO)
@@ -115,6 +196,7 @@ public class ProductionControlOrderService {
     /**
      * Get all active control orders for a workstation.
      */
+    @Override
     public List<ProductionControlOrderDTO> getActiveOrdersByWorkstation(Long workstationId) {
         return repository.findByAssignedWorkstationIdAndStatus(workstationId, STATUS_IN_PROGRESS).stream()
                 .map(this::mapToDTO)
@@ -124,6 +206,7 @@ public class ProductionControlOrderService {
     /**
      * Get all unassigned control orders (status = ASSIGNED).
      */
+    @Override
     public List<ProductionControlOrderDTO> getUnassignedOrders(Long workstationId) {
         return repository.findByAssignedWorkstationIdAndStatus(workstationId, STATUS_ASSIGNED).stream()
                 .map(this::mapToDTO)
@@ -133,6 +216,7 @@ public class ProductionControlOrderService {
     /**
      * Get control order by ID.
      */
+    @Override
     @SuppressWarnings("null")
     public Optional<ProductionControlOrderDTO> getOrderById(Long id) {
         return repository.findById(id).map(this::mapToDTO);
@@ -141,8 +225,32 @@ public class ProductionControlOrderService {
     /**
      * Get control order by control order number.
      */
+    @Override
     public Optional<ProductionControlOrderDTO> getOrderByNumber(String controlOrderNumber) {
         return repository.findByControlOrderNumber(controlOrderNumber).map(this::mapToDTO);
+    }
+
+    /**
+     * Confirm receipt of a production control order.
+     * Changes status from PENDING to CONFIRMED.
+     * This is the first step in the Scenario 3 workflow.
+     */
+    public ProductionControlOrderDTO confirmReceipt(Long id) {
+        @SuppressWarnings("null")
+        ProductionControlOrder order = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + id));
+
+        if (!STATUS_PENDING.equals(order.getStatus())) {
+            throw new IllegalStateException("Cannot confirm receipt - order status is " + order.getStatus() + ", expected PENDING");
+        }
+
+        order.setStatus(STATUS_CONFIRMED);
+        order.setUpdatedAt(LocalDateTime.now());
+
+        ProductionControlOrder updated = repository.save(order);
+        logger.info("Confirmed receipt of control order {}", order.getControlOrderNumber());
+
+        return mapToDTO(updated);
     }
 
     /**
@@ -153,7 +261,8 @@ public class ProductionControlOrderService {
         ProductionControlOrder order = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException(ERROR_CONTROL_ORDER_NOT_FOUND + id));
 
-        if (!STATUS_ASSIGNED.equals(order.getStatus())) {
+        // Can start from ASSIGNED or CONFIRMED status
+        if (!STATUS_ASSIGNED.equals(order.getStatus()) && !STATUS_CONFIRMED.equals(order.getStatus())) {
             throw new IllegalStateException("Cannot start production - order status is " + order.getStatus());
         }
 
@@ -228,12 +337,7 @@ public class ProductionControlOrderService {
         logger.info("Completed manufacturing production on control order {}", order.getControlOrderNumber());
 
         // Step 2: Call SimAL to update schedule status (fire-and-forget)
-        try {
-            updateSimalScheduleStatus(order.getSimalScheduleId(), STATUS_COMPLETED);
-        } catch (Exception e) {
-            logger.warn("Failed to update SimAL schedule status for {}: {}", order.getSimalScheduleId(), e.getMessage());
-            // Don't throw - completion already succeeded, SimAL update is secondary
-        }
+        simalNotificationService.tryUpdateScheduleStatus(order.getSimalScheduleId(), STATUS_COMPLETED);
 
         // Step 3: Credit Modules Supermarket inventory (fire-and-forget)
         try {
@@ -244,24 +348,6 @@ public class ProductionControlOrderService {
         }
 
         return mapToDTO(updated);
-    }
-
-    /**
-     * Update SimAL schedule status via SimAL Integration Service.
-     */
-    private void updateSimalScheduleStatus(String scheduleId, String status) {
-        try {
-            String url = simalServiceUrl + "/api/simal/scheduled-orders/" + scheduleId + "/status";
-            Map<String, Object> request = new HashMap<>();
-            request.put("status", status);
-            request.put("completedAt", LocalDateTime.now().toString());
-            
-            restTemplate.postForObject(url, request, String.class);
-            logger.info("Updated SimAL schedule {} status to {}", scheduleId, status);
-        } catch (Exception e) {
-            logger.error("Failed to update SimAL schedule status for {}", scheduleId, e);
-            throw new RuntimeException("SimAL update failed: " + e.getMessage(), e);
-        }
     }
 
     /**
@@ -311,6 +397,7 @@ public class ProductionControlOrderService {
     /**
      * Update operator notes.
      */
+    @Override
     public ProductionControlOrderDTO updateOperatorNotes(Long id, String notes) {
         @SuppressWarnings("null")
         ProductionControlOrder order = repository.findById(id)
@@ -394,7 +481,8 @@ public class ProductionControlOrderService {
     /**
      * Dispatch control order to workstation.
      * Validates that supply order is fulfilled before dispatching.
-     * Changes status from ASSIGNED to IN_PROGRESS.
+     * Creates workstation-specific order and changes status to ASSIGNED.
+     * NOTE: Control orders skip the confirm step, so dispatch accepts PENDING or CONFIRMED status.
      */
     public ProductionControlOrderDTO dispatchToWorkstation(Long controlOrderId) {
         @SuppressWarnings("null")
@@ -407,20 +495,124 @@ public class ProductionControlOrderService {
             throw new RuntimeException("Cannot dispatch order - supply order not fulfilled");
         }
         
-        // Validate current status
-        if (!STATUS_ASSIGNED.equals(order.getStatus())) {
-            throw new RuntimeException("Cannot dispatch order with status: " + order.getStatus());
+        // Validate current status - must be PENDING or CONFIRMED (control orders skip confirm step)
+        if (!STATUS_PENDING.equals(order.getStatus()) && !STATUS_CONFIRMED.equals(order.getStatus())) {
+            throw new RuntimeException("Cannot dispatch order with status: " + order.getStatus() + ", expected PENDING or CONFIRMED");
         }
         
-        // Update status to IN_PROGRESS
-        order.setStatus(STATUS_IN_PROGRESS);
+        // Create workstation-specific order based on assigned workstation
+        createWorkstationOrder(order);
+        
+        // Update status to ASSIGNED (workstation can now start)
+        order.setStatus(STATUS_ASSIGNED);
         order.setUpdatedAt(LocalDateTime.now());
         
         ProductionControlOrder saved = repository.save(order);
-        logger.info("Dispatched production control order {} to workstation {}", 
+        logger.info("Dispatched production control order {} to workstation {} - workstation order created", 
                     order.getControlOrderNumber(), order.getAssignedWorkstationId());
         
         return mapToDTO(saved);
+    }
+
+    /**
+     * Create a workstation-specific order based on the assigned workstation.
+     * WS-1: InjectionMoldingOrder
+     * WS-2: PartPreProductionOrder
+     * WS-3: PartFinishingOrder
+     */
+    private void createWorkstationOrder(ProductionControlOrder controlOrder) {
+        Long workstationId = controlOrder.getAssignedWorkstationId();
+        
+        switch (workstationId.intValue()) {
+            case 1 -> createInjectionMoldingOrder(controlOrder);
+            case 2 -> createPartPreProductionOrder(controlOrder);
+            case 3 -> createPartFinishingOrder(controlOrder);
+            default -> logger.warn("Unknown manufacturing workstation ID: {} for control order {}", 
+                                   workstationId, controlOrder.getControlOrderNumber());
+        }
+    }
+
+    /**
+     * Create an Injection Molding order for WS-1.
+     */
+    private void createInjectionMoldingOrder(ProductionControlOrder controlOrder) {
+        String orderNumber = "IMO-" + controlOrder.getControlOrderNumber();
+        
+        InjectionMoldingOrder wsOrder = InjectionMoldingOrder.builder()
+                .orderNumber(orderNumber)
+                .productionControlOrderId(controlOrder.getId())
+                .workstationId(1L)
+                .outputPartId(controlOrder.getItemId() != null ? controlOrder.getItemId() : 0L)
+                .outputPartName(controlOrder.getProductionInstructions() != null ? 
+                               controlOrder.getProductionInstructions().substring(0, Math.min(50, controlOrder.getProductionInstructions().length())) : 
+                               "Part")
+                .quantity(controlOrder.getQuantity() != null ? controlOrder.getQuantity() : 1)
+                .status("PENDING")
+                .priority(controlOrder.getPriority())
+                .targetStartTime(controlOrder.getTargetStartTime())
+                .targetCompletionTime(controlOrder.getTargetCompletionTime())
+                .qualityChecks(controlOrder.getQualityCheckpoints())
+                .build();
+        
+        injectionMoldingOrderRepository.save(wsOrder);
+        logger.info("Created Injection Molding Order {} for WS-1 from control order {}", 
+                   orderNumber, controlOrder.getControlOrderNumber());
+    }
+
+    /**
+     * Create a Part Pre-Production order for WS-2.
+     */
+    private void createPartPreProductionOrder(ProductionControlOrder controlOrder) {
+        String orderNumber = "PPO-" + controlOrder.getControlOrderNumber();
+        
+        PartPreProductionOrder wsOrder = PartPreProductionOrder.builder()
+                .orderNumber(orderNumber)
+                .productionControlOrderId(controlOrder.getId())
+                .workstationId(2L)
+                .requiredPartIds("[]")
+                .outputPartId(controlOrder.getItemId() != null ? controlOrder.getItemId() : 0L)
+                .outputPartName(controlOrder.getProductionInstructions() != null ? 
+                               controlOrder.getProductionInstructions().substring(0, Math.min(50, controlOrder.getProductionInstructions().length())) : 
+                               "Part")
+                .quantity(controlOrder.getQuantity() != null ? controlOrder.getQuantity() : 1)
+                .status("PENDING")
+                .priority(controlOrder.getPriority())
+                .targetStartTime(controlOrder.getTargetStartTime())
+                .targetCompletionTime(controlOrder.getTargetCompletionTime())
+                .qualityChecks(controlOrder.getQualityCheckpoints())
+                .build();
+        
+        partPreProductionOrderRepository.save(wsOrder);
+        logger.info("Created Part Pre-Production Order {} for WS-2 from control order {}", 
+                   orderNumber, controlOrder.getControlOrderNumber());
+    }
+
+    /**
+     * Create a Part Finishing order for WS-3.
+     */
+    private void createPartFinishingOrder(ProductionControlOrder controlOrder) {
+        String orderNumber = "PFO-" + controlOrder.getControlOrderNumber();
+        
+        PartFinishingOrder wsOrder = PartFinishingOrder.builder()
+                .orderNumber(orderNumber)
+                .productionControlOrderId(controlOrder.getId())
+                .workstationId(3L)
+                .requiredPartIds("[]")
+                .outputPartId(controlOrder.getItemId() != null ? controlOrder.getItemId() : 0L)
+                .outputPartName(controlOrder.getProductionInstructions() != null ? 
+                               controlOrder.getProductionInstructions().substring(0, Math.min(50, controlOrder.getProductionInstructions().length())) : 
+                               "Part")
+                .quantity(controlOrder.getQuantity() != null ? controlOrder.getQuantity() : 1)
+                .status("PENDING")
+                .priority(controlOrder.getPriority())
+                .targetStartTime(controlOrder.getTargetStartTime())
+                .targetCompletionTime(controlOrder.getTargetCompletionTime())
+                .qualityChecks(controlOrder.getQualityCheckpoints())
+                .build();
+        
+        partFinishingOrderRepository.save(wsOrder);
+        logger.info("Created Part Finishing Order {} for WS-3 from control order {}", 
+                   orderNumber, controlOrder.getControlOrderNumber());
     }
 
     /**
@@ -461,5 +653,36 @@ public class ProductionControlOrderService {
                 .updatedAt(order.getUpdatedAt())
                 .completedAt(order.getCompletedAt())
                 .build();
+    }
+
+    // ========================================================================
+    // WorkstationOrderOperations interface implementation (adapter methods)
+    // ========================================================================
+
+    /**
+     * Start work on an order (interface adapter).
+     * Delegates to startProduction().
+     */
+    @Override
+    public ProductionControlOrderDTO startWork(Long id) {
+        return startProduction(id);
+    }
+
+    /**
+     * Complete work on an order (interface adapter).
+     * Delegates to completeManufacturingProduction() which handles inventory credits.
+     */
+    @Override
+    public ProductionControlOrderDTO completeWork(Long id) {
+        return completeManufacturingProduction(id);
+    }
+
+    /**
+     * Halt work on an order (interface adapter).
+     * Delegates to haltProduction().
+     */
+    @Override
+    public ProductionControlOrderDTO haltWork(Long id, String reason) {
+        return haltProduction(id, reason);
     }
 }

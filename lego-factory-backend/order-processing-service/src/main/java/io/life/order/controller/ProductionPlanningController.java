@@ -3,7 +3,6 @@ package io.life.order.controller;
 import io.life.order.dto.ProductionOrderDTO;
 import io.life.order.service.ProductionOrderService;
 import io.life.order.service.ProductionPlanningService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +12,8 @@ import java.util.Map;
 /**
  * REST Controller for Production Planning operations.
  * Coordinates production order submission to SimAL and tracks production progress.
+ * 
+ * Error handling: Exceptions propagate to GlobalExceptionHandler for consistent responses.
  */
 @RestController
 @RequestMapping("/api/production-planning")
@@ -34,12 +35,8 @@ public class ProductionPlanningController {
      */
     @PutMapping("/{productionOrderId}/confirm")
     public ResponseEntity<ProductionOrderDTO> confirmProductionOrder(@PathVariable Long productionOrderId) {
-        try {
-            ProductionOrderDTO order = productionOrderService.confirmProductionOrder(productionOrderId);
-            return ResponseEntity.ok(order);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionOrderDTO order = productionOrderService.confirmProductionOrder(productionOrderId);
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -47,12 +44,8 @@ public class ProductionPlanningController {
      */
     @PostMapping("/{productionOrderId}/submit-to-simal")
     public ResponseEntity<ProductionOrderDTO> submitToSimal(@PathVariable Long productionOrderId) {
-        try {
-            ProductionOrderDTO order = productionPlanningService.submitProductionOrderToSimal(productionOrderId);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionOrderDTO order = productionPlanningService.submitProductionOrderToSimal(productionOrderId);
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -80,14 +73,8 @@ public class ProductionPlanningController {
      */
     @PostMapping("/{productionOrderId}/dispatch")
     public ResponseEntity<ProductionOrderDTO> dispatchProduction(@PathVariable Long productionOrderId) {
-        try {
-            ProductionOrderDTO order = productionPlanningService.dispatchProduction(productionOrderId);
-            return ResponseEntity.ok(order);
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        ProductionOrderDTO order = productionPlanningService.dispatchProduction(productionOrderId);
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -106,11 +93,20 @@ public class ProductionPlanningController {
      */
     @PostMapping("/{productionOrderId}/complete")
     public ResponseEntity<ProductionOrderDTO> completeProduction(@PathVariable Long productionOrderId) {
-        try {
-            ProductionOrderDTO order = productionPlanningService.completeProduction(productionOrderId);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionOrderDTO order = productionPlanningService.completeProduction(productionOrderId);
+        return ResponseEntity.ok(order);
+    }
+    
+    /**
+     * Submit a completed production order for Final Assembly creation (Scenario 4 workflow).
+     * This is a MANUAL step performed by Production Planning AFTER production completes.
+     * Creates Final Assembly orders for the products in the original customer order.
+     * 
+     * POST /api/production-planning/{id}/submit-for-final-assembly
+     */
+    @PostMapping("/{productionOrderId}/submit-for-final-assembly")
+    public ResponseEntity<ProductionOrderDTO> submitForFinalAssembly(@PathVariable Long productionOrderId) {
+        ProductionOrderDTO order = productionPlanningService.submitForFinalAssembly(productionOrderId);
+        return ResponseEntity.ok(order);
     }
 }

@@ -3,7 +3,8 @@ import {
   OrdersSection,
   ActivityLog,
   StatisticsGrid,
-  AssemblyControlOrderCard
+  WorkstationOrderCard,
+  Card
 } from "../../components";
 import { useWorkstationOrders } from "../../hooks/useWorkstationOrders";
 import { STANDARD_FILTER_OPTIONS, STANDARD_SORT_OPTIONS } from "../../config/workstationConfig";
@@ -31,10 +32,13 @@ function GearAssemblyDashboard() {
   } = useWorkstationOrders(4);
 
   const renderActivity = () => (
-    <ActivityLog 
-      notifications={notifications}
-      onClear={clearNotifications}
-    />
+    <Card variant="framed" title="STATION ACTIVITY" style={{ height: '100%' }}>
+      <ActivityLog 
+        notifications={notifications}
+        onClear={clearNotifications}
+        showTitle={false}
+      />
+    </Card>
   );
 
   const renderOrders = () => (
@@ -47,7 +51,7 @@ function GearAssemblyDashboard() {
       searchKeys={['orderNumber']}
       sortKey="orderNumber"
       renderCard={(order) => (
-        <AssemblyControlOrderCard
+        <WorkstationOrderCard
           key={order.id}
           order={order}
           onStart={handleStartOrder}

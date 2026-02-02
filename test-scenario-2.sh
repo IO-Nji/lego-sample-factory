@@ -59,7 +59,7 @@ wait_for_key() {
 echo -e "${BOLD}Pre-flight Check:${NC}"
 if ! curl -s -f "$BASE_URL/health" > /dev/null 2>&1; then
     echo -e "${RED}❌ System not accessible at $BASE_URL${NC}"
-    echo "   Please ensure docker-compose is running: docker-compose up -d"
+    echo "   Please ensure docker-compose is running: docker compose up -d"
     exit 1
 fi
 echo -e "${GREEN}✅ System is running${NC}\n"
@@ -96,14 +96,29 @@ INITIAL_PRODUCT_STOCK=$(echo $INVENTORY_RESPONSE | jq -r "[.[] | select(.itemId 
 
 print_info "Product ID: $PRODUCT_ID, Initial Stock: $INITIAL_PRODUCT_STOCK units"
 
-# If stock is sufficient, reduce it first
-if [ $INITIAL_PRODUCT_STOCK -gt 0 ]; then
-    print_info "Reducing product stock to simulate insufficient inventory..."
-    # We'll create an order that exceeds available stock
-    ORDER_QTY=$((INITIAL_PRODUCT_STOCK + 2))
-else
-    ORDER_QTY=2
+# For Scenario 2, we need INSUFFICIENT stock to trigger WAREHOUSE_ORDER_NEEDED
+# First, deplete any existing stock by adjusting it to 0
+if [ "$INITIAL_PRODUCT_STOCK" -gt 0 ]; then
+    print_info "Depleting product stock to 0 to simulate insufficient inventory..."
+    ADJUST_RESPONSE=$(curl -s -X POST "$BASE_URL/stock/adjust" \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"workstationId\": $WORKSTATION_ID,
+            \"itemType\": \"PRODUCT\",
+            \"itemId\": $PRODUCT_ID,
+            \"delta\": -$INITIAL_PRODUCT_STOCK,
+            \"reasonCode\": \"ADJUSTMENT\",
+            \"notes\": \"Test setup - depleting stock for Scenario 2\"
+        }")
+    
+    NEW_STOCK=$(curl -s -X GET "$BASE_URL/stock/workstation/$WORKSTATION_ID" \
+        -H "Authorization: Bearer $TOKEN" | jq -r "[.[] | select(.itemId == $PRODUCT_ID)] | .[0].quantity // 0")
+    print_info "Stock depleted: $INITIAL_PRODUCT_STOCK → $NEW_STOCK units"
 fi
+
+# Order quantity stays below LOT_SIZE_THRESHOLD (3) to get WAREHOUSE_ORDER_NEEDED, not DIRECT_PRODUCTION
+ORDER_QTY=2
 
 print_step "Create customer order (quantity: $ORDER_QTY) - exceeds available stock"
 ORDER_CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/customer-orders" \
@@ -184,11 +199,26 @@ print_step "Fetch warehouse orders for Modules Supermarket"
 WO_LIST_RESPONSE=$(curl -s -X GET "$BASE_URL/warehouse-orders/workstation/$WORKSTATION_MS" \
     -H "Authorization: Bearer $TOKEN_MS")
 
-# Check if response is an array
+# Filter for PENDING warehouse orders linked to our customer order, or just pick the latest PENDING one
 if echo "$WO_LIST_RESPONSE" | jq -e 'type == "array"' > /dev/null 2>&1; then
-    WAREHOUSE_ORDER_ID=$(echo $WO_LIST_RESPONSE | jq -r 'last | .id')
-    WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST_RESPONSE | jq -r 'last | .orderNumber')
-    WAREHOUSE_ORDER_STATUS=$(echo $WO_LIST_RESPONSE | jq -r 'last | .status')
+    # First try to find a PENDING order linked to our customer order
+    WAREHOUSE_ORDER_ID=$(echo $WO_LIST_RESPONSE | jq -r "[.[] | select(.customerOrderId == $CUSTOMER_ORDER_ID)] | last | .id")
+    WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST_RESPONSE | jq -r "[.[] | select(.customerOrderId == $CUSTOMER_ORDER_ID)] | last | .orderNumber")
+    WAREHOUSE_ORDER_STATUS=$(echo $WO_LIST_RESPONSE | jq -r "[.[] | select(.customerOrderId == $CUSTOMER_ORDER_ID)] | last | .status")
+    
+    # If not found, fall back to latest PENDING order
+    if [ "$WAREHOUSE_ORDER_ID" == "null" ] || [ -z "$WAREHOUSE_ORDER_ID" ]; then
+        WAREHOUSE_ORDER_ID=$(echo $WO_LIST_RESPONSE | jq -r '[.[] | select(.status == "PENDING")] | last | .id')
+        WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST_RESPONSE | jq -r '[.[] | select(.status == "PENDING")] | last | .orderNumber')
+        WAREHOUSE_ORDER_STATUS=$(echo $WO_LIST_RESPONSE | jq -r '[.[] | select(.status == "PENDING")] | last | .status')
+    fi
+    
+    # Final fallback to any last order
+    if [ "$WAREHOUSE_ORDER_ID" == "null" ] || [ -z "$WAREHOUSE_ORDER_ID" ]; then
+        WAREHOUSE_ORDER_ID=$(echo $WO_LIST_RESPONSE | jq -r 'last | .id')
+        WAREHOUSE_ORDER_NUMBER=$(echo $WO_LIST_RESPONSE | jq -r 'last | .orderNumber')
+        WAREHOUSE_ORDER_STATUS=$(echo $WO_LIST_RESPONSE | jq -r 'last | .status')
+    fi
 else
     # Try as single object
     WAREHOUSE_ORDER_ID=$(echo $WO_LIST_RESPONSE | jq -r '.id')
@@ -228,18 +258,32 @@ else
 fi
 
 print_step "Confirm warehouse order - should check MODULE stock and set triggerScenario"
-WO_CONFIRM_RESPONSE=$(curl -s -X PUT "$BASE_URL/warehouse-orders/$WAREHOUSE_ORDER_ID/confirm" \
-    -H "Authorization: Bearer $TOKEN_MS")
+# Only confirm if the order is in PENDING status
+if [ "$WAREHOUSE_ORDER_STATUS" == "PENDING" ]; then
+    WO_CONFIRM_RESPONSE=$(curl -s -X PUT "$BASE_URL/warehouse-orders/$WAREHOUSE_ORDER_ID/confirm" \
+        -H "Authorization: Bearer $TOKEN_MS")
 
-WO_CONFIRM_STATUS=$(echo $WO_CONFIRM_RESPONSE | jq -r '.status')
-WO_TRIGGER_SCENARIO=$(echo $WO_CONFIRM_RESPONSE | jq -r '.triggerScenario')
+    WO_CONFIRM_STATUS=$(echo $WO_CONFIRM_RESPONSE | jq -r '.status')
+    WO_TRIGGER_SCENARIO=$(echo $WO_CONFIRM_RESPONSE | jq -r '.triggerScenario')
+    WO_ERROR=$(echo $WO_CONFIRM_RESPONSE | jq -r '.message // .error // empty')
 
-print_info "Status: $WO_CONFIRM_STATUS, Trigger Scenario: $WO_TRIGGER_SCENARIO"
+    print_info "Status: $WO_CONFIRM_STATUS, Trigger Scenario: $WO_TRIGGER_SCENARIO"
 
-if [ "$WO_CONFIRM_STATUS" == "CONFIRMED" ]; then
-    print_result 0 "Warehouse order confirmed (Status: PENDING → CONFIRMED)"
+    if [ "$WO_CONFIRM_STATUS" == "CONFIRMED" ]; then
+        print_result 0 "Warehouse order confirmed (Status: PENDING → CONFIRMED)"
+    else
+        print_result 1 "Warehouse order confirmation failed (Got: $WO_CONFIRM_STATUS, Error: $WO_ERROR)"
+    fi
 else
-    print_result 1 "Warehouse order confirmation failed (Got: $WO_CONFIRM_STATUS)"
+    # Order was already confirmed (from creation or previous step)
+    print_info "Warehouse order already in status: $WAREHOUSE_ORDER_STATUS"
+    if [ "$WAREHOUSE_ORDER_STATUS" == "CONFIRMED" ]; then
+        print_result 0 "Warehouse order already confirmed (Status: $WAREHOUSE_ORDER_STATUS)"
+        # Get the triggerScenario from the order details
+        WO_TRIGGER_SCENARIO=$(echo $WO_DETAILS | jq -r '.triggerScenario')
+    else
+        print_result 1 "Warehouse order in unexpected status: $WAREHOUSE_ORDER_STATUS"
+    fi
 fi
 
 if [ "$WO_TRIGGER_SCENARIO" == "DIRECT_FULFILLMENT" ] || [ "$WO_TRIGGER_SCENARIO" == "PRODUCTION_REQUIRED" ]; then
@@ -333,7 +377,7 @@ fi
 
 if [ "$FA_ORDER_ID" != "null" ] && [ -n "$FA_ORDER_ID" ] && [ "$FA_ORDER_STATUS" != "COMPLETED" ]; then
     print_step "Confirm final assembly order (PENDING → CONFIRMED)"
-    FA_CONFIRM_RESPONSE=$(curl -s -X POST "$BASE_URL/final-assembly-orders/$FA_ORDER_ID/confirm" \
+    FA_CONFIRM_RESPONSE=$(curl -s -X PUT "$BASE_URL/final-assembly-orders/$FA_ORDER_ID/confirm" \
         -H "Authorization: Bearer $TOKEN_FA")
     
     FA_CONFIRM_STATUS=$(echo $FA_CONFIRM_RESPONSE | jq -r '.status')
@@ -365,27 +409,27 @@ if [ "$FA_ORDER_ID" != "null" ] && [ -n "$FA_ORDER_ID" ] && [ "$FA_ORDER_STATUS"
     
     print_info "Plant Warehouse product stock before completion: $PRODUCT_STOCK_BEFORE"
     
-    # Step 3: Complete assembly (IN_PROGRESS → COMPLETED_ASSEMBLY)
+    # Step 3: Complete assembly (IN_PROGRESS → COMPLETED)
     FA_COMPLETE_RESPONSE=$(curl -s -X POST "$BASE_URL/final-assembly-orders/$FA_ORDER_ID/complete" \
         -H "Authorization: Bearer $TOKEN_FA")
     
     FA_COMPLETE_STATUS=$(echo $FA_COMPLETE_RESPONSE | jq -r '.status')
     
-    if [ "$FA_COMPLETE_STATUS" == "COMPLETED_ASSEMBLY" ]; then
-        print_result 0 "Final assembly completed (Status: IN_PROGRESS → COMPLETED_ASSEMBLY)"
+    if [ "$FA_COMPLETE_STATUS" == "COMPLETED" ]; then
+        print_result 0 "Final assembly completed (Status: IN_PROGRESS → COMPLETED)"
     else
         print_result 1 "Final assembly completion failed (Got: $FA_COMPLETE_STATUS)"
     fi
     
-    # Step 4: Submit completion (COMPLETED_ASSEMBLY → COMPLETED, credits warehouse)
+    # Step 4: Submit completion (COMPLETED → SUBMITTED, credits warehouse)
     print_step "Submit final assembly completion - this credits Plant Warehouse"
     FA_SUBMIT_RESPONSE=$(curl -s -X POST "$BASE_URL/final-assembly-orders/$FA_ORDER_ID/submit" \
         -H "Authorization: Bearer $TOKEN_FA")
     
     FA_SUBMIT_STATUS=$(echo $FA_SUBMIT_RESPONSE | jq -r '.status')
     
-    if [ "$FA_SUBMIT_STATUS" == "COMPLETED" ]; then
-        print_result 0 "Final assembly submitted (Status: COMPLETED_ASSEMBLY → COMPLETED)"
+    if [ "$FA_SUBMIT_STATUS" == "SUBMITTED" ]; then
+        print_result 0 "Final assembly submitted (Status: COMPLETED → SUBMITTED)"
     else
         print_result 1 "Final assembly submission failed (Got: $FA_SUBMIT_STATUS)"
     fi

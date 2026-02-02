@@ -2,8 +2,17 @@ package io.life.order.controller;
 
 import io.life.order.dto.ProductionControlOrderDTO;
 import io.life.order.dto.SupplyOrderDTO;
-import io.life.order.dto.SupplyOrderItemDTO;
+import io.life.order.dto.request.DefectsRequest;
+import io.life.order.dto.request.HaltRequest;
+import io.life.order.dto.request.NotesRequest;
+import io.life.order.dto.request.ProductionControlOrderCreateRequest;
+import io.life.order.dto.request.RequestPartsRequest;
 import io.life.order.service.ProductionControlOrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +29,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/production-control-orders")
 @CrossOrigin(origins = "*", maxAge = 3600)
+@Tag(name = "Production Control Orders", description = "Production Control - Manage manufacturing orders for WS-1, WS-2, WS-3")
 public class ProductionControlOrderController {
 
     private final ProductionControlOrderService productionControlOrderService;
@@ -28,120 +38,123 @@ public class ProductionControlOrderController {
         this.productionControlOrderService = productionControlOrderService;
     }
 
-    /**
-     * Get all control orders
-     */
+    @Operation(summary = "Get all production control orders", 
+               description = "Retrieve all production control orders in the system")
+    @ApiResponse(responseCode = "200", description = "List of production control orders")
     @GetMapping
     public ResponseEntity<List<ProductionControlOrderDTO>> getAllOrders() {
         List<ProductionControlOrderDTO> orders = productionControlOrderService.getAllOrders();
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get all control orders for a workstation
-     */
+    @Operation(summary = "Get orders by workstation", 
+               description = "Retrieve production control orders assigned to a specific workstation")
+    @ApiResponse(responseCode = "200", description = "List of orders for workstation")
     @GetMapping("/workstation/{workstationId}")
     public ResponseEntity<List<ProductionControlOrderDTO>> getOrdersByWorkstation(
-            @PathVariable Long workstationId) {
+            @Parameter(description = "Workstation ID") @PathVariable Long workstationId) {
         List<ProductionControlOrderDTO> orders = productionControlOrderService.getOrdersByWorkstation(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get active (in progress) control orders for a workstation
-     */
+    @Operation(summary = "Get active orders by workstation", 
+               description = "Retrieve in-progress production control orders for a workstation")
+    @ApiResponse(responseCode = "200", description = "List of active orders")
     @GetMapping("/workstation/{workstationId}/active")
     public ResponseEntity<List<ProductionControlOrderDTO>> getActiveOrdersByWorkstation(
-            @PathVariable Long workstationId) {
+            @Parameter(description = "Workstation ID") @PathVariable Long workstationId) {
         List<ProductionControlOrderDTO> orders = productionControlOrderService.getActiveOrdersByWorkstation(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get unassigned (status=ASSIGNED) control orders for a workstation
-     */
+    @Operation(summary = "Get unassigned orders", 
+               description = "Retrieve orders with ASSIGNED status waiting to be started at a workstation")
+    @ApiResponse(responseCode = "200", description = "List of unassigned orders")
     @GetMapping("/workstation/{workstationId}/unassigned")
     public ResponseEntity<List<ProductionControlOrderDTO>> getUnassignedOrders(
-            @PathVariable Long workstationId) {
+            @Parameter(description = "Workstation ID") @PathVariable Long workstationId) {
         List<ProductionControlOrderDTO> orders = productionControlOrderService.getUnassignedOrders(workstationId);
         return ResponseEntity.ok(orders);
     }
 
-    /**
-     * Get control order by ID
-     */
+    @Operation(summary = "Get order by ID", 
+               description = "Retrieve a production control order by its ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order found"),
+        @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<ProductionControlOrderDTO> getOrderById(@PathVariable Long id) {
+    public ResponseEntity<ProductionControlOrderDTO> getOrderById(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
         Optional<ProductionControlOrderDTO> order = productionControlOrderService.getOrderById(id);
         return order.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Get control order by control order number
-     */
+    @Operation(summary = "Get order by number", 
+               description = "Retrieve a production control order by its order number")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Order found"),
+        @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     @GetMapping("/number/{controlOrderNumber}")
     public ResponseEntity<ProductionControlOrderDTO> getOrderByNumber(
-            @PathVariable String controlOrderNumber) {
+            @Parameter(description = "Control order number (e.g., PCO-00001)") @PathVariable String controlOrderNumber) {
         Optional<ProductionControlOrderDTO> order = productionControlOrderService.getOrderByNumber(controlOrderNumber);
         return order.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Start production on a control order
-     */
+    @Operation(summary = "Confirm receipt", 
+               description = "Confirm receipt of a production control order (PENDING -> CONFIRMED)")
+    @ApiResponse(responseCode = "200", description = "Order confirmed")
+    @PutMapping("/{id}/confirm")
+    public ResponseEntity<ProductionControlOrderDTO> confirmReceipt(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
+        ProductionControlOrderDTO order = productionControlOrderService.confirmReceipt(id);
+        return ResponseEntity.ok(order);
+    }
+
+    @Operation(summary = "Start production", 
+               description = "Start production on a control order (CONFIRMED -> IN_PROGRESS)")
+    @ApiResponse(responseCode = "200", description = "Production started")
     @PostMapping("/{id}/start")
-    public ResponseEntity<ProductionControlOrderDTO> startProduction(@PathVariable Long id) {
-        try {
-            ProductionControlOrderDTO order = productionControlOrderService.startProduction(id);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+    public ResponseEntity<ProductionControlOrderDTO> startProduction(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
+        ProductionControlOrderDTO order = productionControlOrderService.startProduction(id);
+        return ResponseEntity.ok(order);
     }
 
-    /**
-     * Complete production on a control order
-     */
+    @Operation(summary = "Complete production", 
+               description = "Complete production on a control order and propagate status upward")
+    @ApiResponse(responseCode = "200", description = "Production completed")
     @PostMapping("/{id}/complete")
-    public ResponseEntity<ProductionControlOrderDTO> completeProduction(@PathVariable Long id) {
-        try {
-            ProductionControlOrderDTO order = productionControlOrderService.completeProduction(id);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+    public ResponseEntity<ProductionControlOrderDTO> completeProduction(
+            @Parameter(description = "Order ID") @PathVariable Long id) {
+        ProductionControlOrderDTO order = productionControlOrderService.completeProduction(id);
+        return ResponseEntity.ok(order);
     }
 
-    /**
-     * Halt production on a control order
-     */
+    @Operation(summary = "Halt production", 
+               description = "Halt production on a control order with a reason")
+    @ApiResponse(responseCode = "200", description = "Production halted")
     @PostMapping("/{id}/halt")
     public ResponseEntity<ProductionControlOrderDTO> haltProduction(
-            @PathVariable Long id,
+            @Parameter(description = "Order ID") @PathVariable Long id,
             @RequestBody HaltRequest request) {
-        try {
-            ProductionControlOrderDTO order = productionControlOrderService.haltProduction(id, request.getReason());
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionControlOrderDTO order = productionControlOrderService.haltProduction(id, request.getReason());
+        return ResponseEntity.ok(order);
     }
 
-    /**
-     * Update operator notes
-     */
+    @Operation(summary = "Update operator notes", 
+               description = "Update the operator notes for a control order")
+    @ApiResponse(responseCode = "200", description = "Notes updated")
     @PatchMapping("/{id}/notes")
     public ResponseEntity<ProductionControlOrderDTO> updateNotes(
-            @PathVariable Long id,
+            @Parameter(description = "Order ID") @PathVariable Long id,
             @RequestBody NotesRequest request) {
-        try {
-            ProductionControlOrderDTO order = productionControlOrderService.updateOperatorNotes(id, request.getNotes());
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionControlOrderDTO order = productionControlOrderService.updateOperatorNotes(id, request.getNotes());
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -152,17 +165,13 @@ public class ProductionControlOrderController {
     public ResponseEntity<SupplyOrderDTO> requestParts(
             @PathVariable Long id,
             @RequestBody RequestPartsRequest request) {
-        try {
-            SupplyOrderDTO supplyOrder = productionControlOrderService.requestSupplies(
-                    id,
-                    request.getRequiredParts(),
-                    request.getNeededBy(),
-                    request.getNotes()
-            );
-            return ResponseEntity.ok(supplyOrder);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        SupplyOrderDTO supplyOrder = productionControlOrderService.requestSupplies(
+                id,
+                request.getRequiredParts(),
+                request.getNeededBy(),
+                request.getNotes()
+        );
+        return ResponseEntity.ok(supplyOrder);
     }
 
     /**
@@ -171,12 +180,8 @@ public class ProductionControlOrderController {
      */
     @PostMapping("/{id}/dispatch")
     public ResponseEntity<ProductionControlOrderDTO> dispatchToWorkstation(@PathVariable Long id) {
-        try {
-            ProductionControlOrderDTO order = productionControlOrderService.dispatchToWorkstation(id);
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        ProductionControlOrderDTO order = productionControlOrderService.dispatchToWorkstation(id);
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -195,55 +200,13 @@ public class ProductionControlOrderController {
     public ResponseEntity<ProductionControlOrderDTO> updateDefects(
             @PathVariable Long id,
             @RequestBody DefectsRequest request) {
-        try {
-            ProductionControlOrderDTO order = productionControlOrderService.updateDefects(
-                    id,
-                    request.getDefectsFound(),
-                    request.getDefectsReworked(),
-                    request.getReworkRequired()
-            );
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-    }
-
-    /**
-     * Request class for halting production
-     */
-    public static class HaltRequest {
-        private String reason;
-
-        public String getReason() { return reason; }
-        public void setReason(String reason) { this.reason = reason; }
-    }
-
-    /**
-     * Request class for operator notes
-     */
-    public static class NotesRequest {
-        private String notes;
-
-        public String getNotes() { return notes; }
-        public void setNotes(String notes) { this.notes = notes; }
-    }
-
-    /**
-     * Request class for defect information
-     */
-    public static class DefectsRequest {
-        private Integer defectsFound;
-        private Integer defectsReworked;
-        private Boolean reworkRequired;
-
-        public Integer getDefectsFound() { return defectsFound; }
-        public void setDefectsFound(Integer defectsFound) { this.defectsFound = defectsFound; }
-
-        public Integer getDefectsReworked() { return defectsReworked; }
-        public void setDefectsReworked(Integer defectsReworked) { this.defectsReworked = defectsReworked; }
-
-        public Boolean getReworkRequired() { return reworkRequired; }
-        public void setReworkRequired(Boolean reworkRequired) { this.reworkRequired = reworkRequired; }
+        ProductionControlOrderDTO order = productionControlOrderService.updateDefects(
+                id,
+                request.getDefectsFound(),
+                request.getDefectsReworked(),
+                request.getReworkRequired()
+        );
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -253,94 +216,26 @@ public class ProductionControlOrderController {
      */
     @PostMapping
     public ResponseEntity<ProductionControlOrderDTO> createControlOrder(
-            @RequestBody CreateControlOrderRequest request) {
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-            LocalDateTime targetStart = LocalDateTime.parse(request.getTargetStartTime(), formatter);
-            LocalDateTime targetCompletion = LocalDateTime.parse(request.getTargetCompletionTime(), formatter);
+            @RequestBody ProductionControlOrderCreateRequest request) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        LocalDateTime targetStart = LocalDateTime.parse(request.getTargetStartTime(), formatter);
+        LocalDateTime targetCompletion = LocalDateTime.parse(request.getTargetCompletionTime(), formatter);
 
-            ProductionControlOrderDTO order = productionControlOrderService.createControlOrder(
-                    request.getSourceProductionOrderId(),
-                    request.getAssignedWorkstationId(),
-                    request.getSimalScheduleId(),
-                    request.getPriority(),
-                    targetStart,
-                    targetCompletion,
-                    request.getProductionInstructions(),
-                    request.getQualityCheckpoints(),
-                    "Standard safety procedures apply",
-                    120  // Default 2-hour estimate
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-    }
-
-    /**
-     * Request class for creating a production control order from SimAL
-     */
-    public static class CreateControlOrderRequest {
-        private Long sourceProductionOrderId;
-        private Long assignedWorkstationId;
-        private String simalScheduleId;
-        private String targetStartTime;
-        private String targetCompletionTime;
-        private String priority;
-        private String productionInstructions;
-        private String qualityCheckpoints;
-
-        // Getters and setters
-        public Long getSourceProductionOrderId() { return sourceProductionOrderId; }
-        public void setSourceProductionOrderId(Long sourceProductionOrderId) {
-            this.sourceProductionOrderId = sourceProductionOrderId;
-        }
-
-        public Long getAssignedWorkstationId() { return assignedWorkstationId; }
-        public void setAssignedWorkstationId(Long assignedWorkstationId) {
-            this.assignedWorkstationId = assignedWorkstationId;
-        }
-
-        public String getSimalScheduleId() { return simalScheduleId; }
-        public void setSimalScheduleId(String simalScheduleId) { this.simalScheduleId = simalScheduleId; }
-
-        public String getTargetStartTime() { return targetStartTime; }
-        public void setTargetStartTime(String targetStartTime) { this.targetStartTime = targetStartTime; }
-
-        public String getTargetCompletionTime() { return targetCompletionTime; }
-        public void setTargetCompletionTime(String targetCompletionTime) {
-            this.targetCompletionTime = targetCompletionTime;
-        }
-
-        public String getPriority() { return priority; }
-        public void setPriority(String priority) { this.priority = priority; }
-
-        public String getProductionInstructions() { return productionInstructions; }
-        public void setProductionInstructions(String productionInstructions) {
-            this.productionInstructions = productionInstructions;
-        }
-
-        public String getQualityCheckpoints() { return qualityCheckpoints; }
-        public void setQualityCheckpoints(String qualityCheckpoints) {
-            this.qualityCheckpoints = qualityCheckpoints;
-        }
-    }
-
-    // Request DTO for requesting parts
-    public static class RequestPartsRequest {
-        private List<SupplyOrderItemDTO> requiredParts;
-        private LocalDateTime neededBy;
-        private String notes;
-
-        public List<SupplyOrderItemDTO> getRequiredParts() { return requiredParts; }
-        public void setRequiredParts(List<SupplyOrderItemDTO> requiredParts) {
-            this.requiredParts = requiredParts;
-        }
-
-        public LocalDateTime getNeededBy() { return neededBy; }
-        public void setNeededBy(LocalDateTime neededBy) { this.neededBy = neededBy; }
-
-        public String getNotes() { return notes; }
-        public void setNotes(String notes) { this.notes = notes; }
+        ProductionControlOrderDTO order = productionControlOrderService.createControlOrder(
+                request.getSourceProductionOrderId(),
+                request.getAssignedWorkstationId(),
+                request.getSimalScheduleId(),
+                request.getPriority(),
+                targetStart,
+                targetCompletion,
+                request.getProductionInstructions(),
+                request.getQualityCheckpoints(),
+                "Standard safety procedures apply",
+                120,  // Default 2-hour estimate
+                request.getItemId(),
+                request.getItemType(),
+                request.getQuantity()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 }

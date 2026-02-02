@@ -1,9 +1,16 @@
 package io.life.order.service;
 
+import io.life.order.config.OrderProcessingConfig;
 import io.life.order.dto.FinalAssemblyOrderDTO;
 import io.life.order.entity.FinalAssemblyOrder;
+import io.life.order.entity.ProductionOrder;
+import io.life.order.entity.ProductionOrderItem;
 import io.life.order.entity.WarehouseOrder;
+import io.life.order.entity.CustomerOrder;
 import io.life.order.repository.FinalAssemblyOrderRepository;
+import io.life.order.repository.ProductionOrderRepository;
+import io.life.order.repository.WarehouseOrderRepository;
+import io.life.order.repository.CustomerOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,18 +27,28 @@ import java.util.stream.Collectors;
 public class FinalAssemblyOrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(FinalAssemblyOrderService.class);
-    private static final Long FINAL_ASSEMBLY_WORKSTATION_ID = 6L;
-    private static final Long PLANT_WAREHOUSE_WORKSTATION_ID = 7L;
     private static final String FINAL_ASSEMBLY_AUDIT_SOURCE = "FINAL_ASSEMBLY";
 
+    private final OrderProcessingConfig config;
     private final FinalAssemblyOrderRepository finalAssemblyOrderRepository;
+    private final ProductionOrderRepository productionOrderRepository;
+    private final WarehouseOrderRepository warehouseOrderRepository;
+    private final CustomerOrderRepository customerOrderRepository;
     private final InventoryService inventoryService;
     private final OrderAuditService orderAuditService;
 
-    public FinalAssemblyOrderService(FinalAssemblyOrderRepository finalAssemblyOrderRepository,
+    public FinalAssemblyOrderService(OrderProcessingConfig config,
+                                    FinalAssemblyOrderRepository finalAssemblyOrderRepository,
+                                    ProductionOrderRepository productionOrderRepository,
+                                    WarehouseOrderRepository warehouseOrderRepository,
+                                    CustomerOrderRepository customerOrderRepository,
                                     InventoryService inventoryService,
                                     OrderAuditService orderAuditService) {
+        this.config = config;
         this.finalAssemblyOrderRepository = finalAssemblyOrderRepository;
+        this.productionOrderRepository = productionOrderRepository;
+        this.warehouseOrderRepository = warehouseOrderRepository;
+        this.customerOrderRepository = customerOrderRepository;
         this.inventoryService = inventoryService;
         this.orderAuditService = orderAuditService;
     }
@@ -45,9 +62,9 @@ public class FinalAssemblyOrderService {
                 warehouseOrder.getOrderNumber(), productId, quantity);
 
         FinalAssemblyOrder order = new FinalAssemblyOrder();
-        order.setOrderNumber("FA-" + generateOrderNumber());
+        order.setOrderNumber(config.getOrderNumbers().getFinalAssemblyOrderPrefix() + generateOrderNumber());
         order.setWarehouseOrderId(warehouseOrder.getId());
-        order.setWorkstationId(FINAL_ASSEMBLY_WORKSTATION_ID);
+        order.setWorkstationId(config.getWorkstations().getFinalAssembly());
         order.setOutputProductId(productId);
         order.setOutputQuantity(quantity);
         order.setOrderDate(LocalDateTime.now());
@@ -61,6 +78,61 @@ public class FinalAssemblyOrderService {
                 "Final Assembly order created from warehouse order " + warehouseOrder.getOrderNumber());
 
         return mapToDTO(saved);
+    }
+
+    /**
+     * Create Final Assembly order from Production Order (Scenario 4 - Direct Production)
+     * Called when ProductionOrder completes without a WarehouseOrder (high volume bypass)
+     * 
+     * @param productionOrder The completed production order
+     * @param productId The target product ID
+     * @param quantity The quantity to assemble
+     * @return Created Final Assembly order DTO
+     */
+    public FinalAssemblyOrderDTO createFromProductionOrder(ProductionOrder productionOrder, Long productId, Integer quantity) {
+        logger.info("Creating Final Assembly order from production order {} for product {} qty {}", 
+                productionOrder.getProductionOrderNumber(), productId, quantity);
+
+        FinalAssemblyOrder order = new FinalAssemblyOrder();
+        order.setOrderNumber(config.getOrderNumbers().getFinalAssemblyOrderPrefix() + generateOrderNumber());
+        order.setProductionOrderId(productionOrder.getId());
+        order.setWorkstationId(config.getWorkstations().getFinalAssembly());
+        order.setOutputProductId(productId);
+        order.setOutputQuantity(quantity);
+        order.setOrderDate(LocalDateTime.now());
+        order.setStatus("PENDING");
+        order.setNotes("Auto-created from production order " + productionOrder.getProductionOrderNumber() + " (Scenario 4 - Direct Production)");
+
+        FinalAssemblyOrder saved = finalAssemblyOrderRepository.save(order);
+        logger.info("Final Assembly order {} created for direct production", saved.getOrderNumber());
+        
+        orderAuditService.recordOrderEvent(FINAL_ASSEMBLY_AUDIT_SOURCE, saved.getId(), "CREATED",
+                "Final Assembly order created from production order " + productionOrder.getProductionOrderNumber());
+
+        return mapToDTO(saved);
+    }
+    
+    /**
+     * Create Final Assembly orders from Production Order using Customer Order products.
+     * This overload fetches the production order and customer order, extracts products,
+     * and creates Final Assembly orders for each product.
+     * 
+     * @param productionOrderId The completed production order ID
+     * @param customerOrderId The source customer order ID
+     * @throws RuntimeException if orders not found or have no items
+     */
+    public void createFromProductionOrder(Long productionOrderId, Long customerOrderId) {
+        logger.info("Creating Final Assembly orders from production order {} for customer order {}", 
+                productionOrderId, customerOrderId);
+        
+        // For now, create a simple placeholder implementation
+        // A full implementation would:
+        // 1. Fetch production order
+        // 2. Fetch customer order to get product IDs
+        // 3. For each product, create Final Assembly order
+        
+        logger.warn("createFromProductionOrder(Long, Long) is a placeholder - needs full implementation");
+        throw new UnsupportedOperationException("This method requires full implementation with customer order lookup");
     }
 
     /**
@@ -243,7 +315,7 @@ public class FinalAssemblyOrderService {
 
         // Credit Plant Warehouse (WS-7) with finished products
         boolean credited = inventoryService.creditStock(
-                PLANT_WAREHOUSE_WORKSTATION_ID,
+                config.getWorkstations().getPlantWarehouse(),
                 order.getOutputProductId(),
                 order.getOutputQuantity()
         );
@@ -266,9 +338,13 @@ public class FinalAssemblyOrderService {
                 String.format("Final Assembly order submitted - Plant Warehouse credited with product %d qty %d",
                         order.getOutputProductId(), order.getOutputQuantity()));
 
-        // Check if all Final Assembly orders for this Warehouse Order are submitted
+        // SCENARIO 2/3: Check if all Final Assembly orders for this Warehouse Order are submitted
         if (order.getWarehouseOrderId() != null) {
             checkAndUpdateWarehouseOrderStatus(order.getWarehouseOrderId());
+        }
+        // SCENARIO 4: Check if all Final Assembly orders for this Production Order are submitted (direct production)
+        else if (order.getProductionOrderId() != null) {
+            checkAndUpdateProductionOrderStatus(order.getProductionOrderId());
         }
 
         return mapToDTO(order);
@@ -276,7 +352,7 @@ public class FinalAssemblyOrderService {
 
     /**
      * Check if all Final Assembly orders for a Warehouse Order are submitted
-     * If all submitted, update the Warehouse Order status to allow customer order completion
+     * If all submitted, update the customer order status to enable completion
      */
     private void checkAndUpdateWarehouseOrderStatus(Long warehouseOrderId) {
         List<FinalAssemblyOrder> relatedOrders = finalAssemblyOrderRepository.findByWarehouseOrderId(warehouseOrderId);
@@ -285,14 +361,92 @@ public class FinalAssemblyOrderService {
                 .allMatch(o -> "SUBMITTED".equals(o.getStatus()));
         
         if (allSubmitted) {
-            logger.info("✓ All Final Assembly orders for warehouse order {} are submitted - ready for customer order completion", 
+            logger.info("✓ All Final Assembly orders for warehouse order {} are submitted - updating customer order status", 
                     warehouseOrderId);
             orderAuditService.recordOrderEvent("WAREHOUSE_ORDER", warehouseOrderId, "ASSEMBLY_COMPLETE",
                     "All Final Assembly orders submitted - customer order can be completed");
+            
+            // Get warehouse order and update customer order status
+            Optional<WarehouseOrder> warehouseOrderOpt = warehouseOrderRepository.findById(warehouseOrderId);
+            if (warehouseOrderOpt.isPresent()) {
+                WarehouseOrder warehouseOrder = warehouseOrderOpt.get();
+                Long customerOrderId = warehouseOrder.getCustomerOrderId();
+                
+                if (customerOrderId != null) {
+                    // Update customer order to show it's ready for completion
+                    Optional<CustomerOrder> customerOrderOpt = customerOrderRepository.findById(customerOrderId);
+                    if (customerOrderOpt.isPresent()) {
+                        CustomerOrder customerOrder = customerOrderOpt.get();
+                        
+                        // Change status from PROCESSING to CONFIRMED to enable complete button
+                        if ("PROCESSING".equals(customerOrder.getStatus())) {
+                            customerOrder.setStatus("CONFIRMED");
+                            customerOrder.setTriggerScenario("DIRECT_FULFILLMENT");
+                            customerOrder.setUpdatedAt(LocalDateTime.now());
+                            customerOrderRepository.save(customerOrder);
+                            
+                            logger.info("✓ Customer order {} status updated to CONFIRMED (DIRECT_FULFILLMENT) - ready for completion", 
+                                    customerOrder.getOrderNumber());
+                            orderAuditService.recordOrderEvent("CUSTOMER_ORDER", customerOrderId, "ASSEMBLY_COMPLETE",
+                                    "All products assembled - order ready for completion");
+                        }
+                    }
+                }
+            }
         } else {
             long submitted = relatedOrders.stream().filter(o -> "SUBMITTED".equals(o.getStatus())).count();
             logger.info("Warehouse order {} has {}/{} Final Assembly orders submitted", 
                     warehouseOrderId, submitted, relatedOrders.size());
+        }
+    }
+
+    /**
+     * Check if all Final Assembly orders for a Production Order are submitted (Scenario 4)
+     * If all submitted, update the customer order status to enable completion
+     */
+    private void checkAndUpdateProductionOrderStatus(Long productionOrderId) {
+        List<FinalAssemblyOrder> relatedOrders = finalAssemblyOrderRepository.findByProductionOrderId(productionOrderId);
+        
+        boolean allSubmitted = relatedOrders.stream()
+                .allMatch(o -> "SUBMITTED".equals(o.getStatus()));
+        
+        if (allSubmitted) {
+            logger.info("✓ All Final Assembly orders for production order {} are submitted - updating customer order status", 
+                    productionOrderId);
+            orderAuditService.recordOrderEvent("PRODUCTION_ORDER", productionOrderId, "ASSEMBLY_COMPLETE",
+                    "All Final Assembly orders submitted - customer order can be completed");
+            
+            // Get production order and update customer order status
+            Optional<ProductionOrder> productionOrderOpt = productionOrderRepository.findById(productionOrderId);
+            if (productionOrderOpt.isPresent()) {
+                ProductionOrder productionOrder = productionOrderOpt.get();
+                Long customerOrderId = productionOrder.getSourceCustomerOrderId();
+                
+                if (customerOrderId != null) {
+                    // Update customer order to show it's ready for completion
+                    Optional<CustomerOrder> customerOrderOpt = customerOrderRepository.findById(customerOrderId);
+                    if (customerOrderOpt.isPresent()) {
+                        CustomerOrder customerOrder = customerOrderOpt.get();
+                        
+                        // Change status from PROCESSING to CONFIRMED to enable complete button
+                        if ("PROCESSING".equals(customerOrder.getStatus())) {
+                            customerOrder.setStatus("CONFIRMED");
+                            customerOrder.setTriggerScenario("DIRECT_FULFILLMENT");
+                            customerOrder.setUpdatedAt(LocalDateTime.now());
+                            customerOrderRepository.save(customerOrder);
+                            
+                            logger.info("✓ Customer order {} status updated to CONFIRMED (DIRECT_FULFILLMENT) - ready for completion [Scenario 4]", 
+                                    customerOrder.getOrderNumber());
+                            orderAuditService.recordOrderEvent("CUSTOMER_ORDER", customerOrderId, "ASSEMBLY_COMPLETE",
+                                    "All products assembled - order ready for completion (Scenario 4)");
+                        }
+                    }
+                }
+            }
+        } else {
+            long submitted = relatedOrders.stream().filter(o -> "SUBMITTED".equals(o.getStatus())).count();
+            logger.info("Production order {} has {}/{} Final Assembly orders submitted", 
+                    productionOrderId, submitted, relatedOrders.size());
         }
     }
 

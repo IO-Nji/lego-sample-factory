@@ -193,7 +193,10 @@ function HomePage() {
       <section className="home-page">
         {/* Welcome Header */}
         <div className="home-hero">
-          <h2>LIFE System - LEGO Integrated Factory Execution</h2>
+          <div className="hero-title-container">
+            <h1 className="hero-main-title">L.I.F.E</h1>
+            <p className="hero-slogan">LEGO Integrated Factory Execution</p>
+          </div>
         </div>
 
         {message && (
@@ -338,7 +341,7 @@ function HomePage() {
                 <WorkstationCard 
                   icon="🛒" 
                   name="Customer" 
-                  tooltip="Customer places order for products | Entry point for all orders"
+                  tooltip={{ description: "Place Customer Order for Products", username: "lego_admin" }}
                   layout="horizontal"
                 />
                 <div className="flow-connector green right-arrow">
@@ -348,7 +351,7 @@ function HomePage() {
                 <WorkstationCard 
                   icon="🏭" 
                   name={<>Plant<br/>Warehouse</>} 
-                  tooltip="WS-7: Final product storage | Checks stock → fulfills or triggers production"
+                  tooltip={{ description: "Stock Check; Fulfill Customer Order or Order Production", username: "plant_warehouse" }}
                   status="highlight"
                   layout="horizontal"
                 />
@@ -359,7 +362,7 @@ function HomePage() {
                 <WorkstationCard 
                   icon="📦" 
                   name="Delivery" 
-                  tooltip="Order shipped to customer | Scenario 1: Direct Fulfillment complete"
+                  tooltip={{ description: "Order Shipped to Customer", username: "Fulfillment Scenarios Complete" }}
                   layout="horizontal"
                 />
               </div>
@@ -381,7 +384,7 @@ function HomePage() {
                 <WorkstationCard 
                   icon="🏢" 
                   name={<>Modules<br/>Supermarket</>} 
-                  tooltip="WS-8: Module storage | Supplies modules for final assembly"
+                  tooltip={{ description: "Manage Modules Inventory + Trigger Production", username: "modules_supermarket" }}
                   layout="horizontal"
                 />
                 <div className="flow-connector purple left-arrow">
@@ -391,7 +394,7 @@ function HomePage() {
                 <WorkstationCard 
                   icon="🔨" 
                   name={<>Final<br/>Assembly</>} 
-                  tooltip="WS-6: Assembles finished products | Credits Plant Warehouse on completion"
+                  tooltip={{ description: "Assemble MODULES → PRODUCT", username: "final_assembly" }}
                   layout="horizontal"
                 />
               </div>
@@ -414,14 +417,14 @@ function HomePage() {
                   <WorkstationCard 
                     icon="📋" 
                     name={<>Production<br/>Planning</>} 
-                    tooltip="Schedules production orders | Dispatches to workstations"
+                    tooltip={{ description: "Schedule Production Orders + Dispatch to Workstations", username: "production_planning" }}
                     layout="horizontal"
                   />
                   <div className="stack-arrow purple">↓</div>
                   <WorkstationCard 
                     icon="🎛️" 
                     name="Control" 
-                    tooltip="Production & Assembly Control | Coordinates manufacturing sequence"
+                    tooltip={{ description: "Coordinate Manufacturing + Monitor Operations", username: "production_control" }}
                     layout="horizontal"
                   />
                 </div>
@@ -435,14 +438,14 @@ function HomePage() {
                   <WorkstationCard 
                     icon="📦" 
                     name={<>Parts<br/>Supply</>} 
-                    tooltip="WS-9: Raw materials warehouse | Stages materials at workstations"
+                    tooltip={{ description: "Manage Raw Materials + Supply to Workstations", username: "parts_supply" }}
                     layout="horizontal"
                   />
                   <div className="stack-arrow green">↓</div>
                   <WorkstationCard 
                     icon="⚙️" 
                     name="Manufacturing" 
-                    tooltip="WS-1,2,3: Injection Molding → Pre-Production → Finishing"
+                    tooltip={{ description: "Produce PARTS: Injection → Pre-Production → Finishing", username: "injection_molding\nparts_pre_production\npart_finishing" }}
                     layout="horizontal"
                   />
                 </div>
@@ -456,7 +459,7 @@ function HomePage() {
                   <WorkstationCard 
                     icon="🔧" 
                     name="Assembly" 
-                    tooltip="WS-4,5: Gear Assembly → Motor Assembly | Creates modules"
+                    tooltip={{ description: "Assemble PARTS → MODULES (Gear + Motor)", username: "gear_assembly\nmotor_assembly" }}
                     layout="horizontal"
                   />
                 </div>
@@ -487,6 +490,14 @@ function HomePage() {
                 execution system (MES) built from the ground up to demonstrate the practical application of academic research 
                 in industrial engineering. This comprehensive platform digitizes and automates end-to-end supply chain operations 
                 across nine autonomous workstations, coordinating complex production workflows from raw materials to finished products.
+              </p>
+              
+              <p className="overview-business-value">
+                <strong>Transforming Small Business Manufacturing:</strong> This system demonstrates how modern digital tools 
+                can revolutionize small-scale manufacturing operations. By automating order fulfillment, inventory tracking, 
+                and production scheduling, small businesses can achieve enterprise-level efficiency without requiring massive 
+                IT infrastructure. The platform's modular architecture allows businesses to start small and scale progressively, 
+                making advanced manufacturing execution systems accessible to operations of any size.
               </p>
               
               <div className="tech-highlights-split">
@@ -591,7 +602,7 @@ function HomePage() {
                 <div className="arch-layer">
                   <div 
                     className={`service-box frontend ${serviceHealth['frontend'] || 'unknown'}`}
-                    title="React SPA - User interface with real-time updates, role-based dashboards, order management, and inventory tracking. Built with Vite and served via Nginx."
+                    data-tooltip="React SPA | 9 role-based dashboards + real-time updates | React 18 + Vite"
                   >
                     <span className="service-name">React App</span>
                     <span className="service-tech">UI Layer</span>
@@ -605,7 +616,7 @@ function HomePage() {
               <div className="arch-layer">
                 <div 
                   className={`service-box gateway ${serviceHealth['api-gateway'] || 'unknown'}`}
-                  title="API Gateway - Central routing hub with JWT authentication, request filtering, and load balancing. Routes all frontend requests to backend microservices."
+                  data-tooltip="Routing Hub | JWT auth + request filtering + load balancing | Spring Cloud Gateway"
                 >
                   <span className="service-name">API Gateway</span>
                   <span className="service-tech">Auth & Routing</span>
@@ -623,7 +634,7 @@ function HomePage() {
                 <div className="arch-layer services-primary">
                   <div 
                     className={`service-box service-user ${serviceHealth['user-service'] || 'unknown'}`}
-                    title="User Service - Authentication & authorization with JWT tokens, user management, role-based access control (9 roles), and workstation assignments."
+                    data-tooltip="Auth & Users | JWT tokens + 9 role RBAC + workstation assignments | Spring Boot 3.4"
                   >
                     <span className="service-name">User</span>
                     <span className={`health-indicator ${serviceHealth['user-service'] || 'unknown'}`}></span>
@@ -631,7 +642,7 @@ function HomePage() {
                   
                   <div 
                     className={`service-box service-order ${serviceHealth['order-processing-service'] || 'unknown'}`}
-                    title="Order Processing - Customer orders, warehouse orders, production orders, fulfillment workflows, order state management, and production scheduling integration."
+                    data-tooltip="Order Engine | Customer/warehouse/production orders + fulfillment workflows | Spring Boot 3.4"
                   >
                     <span className="service-name">Order</span>
                     <span className={`health-indicator ${serviceHealth['order-processing-service'] || 'unknown'}`}></span>
@@ -639,7 +650,7 @@ function HomePage() {
                   
                   <div 
                     className={`service-box service-simal ${serviceHealth['simal-integration-service'] || 'unknown'}`}
-                    title="SimAL Integration - Production scheduling with Gantt charts, manufacturing timeline optimization, control order generation, and real-time schedule adjustments."
+                    data-tooltip="Scheduling AI | Production optimization + interactive Gantt charts | SimAL API"
                   >
                     <span className="service-name">SimAL</span>
                     <span className={`health-indicator ${serviceHealth['simal-integration-service'] || 'unknown'}`}></span>
@@ -654,7 +665,7 @@ function HomePage() {
                 <div className="arch-layer services-secondary">
                   <div 
                     className={`service-box service-masterdata ${serviceHealth['masterdata-service'] || 'unknown'}`}
-                    title="Masterdata Service - Product variants, modules, parts catalog, bill-of-materials (BOM), workstation definitions, and manufacturing hierarchies."
+                    data-tooltip="Product Catalog | BOM hierarchy + product/module/part definitions | Spring Boot 3.4"
                   >
                     <span className="service-name">Masterdata</span>
                     <span className={`health-indicator ${serviceHealth['masterdata-service'] || 'unknown'}`}></span>
@@ -662,7 +673,7 @@ function HomePage() {
                   
                   <div 
                     className={`service-box service-inventory ${serviceHealth['inventory-service'] || 'unknown'}`}
-                    title="Inventory Service - Real-time stock tracking across 9 workstations, stock ledger audit trail, low stock alerts, and inventory transactions (credit/debit/transfer)."
+                    data-tooltip="Stock Tracker | Real-time inventory across 9 workstations + audit ledger | Spring Boot 3.4"
                   >
                     <span className="service-name">Inventory</span>
                     <span className={`health-indicator ${serviceHealth['inventory-service'] || 'unknown'}`}></span>

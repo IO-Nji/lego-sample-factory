@@ -24,6 +24,49 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* L.I.F.E Title Styling */
+.hero-title-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.hero-main-title {
+  font-size: 4rem;
+  font-weight: 900;
+  letter-spacing: 0.3rem;
+  margin: 0;
+  background: linear-gradient(135deg, #2c5aa0 0%, #33a7d9 50%, #098bf5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 4px 12px rgba(44, 90, 160, 0.3);
+  position: relative;
+  animation: titleGlow 3s ease-in-out infinite;
+}
+
+.hero-slogan {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  text-transform: uppercase;
+  letter-spacing: 0.15rem;
+  margin: 0;
+  opacity: 0.85;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+@keyframes titleGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(44, 90, 160, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(51, 167, 217, 0.6));
+  }
+}
+
 /* === ROW 1: Products + Flow Diagram + Login (3 Columns) === */
 .home-top-row {
   display: flex;
@@ -731,6 +774,24 @@
   line-height: 1.8;
 }
 
+.overview-business-value {
+  color: #1e3d66;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #e3f2fd 100%);
+  border-left: 4px solid #2c5aa0;
+  border-radius: 6px;
+  line-height: 1.7;
+  text-align: justify;
+  box-shadow: 0 2px 8px rgba(44, 90, 160, 0.1);
+}
+
+.overview-business-value strong {
+  color: #2c5aa0;
+  font-size: 1.05rem;
+}
+
 .tech-highlights-split {
   display: flex;
   align-items: stretch;
@@ -1050,6 +1111,59 @@
   transform: translateY(-3px) scale(1.02);
   box-shadow: 0 6px 16px rgba(44, 90, 160, 0.25);
   z-index: 10;
+}
+
+/* Microservices Tooltip Styling */
+.service-box[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #4a7bc8 0%, #3a5f99 100%);
+  color: white;
+  padding: 0.64rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.64rem;
+  font-weight: 500;
+  white-space: pre-line;
+  width: 260px;
+  text-align: center;
+  z-index: 999999;
+  box-shadow: 
+    0 12px 32px rgba(44, 90, 160, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.2);
+  line-height: 1.4;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.service-box[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Tooltip arrow */
+.service-box[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: #3a5f99;
+  z-index: 999998;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.service-box[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
 }
 
 .service-box.healthy:hover {

@@ -76,11 +76,11 @@ ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH} && ./update-from-registry.s
 
 echo ""
 echo "Restarting services..."
-ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH} && docker-compose down && docker-compose up -d --force-recreate"
+ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH} && docker compose down && docker compose up -d --force-recreate"
 
 echo ""
 echo "Checking service status..."
-ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH} && docker-compose ps"
+ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH} && docker compose ps"
 
 echo ""
 echo "=================================================="
@@ -98,4 +98,4 @@ echo ""
 echo "To check logs:"
 echo "  ssh ${SERVER_USER}@${SERVER_HOST}"
 echo "  cd ${SERVER_PATH}"
-echo "  docker-compose logs -f order-processing-service"
+echo "  docker compose logs -f order-processing-service"

@@ -35,9 +35,6 @@
 
 This system addresses critical challenges in traditional manufacturing:
 
-### 💼 Business Value
-
-This system addresses critical challenges in traditional manufacturing:
 
 | **Problem** | **Solution** |
 |-------------|--------------|
@@ -167,16 +164,25 @@ Product Variants (Final Products) → Stored in Plant Warehouse (WS-7)
 
 Implements 4 distinct fulfillment workflows from thesis research:
 
-1. **Scenario 1: Sunny Day** - Direct fulfillment from warehouse stock
-2. **Scenario 2: Warehouse Order** - Missing products trigger module assembly
-3. **Scenario 3: Full Production** - Missing modules trigger manufacturing chain
-4. **Scenario 4: High Volume** - Large orders bypass warehouse, go direct to production
+1. **Scenario 1: Sunny Day** ✅ - Direct fulfillment from warehouse stock
+2. **Scenario 2: Warehouse Order** ✅ - Missing products trigger module assembly
+3. **Scenario 3: Full Production** ✅ - Missing modules trigger manufacturing chain
+4. **Scenario 4: High Volume** ✅ - Large orders (≥ LOT_SIZE_THRESHOLD) bypass warehouse, go direct to production
+
+**Recent Enhancements (February 2026):**
+- ✅ **Production Order Linking**: Warehouse orders link to production via `productionOrderId` field, preventing cross-order interference
+- ✅ **Automatic Completion**: Production orders auto-complete and trigger downstream processing (no manual submission)
+- ✅ **Direct Fulfillment Bypass**: Orders with linked production skip stock checks (modules already reserved)
+- ✅ **Frontend Smart Buttons**: Status-aware action buttons based on backend `triggerScenario` field
+- ✅ **Configuration Externalization**: All settings externalized via `@ConfigurationProperties`
+- ✅ **Spring Profiles**: `dev`, `prod`, `cloud` profiles for environment-specific configuration
+- ✅ **Registry Deployment**: Server deployment from Docker registry (192.168.1.237:5000)
 
 **Order State Machines:**
 ```
 CustomerOrder:  PENDING → CONFIRMED → PROCESSING → COMPLETED → DELIVERED
-WarehouseOrder: PENDING → PROCESSING → AWAITING_PRODUCTION → FULFILLED
-ProductionOrder: PENDING → PLANNED → IN_PRODUCTION → COMPLETED
+WarehouseOrder: PENDING → CONFIRMED → FULFILLED (with productionOrderId link if needed)
+ProductionOrder: PENDING → PLANNED → IN_PRODUCTION → COMPLETED (auto-triggers downstream)
 ```
 
 ### 📊 Real-Time Inventory Management
@@ -226,16 +232,37 @@ ProductionOrder: PENDING → PLANNED → IN_PRODUCTION → COMPLETED
 - **Node.js 18+** (for frontend development)
 - **Git**
 
-### One-Command Deployment
+### One-Command Deployment (Development)
 
 ```bash
 # Clone repository
 git clone <repository-url>
 cd lego-sample-factory
 
-# Start all services
+# Start all services (builds locally)
 docker-compose up -d
 ```
+
+### Server Deployment (Production)
+
+For production servers using pre-built Docker images from registry:
+
+```bash
+# On your server (e.g., 192.168.1.237)
+git clone -b prod <repository-url>
+cd lego-sample-factory/deploy
+
+# First-time setup
+./setup.sh
+
+# Pull images and start
+./update.sh
+```
+
+**Registry-based deployment:**
+- Uses pre-built images from `192.168.1.237:5000`
+- No source code compilation on server
+- Quick updates: just `./update.sh`
 
 **Access Application:**
 - Frontend: `http://localhost:1011` (or `:80` if `NGINX_ROOT_PROXY_EXTERNAL_PORT=80`)
@@ -251,18 +278,41 @@ docker-compose up -d
 | `production_planning` | `password` | PRODUCTION_PLANNING | - | Factory-wide scheduling |
 | `production_control` | `password` | PRODUCTION_CONTROL | Injection Molding (WS-1) | Manufacturing oversight |
 | `assembly_control` | `password` | ASSEMBLY_CONTROL | Gear Assembly (WS-4) | Assembly coordination |
-
+| 'motor_assembly'  | `password` | 
+| 'gear_assembly'  | `password` | 
+| 'parts_preproduction'  | `password` | 
+| 'part_finishing'  | `password` | 
+| 'injection_molding'  | `password` | 
+| 'part_supply'  | `password` | 
 ---
 
 ## 📚 Documentation
 
+### Core Documentation
+
 | Document | Purpose |
 |----------|---------|
-| [PROJECT_TECHNICAL_OVERVIEW.md](_dev-docs/PROJECT_TECHNICAL_OVERVIEW.md) | Academic research context, thesis background, PhD proposal material |
-| [README.architecture.md](_dev-docs/README.architecture.md) | System architecture diagrams, data models, API specifications |
+| [copilot-instructions.md](.github/copilot-instructions.md) | AI agent onboarding and quick start guide |
 | [BusinessScenarios.md](_dev-docs/BusinessScenarios.md) | 4 order fulfillment scenarios with step-by-step workflows |
-| [SCENARIO_IMPLEMENTATION_ROADMAP.md](_dev-docs/SCENARIO_IMPLEMENTATION_ROADMAP.md) | Feature development plan and implementation guide |
-| [copilot-instructions.md](.github/copilot-instructions.md) | AI agent onboarding for development assistance |
+| [README.architecture.md](_dev-docs/README.architecture.md) | System architecture diagrams, data models, API specifications |
+
+### Development Guides
+
+| Document | Purpose |
+|----------|---------|
+| [CARD_SYSTEM.md](_dev-docs/CARD_SYSTEM.md) | Order card UI components and styling architecture |
+| [Dashboard-Component-Standardization-Guide.md](_dev-docs/Dashboard-Component-Standardization-Guide.md) | Dashboard layout patterns and component usage |
+| [ORDER_BUTTON_SEQUENCES.md](_dev-docs/ORDER_BUTTON_SEQUENCES.md) | Button action flows per order type and status |
+| [UI-Workflow-Guide-Business-Scenarios.md](_dev-docs/UI-Workflow-Guide-Business-Scenarios.md) | User interface workflows mapped to business scenarios |
+
+### Planning & Technical
+
+| Document | Purpose |
+|----------|---------|
+| [PROJECT_TECHNICAL_OVERVIEW.md](_dev-docs/PROJECT_TECHNICAL_OVERVIEW.md) | Academic research context, thesis background |
+| [SCENARIO_IMPLEMENTATION_ROADMAP.md](_dev-docs/SCENARIO_IMPLEMENTATION_ROADMAP.md) | Feature development plan and implementation status |
+| [DEVELOPMENT_STRATEGY.md](_dev-docs/DEVELOPMENT_STRATEGY.md) | Coding patterns and development workflow |
+| [API_OPTIMIZATION_PLAN.md](_dev-docs/API_OPTIMIZATION_PLAN.md) | API performance improvements and optimizations |
 
 ---
 
@@ -355,6 +405,13 @@ docker-compose build --no-cache frontend && docker-compose up -d frontend
 
 ## 🛣️ Future Enhancements
 
+**Recently Completed:**
+- [x] **Configuration Externalization**: Spring profiles (dev/prod/cloud) implemented
+- [x] **Service Layer Refactoring**: FulfillmentService decomposed into focused services
+- [x] **Exception Handling**: Standardized error codes across all 5 microservices
+- [x] **API Contract Documentation**: All cross-service contracts documented
+
+**Planned:**
 - [ ] **Kubernetes Deployment**: Helm charts for cloud-native scaling
 - [ ] **PostgreSQL Migration**: Production-grade persistence layer
 - [ ] **Redis Caching**: Session store & API response caching
