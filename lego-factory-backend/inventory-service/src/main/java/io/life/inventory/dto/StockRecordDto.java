@@ -1,10 +1,22 @@
 package io.life.inventory.dto;
 
+import io.life.inventory.annotation.ApiContract;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+/**
+ * StockRecordDto - Inventory stock levels by workstation.
+ * 
+ * API Contract: Frontend queries stock via GET /api/inventory
+ * Also used by order-service for stock validation.
+ */
+@ApiContract(
+    version = "v1",
+    externalSource = "frontend, order-service",
+    description = "Stock levels by workstation, item type, and item ID"
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,5 +1,6 @@
 package io.life.simal_integration_service.dto;
 
+import io.life.simal_integration_service.annotation.ApiContract;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +11,15 @@ import java.util.List;
 /**
  * DTO for production order request to SimAL.
  * Represents an order to be scheduled in the production system.
+ * 
+ * API Contract: order-service sends this to POST /api/simal/schedules
+ * SimAL uses this to generate optimized production schedules.
  */
+@ApiContract(
+    version = "v1",
+    externalSource = "order-service",
+    description = "Production order request for SimAL scheduling optimization"
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
