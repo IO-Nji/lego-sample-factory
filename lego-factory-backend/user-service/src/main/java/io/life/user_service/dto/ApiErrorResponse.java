@@ -1,13 +1,13 @@
-package io.life.order.dto;
+package io.life.user_service.dto;
 
-import io.life.order.annotation.ApiContract;
+import io.life.user_service.annotation.ApiContract;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Standard API error response DTO.
+ * Standard API error response DTO for user service.
  * Provides consistent error response structure across all endpoints.
  * 
  * Used by GlobalExceptionHandler to return standardized error information.
@@ -17,19 +17,20 @@ import java.util.Map;
  *   "timestamp": "2026-02-02T10:30:00",
  *   "status": 404,
  *   "error": "Not Found",
- *   "errorCode": "ORDER_NOT_FOUND",
- *   "message": "Order with ID 123 not found",
- *   "path": "/api/customer-orders/123",
+ *   "errorCode": "USER_NOT_FOUND",
+ *   "message": "User not found with username: 'alice'",
+ *   "path": "/api/users/alice",
  *   "details": {
- *     "entityType": "CustomerOrder",
- *     "entityId": 123
+ *     "resourceName": "User",
+ *     "fieldName": "username",
+ *     "fieldValue": "alice"
  *   }
  * }
  */
 @ApiContract(
     version = "v1",
-    externalSource = "All frontend clients",
-    description = "Standard error response format for all API errors. " +
+    externalSource = "All frontend clients, api-gateway",
+    description = "Standard error response format for all user API errors. " +
                   "Includes HTTP status, machine-readable error code, human-readable message, " +
                   "and optional debugging context in details map."
 )
@@ -67,12 +68,11 @@ public class ApiErrorResponse {
         this.details = details != null ? new HashMap<>(details) : new HashMap<>();
     }
 
-    // Static factory method for simple errors (backward compatibility)
+    // Static factory methods
     public static ApiErrorResponse of(int status, String error, String message, String path) {
         return new ApiErrorResponse(status, error, message, path);
     }
     
-    // Static factory method for full error context
     public static ApiErrorResponse of(int status, String error, String errorCode, String message, String path, Map<String, Object> details) {
         return new ApiErrorResponse(status, error, errorCode, message, path, details);
     }

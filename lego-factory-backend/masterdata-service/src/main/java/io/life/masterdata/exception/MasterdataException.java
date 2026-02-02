@@ -1,18 +1,21 @@
-package io.life.user_service.exception;
+package io.life.masterdata.exception;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Base exception for all custom exceptions in the user service.
+ * Base exception for all masterdata service exceptions.
  * Provides machine-readable error codes and contextual details for debugging.
  * 
- * All user service exceptions should extend this class to ensure consistent error handling.
+ * All masterdata exceptions should extend this class to ensure consistent error handling.
  * 
- * Error codes follow format: USER_DOMAIN_ERROR
- * Examples: USER_NOT_FOUND, USER_UNAUTHORIZED, USER_INVALID_CREDENTIALS
+ * Error codes follow format: MASTERDATA_DOMAIN_ERROR
+ * Examples: MASTERDATA_PRODUCT_NOT_FOUND, MASTERDATA_BOM_NOT_FOUND, MASTERDATA_VALIDATION_ERROR
+ * 
+ * @see ResourceNotFoundException
+ * @see ValidationException
  */
-public class UserServiceException extends RuntimeException {
+public class MasterdataException extends RuntimeException {
 
     private final String errorCode;
     private final Map<String, Object> details;
@@ -20,16 +23,16 @@ public class UserServiceException extends RuntimeException {
     /**
      * Constructor with message and default error code
      */
-    public UserServiceException(String message) {
+    public MasterdataException(String message) {
         super(message);
-        this.errorCode = "USER_SERVICE_ERROR";
+        this.errorCode = "MASTERDATA_ERROR";
         this.details = new HashMap<>();
     }
 
     /**
      * Constructor with message and error code
      */
-    public UserServiceException(String message, String errorCode) {
+    public MasterdataException(String message, String errorCode) {
         super(message);
         this.errorCode = errorCode;
         this.details = new HashMap<>();
@@ -38,25 +41,16 @@ public class UserServiceException extends RuntimeException {
     /**
      * Constructor with message, error code, and details
      */
-    public UserServiceException(String message, String errorCode, Map<String, Object> details) {
+    public MasterdataException(String message, String errorCode, Map<String, Object> details) {
         super(message);
         this.errorCode = errorCode;
         this.details = details != null ? new HashMap<>(details) : new HashMap<>();
     }
 
     /**
-     * Constructor with message and cause
-     */
-    public UserServiceException(String message, Throwable cause) {
-        super(message, cause);
-        this.errorCode = "USER_SERVICE_ERROR";
-        this.details = new HashMap<>();
-    }
-
-    /**
      * Constructor with message, cause, and error code
      */
-    public UserServiceException(String message, Throwable cause, String errorCode) {
+    public MasterdataException(String message, Throwable cause, String errorCode) {
         super(message, cause);
         this.errorCode = errorCode;
         this.details = new HashMap<>();
@@ -65,7 +59,7 @@ public class UserServiceException extends RuntimeException {
     /**
      * Constructor with message, cause, error code, and details
      */
-    public UserServiceException(String message, Throwable cause, String errorCode, Map<String, Object> details) {
+    public MasterdataException(String message, Throwable cause, String errorCode, Map<String, Object> details) {
         super(message, cause);
         this.errorCode = errorCode;
         this.details = details != null ? new HashMap<>(details) : new HashMap<>();
@@ -88,7 +82,7 @@ public class UserServiceException extends RuntimeException {
     /**
      * Add a detail entry (fluent API)
      */
-    public UserServiceException addDetail(String key, Object value) {
+    public MasterdataException addDetail(String key, Object value) {
         this.details.put(key, value);
         return this;
     }

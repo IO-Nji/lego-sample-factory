@@ -1,13 +1,13 @@
-package io.life.order.dto;
+package io.life.inventory.dto;
 
-import io.life.order.annotation.ApiContract;
+import io.life.inventory.annotation.ApiContract;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Standard API error response DTO.
+ * Standard API error response DTO for inventory service.
  * Provides consistent error response structure across all endpoints.
  * 
  * Used by GlobalExceptionHandler to return standardized error information.
@@ -17,19 +17,20 @@ import java.util.Map;
  *   "timestamp": "2026-02-02T10:30:00",
  *   "status": 404,
  *   "error": "Not Found",
- *   "errorCode": "ORDER_NOT_FOUND",
- *   "message": "Order with ID 123 not found",
- *   "path": "/api/customer-orders/123",
+ *   "errorCode": "INVENTORY_NOT_FOUND",
+ *   "message": "Stock record not found with id: 123",
+ *   "path": "/api/inventory/123",
  *   "details": {
- *     "entityType": "CustomerOrder",
- *     "entityId": 123
+ *     "resourceName": "StockRecord",
+ *     "fieldName": "id",
+ *     "fieldValue": "123"
  *   }
  * }
  */
 @ApiContract(
     version = "v1",
     externalSource = "All frontend clients",
-    description = "Standard error response format for all API errors. " +
+    description = "Standard error response format for all inventory API errors. " +
                   "Includes HTTP status, machine-readable error code, human-readable message, " +
                   "and optional debugging context in details map."
 )
@@ -67,12 +68,11 @@ public class ApiErrorResponse {
         this.details = details != null ? new HashMap<>(details) : new HashMap<>();
     }
 
-    // Static factory method for simple errors (backward compatibility)
+    // Static factory methods
     public static ApiErrorResponse of(int status, String error, String message, String path) {
         return new ApiErrorResponse(status, error, message, path);
     }
     
-    // Static factory method for full error context
     public static ApiErrorResponse of(int status, String error, String errorCode, String message, String path, Map<String, Object> details) {
         return new ApiErrorResponse(status, error, errorCode, message, path, details);
     }
