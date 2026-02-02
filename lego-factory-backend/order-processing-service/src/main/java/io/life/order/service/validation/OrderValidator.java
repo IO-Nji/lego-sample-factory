@@ -5,6 +5,7 @@ import io.life.order.entity.OrderItem;
 import io.life.order.entity.WarehouseOrder;
 import io.life.order.entity.WarehouseOrderItem;
 import io.life.order.exception.OrderProcessingException;
+import io.life.order.service.domain.BomConversionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -258,6 +259,53 @@ public class OrderValidator {
                     .addDetail("productId", productId)
                     .addDetail("validationErrors", errors);
         }
+    }
+
+    /**
+     * Validate BOM conversion result from BomConversionService.
+     * 
+     * @param bomResult The BOM conversion result to validate
+     * @param orderNumber Order number for error context
+     * @throws OrderProcessingException if conversion failed or produced no modules
+     */
+    public void validateBomResult(BomConversionService.BomConversionResult bomResult, String orderNumber) {
+        List<String> errors = new ArrayList<>();
+
+        if (bomResult == null) {
+            throw new OrderProcessingException("BOM conversion returned null result")
+                    .addDetail("orderNumber", orderNumber);
+        }
+
+        if (bomResult.hasErrors()) {
+            throw new OrderProcessingException("BOM conversion failed")
+                    .addDetail("orderNumber", orderNumber);
+        }
+
+        if (bomResult.items() == null || bomResult.items().isEmpty()) {
+            throw new OrderProcessingException("BOM conversion produced no modules")
+                    .addDetail("orderNumber", orderNumber)
+                    .addDetail("totalModules", bomResult.totalModules());
+        }
+
+        // Validate each BOM item
+        for (int i = 0; i < bomResult.items().size(); i++) {
+            BomConversionService.BomItem item = bomResult.items().get(i);
+            if (item.moduleId() == null) {
+                errors.add(String.format("BOM item %d: moduleId is null", i));
+            }
+            if (item.quantity() == null || item.quantity() <= 0) {
+                errors.add(String.format("BOM item %d: invalid quantity %s", i, item.quantity()));
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new OrderProcessingException("BOM validation failed: " + String.join(", ", errors))
+                    .addDetail("orderNumber", orderNumber)
+                    .addDetail("validationErrors", errors);
+        }
+
+        log.debug("BOM validation passed for order {}: {} items, {} total modules",
+                orderNumber, bomResult.items().size(), bomResult.totalModules());
     }
 
     // ========================
