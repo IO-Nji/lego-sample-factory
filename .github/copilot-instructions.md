@@ -1,134 +1,90 @@
 # LIFE System – Copilot Instructions
 
-> **Last Updated:** February 1, 2026  
-> This file guides AI coding agents through the LIFE (LEGO Integrated Factory Execution) microservice architecture. It captures critical patterns, domain logic, and workflows required for productive contribution.
-> 
-> **Navigation:** This is the comprehensive reference. See also:
-> - `_dev-docs/BusinessScenarios.md` - Order fulfillment workflows (4 scenarios)
-> - `_dev-docs/PROJECT_TECHNICAL_OVERVIEW.md` - Architecture deep-dive
-> - `README.md` - Project overview and technology stack
-> - `PRE_COMMIT_CHECKLIST.md` - Validation checklist before commits
-
----
-
-## 🚀 Speed Reference for AI Agents
-
-**First-Time Setup:**
-```bash
-cp .env.example .env  # Configure ports & JWT secret
-docker-compose up -d  # Start all services
-```
-
-**Common Dev Tasks:**
-```bash
-# Rebuild single service after code change
-docker-compose build --no-cache order-processing-service && docker-compose up -d order-processing-service
-
-# Debug service
-docker-compose logs -f order-processing-service
-
-# Test scenarios (run before every commit)
-./test-scenario-1.sh && ./test-scenario-2.sh && ./test-scenario-3.sh && ./test-scenario-4.sh
-```
-
-**Critical Architecture Rules:**
-- ✅ All traffic → nginx → api-gateway → services (NEVER bypass gateway)
-- ✅ Stock updates ONLY on completion endpoints (not confirmation)
-- ✅ Services communicate via REST (no shared database)
-- ✅ JWT secret must match in: `.env`, `api-gateway/application.properties`, `user-service/application.properties`
-- ✅ H2 in-memory DB resets on service restart (check DataInitializer for seed data)
-
-**9 Workstations (WS-1 to WS-9):**
-- WS-1, WS-2, WS-3: Manufacturing (Injection Molding, Pre-Production, Finishing)
-- WS-4, WS-5, WS-6: Assembly (Gear, Motor, Final Assembly)
-- WS-7: Plant Warehouse (Customer orders)
-- WS-8: Modules Supermarket (Internal warehouse)
-- WS-9: Parts Supply (Raw materials)
-
-**4 Business Scenarios:**
-1. Direct fulfillment (stock available at WS-7)
-2. Warehouse order + Final Assembly (modules available at WS-8)
-3. Full production (manufacture parts → assemble modules → final assembly)
-4. High-volume direct production (qty ≥ LOT_SIZE_THRESHOLD, bypasses warehouse)
-
-**Test Credentials (ALL use password: `password`):**
-```bash
-# Admin & System
-lego_admin              # ADMIN role, all workstations
-viewer_user             # VIEWER role, read-only
-
-# Warehouses (WS-7, WS-8, WS-9)
-warehouse_operator      # WS-7 Plant Warehouse
-modules_supermarket     # WS-8 Modules Supermarket
-parts_supply            # WS-9 Parts Supply
-
-# Planning & Control
-production_planning     # Production Planning (no workstation)
-production_control      # Production Control (WS-1,2,3,9)
-assembly_control        # Assembly Control (WS-4,5,6,8)
-
-# Manufacturing (WS-1, WS-2, WS-3)
-injection_molding       # WS-1 Injection Molding
-parts_preproduction     # WS-2 Parts Pre-Production  
-part_finishing          # WS-3 Part Finishing
-
-# Assembly (WS-4, WS-5, WS-6)
-gear_assembly           # WS-4 Gear Assembly
-motor_assembly          # WS-5 Motor Assembly
-final_assembly          # WS-6 Final Assembly
-```
-
----
+> **Last Updated:** February 2, 2026  
+> Concise guide for AI agents. Extended docs: `_dev-docs/BusinessScenarios.md`, `PRE_COMMIT_CHECKLIST.md`
 
 ## Quick Start
 
 ```bash
-# First time: copy environment template and configure ports
-# Default: 1011 for dev (NGINX_ROOT_PROXY_EXTERNAL_PORT), 80 for prod
-cp .env.example .env
-# Edit .env to set JWT secret, ports, and other config
-
-# Start all services: nginx + frontend + api-gateway + 5 microservices
-docker-compose up -d
-
-# Watch gateway logs for routing/auth issues
-docker-compose logs -f api-gateway
-
-# Fast frontend dev loop (backend in Docker, frontend local on :5173)
-docker-compose up -d api-gateway user-service inventory-service order-processing-service masterdata-service
-cd lego-factory-frontend && npm run dev
-
-# Rebuild + restart a single service after code changes
-docker-compose build --no-cache order-processing-service && docker-compose up -d order-processing-service
-
-# Validate business scenarios (All 4 scenarios complete)
-./test-scenario-1.sh  # Direct fulfillment from stock
-./test-scenario-2.sh  # Warehouse order + final assembly
-./test-scenario-3.sh  # Full production pipeline (all 9 workstations)
-./test-scenario-4.sh  # High volume direct production (qty ≥ LOT_SIZE_THRESHOLD)
+cp .env.example .env && docker-compose up -d  # Start all services
+docker-compose logs -f api-gateway            # Debug routing/auth
+./test-scenario-1.sh && ./test-scenario-2.sh && ./test-scenario-3.sh && ./test-scenario-4.sh  # Validate before commit
 ```
 
----
-
-## Architecture: Six Microservices + Single Entry Point
+## Architecture (Critical Rules)
 
 ```
-nginx-root-proxy (port 1011/80)
-  ├─ /api/* → api-gateway:8011 (JWT validation, route to services)
-  └─ /* → frontend (React SPA)
-
-api-gateway routes to 5 microservices:
-  ├─ user-service:8012 (auth, users)
-  ├─ masterdata-service:8013 (products, variants, cached)
-  ├─ inventory-service:8014 (stock levels by workstation)
-  ├─ order-processing-service:8015 (orders, workflows)
-  └─ simal-integration-service:8016 (scheduling, Gantt charts)
+nginx:1011 → api-gateway:8011 → { user:8012, masterdata:8013, inventory:8014, order:8015, simal:8016 }
 ```
 
-**Critical rule:** All external traffic MUST flow through api-gateway. Never bypass to a service directly.  
-**Service communication:** REST over Docker DNS (e.g., `http://inventory-service:8014`). No direct DB access between services.  
-**Database isolation:** Each service has independent H2 in-memory database, seeded by `DataInitializer`.  
-**JWT:** Issued by user-service, validated by gateway. Keep `SECURITY_JWT_SECRET` synchronized across `.env` and all `application.properties` files.
+- **NEVER bypass gateway** – all traffic flows nginx → gateway → services
+- **No shared DB** – services communicate via REST only (Docker DNS: `http://inventory-service:8014`)
+- **JWT sync required** – `SECURITY_JWT_SECRET` must match in `.env`, `api-gateway/application.properties`, `user-service/application.properties`
+- **H2 resets on restart** – seed data in each service's `DataInitializer`
+
+## Domain Model
+
+**9 Workstations:** WS-1,2,3 (Manufacturing) → WS-4,5,6 (Assembly) → WS-7 (Plant Warehouse) ← WS-8 (Modules) ← WS-9 (Parts)
+
+**Order Hierarchy:** CustomerOrder → WarehouseOrder → ProductionOrder → ControlOrders → WorkstationOrders
+
+**4 Business Scenarios:**
+1. Direct fulfillment (WS-7 has stock)
+2. Warehouse + Final Assembly (WS-8 has modules)
+3. Full production (WS-1→WS-3→WS-4→WS-6)
+4. High-volume direct (qty ≥ LOT_SIZE_THRESHOLD bypasses warehouse)
+
+## Critical Patterns
+
+### Stock Updates
+- ✅ **Completion endpoints** (`POST .../complete`) credit/debit inventory
+- ❌ **Confirmation endpoints** (`PUT`) only set `triggerScenario`, never move stock
+
+### Order Flow
+```java
+// OrderOrchestrationService handles all status propagation
+orchestrationService.notifyWorkstationOrderComplete(WorkstationOrderType.PART_FINISHING, controlOrderId);
+// Use constants: OrderOrchestrationService.STATUS_COMPLETED (not "COMPLETED" strings)
+```
+
+### Inter-Service Calls
+```java
+// Use dedicated clients (not raw RestTemplate)
+inventoryClient.creditStock(7L, "PRODUCT", productId, quantity, "FULFILLMENT", "Order completed");
+masterdataClient.getProductModules(productId);  // Returns componentId, map to moduleId
+```
+
+### Frontend Patterns
+```javascript
+// User workstation: session?.user?.workstationId (flat field, NOT session?.user?.workstation?.id)
+// Dashboard routing: DashboardPage.jsx uses WORKSTATION_DASHBOARDS[workstationId]
+// All dashboards use StandardDashboardLayout wrapper
+```
+
+## Test Credentials (password: `password`)
+
+| Role | Username | Workstation |
+|------|----------|-------------|
+| Admin | `lego_admin` | All |
+| Plant Warehouse | `warehouse_operator` | WS-7 |
+| Modules Supermarket | `modules_supermarket` | WS-8 |
+| Production Planning | `production_planning` | — |
+| Final Assembly | `final_assembly` | WS-6 |
+
+## Common Commands
+
+```bash
+docker-compose build --no-cache order-processing-service && docker-compose up -d order-processing-service  # Rebuild service
+cd lego-factory-frontend && npm run dev  # Frontend dev (backend in Docker)
+./push-to-registry.sh --all              # Deploy to registry
+```
+
+## Pitfalls to Avoid
+
+1. **Endpoint routing** – add gateway routes in `api-gateway/application.properties` for new endpoints
+2. **HTTP verbs** – PUT for status changes, POST for actions (start/complete/halt)
+3. **BOM tracking** – preserve `productId` through WarehouseOrderItem → FinalAssemblyOrder chain
+4. **Docker hostnames** – use `http://service-name:port` (not localhost) inside containers
 
 ---
 
@@ -653,7 +609,7 @@ curl -X POST http://localhost:1011/api/auth/login \
 | `ASSEMBLY_CONTROL` | `assembly_control` | WS-4,5,6,8 | AssemblyControlDashboard | Assembly control orders, module tracking |
 | `PARTS_SUPPLY` | `parts_supply` | WS-9 | PartsSupplyWarehouseDashboard | Supply orders, parts distribution |
 | `MANUFACTURING` | `injection_molding`<br>`parts_preproduction`<br>`part_finishing` | Assigned WS only | Workstation-specific | Workstation orders (start/complete/halt) |
-| `VIEWER` | `viewer_user` | ALL (read-only) | ViewerDashboard | Read-only access, no modifications |
+| `VIEWER` | `viewer_user` | ALL (read-only) | Fallback view (no dedicated dashboard) | Read-only access, no modifications |
 
 **Access Control Examples:**
 ```java
@@ -1118,101 +1074,3 @@ git push origin feature/your-feature  # Push to remote
 13. **Status magic strings**: Use `OrderOrchestrationService.STATUS_COMPLETED` constants instead of hardcoded `"COMPLETED"` strings.
 14. **Inter-service calls**: Use `InventoryClient`/`MasterdataClient` instead of raw RestTemplate calls for centralized error handling.
 
----
-
-## Additional Notes
-
-### START: Multiple warehouse orders interfering with production
-  ↓
-  Q: Is productionOrderId field set on warehouse order?
-  ├─ NO → Production created but link not established
-  │        Check WarehouseOrderService.createProductionOrder()
-  │        Should call: warehouseOrder.setProductionOrderId()
-  │        ↓
-  │        Fix: Manually update database or recreate production order
-  │        UPDATE warehouse_order SET production_order_id = X WHERE id = Y;
-  │
-  └─ YES → Check fulfillment logic
-           ↓
-           Q: Does fulfillment bypass stock checks?
-           ├─ NO → WarehouseOrderService.fulfillWarehouseOrder() bug
-           │        Should check: if (order.getProductionOrderId() != null)
-           │        Then bypass recalculateTriggerScenario()
-           │        ↓
-           │        Fix: Update fulfillment logic to check productionOrderId
-           │
-           └─ YES → Check if modules were credited correctly
-                   ↓
-                   GET /api/inventory?workstationId=8&itemType=MODULE
-                   ↓
-                   Q: Do modules exist in WS-8?
-                   ├─ NO → Production completion didn't credit inventory
-                   │        Check OrderOrchestrationService.creditModulesSupermarketFromProduction()
-                   │        Check inventory-service logs for credit operations
-                   └─ YES → Fulfillment should work
-                            If "Fulfill" button missing, check frontend:
-                            - order.triggerScenario should be DIRECT_FULFILLMENT
-                            - WarehouseOrderCard.jsx button logic
-```
-# 1. Check production order hierarchy
-curl http://localhost:1011/api/production-orders/{id} \
-  -H "Authorization: Bearer $TOKEN" | jq
-
-# 2. Check all control orders for production
-curl "http://localhost:1011/api/production-control-orders?productionOrderId={id}" \
-  -H "Authorization: Bearer $TOKEN" | jq
-curl "http://localhost:1011/api/assembly-control-orders?productionOrderId={id}" \
-  -H "Authorization: Bearer $TOKEN" | jq
-
-# 3. Check supply orders for a control order
-curl "http://localhost:1011/api/supply-orders?targetWorkstationId={wsId}" \
-  -H "Authorization: Bearer $TOKEN" | jq
-
-# 4. Check workstation order completion counts
-curl "http://localhost:1011/api/injection-molding-orders?productionControlOrderId={id}" \
-  -H "Authorization: Bearer $TOKEN" | jq '[.[] | select(.status=="COMPLETED")] | length'
-
-# 5. Force production order completion (if stuck)
-# WARNING: Only use if orchestration service failed
-curl -X POST http://localhost:1011/api/production-orders/{id}/submit \
-  -H "Authorization: Bearer $TOKEN"
-
-# 6. Check warehouse order production link
-curl http://localhost:1011/api/warehouse-orders/{id} \
-  -H "Authorization: Bearer $TOKEN" | jq '.productionOrderId'
-
-# 7. Verify module inventory after production
-curl "http://localhost:1011/api/inventory?workstationId=8&itemType=MODULE" \
-  -H "Authorization: Bearer $TOKEN" | jq
-
-  # 1. Check schedule structure
-curl http://localhost:1011/api/simal/schedules?productionOrderId={id} \
-  -H "Authorization: Bearer $TOKEN" | jq
-
-# Expected structure:
-# {
-#   "scheduleId": 1,
-#   "productionOrderId": 1,
-#   "tasks": [
-#     {
-#       "taskId": "INJ-1-1",
-#       "taskType": "INJECTION_MOLDING",
-#       "workstationId": 1,
-#       "startTime": "2026-02-01T08:00:00",
-#       "endTime": "2026-02-01T10:00:00",
-#       "productName": "LEGO Model Car",
-#       "quantity": 10,
-#       "status": "PENDING"
-#     }
-#   ]
-# }
-
-# 2. Validate task times are ISO 8601 format
-curl http://localhost:1011/api/simal/schedules?productionOrderId={id} \
-  -H "Authorization: Bearer $TOKEN" | \
-  jq '.tasks[0] | {start: .startTime, end: .endTime}'
-
-# 3. Check workstation IDs are valid (1-9)
-curl http://localhost:1011/api/simal/schedules?productionOrderId={id} \
-  -H "Authorization: Bearer $TOKEN" | \
-  jq '.tasks[].workstationId' | sort -u
