@@ -1,0 +1,229 @@
+# =========================================================
+# LIFE System - Production Docker Compose
+# =========================================================
+# This file is for SERVER DEPLOYMENT ONLY
+# Images are pulled from the local registry, NOT built locally
+#
+# Usage:
+#   1. Copy .env.example to .env and configure
+#   2. Run: ./update-from-registry.sh
+#   3. Or manually: docker compose up -d
+# =========================================================
+
+services:
+  # ==============================================
+  # ROOT NGINX PROXY - Entry point for all traffic
+  # ==============================================
+  nginx-root-proxy:
+    image: 192.168.1.237:5000/lego-sample-factory-nginx-root-proxy:latest
+    container_name: lego-nginx-proxy
+    ports:
+      - "${NGINX_ROOT_PROXY_EXTERNAL_PORT:-1011}:80"
+    depends_on:
+      - frontend
+      - api-gateway
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==============================================
+  # FRONTEND - React Application
+  # ==============================================
+  frontend:
+    image: 192.168.1.237:5000/lego-sample-factory-frontend:latest
+    container_name: lego-frontend
+    ports:
+      - "8080:80"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - api-gateway
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==============================================
+  # API GATEWAY - Central routing service
+  # ==============================================
+  api-gateway:
+    image: 192.168.1.237:5000/lego-sample-factory-api-gateway:latest
+    container_name: lego-api-gateway
+    ports:
+      - "${API_GATEWAY_HOST_PORT:-8011}:${API_GATEWAY_PORT:-8011}"
+    environment:
+      - SERVER_PORT=${API_GATEWAY_PORT:-8011}
+      - SECURITY_JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SECURITY_JWT_EXPIRATION=${SECURITY_JWT_EXPIRATION:-PT1H}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - USER_SERVICE_URL=http://user-service:${USER_SERVICE_PORT:-8012}
+      - MASTERDATA_SERVICE_URL=http://masterdata-service:${MASTERDATA_SERVICE_PORT:-8013}
+      - INVENTORY_SERVICE_URL=http://inventory-service:${INVENTORY_SERVICE_PORT:-8014}
+      - ORDER_PROCESSING_SERVICE_URL=http://order-processing-service:${ORDER_PROCESSING_SERVICE_PORT:-8015}
+      - SIMAL_INTEGRATION_SERVICE_URL=http://simal-integration-service:${SIMAL_INTEGRATION_SERVICE_PORT:-8016}
+    depends_on:
+      - user-service
+      - masterdata-service
+      - inventory-service
+      - order-processing-service
+      - simal-integration-service
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${API_GATEWAY_PORT:-8011}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==============================================
+  # USER SERVICE - Authentication & User Management
+  # ==============================================
+  user-service:
+    image: 192.168.1.237:5000/lego-sample-factory-user-service:latest
+    container_name: lego-user-service
+    environment:
+      - SERVER_PORT=${USER_SERVICE_PORT:-8012}
+      - JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SECURITY_JWT_EXPIRATION=${SECURITY_JWT_EXPIRATION:-PT1H}
+      - SPRING_DATASOURCE_URL=${H2_DB_USER_PATH}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
+      - H2_CONSOLE_ENABLED=${H2_CONSOLE_ENABLED:-false}
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${USER_SERVICE_PORT:-8012}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==============================================
+  # MASTERDATA SERVICE - Master Data Management
+  # ==============================================
+  masterdata-service:
+    image: 192.168.1.237:5000/lego-sample-factory-masterdata-service:latest
+    container_name: lego-masterdata-service
+    environment:
+      - SERVER_PORT=${MASTERDATA_SERVICE_PORT:-8013}
+      - SECURITY_JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SPRING_DATASOURCE_URL=${H2_DB_MASTERDATA_PATH}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
+      - H2_CONSOLE_ENABLED=${H2_CONSOLE_ENABLED:-false}
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${MASTERDATA_SERVICE_PORT:-8013}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==============================================
+  # INVENTORY SERVICE - Inventory Management
+  # ==============================================
+  inventory-service:
+    image: 192.168.1.237:5000/lego-sample-factory-inventory-service:latest
+    container_name: lego-inventory-service
+    environment:
+      - SERVER_PORT=${INVENTORY_SERVICE_PORT:-8014}
+      - SECURITY_JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SPRING_DATASOURCE_URL=${H2_DB_INVENTORY_PATH}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
+      - H2_CONSOLE_ENABLED=${H2_CONSOLE_ENABLED:-false}
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${INVENTORY_SERVICE_PORT:-8014}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==============================================
+  # ORDER PROCESSING SERVICE - Order Management
+  # ==============================================
+  order-processing-service:
+    image: 192.168.1.237:5000/lego-sample-factory-order-processing-service:latest
+    container_name: lego-order-processing-service
+    environment:
+      # Core configuration
+      - SERVER_PORT=${ORDER_PROCESSING_SERVICE_PORT:-8015}
+      - SECURITY_JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      # Database configuration
+      - SPRING_DATASOURCE_URL=${H2_DB_ORDER_PROCESSING_PATH}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
+      - H2_CONSOLE_ENABLED=${H2_CONSOLE_ENABLED:-false}
+      # Service URLs
+      - inventory.service.url=http://inventory-service:${INVENTORY_SERVICE_PORT:-8014}
+      - simal.api.base-url=http://simal-integration-service:${SIMAL_INTEGRATION_SERVICE_PORT:-8016}/api
+      # Thresholds (externalized configuration)
+      - LOT_SIZE_THRESHOLD=${LOT_SIZE_THRESHOLD:-3}
+      - MAX_ORDER_ITEMS=${MAX_ORDER_ITEMS:-100}
+      - STOCK_RESERVE_MINUTES=${STOCK_RESERVE_MINUTES:-30}
+      - STOCK_SAFETY_MARGIN_PERCENT=${STOCK_SAFETY_MARGIN_PERCENT:-10}
+      - MAX_RETRIES=${MAX_RETRIES:-3}
+      # Timeouts (milliseconds)
+      - MASTERDATA_TIMEOUT_MS=${MASTERDATA_TIMEOUT_MS:-5000}
+      - INVENTORY_TIMEOUT_MS=${INVENTORY_TIMEOUT_MS:-10000}
+      - SIMAL_TIMEOUT_MS=${SIMAL_TIMEOUT_MS:-30000}
+      # Feature flags
+      - ENABLE_CACHING=${ENABLE_CACHING:-false}
+      - ENABLE_ASYNC_PROCESSING=${ENABLE_ASYNC_PROCESSING:-false}
+      - ENABLE_CIRCUIT_BREAKER=${ENABLE_CIRCUIT_BREAKER:-false}
+      - ENABLE_DETAILED_LOGGING=${ENABLE_DETAILED_LOGGING:-false}
+      - ENABLE_AUTO_STATUS_PROPAGATION=${ENABLE_AUTO_STATUS_PROPAGATION:-true}
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${ORDER_PROCESSING_SERVICE_PORT:-8015}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==============================================
+  # SIMAL INTEGRATION SERVICE - External System Integration
+  # ==============================================
+  simal-integration-service:
+    image: 192.168.1.237:5000/lego-sample-factory-simal-integration-service:latest
+    container_name: lego-simal-integration-service
+    environment:
+      - SERVER_PORT=${SIMAL_INTEGRATION_SERVICE_PORT:-8016}
+      - SECURITY_JWT_SECRET=${SECURITY_JWT_SECRET}
+      - SPRING_DATASOURCE_URL=${H2_DB_SIMAL_INTEGRATION_PATH}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.H2Dialect
+      - H2_CONSOLE_ENABLED=${H2_CONSOLE_ENABLED:-false}
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${SIMAL_INTEGRATION_SERVICE_PORT:-8016}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  lego-network:
+    driver: bridge
