@@ -174,6 +174,9 @@ Implements 4 distinct fulfillment workflows from thesis research:
 - ✅ **Automatic Completion**: Production orders auto-complete and trigger downstream processing (no manual submission)
 - ✅ **Direct Fulfillment Bypass**: Orders with linked production skip stock checks (modules already reserved)
 - ✅ **Frontend Smart Buttons**: Status-aware action buttons based on backend `triggerScenario` field
+- ✅ **Configuration Externalization**: All settings externalized via `@ConfigurationProperties`
+- ✅ **Spring Profiles**: `dev`, `prod`, `cloud` profiles for environment-specific configuration
+- ✅ **Registry Deployment**: Server deployment from Docker registry (192.168.1.237:5000)
 
 **Order State Machines:**
 ```
@@ -229,16 +232,37 @@ ProductionOrder: PENDING → PLANNED → IN_PRODUCTION → COMPLETED (auto-trigg
 - **Node.js 18+** (for frontend development)
 - **Git**
 
-### One-Command Deployment
+### One-Command Deployment (Development)
 
 ```bash
 # Clone repository
 git clone <repository-url>
 cd lego-sample-factory
 
-# Start all services
+# Start all services (builds locally)
 docker-compose up -d
 ```
+
+### Server Deployment (Production)
+
+For production servers using pre-built Docker images from registry:
+
+```bash
+# On your server (e.g., 192.168.1.237)
+git clone -b prod <repository-url>
+cd lego-sample-factory/deploy
+
+# First-time setup
+./setup.sh
+
+# Pull images and start
+./update.sh
+```
+
+**Registry-based deployment:**
+- Uses pre-built images from `192.168.1.237:5000`
+- No source code compilation on server
+- Quick updates: just `./update.sh`
 
 **Access Application:**
 - Frontend: `http://localhost:1011` (or `:80` if `NGINX_ROOT_PROXY_EXTERNAL_PORT=80`)
@@ -381,6 +405,13 @@ docker-compose build --no-cache frontend && docker-compose up -d frontend
 
 ## 🛣️ Future Enhancements
 
+**Recently Completed:**
+- [x] **Configuration Externalization**: Spring profiles (dev/prod/cloud) implemented
+- [x] **Service Layer Refactoring**: FulfillmentService decomposed into focused services
+- [x] **Exception Handling**: Standardized error codes across all 5 microservices
+- [x] **API Contract Documentation**: All cross-service contracts documented
+
+**Planned:**
 - [ ] **Kubernetes Deployment**: Helm charts for cloud-native scaling
 - [ ] **PostgreSQL Migration**: Production-grade persistence layer
 - [ ] **Redis Caching**: Session store & API response caching
