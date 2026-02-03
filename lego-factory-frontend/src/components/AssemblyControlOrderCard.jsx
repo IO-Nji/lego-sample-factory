@@ -252,50 +252,6 @@ function AssemblyControlOrderCard({
           show: !!onViewDetails
         });
         break;
-
-      case 'CONFIRMED':
-        // Check supply order status to determine button
-        if (loadingSupply) {
-          actions.push({
-            label: 'Loading...',
-            variant: 'outline',
-            size: 'small',
-            disabled: true,
-            show: true
-          });
-        } else if (hasFulfilledSupply) {
-          actions.push({
-            label: '🚀 Dispatch to Workstation',
-            variant: 'success',
-            size: 'small',
-            onClick: () => onDispatch(order.id),
-            show: !!onDispatch
-          });
-        } else if (hasActiveSupply) {
-          actions.push({
-            label: '⏳ Waiting for Parts...',
-            variant: 'outline',
-            size: 'small',
-            disabled: true,
-            show: true
-          });
-        } else {
-          actions.push({
-            label: '📦 Request Parts',
-            variant: 'primary',
-            size: 'small',
-            onClick: () => onRequestParts(order),
-            show: !!onRequestParts
-          });
-        }
-        actions.push({
-          label: 'Details',
-          variant: 'ghost',
-          size: 'small',
-          onClick: () => onViewDetails(order),
-          show: !!onViewDetails
-        });
-        break;
       
       case 'IN_PROGRESS':
         // Step 6: Work in progress - can complete or halt

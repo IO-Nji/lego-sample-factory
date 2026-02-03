@@ -1,0 +1,1125 @@
+/* ============================================================================
+   HOME PAGE - ARCHITECTURE DIAGRAM
+   ============================================================================
+   Microservices architecture visualization with service boxes and connections.
+   ============================================================================ */
+
+@import '../variables.css';
+
+/* ============================================================================
+   ARCHITECTURE SECTION CONTAINER
+   ============================================================================ */
+.architecture-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  overflow: visible;
+}
+
+.architecture-section-header {
+  text-align: center;
+  flex-shrink: 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid rgba(44, 90, 160, 0.15);
+}
+
+.architecture-section-header h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gray-800, #2d3748);
+  margin: 0;
+}
+
+.architecture-section-header p {
+  font-size: 0.7rem;
+  color: var(--gray-600, #718096);
+  margin: 0.15rem 0 0 0;
+}
+
+/* ============================================================================
+   ARCHITECTURE DIAGRAM CONTAINER
+   ============================================================================ */
+.architecture-diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, rgba(44, 90, 160, 0.02) 0%, rgba(33, 150, 243, 0.04) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(44, 90, 160, 0.1);
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ============================================================================
+   ARCHITECTURE LAYERS
+   ============================================================================ */
+.architecture-layer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.architecture-layer-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+  padding: 0.1rem 0.4rem;
+  background: rgba(44, 90, 160, 0.08);
+  border-radius: 4px;
+}
+
+/* ============================================================================
+   SERVICE BOX GRID
+   ============================================================================ */
+.services-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* ============================================================================
+   SERVICE BOX STYLING
+   ============================================================================ */
+.service-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 75px;
+  padding: 0.4rem 0.6rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 2px solid #2c5aa0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.service-box:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.25);
+  border-color: #1a3d7a;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+.service-box .service-icon {
+  font-size: 1.2rem;
+  margin-bottom: 0.15rem;
+}
+
+.service-box .service-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.service-box .service-port {
+  font-size: 0.55rem;
+  color: #888;
+  font-family: 'Monaco', 'Consolas', monospace;
+  margin-top: 0.15rem;
+}
+
+/* ============================================================================
+   HEALTH INDICATORS
+   ============================================================================ */
+.service-box .health-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4caf50;
+  box-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
+}
+
+.service-box .health-indicator.warning {
+  background: #ff9800;
+  box-shadow: 0 0 4px rgba(255, 152, 0, 0.5);
+}
+
+.service-box .health-indicator.error {
+  background: #f44336;
+  box-shadow: 0 0 4px rgba(244, 67, 54, 0.5);
+  animation: pulse-error 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-error {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+/* ============================================================================
+   SERVICE BOX VARIANTS (Color-coded by type)
+   ============================================================================ */
+.service-box.gateway {
+  border-color: #9c27b0;
+  background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+}
+
+.service-box.gateway .service-name {
+  color: #7b1fa2;
+}
+
+.service-box.gateway:hover {
+  border-color: #6a1b9a;
+  background: linear-gradient(135deg, #e1bee7 0%, #ce93d8 100%);
+}
+
+.service-box.core {
+  border-color: #2196f3;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+.service-box.core .service-name {
+  color: #1565c0;
+}
+
+.service-box.core:hover {
+  border-color: #1565c0;
+  background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
+}
+
+.service-box.data {
+  border-color: #4caf50;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+}
+
+.service-box.data .service-name {
+  color: #2e7d32;
+}
+
+.service-box.data:hover {
+  border-color: #2e7d32;
+  background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
+}
+
+.service-box.integration {
+  border-color: #ff9800;
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+}
+
+.service-box.integration .service-name {
+  color: #ef6c00;
+}
+
+.service-box.integration:hover {
+  border-color: #ef6c00;
+  background: linear-gradient(135deg, #ffecb3 0%, #ffe082 100%);
+}
+
+/* ============================================================================
+   ARCHITECTURE CONNECTIONS
+   ============================================================================ */
+.architecture-connections {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0;
+}
+
+.arch-connector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.arch-connector .connector-line {
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(44, 90, 160, 0.2), rgba(44, 90, 160, 0.5), rgba(44, 90, 160, 0.2));
+  border-radius: 1px;
+}
+
+.arch-connector .connector-arrow {
+  font-size: 0.8rem;
+  color: #2c5aa0;
+}
+
+.arch-connector-vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem 0;
+}
+
+.arch-connector-vertical .connector-line-v {
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(180deg, rgba(44, 90, 160, 0.5), rgba(44, 90, 160, 0.2));
+  border-radius: 1px;
+}
+
+.arch-connector-vertical .connector-arrow-v {
+  font-size: 0.8rem;
+  color: #2c5aa0;
+}
+
+/* ============================================================================
+   ARCHITECTURE LEGEND
+   ============================================================================ */
+.architecture-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 6px;
+}
+
+.architecture-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6rem;
+  color: #666;
+}
+
+.architecture-legend .legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legend-color.gateway { background: linear-gradient(135deg, #f3e5f5, #e1bee7); }
+.legend-color.core { background: linear-gradient(135deg, #e3f2fd, #bbdefb); }
+.legend-color.data { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); }
+.legend-color.integration { background: linear-gradient(135deg, #fff8e1, #ffecb3); }
+
+/* ============================================================================
+   TECH STACK BADGES
+   ============================================================================ */
+.tech-stack {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.tech-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(44, 90, 160, 0.08);
+  border: 1px solid rgba(44, 90, 160, 0.15);
+  border-radius: 12px;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: #2c5aa0;
+  transition: all 0.2s ease;
+}
+
+.tech-badge:hover {
+  background: rgba(44, 90, 160, 0.15);
+  transform: scale(1.05);
+}
+
+.tech-badge .tech-icon {
+  font-size: 0.75rem;
+}
+
+/* ============================================================================
+   MICROSERVICES GRID (Alternative Layout)
+   ============================================================================ */
+.microservices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.microservice-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid rgba(44, 90, 160, 0.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.microservice-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.15);
+  border-color: rgba(44, 90, 160, 0.3);
+}
+
+.microservice-card .service-emoji {
+  font-size: 1.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.microservice-card .service-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  text-align: center;
+}
+
+.microservice-card .service-desc {
+  font-size: 0.55rem;
+  color: #666;
+  text-align: center;
+  margin-top: 0.2rem;
+}
+
+/* ============================================================================
+   ARCHITECTURE TOOLTIPS
+   ============================================================================ */
+.service-box[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d66 100%);
+  color: white;
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: normal;
+  width: max-content;
+  max-width: 180px;
+  text-align: center;
+  z-index: 100;
+  margin-bottom: 0.4rem;
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.35);
+  line-height: 1.4;
+}
+
+.service-box[data-tooltip]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #2c5aa0;
+  margin-bottom: 0;
+}
+
+/* ============================================================================
+   HORIZONTAL ARCHITECTURE DIAGRAM (New Layout)
+   ============================================================================ */
+.architecture-diagram-horizontal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, rgba(44, 90, 160, 0.02) 0%, rgba(33, 150, 243, 0.04) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(44, 90, 160, 0.1);
+  flex: 1;
+}
+
+.services-horizontal-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  flex: 1;
+  align-content: center;
+}
+
+/* Horizontal Service Box: ICON | TEXT | STATUS in one line */
+.service-box-horizontal {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.5rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 2px solid #2c5aa0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  min-width: 0;
+  max-width: 85px;
+}
+
+.service-box-horizontal:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.25);
+  border-color: #1a3d7a;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+.service-box-horizontal .service-icon {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.service-box-horizontal .service-name-vertical {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  text-align: center;
+  line-height: 1.15;
+  flex: 1;
+  min-width: 0;
+}
+
+.service-box-horizontal .health-indicator {
+  position: relative;
+  top: auto;
+  right: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4caf50;
+  box-shadow: 0 0 3px rgba(76, 175, 80, 0.5);
+  flex-shrink: 0;
+}
+
+/* Service type colors */
+.service-box-horizontal.gateway {
+  border-color: #6366f1;
+}
+
+.service-box-horizontal.core {
+  border-color: #2c5aa0;
+}
+
+.service-box-horizontal.data {
+  border-color: #059669;
+}
+
+.service-box-horizontal.integration {
+  border-color: #d97706;
+}
+
+/* Horizontal Architecture Legend */
+.architecture-legend-horizontal {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0.4rem;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 6px;
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
+}
+
+.architecture-legend-horizontal .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: #666;
+}
+
+.architecture-legend-horizontal .legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.architecture-legend-horizontal .legend-color.gateway {
+  background: #6366f1;
+}
+
+.architecture-legend-horizontal .legend-color.core {
+  background: #2c5aa0;
+}
+
+.architecture-legend-horizontal .legend-color.data {
+  background: #059669;
+}
+
+.architecture-legend-horizontal .legend-color.integration {
+  background: #d97706;
+}
+
+/* Tooltip for horizontal service boxes */
+.service-box-horizontal[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d66 100%);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  white-space: normal;
+  width: max-content;
+  max-width: 160px;
+  text-align: center;
+  z-index: 100;
+  margin-bottom: 0.3rem;
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.35);
+  line-height: 1.4;
+}
+
+.service-box-horizontal[data-tooltip]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #2c5aa0;
+  margin-bottom: 0;
+}
+
+/* ============================================================================
+   LAYERED ARCHITECTURE DIAGRAM (New Design with Flow Arrows)
+   ============================================================================ */
+
+.architecture-layered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0.75rem 0.5rem;
+  background: linear-gradient(180deg, 
+    rgba(99, 102, 241, 0.03) 0%, 
+    rgba(44, 90, 160, 0.05) 40%,
+    rgba(5, 150, 105, 0.03) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(44, 90, 160, 0.12);
+  position: relative;
+  overflow: visible;
+  margin: 0 auto;
+}
+
+/* Architecture Layer Container */
+.arch-layer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0.35rem 0.4rem;
+  position: relative;
+  border-radius: 6px;
+  margin-bottom: 0;
+}
+
+.arch-layer .layer-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  padding: 0.15rem 0.4rem;
+  background: rgba(100, 116, 139, 0.1);
+  border-radius: 3px;
+  border-left: 2px solid rgba(100, 116, 139, 0.4);
+  align-self: flex-start;
+}
+
+.arch-layer .layer-services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  padding: 0.1rem 0;
+}
+
+/* Inline label within services row */
+.arch-layer .layer-services.with-label {
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.arch-layer .layer-label-inline {
+  position: absolute;
+  left: 0;
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  padding: 0.2rem 0.5rem;
+  background: rgba(100, 116, 139, 0.1);
+  border-radius: 4px;
+  border-left: 2px solid rgba(100, 116, 139, 0.4);
+  white-space: nowrap;
+}
+
+/* Layer-specific styling */
+.arch-layer.client-layer {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.05) 0%, transparent 100%);
+}
+
+.arch-layer.gateway-layer {
+  background: linear-gradient(90deg, rgba(147, 51, 234, 0.05) 0%, transparent 100%);
+}
+
+.arch-layer.services-layer {
+  background: linear-gradient(90deg, rgba(44, 90, 160, 0.05) 0%, transparent 100%);
+}
+
+/* Frontend service box variant */
+.service-box-horizontal.frontend {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.service-box-horizontal.frontend .service-name-vertical {
+  color: #1d4ed8;
+}
+
+/* ============================================================================
+   ANIMATED FLOW ARROWS
+   ============================================================================ */
+
+.arch-flow-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0;
+  position: relative;
+  margin-left: 0;
+}
+
+.arch-flow-arrow .arrow-line {
+  width: 4px;
+  height: 16px;
+  background: linear-gradient(180deg, 
+    #6366f1 0%, 
+    #8b5cf6 50%,
+    #a855f7 100%);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
+.arch-flow-arrow .arrow-line.animated-pulse::before {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.95) 50%, 
+    transparent 100%);
+  animation: flowDown 1.2s ease-in-out infinite;
+}
+
+@keyframes flowDown {
+  0% { top: -100%; }
+  100% { top: 200%; }
+}
+
+.arch-flow-arrow .arrow-head {
+  font-size: 0.85rem;
+  color: #8b5cf6;
+  line-height: 1;
+  animation: arrowBounce 1.5s ease-in-out infinite;
+  text-shadow: 0 0 6px rgba(139, 92, 246, 0.5);
+}
+
+@keyframes arrowBounce {
+  0%, 100% { opacity: 0.8; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(2px); }
+}
+
+.arch-flow-arrow .arrow-label {
+  display: none; /* Hide to prevent overflow - info available in tooltip */
+}
+
+/* Fan-out Arrow (Gateway to Services) */
+.arch-flow-arrow.fanout {
+  padding: 0.2rem 0;
+}
+
+.arch-flow-arrow.fanout .arrow-branches {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  position: relative;
+  padding-top: 0.25rem;
+}
+
+.arch-flow-arrow.fanout .arrow-branches::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 10px;
+  background: linear-gradient(180deg, #8b5cf6, #2c5aa0);
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
+}
+
+.arch-flow-arrow.fanout .branch-line {
+  width: 4px;
+  height: 12px;
+  background: linear-gradient(180deg, 
+    #2c5aa0 0%, 
+    #3b82f6 100%);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
+}
+
+.arch-flow-arrow.fanout .branch-line::before {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.9) 50%, 
+    transparent 100%);
+  animation: flowDown 1.5s ease-in-out infinite;
+}
+
+.arch-flow-arrow.fanout .branch-line.left::before {
+  animation-delay: 0.1s;
+}
+
+.arch-flow-arrow.fanout .branch-line.center::before {
+  animation-delay: 0.3s;
+}
+
+.arch-flow-arrow.fanout .branch-line.right::before {
+  animation-delay: 0.5s;
+}
+
+.arch-flow-arrow.fanout .arrow-heads {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.arch-flow-arrow.fanout .arrow-heads .arrow-head {
+  font-size: 0.55rem;
+  color: #2c5aa0;
+}
+
+/* ============================================================================
+   INTER-SERVICE COMMUNICATION INDICATOR
+   ============================================================================ */
+
+.inter-service-comm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  margin-top: 0.15rem;
+  margin-left: 0;
+}
+
+.inter-service-comm .comm-line {
+  flex: 1;
+  max-width: 120px;
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(44, 90, 160, 0.4) 0px,
+    rgba(44, 90, 160, 0.4) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  position: relative;
+  animation: dashFlow 2s linear infinite;
+}
+
+@keyframes dashFlow {
+  0% { background-position: 0 0; }
+  100% { background-position: 16px 0; }
+}
+
+.inter-service-comm .comm-label {
+  font-size: 0.5rem;
+  font-weight: 500;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* Legend updates for frontend color */
+.architecture-legend-horizontal .legend-color.frontend {
+  background: #3b82f6;
+}
+
+/* ============================================================================
+   CREATIVE SERVICES GRID - Multi-row Layout with Communication Lines
+   ============================================================================ */
+
+.services-grid-creative {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0.2rem 0 0 0;
+}
+
+/* Service Rows */
+.services-row-auth,
+.services-row-core,
+.services-row-data {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  position: relative;
+}
+
+.services-row-auth.with-label {
+  justify-content: center;
+}
+
+.services-row-auth.with-label .layer-label-inline {
+  position: absolute;
+  left: 0;
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  padding: 0.2rem 0.5rem;
+  background: rgba(100, 116, 139, 0.1);
+  border-radius: 4px;
+  border-left: 2px solid rgba(100, 116, 139, 0.4);
+  white-space: nowrap;
+}
+
+.services-row-data {
+  gap: 2rem;
+}
+
+/* Orchestrator highlight */
+.service-box-horizontal.orchestrator {
+  border-width: 2.5px;
+  box-shadow: 0 3px 10px rgba(44, 90, 160, 0.2);
+}
+
+/* ============================================================================
+   SERVICE CONNECTORS - Animated Communication Lines
+   ============================================================================ */
+
+.service-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.service-connector.vertical-connector {
+  padding: 0.15rem 0;
+}
+
+.service-connector.horizontal-connector {
+  flex-direction: row;
+  padding: 0 0.3rem;
+}
+
+/* Animated vertical line */
+.connector-line-animated {
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(180deg, 
+    #6366f1 0%, 
+    #8b5cf6 50%,
+    #a855f7 100%);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+}
+
+.connector-line-animated::before {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.95) 50%, 
+    transparent 100%);
+  animation: dataFlow 1.2s ease-in-out infinite;
+}
+
+/* Animated horizontal line */
+.connector-line-animated.horizontal {
+  width: 24px;
+  height: 3px;
+  background: linear-gradient(90deg, 
+    #f59e0b 0%, 
+    #fbbf24 50%,
+    #f59e0b 100%);
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+}
+
+.connector-line-animated.horizontal::before {
+  top: 0;
+  left: -100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.95) 50%, 
+    transparent 100%);
+  animation: dataFlowHorizontal 1.2s ease-in-out infinite;
+}
+
+@keyframes dataFlow {
+  0% { top: -100%; }
+  100% { top: 200%; }
+}
+
+@keyframes dataFlowHorizontal {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+/* Connector labels */
+.connector-label {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: #4b5563;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 0.12rem 0.3rem;
+  border-radius: 3px;
+  white-space: nowrap;
+  letter-spacing: 0.4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.horizontal-connector .connector-label {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ============================================================================
+   FAN-OUT CONNECTOR - Order to Data Services
+   ============================================================================ */
+
+.fanout-connector {
+  padding: 0.2rem 0;
+  width: 100%;
+  max-width: 200px;
+}
+
+.fanout-lines {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  position: relative;
+  height: 18px;
+}
+
+.fanout-lines::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 8px;
+  background: linear-gradient(180deg, #2c5aa0, #059669);
+  border-radius: 2px;
+  box-shadow: 0 0 4px rgba(5, 150, 105, 0.3);
+}
+
+.fanout-branch {
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(180deg, 
+    #059669 0%, 
+    #10b981 100%);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+  margin-top: 4px;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+.fanout-branch::before {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, 
+    transparent 0%, 
+    rgba(16, 185, 129, 0.9) 50%, 
+    transparent 100%);
+  animation: dataFlow 1.8s ease-in-out infinite;
+}
+
+.fanout-branch.left::before {
+  animation-delay: 0s;
+}
+
+.fanout-branch.right::before {
+  animation-delay: 0.4s;
+}
+
+/* Horizontal spread line connecting to branches */
+.fanout-lines::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: calc(50% - 1.5rem - 1px);
+  width: calc(3rem + 2px);
+  height: 3px;
+  background: linear-gradient(90deg, #10b981, #059669, #10b981);
+  border-radius: 2px;
+  box-shadow: 0 0 4px rgba(16, 185, 129, 0.3);
+}
+
+.fanout-labels {
+  display: flex;
+  justify-content: center;
+  gap: 2.5rem;
+  margin-top: 0.1rem;
+}
+
+.fanout-labels .connector-label {
+  color: #059669;
+}
+

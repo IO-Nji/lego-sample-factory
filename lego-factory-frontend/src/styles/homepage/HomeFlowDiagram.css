@@ -1,0 +1,1993 @@
+/* ============================================================================
+   HOME PAGE - FLOW DIAGRAM
+   ============================================================================
+   Order fulfillment process diagram with workstation cards and connectors.
+   ============================================================================ */
+
+@import '../variables.css';
+
+/* ============================================================================
+   FLOW SECTION CONTAINER (inside glass-card)
+   ============================================================================ */
+.home-flow-column .glass-card {
+  padding: 0.75rem;
+}
+
+.home-flow-column .section-title {
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid rgba(44, 90, 160, 0.15);
+}
+
+/* ============================================================================
+   FLOW DIAGRAM V3 - ENHANCED DESIGN
+   ============================================================================ */
+.flow-diagram-v3 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  background: linear-gradient(180deg, 
+    rgba(76, 175, 80, 0.03) 0%, 
+    rgba(44, 90, 160, 0.05) 50%,
+    rgba(156, 39, 176, 0.03) 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(44, 90, 160, 0.12);
+  overflow: visible;
+  flex: 1;
+  justify-content: space-between;
+}
+
+/* ============================================================================
+   ZONE CONTAINERS
+   ============================================================================ */
+.flow-zone {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  padding: 0.4rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.flow-zone.customer-zone {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.08) 0%, rgba(76, 175, 80, 0.15) 100%);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.flow-zone.warehouse-zone {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.08) 0%, rgba(255, 152, 0, 0.15) 100%);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.flow-zone.warehouse-zone.primary {
+  border-width: 2px;
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.2);
+}
+
+.flow-zone.modules-zone {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.08) 0%, rgba(33, 150, 243, 0.15) 100%);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+.flow-zone.assembly-zone {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.08) 0%, rgba(156, 39, 176, 0.15) 100%);
+  border-color: rgba(156, 39, 176, 0.3);
+}
+
+.flow-zone.production-zone {
+  background: linear-gradient(135deg, rgba(103, 58, 183, 0.05) 0%, rgba(33, 150, 243, 0.08) 100%);
+  border-color: rgba(103, 58, 183, 0.25);
+  border-style: dashed;
+}
+
+/* Zone Headers */
+.zone-header {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.3rem;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.zone-header.full-width {
+  justify-content: space-between;
+}
+
+.zone-icon {
+  font-size: 0.8rem;
+}
+
+.zone-badge {
+  font-size: 0.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d66 100%);
+  color: white;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.zone-title {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.zone-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.zone-content.compact {
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* ============================================================================
+   FLOW NODES
+   ============================================================================ */
+.flow-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.35rem 0.5rem;
+  background: white;
+  border-radius: 6px;
+  border: 2px solid #2c5aa0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 50px;
+}
+
+.flow-node .node-icon {
+  font-size: 1rem;
+}
+
+.flow-node .node-label {
+  font-size: 0.5rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  text-transform: uppercase;
+}
+
+.flow-node.customer-node {
+  border-color: #4caf50;
+}
+
+.flow-node.customer-node .node-label {
+  color: #2e7d32;
+}
+
+.flow-node.delivery-node {
+  border-color: #4caf50;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+}
+
+.flow-node.delivery-node .node-label {
+  color: #2e7d32;
+}
+
+/* ============================================================================
+   ANIMATED ARROWS
+   ============================================================================ */
+.flow-arrow-animated {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  position: relative;
+}
+
+.flow-arrow-animated.right::before {
+  content: '→';
+  font-size: 1.3rem;
+  color: #10b981;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+  animation: arrowPulseRight 1.2s ease-in-out infinite;
+}
+
+.flow-arrow-animated.up::before {
+  content: '↑';
+  font-size: 1.2rem;
+  color: #a855f7;
+  text-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+  animation: arrowPulseUp 1.2s ease-in-out infinite;
+}
+
+.flow-arrow-animated .arrow-text {
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #4b5563;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 0.12rem 0.3rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes arrowPulseRight {
+  0%, 100% { opacity: 0.7; transform: translateX(0) scale(1); }
+  50% { opacity: 1; transform: translateX(2px) scale(1.1); }
+}
+
+@keyframes arrowPulseUp {
+  0%, 100% { opacity: 0.7; transform: translateY(0) scale(1); }
+  50% { opacity: 1; transform: translateY(-2px) scale(1.1); }
+}
+
+/* ============================================================================
+   ORDER TYPE BADGES
+   ============================================================================ */
+.order-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.5rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.order-type-badge.customer-order {
+  background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+}
+
+.order-type-badge.warehouse-order {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(33, 150, 243, 0.3);
+}
+
+.order-type-badge.production-order {
+  background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(156, 39, 176, 0.3);
+}
+
+/* ============================================================================
+   DECISION DIAMOND
+   ============================================================================ */
+.decision-diamond {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 55px;
+  height: 55px;
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+  border: 2px solid #ff9800;
+  transform: rotate(45deg);
+  border-radius: 6px;
+  box-shadow: 0 3px 8px rgba(255, 152, 0, 0.3);
+}
+
+.decision-diamond > * {
+  transform: rotate(-45deg);
+}
+
+.decision-diamond .decision-icon {
+  font-size: 0.9rem;
+}
+
+.decision-diamond .decision-text {
+  font-size: 0.4rem;
+  font-weight: 700;
+  color: #e65100;
+  text-align: center;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.decision-diamond.small {
+  width: 40px;
+  height: 40px;
+}
+
+.decision-diamond.small .decision-icon {
+  font-size: 0.7rem;
+}
+
+.decision-diamond.small .decision-text {
+  font-size: 0.35rem;
+}
+
+/* ============================================================================
+   SCENARIO BRANCHES & TAGS
+   ============================================================================ */
+.scenario-branches {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.scenario-branches .branch {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.45rem;
+  font-weight: 600;
+  padding: 0.15rem 0.3rem;
+  border-radius: 4px;
+}
+
+.scenario-branches .branch.scenario-1 {
+  background: rgba(76, 175, 80, 0.15);
+  color: #2e7d32;
+}
+
+.scenario-branches .branch.scenario-2-4 {
+  background: rgba(255, 152, 0, 0.15);
+  color: #e65100;
+}
+
+.scenario-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.4rem;
+  font-weight: 800;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: white;
+}
+
+.scenario-tag.s1 {
+  background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+}
+
+.scenario-tag.s2 {
+  background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);
+}
+
+.scenario-tag.s3 {
+  background: linear-gradient(135deg, #9c27b0 0%, #6a1b9a 100%);
+}
+
+.scenario-tag.s4 {
+  background: linear-gradient(135deg, #ff5722 0%, #d84315 100%);
+}
+
+.mini-branches {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.mini-branch {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.5rem;
+  font-weight: 700;
+}
+
+.mini-branch.ok {
+  color: #4caf50;
+}
+
+.mini-branch.need {
+  color: #ff5722;
+}
+
+/* ============================================================================
+   MAIN FLOW PATH
+   ============================================================================ */
+.flow-main-path {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.scenario-path {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.3rem;
+  min-width: 60px;
+}
+
+.scenario-path.direct-path {
+  background: linear-gradient(180deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.2) 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.path-line {
+  width: 3px;
+  height: 20px;
+  border-radius: 2px;
+}
+
+.path-line.green {
+  background: linear-gradient(180deg, #4caf50 0%, #81c784 100%);
+}
+
+.path-label {
+  font-size: 0.4rem;
+  font-weight: 600;
+  color: #2e7d32;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.path-label .scenario-num {
+  display: block;
+  font-size: 0.5rem;
+  font-weight: 800;
+}
+
+/* ============================================================================
+   EXTENDED FLOW (Scenarios 2-4)
+   ============================================================================ */
+.extended-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.assembly-path {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* ============================================================================
+   PRODUCTION ZONE
+   ============================================================================ */
+.scenario-indicators {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.production-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.3rem 0;
+}
+
+.production-pipeline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.pipeline-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.3rem 0.4rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  min-width: 60px;
+}
+
+.pipeline-stage.planning {
+  border-color: rgba(156, 39, 176, 0.3);
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.05) 0%, rgba(156, 39, 176, 0.1) 100%);
+}
+
+.pipeline-stage.manufacturing {
+  border-color: rgba(255, 152, 0, 0.3);
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.05) 0%, rgba(255, 152, 0, 0.1) 100%);
+}
+
+.pipeline-stage.supply {
+  border-color: rgba(76, 175, 80, 0.3);
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, rgba(76, 175, 80, 0.1) 100%);
+}
+
+.pipeline-stage.assembly {
+  border-color: rgba(33, 150, 243, 0.3);
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.05) 0%, rgba(33, 150, 243, 0.1) 100%);
+}
+
+.stage-header {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+}
+
+.stage-nodes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.stage-nodes.horizontal {
+  flex-direction: row;
+  gap: 0.2rem;
+}
+
+.stage-arrow {
+  font-size: 0.5rem;
+  color: #999;
+}
+
+.mini-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.15rem 0.25rem;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid rgba(44, 90, 160, 0.3);
+  min-width: 35px;
+}
+
+.mini-node.highlight {
+  border-color: #4caf50;
+  border-width: 2px;
+}
+
+.mini-node .ws-id {
+  font-size: 0.5rem;
+  font-weight: 800;
+  color: #2c5aa0;
+}
+
+.mini-node .ws-name {
+  font-size: 0.35rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.stage-output {
+  font-size: 0.4rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+}
+
+.pipeline-arrow {
+  font-size: 0.9rem;
+  color: #9c27b0;
+  font-weight: bold;
+}
+
+.production-output {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.production-output .output-arrow {
+  font-size: 1rem;
+  color: #9c27b0;
+  animation: arrowPulse 1.5s ease-in-out infinite;
+}
+
+.production-output .output-label {
+  font-size: 0.4rem;
+  font-weight: 600;
+  color: #666;
+  text-align: center;
+}
+
+/* ============================================================================
+   PROCESS FLOW (Assembly)
+   ============================================================================ */
+.process-icon {
+  font-size: 1rem;
+}
+
+.process-flow {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.4rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.process-flow .arrow {
+  color: #9c27b0;
+}
+
+.process-flow .input-label,
+.process-flow .output-label {
+  text-transform: uppercase;
+}
+
+/* ============================================================================
+   SCENARIO LEGEND
+   ============================================================================ */
+.scenario-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.35rem 0.5rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.scenario-legend .legend-title {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.scenario-legend .legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.scenario-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.45rem;
+  font-weight: 500;
+  color: #666;
+}
+
+/* ============================================================================
+   FLOW DIAGRAM V2 CONTAINER (Legacy - keep for compatibility)
+   ============================================================================ */
+.flow-diagram-v2 {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  background: linear-gradient(135deg, rgba(44, 90, 160, 0.02) 0%, rgba(33, 150, 243, 0.04) 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(44, 90, 160, 0.1);
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ============================================================================
+   LEGACY ROW LAYOUTS (keeping for backward compatibility)
+   ============================================================================ */
+
+/* Top Row: Customer → Plant Warehouse → Delivery */
+.flow-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: linear-gradient(90deg, rgba(76, 175, 80, 0.08) 0%, rgba(76, 175, 80, 0.15) 50%, rgba(76, 175, 80, 0.08) 100%);
+  border-radius: 6px;
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+/* Middle Row: Modules Supermarket ← Final Assembly */
+.flow-row-middle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.3rem;
+}
+
+/* Bottom Row: Planning → Parts Supply → Manufacturing → Assembly */
+.flow-row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: linear-gradient(90deg, rgba(156, 39, 176, 0.05) 0%, rgba(255, 152, 0, 0.08) 50%, rgba(33, 150, 243, 0.05) 100%);
+  border-radius: 6px;
+  border: 1px dashed rgba(156, 39, 176, 0.2);
+}
+
+.flow-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ============================================================================
+   VERTICAL SECTIONS (Down/Up Arrows)
+   ============================================================================ */
+.flow-vertical-section {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0.1rem 2rem;
+}
+
+.flow-down-branch,
+.flow-up-return {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.branch-label,
+.return-label {
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.branch-label {
+  color: #ff5722;
+  background: rgba(255, 87, 34, 0.1);
+}
+
+.return-label {
+  color: #2196f3;
+  background: rgba(33, 150, 243, 0.1);
+}
+
+/* ============================================================================
+   ARROW STYLING
+   ============================================================================ */
+.branch-arrow,
+.return-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  line-height: 1;
+  border-radius: 50%;
+  position: relative;
+}
+
+/* Styled thick arrow for downward flow (orders going to production) */
+.branch-arrow {
+  background: linear-gradient(180deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 152, 0, 0.3) 100%);
+  border: 3px solid currentColor;
+  box-shadow: 
+    0 2px 8px rgba(255, 152, 0, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Styled thick arrow for upward flow (modules returning) */
+.return-arrow {
+  background: linear-gradient(0deg, rgba(33, 150, 243, 0.15) 0%, rgba(33, 150, 243, 0.3) 100%);
+  border: 3px solid currentColor;
+  box-shadow: 
+    0 2px 8px rgba(33, 150, 243, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Animated pulse effect for active flow indication */
+.branch-arrow::before,
+.return-arrow::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  border: 2px dashed currentColor;
+  opacity: 0.3;
+  animation: arrowPulseDashed 2s ease-in-out infinite;
+}
+
+@keyframes arrowPulseDashed {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+.branch-arrow.orange { color: #ff9800; }
+.return-arrow.blue { color: #2196f3; }
+.return-arrow.purple { 
+  color: #9c27b0; 
+  background: linear-gradient(0deg, rgba(156, 39, 176, 0.15) 0%, rgba(156, 39, 176, 0.3) 100%);
+  box-shadow: 
+    0 2px 8px rgba(156, 39, 176, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================================================
+   HORIZONTAL CONNECTORS
+   ============================================================================ */
+.flow-connector {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  position: relative;
+}
+
+.flow-connector .connector-line {
+  width: 32px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 2px;
+  position: relative;
+}
+
+.flow-connector .connector-line::after {
+  content: '';
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-left-color: currentColor;
+}
+
+.flow-connector.left-arrow .connector-line::after {
+  right: auto;
+  left: -7px;
+  border-left-color: transparent;
+  border-right-color: currentColor;
+}
+
+.flow-connector .connector-label {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  color: currentColor;
+  opacity: 0.9;
+}
+
+.flow-connector.long .connector-line {
+  width: 48px;
+}
+
+.flow-connector.green { color: #4caf50; }
+.flow-connector.blue { color: #2196f3; }
+.flow-connector.orange { color: #ff9800; }
+.flow-connector.purple { color: #9c27b0; }
+
+/* ============================================================================
+   VERTICAL CONNECTORS (For Bottom Row)
+   ============================================================================ */
+.flow-connector-vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  gap: 0.15rem;
+  padding: 0 0.2rem;
+}
+
+.flow-connector-vertical .connector-line-v {
+  width: 30px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 2px;
+  position: relative;
+}
+
+.flow-connector-vertical .connector-line-v::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left-color: currentColor;
+}
+
+.flow-connector-vertical .connector-label-v {
+  font-size: 0.4rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  text-align: center;
+  line-height: 1.2;
+  color: currentColor;
+  opacity: 0.9;
+}
+
+.flow-connector-vertical.green { color: #4caf50; }
+.flow-connector-vertical.blue { color: #2196f3; }
+.flow-connector-vertical.orange { color: #ff9800; }
+.flow-connector-vertical.purple { color: #9c27b0; }
+
+/* ============================================================================
+   STATION STACKS (Vertical Grouping)
+   ============================================================================ */
+.flow-station-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.15rem;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 5px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  min-width: 95px;
+}
+
+.flow-station-stack.single {
+  justify-content: center;
+  min-height: 100%;
+}
+
+.stack-arrow {
+  font-size: 0.6rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.stack-arrow.green { color: #4caf50; }
+.stack-arrow.purple { color: #9c27b0; }
+.stack-arrow.orange { color: #ff9800; }
+.stack-arrow.blue { color: #2196f3; }
+
+/* ============================================================================
+   STATION CARD STYLING
+   ============================================================================ */
+.station-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 90px;
+  height: 55px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 2px solid #2c5aa0;
+  border-radius: 5px;
+  padding: 0.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.station-card:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.3);
+  border-color: #1a3d7a;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+.station-icon {
+  font-size: 1.2rem;
+  margin-bottom: 0.1rem;
+}
+
+.station-name {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  text-align: center;
+  line-height: 1.1;
+}
+
+/* Station Card Tooltips */
+.station-card:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #2c5aa0 0%, #1e3d66 100%);
+  color: white;
+  padding: 0.85rem 1.1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: normal;
+  max-width: 320px;
+  text-align: center;
+  z-index: 100;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 6px 16px rgba(44, 90, 160, 0.4);
+  line-height: 1.5;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.station-card:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: #2c5aa0;
+  margin-bottom: 2px;
+}
+
+/* Highlight status for key workstation */
+.flow-diagram-v2 [data-tooltip*="WS-7"] {
+  border-color: #ff9800;
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+}
+
+/* Compact WorkstationCard overrides for flow diagram */
+.flow-diagram-v2 .station-card,
+.flow-diagram-compact .station-card,
+.flow-main-path .station-card,
+.flow-secondary-path .station-card {
+  width: 80px;
+  height: 48px;
+  padding: 0.15rem;
+}
+
+.flow-diagram-v2 .station-icon,
+.flow-diagram-compact .station-icon,
+.flow-main-path .station-icon,
+.flow-secondary-path .station-icon {
+  font-size: 1rem;
+  margin-bottom: 0.05rem;
+}
+
+.flow-diagram-v2 .station-name,
+.flow-diagram-compact .station-name,
+.flow-main-path .station-name,
+.flow-secondary-path .station-name {
+  font-size: 0.5rem;
+  line-height: 1;
+}
+
+/* ============================================================================
+   FLOW LEGEND
+   ============================================================================ */
+.flow-legend {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.3rem;
+  padding: 0.3rem 0.5rem;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+}
+
+.flow-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.5rem;
+  font-weight: 500;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legend-dot.green { background: #4caf50; }
+.legend-dot.blue { background: #2196f3; }
+.legend-dot.orange { background: #ff9800; }
+.legend-dot.purple { background: #9c27b0; }
+
+/* ============================================================================
+   LEGACY FLOW STYLES
+   ============================================================================ */
+.flow-diagram {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0;
+}
+
+.flow-diagram-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+}
+
+.flow-main-path {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0;
+  background: linear-gradient(90deg, rgba(76, 175, 80, 0.05) 0%, rgba(76, 175, 80, 0.1) 50%, rgba(76, 175, 80, 0.05) 100%);
+  border-radius: 8px;
+}
+
+.flow-secondary-path {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.4rem;
+  background: linear-gradient(180deg, rgba(33, 150, 243, 0.03) 0%, rgba(33, 150, 243, 0.08) 100%);
+  border-radius: 8px;
+  padding: 0.4rem;
+}
+
+.flow-path-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.25rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px dashed rgba(44, 90, 160, 0.2);
+}
+
+.flow-group-label {
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+  margin-bottom: 0.2rem;
+  padding: 0.1rem 0.3rem;
+  background: rgba(44, 90, 160, 0.1);
+  border-radius: 3px;
+}
+
+.flow-group-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.flow-branch-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.15rem 0;
+}
+
+.flow-branch-line {
+  flex: 1;
+  height: 2px;
+  max-width: 80px;
+  background: linear-gradient(90deg, transparent, #ff5722, transparent);
+}
+
+.flow-branch-line.left {
+  background: linear-gradient(90deg, transparent, #ff5722);
+}
+
+.flow-branch-line.right {
+  background: linear-gradient(90deg, #ff5722, transparent);
+}
+
+.flow-branch-note {
+  font-size: 0.6rem;
+  color: #ff5722;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  padding: 0.15rem 0.5rem;
+  background: rgba(255, 87, 34, 0.1);
+  border-radius: 4px;
+}
+
+.flow-bidirectional {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.6rem;
+  color: #9c27b0;
+  line-height: 0.9;
+}
+
+.flow-bidirectional .bidir-up,
+.flow-bidirectional .bidir-down {
+  font-size: 0.5rem;
+}
+
+.flow-bidirectional .bidir-label {
+  font-size: 0.45rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.flow-arrow {
+  font-size: 1.2rem;
+  color: #2c5aa0;
+  font-weight: bold;
+}
+
+.flow-arrow-down {
+  font-size: 1.2rem;
+  color: #2c5aa0;
+  font-weight: bold;
+  padding: 0 0.5rem;
+}
+
+.flow-note {
+  font-size: 0.7rem;
+  color: #666;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.flow-spacer {
+  width: 110px;
+}
+
+/* Styled Arrows (Legacy) */
+.flow-arrow-styled {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  position: relative;
+}
+
+.flow-arrow-styled .arrow-line {
+  width: 20px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 2px;
+}
+
+.flow-arrow-styled .arrow-head {
+  font-size: 0.8rem;
+}
+
+.flow-arrow-styled .arrow-label {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  opacity: 0.9;
+}
+
+.flow-arrow-styled.green { color: #4caf50; }
+.flow-arrow-styled.blue { color: #2196f3; }
+.flow-arrow-styled.orange { color: #ff9800; }
+.flow-arrow-styled.purple { color: #9c27b0; }
+
+.flow-arrow-styled.vertical {
+  flex-direction: column;
+  gap: 0;
+}
+
+.flow-arrow-styled.vertical .arrow-line {
+  width: 3px;
+  height: 12px;
+}
+
+.flow-arrow-styled.vertical .arrow-label {
+  position: static;
+  transform: none;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  margin-left: 2px;
+}
+
+.flow-arrow-styled.horizontal .arrow-line {
+  width: 16px;
+}
+/* ============================================================================
+   FLOW DIAGRAM V3 - HIERARCHICAL LAYERS (Feb 2026)
+   ============================================================================
+   Three-tier order hierarchy: Customer → Warehouse → Production
+   ============================================================================ */
+
+/* Flow Layer Base */
+.flow-layer {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: visible;
+}
+
+.flow-layer.customer-layer {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.06) 0%, rgba(76, 175, 80, 0.12) 100%);
+  border-color: rgba(76, 175, 80, 0.35);
+}
+
+.flow-layer.warehouse-layer {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.06) 0%, rgba(33, 150, 243, 0.12) 100%);
+  border-color: rgba(33, 150, 243, 0.35);
+}
+
+.flow-layer.production-layer {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.06) 0%, rgba(156, 39, 176, 0.12) 100%);
+  border-color: rgba(156, 39, 176, 0.35);
+}
+
+/* Layer Headers */
+.layer-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.layer-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.layer-badge.customer {
+  background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+  box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+}
+
+.layer-badge.warehouse {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  box-shadow: 0 2px 6px rgba(33, 150, 243, 0.3);
+}
+
+.layer-badge.production {
+  background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+  box-shadow: 0 2px 6px rgba(156, 39, 176, 0.3);
+}
+
+.layer-subtitle {
+  font-size: 0.65rem;
+  color: #666;
+  font-style: italic;
+}
+
+/* Layer Content */
+.layer-content {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 0.3rem 0;
+}
+
+/* Stacked Layer Content (for rows with escalation paths below) */
+.layer-content-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.layer-row.main-flow {
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.layer-row.escalation-flow {
+  justify-content: center;
+  margin-top: 0.2rem;
+}
+
+/* Spacer to align escalation path under Plant Warehouse */
+.escalation-spacer {
+  display: none; /* Remove spacer, use centering instead */
+}
+
+/* Wrapper for decision point node - stacks node with escalation below */
+.warehouse-decision-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Modules decision wrapper - stacks node with escalation below */
+.modules-decision-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Assembly output wrapper with return indicator on top */
+.assembly-output-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.return-indicator-top {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.4rem;
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 152, 0, 0.2) 100%);
+  border: 1px solid rgba(255, 152, 0, 0.4);
+  border-radius: 4px;
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+.return-indicator-top .return-arrow {
+  font-size: 0.8rem;
+  color: #ff9800;
+  font-weight: bold;
+}
+
+.return-indicator-top .return-text {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #e65100;
+  white-space: nowrap;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Success path connector styling */
+.flow-connector-enhanced.success-path .connector-line {
+  background: #4caf50;
+}
+
+.flow-connector-enhanced.success-path .connector-line.success {
+  background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
+}
+
+.flow-connector-enhanced.success-path .connector-arrow {
+  color: #4caf50;
+}
+
+/* Vertical branch styling */
+.branch-path.vertical-branch {
+  flex-direction: row;
+  justify-content: center;
+}
+
+/* Enhanced Flow Nodes - Horizontal Layout */
+.flow-node-enhanced {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  background: white;
+  border-radius: 6px;
+  border: 2px solid #2c5aa0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  position: relative;
+  cursor: pointer;
+}
+
+.flow-node-enhanced:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(44, 90, 160, 0.2);
+}
+
+/* Tooltip styles for flow nodes and pipeline stages */
+.flow-node-enhanced[data-tooltip]:hover::after,
+.pipeline-stage-v2[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(145deg, #0f172a 0%, #1e3a5f 50%, #1e293b 100%);
+  color: rgba(255, 255, 255, 0.85);
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 400;
+  white-space: pre-line;
+  text-align: left;
+  z-index: 1000;
+  box-shadow: 
+    0 8px 24px rgba(15, 23, 42, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  line-height: 1.7;
+  border: none;
+  min-width: 200px;
+  max-width: 280px;
+  pointer-events: none;
+  letter-spacing: 0.2px;
+}
+
+.flow-node-enhanced[data-tooltip]:hover::before,
+.pipeline-stage-v2[data-tooltip]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: #1e3a5f;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+.flow-node-enhanced .node-icon {
+  font-size: 1rem;
+}
+
+.flow-node-enhanced .node-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  text-align: left;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.flow-node-enhanced .node-sublabel {
+  font-size: 0.55rem;
+  color: #888;
+  font-style: italic;
+  margin-left: -0.2rem;
+}
+
+.flow-node-enhanced.customer-node {
+  border-color: #4caf50;
+}
+
+.flow-node-enhanced.customer-node .node-label {
+  color: #2e7d32;
+}
+
+.flow-node-enhanced.warehouse-node {
+  border-color: #ff9800;
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+}
+
+.flow-node-enhanced.warehouse-node .node-label {
+  color: #e65100;
+}
+
+.flow-node-enhanced.delivery-node {
+  border-color: #4caf50;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+}
+
+.flow-node-enhanced.delivery-node .node-label {
+  color: #2e7d32;
+}
+
+.flow-node-enhanced.modules-node {
+  border-color: #2196f3;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+.flow-node-enhanced.modules-node .node-label {
+  color: #1565c0;
+}
+
+.flow-node-enhanced.assembly-node {
+  border-color: #9c27b0;
+  background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+}
+
+.flow-node-enhanced.assembly-node .node-label {
+  color: #7b1fa2;
+}
+
+/* Flow Connectors */
+.flow-connector-enhanced {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  position: relative;
+  padding: 0 1rem;
+  min-width: 110px;
+}
+
+.flow-connector-enhanced .connector-line {
+  width: 40px;
+  height: 2px;
+  background: #4caf50;
+  border-radius: 1px;
+}
+
+.flow-connector-enhanced .connector-label {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.48rem;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.flow-connector-enhanced .connector-arrow {
+  font-size: 0.8rem;
+  color: #4caf50;
+  font-weight: bold;
+}
+
+/* Decision Branch */
+.decision-branch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-left: 0.3rem;
+}
+
+.decision-branch.horizontal {
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.branch-path {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6rem;
+}
+
+.branch-path.direct {
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.branch-path.escalate {
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.branch-path.available {
+  background: rgba(33, 150, 243, 0.1);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.branch-path.production-needed {
+  background: rgba(156, 39, 176, 0.1);
+  border: 1px solid rgba(156, 39, 176, 0.3);
+}
+
+.branch-path .path-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.branch-path.direct .path-label {
+  color: #2e7d32;
+}
+
+.branch-path.escalate .path-label {
+  color: #e65100;
+}
+
+.branch-path.available .path-label {
+  color: #1565c0;
+}
+
+.branch-path.production-needed .path-label {
+  color: #7b1fa2;
+}
+
+.branch-path .path-arrow {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.branch-path.direct .path-arrow {
+  color: #4caf50;
+}
+
+.branch-path.escalate .path-arrow {
+  color: #ff9800;
+}
+
+.branch-path.available .path-arrow {
+  color: #2196f3;
+}
+
+.branch-path.production-needed .path-arrow {
+  color: #9c27b0;
+}
+
+.return-indicator {
+  font-size: 0.75rem;
+  color: #4caf50;
+  font-weight: 600;
+  background: rgba(76, 175, 80, 0.15);
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+}
+
+/* Scenario Indicators */
+.scenario-indicator {
+  font-size: 0.55rem;
+  font-weight: 800;
+  padding: 0.15rem 0.4rem;
+  border-radius: 8px;
+  color: white;
+  margin-left: 0.3rem;
+  flex-shrink: 0;
+}
+
+.scenario-indicator.s1 {
+  background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+}
+
+.scenario-indicator.s2 {
+  background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);
+}
+
+.scenario-indicator.s2-4 {
+  background: linear-gradient(135deg, #ff9800 0%, #e65100 100%);
+}
+
+.scenario-indicator.s3 {
+  background: linear-gradient(135deg, #9c27b0 0%, #6a1b9a 100%);
+}
+
+.scenario-indicator.s3-4 {
+  background: linear-gradient(135deg, #9c27b0 0%, #6a1b9a 100%);
+}
+
+.scenario-indicator.s4 {
+  background: linear-gradient(135deg, #ff5722 0%, #d84315 100%);
+}
+
+/* Layer Connectors (Vertical) */
+.layer-connector {
+  display: flex;
+  justify-content: center;
+  padding: 0.15rem 0;
+}
+
+.connector-vertical {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.6rem;
+  background: transparent;
+  border-radius: 12px;
+  border: none;
+}
+
+.connector-vertical .connector-line-v {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.connector-vertical .connector-line-v::before {
+  content: '▼';
+  font-size: 1.2rem;
+  background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 50%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 4px rgba(99, 102, 241, 0.5));
+  animation: arrowBob 1.5s ease-in-out infinite;
+}
+
+@keyframes arrowBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+
+.connector-vertical .connector-text {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #6366f1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(99, 102, 241, 0.2);
+}
+
+/* Production Pipeline V2 */
+.production-pipeline-v2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  padding: 0.3rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+}
+
+.pipeline-stage-v2 {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  background: white;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  position: relative;
+  cursor: pointer;
+}
+
+.pipeline-stage-v2:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.pipeline-stage-v2.planning {
+  border-color: rgba(103, 58, 183, 0.4);
+  background: linear-gradient(135deg, rgba(103, 58, 183, 0.05) 0%, rgba(103, 58, 183, 0.1) 100%);
+}
+
+.pipeline-stage-v2.manufacturing {
+  border-color: rgba(255, 152, 0, 0.4);
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.05) 0%, rgba(255, 152, 0, 0.1) 100%);
+}
+
+.pipeline-stage-v2.supply {
+  border-color: rgba(76, 175, 80, 0.4);
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, rgba(76, 175, 80, 0.1) 100%);
+}
+
+.pipeline-stage-v2.assembly {
+  border-color: rgba(33, 150, 243, 0.4);
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.05) 0%, rgba(33, 150, 243, 0.1) 100%);
+}
+
+.pipeline-stage-v2.control {
+  border-color: rgba(233, 30, 99, 0.4);
+  background: linear-gradient(135deg, rgba(233, 30, 99, 0.05) 0%, rgba(233, 30, 99, 0.1) 100%);
+}
+
+.pipeline-stage-v2 .stage-icon {
+  font-size: 0.9rem;
+}
+
+.pipeline-stage-v2 .stage-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #333;
+  white-space: nowrap;
+}
+
+.pipeline-stage-v2 .stage-substeps {
+  display: flex;
+  gap: 0.15rem;
+  font-size: 0.5rem;
+  color: #666;
+  flex-wrap: wrap;
+}
+
+.pipeline-stage-v2 .stage-output {
+  font-size: 0.5rem;
+  font-weight: 600;
+  color: #4caf50;
+}
+
+.pipeline-arrow-v2 {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #9c27b0;
+}
+
+/* Production Outputs */
+.production-outputs {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.3rem;
+  padding-top: 0.3rem;
+  border-top: 1px dashed rgba(156, 39, 176, 0.3);
+}
+
+.output-path {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.65rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 5px;
+  background: rgba(33, 150, 243, 0.08);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.output-path.direct {
+  background: rgba(255, 87, 34, 0.08);
+  border-color: rgba(255, 87, 34, 0.2);
+}
+
+.output-path .output-arrow {
+  font-size: 0.7rem;
+  color: #2196f3;
+  font-weight: bold;
+}
+
+.output-path.direct .output-arrow {
+  color: #ff5722;
+}
+
+.output-path .output-label {
+  color: #1565c0;
+  font-weight: 500;
+}
+
+.output-path.direct .output-label {
+  color: #666;
+}
+
+/* Scenario Legend V2 */
+.scenario-legend-v2 {
+  margin-top: 0.5rem;
+  padding: 0.4rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.scenario-legend-v2 .legend-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 0.3rem;
+  text-align: center;
+}
+
+.scenario-legend-v2 .legend-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.scenario-legend-v2 .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+}
+
+.scenario-legend-v2 .legend-text {
+  color: #555;
+}

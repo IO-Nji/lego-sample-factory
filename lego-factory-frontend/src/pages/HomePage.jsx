@@ -6,7 +6,7 @@ import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext.jsx";
 import api from "../api/api";
 import "../styles/StandardPage.css";
-import "../styles/HomePage.css";
+import "../styles/homepage/index.css"; // Modular CSS - replaces monolithic HomePage.css
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -16,14 +16,94 @@ function HomePage() {
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const [products, setProducts] = useState([]);
-  const [modules, setModules] = useState([]);
-  const [parts, setParts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [expandedModules, setExpandedModules] = useState({});
+  const [expandedBomModules, setExpandedBomModules] = useState({}); // Track which modules in BOM are expanded
   const [productModules, setProductModules] = useState([]);
   const [loadingModules, setLoadingModules] = useState(false);
   const [serviceHealth, setServiceHealth] = useState({});
+
+  // Toggle module expansion within BOM
+  const toggleBomModule = (moduleId) => {
+    setExpandedBomModules(prev => ({
+      ...prev,
+      [moduleId]: !prev[moduleId]
+    }));
+  };
+
+  // Product icon mapping for realistic visuals
+  const getProductIcon = (name) => {
+    const nameLower = name.toLowerCase();
+    // LEGO Technic Trucks
+    if (nameLower.includes('truck') && nameLower.includes('yellow')) 
+      return { icon: '🚛', color: '#ffc107' };
+    if (nameLower.includes('truck') && nameLower.includes('red')) 
+      return { icon: '🚚', color: '#e53935' };
+    if (nameLower.includes('truck')) 
+      return { icon: '🛻', color: '#ff8f00' };
+    // Creator House
+    if (nameLower.includes('house') || nameLower.includes('home') || nameLower.includes('creator')) 
+      return { icon: '🏠', color: '#4caf50' };
+    // Castle Set
+    if (nameLower.includes('castle') || nameLower.includes('medieval')) 
+      return { icon: '🏰', color: '#7b1fa2' };
+    // Other vehicles
+    if (nameLower.includes('race') || nameLower.includes('sports')) 
+      return { icon: '🏎️', color: '#e53935' };
+    if (nameLower.includes('car')) 
+      return { icon: '🚘', color: '#1976d2' };
+    if (nameLower.includes('plane') || nameLower.includes('aircraft')) 
+      return { icon: '✈️', color: '#0288d1' };
+    if (nameLower.includes('helicopter')) 
+      return { icon: '🚁', color: '#00bcd4' };
+    if (nameLower.includes('boat') || nameLower.includes('ship')) 
+      return { icon: '🚢', color: '#00796b' };
+    if (nameLower.includes('motorcycle') || nameLower.includes('bike')) 
+      return { icon: '🏍️', color: '#d32f2f' };
+    return { icon: '🧱', color: '#2c5aa0' };
+  };
+
+  // Handle BOM toggle for a product
+  const handleBomToggle = async (product) => {
+    const isCurrentlyExpanded = expandedModules[product.id];
+    
+    if (isCurrentlyExpanded) {
+      // Collapse
+      setExpandedModules(prev => ({ ...prev, [product.id]: false }));
+      setProductModules([]);
+      setExpandedBomModules({}); // Reset expanded modules within BOM
+    } else {
+      // Expand and fetch modules with their parts
+      setExpandedModules({ [product.id]: true }); // Only one expanded at a time
+      setExpandedBomModules({}); // Reset expanded modules within BOM
+      setLoadingModules(true);
+      try {
+        const modulesResponse = await api.get(`/masterdata/products/${product.id}/modules`);
+        const modulesData = modulesResponse.data || [];
+        
+        // Fetch parts for each module
+        const modulesWithParts = await Promise.all(
+          modulesData.map(async (module) => {
+            try {
+              const partsResponse = await api.get(`/masterdata/modules/${module.id}/parts`);
+              return { ...module, parts: partsResponse.data || [] };
+            } catch (err) {
+              console.error(`Failed to fetch parts for module ${module.id}:`, err);
+              return { ...module, parts: [] };
+            }
+          })
+        );
+        
+        setProductModules(modulesWithParts);
+      } catch (error) {
+        console.error('Failed to fetch product modules:', error);
+        setProductModules([]);
+      } finally {
+        setLoadingModules(false);
+      }
+    }
+  };
 
   useEffect(() => {
     const reason = location.state?.reason || new URLSearchParams(location.search).get('reason');
@@ -43,27 +123,23 @@ function HomePage() {
     }
   }, [location.state, location.search, navigate]);
 
-  // Fetch products, modules, and parts for display
+  // Fetch products for display
   useEffect(() => {
-    const fetchAllData = async () => {
+    const fetchProducts = async () => {
       try {
-        const [productsRes, modulesRes, partsRes] = await Promise.all([
-          api.get('/masterdata/products'),
-          api.get('/masterdata/modules'),
-          api.get('/masterdata/parts')
-        ]);
-        setProducts(productsRes.data);
-        setModules(modulesRes.data);
-        setParts(partsRes.data);
+        const productsRes = await api.get('/masterdata/products');
+        setProducts(productsRes.data || []);
       } catch (err) {
-        console.error('Error fetching data:', err);
+        console.error('Error fetching products:', err);
       } finally {
         setLoadingProducts(false);
       }
     };
     
     if (!isAuthenticated) {
-      fetchAllData();
+      fetchProducts();
+    } else {
+      setLoadingProducts(false); // Don't leave loading state when authenticated
     }
   }, [isAuthenticated]);
 
@@ -189,13 +265,35 @@ function HomePage() {
   // If not authenticated, show login prompt with embedded login form
   if (!isAuthenticated) {
     return (
-      <>
+      <div>
       <section className="home-page">
         {/* Welcome Header */}
         <div className="home-hero">
           <div className="hero-title-container">
-            <h1 className="hero-main-title">L.I.F.E</h1>
-            <p className="hero-slogan">LEGO Integrated Factory Execution</p>
+            <div className="hero-title-row">
+              <h1 className="hero-main-title">
+                <span className="title-letter" style={{'--i': 0}}>L</span>
+                <span className="title-dot">.</span>
+                <span className="title-letter" style={{'--i': 1}}>I</span>
+                <span className="title-dot">.</span>
+                <span className="title-letter" style={{'--i': 2}}>F</span>
+                <span className="title-dot">.</span>
+                <span className="title-letter" style={{'--i': 3}}>E</span>
+              </h1>
+              <div className="hero-version-badge">
+                <span className="version-label">MES</span>
+                <span className="version-number">v2.0</span>
+              </div>
+            </div>
+            <p className="hero-slogan">
+              <span className="slogan-word">LEGO</span>
+              <span className="slogan-separator">•</span>
+              <span className="slogan-word">Integrated</span>
+              <span className="slogan-separator">•</span>
+              <span className="slogan-word">Factory</span>
+              <span className="slogan-separator">•</span>
+              <span className="slogan-word">Execution</span>
+            </p>
           </div>
         </div>
 
@@ -214,331 +312,421 @@ function HomePage() {
           </div>
         )}
         
-        {/* Row 1: Products + Flow Diagram + Login Form */}
-        <div className="home-top-row">
-          {/* Products Column */}
-          <div className="home-products-column">
-            <h3 className="section-title">Our Products</h3>
-            {loadingProducts ? (
-              <p className="loading-text">Loading products...</p>
-            ) : products.length === 0 ? (
-              <p className="no-data">No products available</p>
-            ) : (
-              <div className="products-grid-2x2">
-                {products.map(product => (
-                  <div 
-                    key={product.id} 
-                    className="product-card"
-                    onClick={() => setSelectedProduct(product)}
-                  >
-                    <h4>{product.name}</h4>
-                    <p>{product.description}</p>
-                    <div className="product-specs">
-                      <span className="price">${product.price.toFixed(2)}</span>
-                      <span className="time">{product.estimatedTimeMinutes}m</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {/* Product Details Overlay Dropdown */}
-            {selectedProduct && (
-              <div className="product-details-overlay">
-                <div className="product-details-modal">
-                  <button 
-                    className="btn-close-overlay" 
-                    onClick={() => setSelectedProduct(null)}
-                  >
-                    ✕
-                  </button>
-                  
-                  <div className="product-detail-card-overlay">
-                    <h2>{selectedProduct.name}</h2>
-                    <p className="description">{selectedProduct.description}</p>
-                    <div className="specs">
-                      <div className="spec-item">
-                        <strong>Price:</strong>
-                        <span className="price">${selectedProduct.price.toFixed(2)}</span>
-                      </div>
-                      <div className="spec-item">
-                        <strong>Time:</strong>
-                        <span>{selectedProduct.estimatedTimeMinutes} min</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="components-section-overlay">
-                    <h3>Product Components</h3>
-                    
-                    {loadingModules ? (
-                      <p className="loading-text">Loading modules...</p>
-                    ) : productModules.length === 0 ? (
-                      <div>
-                        <p className="no-data">No modules available for this product</p>
-                      </div>
-                    ) : (
-                      <div className="modules-grid-overlay">
-                        {productModules.map(module => (
-                          <div key={module.id} className="module-item-overlay">
-                            <div 
-                              onClick={() => toggleModuleExpand(module.id)}
-                              className="module-header-overlay"
-                            >
-                              <span className="expand-icon-overlay">
-                                {expandedModules[module.id] ? '▼' : '▶'}
-                              </span>
-                              <div className="module-info-overlay">
-                                <h4>{module.name}</h4>
-                                <span className="module-qty">Qty: {module.quantity}</span>
-                              </div>
-                            </div>
-
-                            {expandedModules[module.id] && (
-                              <div className="module-details-overlay">
-                                <p className="module-desc">{module.description}</p>
-                                <div className="module-time">Time: {module.estimatedTimeMinutes} min</div>
-                                
-                                {module.parts && module.parts.length > 0 ? (
-                                  <div className="parts-section-overlay">
-                                    <h5>Parts ({module.parts.length}):</h5>
-                                    <div className="parts-list-overlay">
-                                      {module.parts.map(part => (
-                                        <div key={part.id} className="part-item-overlay">
-                                          <span className="part-name-overlay">{part.name}</span>
-                                          <span className="part-qty-overlay">×{part.quantity}</span>
-                                          <span className="part-time-overlay">{part.estimatedTimeMinutes}m</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <p style={{fontSize: '0.65rem', color: '#999', marginTop: '0.3rem'}}>
-                                    No parts configured for this module
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Flow Diagram Column */}
-          <div className="home-flow-diagram-section">
-            <h3 className="section-title">Order Fulfillment Process</h3>
-            
-            {/* Redesigned Flow Diagram - Accurate Business Process */}
-            <div className="flow-diagram-v2">
-              
-              {/* TOP ROW: Customer Entry & Exit */}
-              <div className="flow-row-top">
-                <WorkstationCard 
-                  icon="🛒" 
-                  name="Customer" 
-                  tooltip={{ description: "Place Customer Order for Products", username: "lego_admin" }}
-                  layout="horizontal"
-                />
-                <div className="flow-connector green right-arrow">
-                  <div className="connector-line"></div>
-                  <span className="connector-label">order</span>
-                </div>
-                <WorkstationCard 
-                  icon="🏭" 
-                  name={<>Plant<br/>Warehouse</>} 
-                  tooltip={{ description: "Stock Check; Fulfill Customer Order or Order Production", username: "plant_warehouse" }}
-                  status="highlight"
-                  layout="horizontal"
-                />
-                <div className="flow-connector green right-arrow">
-                  <div className="connector-line"></div>
-                  <span className="connector-label">ship</span>
-                </div>
-                <WorkstationCard 
-                  icon="📦" 
-                  name="Delivery" 
-                  tooltip={{ description: "Order Shipped to Customer", username: "Fulfillment Scenarios Complete" }}
-                  layout="horizontal"
-                />
-              </div>
-
-              {/* VERTICAL CONNECTORS */}
-              <div className="flow-vertical-section">
-                <div className="flow-down-branch">
-                  <div className="branch-label">if stock unavailable</div>
-                  <div className="branch-arrow orange">↓</div>
-                </div>
-                <div className="flow-up-return">
-                  <div className="return-arrow blue">↑</div>
-                  <div className="return-label">products credited</div>
-                </div>
-              </div>
-
-              {/* MIDDLE ROW: Warehouse & Assembly */}
-              <div className="flow-row-middle">
-                <WorkstationCard 
-                  icon="🏢" 
-                  name={<>Modules<br/>Supermarket</>} 
-                  tooltip={{ description: "Manage Modules Inventory + Trigger Production", username: "modules_supermarket" }}
-                  layout="horizontal"
-                />
-                <div className="flow-connector purple left-arrow">
-                  <span className="connector-label">modules</span>
-                  <div className="connector-line"></div>
-                </div>
-                <WorkstationCard 
-                  icon="🔨" 
-                  name={<>Final<br/>Assembly</>} 
-                  tooltip={{ description: "Assemble MODULES → PRODUCT", username: "final_assembly" }}
-                  layout="horizontal"
-                />
-              </div>
-
-              {/* VERTICAL CONNECTORS - MIDDLE */}
-              <div className="flow-vertical-section">
-                <div className="flow-down-branch">
-                  <div className="branch-label">if modules unavailable</div>
-                  <div className="branch-arrow orange">↓</div>
-                </div>
-                <div className="flow-up-return">
-                  <div className="return-arrow purple">↑</div>
-                  <div className="return-label">assembled modules</div>
-                </div>
-              </div>
-
-              {/* BOTTOM ROW: Planning & Production */}
-              <div className="flow-row-bottom">
-                <div className="flow-station-stack">
-                  <WorkstationCard 
-                    icon="📋" 
-                    name={<>Production<br/>Planning</>} 
-                    tooltip={{ description: "Schedule Production Orders + Dispatch to Workstations", username: "production_planning" }}
-                    layout="horizontal"
-                  />
-                  <div className="stack-arrow purple">↓</div>
-                  <WorkstationCard 
-                    icon="🎛️" 
-                    name="Control" 
-                    tooltip={{ description: "Coordinate Manufacturing + Monitor Operations", username: "production_control" }}
-                    layout="horizontal"
-                  />
-                </div>
-                
-                <div className="flow-connector-vertical orange">
-                  <div className="connector-line-v"></div>
-                  <span className="connector-label-v">dispatch<br/>orders</span>
-                </div>
-
-                <div className="flow-station-stack">
-                  <WorkstationCard 
-                    icon="📦" 
-                    name={<>Parts<br/>Supply</>} 
-                    tooltip={{ description: "Manage Raw Materials + Supply to Workstations", username: "parts_supply" }}
-                    layout="horizontal"
-                  />
-                  <div className="stack-arrow green">↓</div>
-                  <WorkstationCard 
-                    icon="⚙️" 
-                    name="Manufacturing" 
-                    tooltip={{ description: "Produce PARTS: Injection → Pre-Production → Finishing", username: "injection_molding\nparts_pre_production\npart_finishing" }}
-                    layout="horizontal"
-                  />
-                </div>
-
-                <div className="flow-connector-vertical blue">
-                  <div className="connector-line-v"></div>
-                  <span className="connector-label-v">parts</span>
-                </div>
-
-                <div className="flow-station-stack single">
-                  <WorkstationCard 
-                    icon="🔧" 
-                    name="Assembly" 
-                    tooltip={{ description: "Assemble PARTS → MODULES (Gear + Motor)", username: "gear_assembly\nmotor_assembly" }}
-                    layout="horizontal"
-                  />
-                </div>
-              </div>
-
-              {/* Legend */}
-              <div className="flow-legend">
-                <span className="legend-item"><span className="legend-dot green"></span>Order/Material</span>
-                <span className="legend-item"><span className="legend-dot blue"></span>Product Return</span>
-                <span className="legend-item"><span className="legend-dot orange"></span>Trigger/Dispatch</span>
-                <span className="legend-item"><span className="legend-dot purple"></span>Module Flow</span>
+        {/* ================================================================
+            ROW 1: Industry 4.0 Tagline | Application Overview | Login Form
+            ================================================================ */}
+        <div className="home-overview-row">
+          {/* Column 1: Industry 4.0 Tagline Card */}
+          <div className="home-tagline-column">
+            <div className="glass-card industry-tagline-card">
+              <h2>Industry 4.0 Digital Manufacturing</h2>
+              <p className="tagline-subtitle">
+                Enterprise-grade Manufacturing Execution System demonstrating 
+                smart factory automation, real-time production orchestration, 
+                and intelligent supply chain management.
+              </p>
+              <div className="tagline-badges">
+                <span className="tech-badge"><span className="tech-icon">☕</span> Java 21</span>
+                <span className="tech-badge"><span className="tech-icon">🌱</span> Spring Boot</span>
+                <span className="tech-badge"><span className="tech-icon">⚛️</span> React 18</span>
+                <span className="tech-badge"><span className="tech-icon">🐳</span> Docker</span>
               </div>
             </div>
           </div>
-          
-          <div className="home-login-section">
+
+          {/* Column 2: Application Overview Card - Redesigned */}
+          <div className="home-overview-column">
+            <div className="overview-card-v2">
+              <div className="overview-header">
+                <div className="overview-icon">🏭</div>
+                <div className="overview-title-block">
+                  <h3>Application Overview</h3>
+                  <span className="overview-badge">Enterprise MES Platform</span>
+                </div>
+              </div>
+              <div className="overview-body">
+                <p>The <strong>LIFE System</strong> (LEGO Integrated Factory Execution) is an enterprise-grade digital manufacturing execution system built to demonstrate academic research in industrial engineering. This platform digitizes end-to-end supply chain operations across <strong>nine autonomous workstations</strong>, coordinating complex production workflows from raw materials to finished products. Supporting <strong>four distinct business scenarios</strong>, it handles direct fulfillment, warehouse replenishment, full production cycles, and high-volume batch processing with real-time inventory tracking.</p>
+                <p>Login with username <strong>lego_admin</strong> to access the Admin Dashboard for a complete overview of system state and operations.</p>
+              </div>
+              <div className="overview-metrics">
+                <div className="metric-box">
+                  <span className="metric-num">6</span>
+                  <span className="metric-lbl">Microservices</span>
+                </div>
+                <div className="metric-box">
+                  <span className="metric-num">9</span>
+                  <span className="metric-lbl">Workstations</span>
+                </div>
+                <div className="metric-box">
+                  <span className="metric-num">4</span>
+                  <span className="metric-lbl">Scenarios</span>
+                </div>
+                <div className="metric-box">
+                  <span className="metric-num">5</span>
+                  <span className="metric-lbl">User Roles</span>
+                </div>
+              </div>
+              <div className="overview-tech">
+                <span className="tech-pill">⚛️ React</span>
+                <span className="tech-pill">🍃 Spring</span>
+                <span className="tech-pill">🐳 Docker</span>
+                <span className="tech-pill">🔐 JWT</span>
+                <span className="tech-pill">📡 REST</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 3: Login Form */}
+          <div className="home-login-column">
             <LoginForm embedded={true} showHeader={true} showHelpText={true} />
           </div>
         </div>
 
-        {/* Row 2: Application Overview (Full Width) */}
-        <div className="home-overview-row">
-          <div className="home-overview-section">
-            <h3 className="section-title">Application Overview</h3>
-            <div className="overview-content">
-              <p className="overview-description">
-                The <strong>LIFE System</strong> (LEGO Integrated Factory Execution) is an enterprise-grade digital manufacturing 
-                execution system (MES) built from the ground up to demonstrate the practical application of academic research 
-                in industrial engineering. This comprehensive platform digitizes and automates end-to-end supply chain operations 
-                across nine autonomous workstations, coordinating complex production workflows from raw materials to finished products.
-              </p>
+        {/* ================================================================
+            ROW 2: Order Fulfillment Flow | Microservices Architecture
+            ================================================================ */}
+        <div className="home-features-row">
+          {/* Column 1: Flow Diagram */}
+          <div className="home-flow-column">
+            <div className="glass-card">
+              <h3 className="section-title">🔄 Order Fulfillment Process</h3>
+            
+            {/* Enhanced Flow Diagram - Hierarchical Order Layers */}
+            <div className="flow-diagram-v3">
               
-              <p className="overview-business-value">
-                <strong>Transforming Small Business Manufacturing:</strong> This system demonstrates how modern digital tools 
-                can revolutionize small-scale manufacturing operations. By automating order fulfillment, inventory tracking, 
-                and production scheduling, small businesses can achieve enterprise-level efficiency without requiring massive 
-                IT infrastructure. The platform's modular architecture allows businesses to start small and scale progressively, 
-                making advanced manufacturing execution systems accessible to operations of any size.
-              </p>
-              
-              <div className="tech-highlights-split">
-                {/* Left Column - Right Aligned */}
-                <div className="tech-column tech-column-left">
-                  <div className="tech-feature">
-                    <div className="feature-header">
-                      <span className="feature-icon">🏗️</span>
-                      <strong>Microservices Architecture</strong>
+              {/* LAYER 1: Customer Order Level */}
+              <div className="flow-layer customer-layer">
+                <div className="layer-header">
+                  <span className="layer-badge customer">📋 Customer Order</span>
+                  <span className="layer-subtitle">Order Entry & Fulfillment</span>
+                </div>
+                <div className="layer-content-stacked">
+                  {/* Main horizontal flow: Customer → Plant Warehouse → Ship */}
+                  <div className="layer-row main-flow">
+                    <div className="flow-node-enhanced customer-node">
+                      <span className="node-icon">👤</span>
+                      <span className="node-label">Customer</span>
                     </div>
-                    <p>6 independently scalable Spring Boot services with isolated H2 databases, orchestrated via Docker Compose</p>
+                    <div className="flow-connector-enhanced">
+                      <span className="connector-line"></span>
+                      <span className="connector-label">Places Order</span>
+                      <span className="connector-arrow">→</span>
+                    </div>
+                    <div className="warehouse-decision-wrapper">
+                      <div className="flow-node-enhanced warehouse-node" data-tooltip="Receives customer orders and checks product stock availability&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 warehouse_operator">
+                        <span className="node-icon">🏭</span>
+                        <span className="node-label">Plant Warehouse</span>
+                      </div>
+                      {/* Escalation path below Plant Warehouse */}
+                      <div className="branch-path escalate vertical-branch">
+                        <span className="path-label">✗ Insufficient</span>
+                        <span className="path-arrow">↓</span>
+                        <span className="scenario-indicator s2-4">S2-4</span>
+                      </div>
+                    </div>
+                    <div className="flow-connector-enhanced success-path">
+                      <span className="connector-line success"></span>
+                      <span className="connector-label">✓ In Stock</span>
+                      <span className="connector-arrow">→</span>
+                    </div>
+                    <div className="flow-node-enhanced delivery-node">
+                      <span className="node-icon">🚚</span>
+                      <span className="node-label">Ship</span>
+                    </div>
+                    <span className="scenario-indicator s1">S1</span>
                   </div>
-                  
-                  <div className="tech-feature">
-                    <div className="feature-header">
-                      <span className="feature-icon">🔐</span>
-                      <strong>Enterprise Security</strong>
+                </div>
+              </div>
+
+              {/* Arrow: Customer → Warehouse Order */}
+              <div className="layer-connector">
+                <div className="connector-vertical">
+                  <span className="connector-line-v"></span>
+                  <span className="connector-text">Creates</span>
+                </div>
+              </div>
+
+              {/* LAYER 2: Warehouse Order Level */}
+              <div className="flow-layer warehouse-layer">
+                <div className="layer-header">
+                  <span className="layer-badge warehouse">📦 Warehouse Order</span>
+                  <span className="layer-subtitle">Module Assembly</span>
+                </div>
+                <div className="layer-content-stacked">
+                  {/* Main horizontal flow: Modules Supermarket → Final Assembly → Plant Warehouse */}
+                  <div className="layer-row main-flow">
+                    <div className="modules-decision-wrapper">
+                      <div className="flow-node-enhanced modules-node" data-tooltip="Stores pre-assembled modules and fulfills internal warehouse orders&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 modules_supermarket">
+                        <span className="node-icon">🏢</span>
+                        <span className="node-label">Modules Supermarket</span>
+                        <span className="node-sublabel">Module Check</span>
+                      </div>
+                      {/* Escalation path below Modules Supermarket */}
+                      <div className="branch-path production-needed vertical-branch">
+                        <span className="path-label">✗ Need Production</span>
+                        <span className="path-arrow">↓</span>
+                        <span className="scenario-indicator s3-4">S3/S4</span>
+                      </div>
                     </div>
-                    <p>JWT-based authentication with BCrypt encryption, role-based access control across 9 user roles</p>
+                    <div className="flow-connector-enhanced success-path">
+                      <span className="connector-line success"></span>
+                      <span className="connector-label">✓ Modules Available</span>
+                      <span className="connector-arrow">→</span>
+                    </div>
+                    <div className="assembly-output-wrapper">
+                      <div className="return-indicator-top">
+                        <span className="return-arrow">↑</span>
+                        <span className="return-text">to Plant Warehouse</span>
+                        <span className="scenario-indicator s2">S2</span>
+                      </div>
+                      <div className="flow-node-enhanced assembly-node" data-tooltip="Combines modules into finished products ready for shipment&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 final_assembly">
+                        <span className="node-icon">🔨</span>
+                        <span className="node-label">Final Assembly</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Arrow: Warehouse → Production Order */}
+              <div className="layer-connector">
+                <div className="connector-vertical">
+                  <span className="connector-line-v"></span>
+                  <span className="connector-text">Triggers</span>
+                </div>
+              </div>
+
+              {/* LAYER 3: Production Order Level */}
+              <div className="flow-layer production-layer">
+                <div className="layer-header">
+                  <span className="layer-badge production">⚙️ Production Order</span>
+                  <span className="layer-subtitle">Full Manufacturing Pipeline</span>
+                </div>
+                <div className="layer-content production-pipeline-v2">
+                  {/* Planning Stage */}
+                  <div className="pipeline-stage-v2 planning" data-tooltip="Schedules production orders and optimizes manufacturing sequences&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 production_planning">
+                    <span className="stage-icon">📋</span>
+                    <span className="stage-label">Planning</span>
+                  </div>
+                  <span className="pipeline-arrow-v2">→</span>
+
+                  {/* Control Stage */}
+                  <div className="pipeline-stage-v2 control" data-tooltip="Coordinates and monitors production and assembly operations&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 production_control&#10;👤 assembly_control">
+                    <span className="stage-icon">🎛️</span>
+                    <span className="stage-label">Control</span>
+                  </div>
+                  <span className="pipeline-arrow-v2">→</span>
+                  
+                  {/* Parts Supply */}
+                  <div className="pipeline-stage-v2 supply" data-tooltip="Distributes raw materials and components to workstations&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 parts_supply">
+                    <span className="stage-icon">📦</span>
+                    <span className="stage-label">Parts Supply</span>
+                  </div>
+                  <span className="pipeline-arrow-v2">→</span>
+
+                  {/* Manufacturing Stage */}
+                  <div className="pipeline-stage-v2 manufacturing" data-tooltip="Produces parts through injection molding, pre-production, and finishing&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 injection_molding&#10;👤 parts_preproduction&#10;👤 part_finishing">
+                    <span className="stage-icon">🔧</span>
+                    <span className="stage-label">Manufacturing</span>
+                    <span className="stage-output">→ Parts</span>
+                  </div>
+                  <span className="pipeline-arrow-v2">→</span>
+
+                  {/* Assembly Stage */}
+                  <div className="pipeline-stage-v2 assembly" data-tooltip="Assembles gear and motor modules from manufactured parts&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 gear_assembly&#10;👤 motor_assembly">
+                    <span className="stage-icon">⚙️</span>
+                    <span className="stage-label">Assembly</span>
+                    <span className="stage-output">→ Modules</span>
                   </div>
                 </div>
                 
-                {/* Center Divider */}
-                <div className="tech-divider"></div>
-                
-                {/* Right Column - Left Aligned */}
-                <div className="tech-column tech-column-right">
-                  <div className="tech-feature">
-                    <div className="feature-header">
-                      <span className="feature-icon">⚡</span>
-                      <strong>Modern Tech Stack</strong>
-                    </div>
-                    <p>Spring Boot 3.4.12 (Java 21) backend + React 18 (Vite) frontend + Spring Cloud Gateway + Nginx reverse proxy</p>
+                {/* Output flows */}
+                <div className="production-outputs">
+                  <div className="output-path">
+                    <span className="output-arrow">↑</span>
+                    <span className="output-label">Modules → Supermarket</span>
+                    <span className="scenario-indicator s3">S3</span>
                   </div>
-                  
-                  <div className="tech-feature">
-                    <div className="feature-header">
-                      <span className="feature-icon">📊</span>
-                      <strong>Real-Time Operations</strong>
+                  <div className="output-path direct">
+                    <span className="output-arrow">↑↑</span>
+                    <span className="output-label">Modules → Final Assembly</span>
+                    <span className="scenario-indicator s4">S4</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scenario Legend */}
+              <div className="scenario-legend-v2">
+                <div className="legend-title">📊 Business Scenarios</div>
+                <div className="legend-grid">
+                  <div className="legend-item">
+                    <span className="scenario-tag s1">S1</span>
+                    <span className="legend-text">Direct Fulfillment</span>
+                  </div>
+                  <div className="legend-item">
+                    <span className="scenario-tag s2">S2</span>
+                    <span className="legend-text">Warehouse + Assembly</span>
+                  </div>
+                  <div className="legend-item">
+                    <span className="scenario-tag s3">S3</span>
+                    <span className="legend-text">Full Production</span>
+                  </div>
+                  <div className="legend-item">
+                    <span className="scenario-tag s4">S4</span>
+                    <span className="legend-text">High Volume Direct</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+          </div>
+          
+          {/* Column 2: Microservices Architecture - Layered Layout */}
+          <div className="home-architecture-column">
+            <div className="glass-card">
+              <h3 className="section-title">🏗️ Microservice Architecture</h3>
+              <div className="architecture-layered">
+                
+                {/* Layer 1: Client/Frontend */}
+                <div className="arch-layer client-layer">
+                  <div className="layer-services with-label">
+                    <div className="layer-label-inline">Client</div>
+                    <div className="service-box-horizontal frontend" data-tooltip="React 18 + Vite SPA | Port: 5173">
+                      <span className="service-icon">⚛️</span>
+                      <span className="service-name-vertical">React<br/>Frontend</span>
+                      <span className={`health-indicator ${serviceHealth['frontend'] || 'unknown'}`}></span>
                     </div>
-                    <p>Live inventory tracking, automated order fulfillment, SimAL scheduling integration with interactive Gantt charts</p>
+                  </div>
+                </div>
+
+                {/* Animated Arrow: Client → Gateway */}
+                <div className="arch-flow-arrow">
+                  <div className="arrow-line animated-pulse"></div>
+                  <div className="arrow-head">▼</div>
+                  <span className="arrow-label">HTTP/REST</span>
+                </div>
+
+                {/* Layer 2: API Gateway */}
+                <div className="arch-layer gateway-layer">
+                  <div className="layer-services with-label">
+                    <div className="layer-label-inline">Gateway</div>
+                    <div className="service-box-horizontal gateway" data-tooltip="Spring Cloud Gateway | Auth & Routing | Port: 8011">
+                      <span className="service-icon">🚪</span>
+                      <span className="service-name-vertical">API<br/>Gateway</span>
+                      <span className={`health-indicator ${serviceHealth['api-gateway'] || 'unknown'}`}></span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Animated Arrow: Gateway → Services (Fan-out) */}
+                <div className="arch-flow-arrow fanout">
+                  <div className="arrow-branches">
+                    <div className="branch-line left"></div>
+                    <div className="branch-line center"></div>
+                    <div className="branch-line right"></div>
+                  </div>
+                  <div className="arrow-heads">
+                    <span className="arrow-head">▼</span>
+                    <span className="arrow-head">▼</span>
+                    <span className="arrow-head">▼</span>
+                  </div>
+                  <span className="arrow-label">Route & Auth</span>
+                </div>
+
+                {/* Layer 3: Backend Microservices - Multi-row Layout */}
+                <div className="arch-layer services-layer">
+                  
+                  {/* Services Grid with Communication Lines */}
+                  <div className="services-grid-creative">
+                    
+                    {/* Row 1: Auth Service (standalone) */}
+                    <div className="services-row-auth with-label">
+                      <div className="layer-label-inline">Microservices</div>
+                      <div className="service-box-horizontal core" data-tooltip="Authentication & Authorization | Port: 8012">
+                        <span className="service-icon">👤</span>
+                        <span className="service-name-vertical">User<br/>Service</span>
+                        <span className={`health-indicator ${serviceHealth['user-service'] || 'unknown'}`}></span>
+                      </div>
+                    </div>
+                    
+                    {/* Animated connection: Auth → Order */}
+                    <div className="service-connector vertical-connector">
+                      <div className="connector-line-animated"></div>
+                      <span className="connector-label">JWT</span>
+                    </div>
+                    
+                    {/* Row 2: Central Orchestrator + Integration */}
+                    <div className="services-row-core">
+                      <div className="service-box-horizontal core orchestrator" data-tooltip="Order Processing Engine | Port: 8015">
+                        <span className="service-icon">📋</span>
+                        <span className="service-name-vertical">Order<br/>Service</span>
+                        <span className={`health-indicator ${serviceHealth['order-processing-service'] || 'unknown'}`}></span>
+                      </div>
+                      
+                      {/* Horizontal connector to SimAL */}
+                      <div className="service-connector horizontal-connector">
+                        <div className="connector-line-animated horizontal"></div>
+                        <span className="connector-label">Schedule</span>
+                      </div>
+                      
+                      <div className="service-box-horizontal integration" data-tooltip="SimAL Scheduling & Optimization | Port: 8016">
+                        <span className="service-icon">📊</span>
+                        <span className="service-name-vertical">SimAL<br/>Service</span>
+                        <span className={`health-indicator ${serviceHealth['simal-integration-service'] || 'unknown'}`}></span>
+                      </div>
+                    </div>
+                    
+                    {/* Animated fan-out: Order → Data Services */}
+                    <div className="service-connector fanout-connector">
+                      <div className="fanout-lines">
+                        <div className="fanout-branch left"></div>
+                        <div className="fanout-branch right"></div>
+                      </div>
+                      <div className="fanout-labels">
+                        <span className="connector-label">BOM</span>
+                        <span className="connector-label">Stock</span>
+                      </div>
+                    </div>
+                    
+                    {/* Row 3: Data Services */}
+                    <div className="services-row-data">
+                      <div className="service-box-horizontal data" data-tooltip="Product Catalog & BOM | Port: 8013">
+                        <span className="service-icon">📦</span>
+                        <span className="service-name-vertical">Master<br/>Data</span>
+                        <span className={`health-indicator ${serviceHealth['masterdata-service'] || 'unknown'}`}></span>
+                      </div>
+                      
+                      <div className="service-box-horizontal data" data-tooltip="Stock Management | Port: 8014">
+                        <span className="service-icon">📈</span>
+                        <span className="service-name-vertical">Inventory<br/>Service</span>
+                        <span className={`health-indicator ${serviceHealth['inventory-service'] || 'unknown'}`}></span>
+                      </div>
+                    </div>
+                    
+                  </div>
+                </div>
+
+                {/* Architecture Legend */}
+                <div className="architecture-legend-horizontal">
+                  <div className="legend-item">
+                    <span className="legend-color frontend"></span>
+                    <span>Frontend</span>
+                  </div>
+                  <div className="legend-item">
+                    <span className="legend-color gateway"></span>
+                    <span>Gateway</span>
+                  </div>
+                  <div className="legend-item">
+                    <span className="legend-color core"></span>
+                    <span>Core</span>
+                  </div>
+                  <div className="legend-item">
+                    <span className="legend-color data"></span>
+                    <span>Data</span>
+                  </div>
+                  <div className="legend-item">
+                    <span className="legend-color integration"></span>
+                    <span>Integration</span>
                   </div>
                 </div>
               </div>
@@ -546,161 +734,272 @@ function HomePage() {
           </div>
         </div>
 
-        {/* Row 3: Navigation Guide + Microservices Architecture (Two Columns) */}
+        {/* ================================================================
+            ROW 3: Products | Quick Navigation Guide | Feature Highlights
+            ================================================================ */}
         <div className="home-guide-row">
-          {/* Column 1: Navigation Guide */}
+          {/* Column 1: Products */}
+          <div className="home-products-column-row3">
+            <div className="glass-card">
+              <h3 className="section-title">🧱 Our Products</h3>
+              {loadingProducts ? (
+                <p className="loading-text">Loading products...</p>
+              ) : products.length === 0 ? (
+                <p className="no-data">No products available</p>
+              ) : (
+                <div className="products-grid-row3">
+                  {products.map(product => {
+                    const productIcon = getProductIcon(product.name);
+                    const isExpanded = expandedModules[product.id];
+                    
+                    return (
+                      <div key={product.id} className="product-card-enhanced">
+                        <div className="product-card-main">
+                          <div className="product-visual">
+                            <span className="product-icon-realistic">{productIcon.icon}</span>
+                            <span className="product-color-dot" style={{background: productIcon.color}}></span>
+                          </div>
+                          <div className="product-info-block">
+                            <h4 className="product-title">{product.name}</h4>
+                            <span className="product-sku">SKU: PRD-{String(product.id).padStart(3, '0')}</span>
+                          </div>
+                          <button 
+                            className={`bom-toggle-btn ${isExpanded ? 'expanded' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleBomToggle(product);
+                            }}
+                            title="View Bill of Materials"
+                          >
+                            <span className="bom-icon">📋</span>
+                            <span className="bom-arrow">{isExpanded ? '▲' : '▼'}</span>
+                          </button>
+                        </div>
+                        
+                        {/* Expandable BOM Section - Modal-style popout */}
+                        {isExpanded && (
+                          <>
+                            <div 
+                              className="bom-backdrop" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedModules({});
+                                setProductModules([]);
+                                setExpandedBomModules({});
+                              }}
+                            />
+                            <div className="bom-dropdown">
+                              <div className="bom-header">
+                                <span className="bom-title">🛠️ Bill of Materials</span>
+                                <button 
+                                  className="bom-close-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedModules({});
+                                    setProductModules([]);
+                                    setExpandedBomModules({});
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                              {loadingModules ? (
+                                <div className="bom-loading-container">
+                                  <span className="bom-loading">Loading components...</span>
+                                </div>
+                              ) : productModules.length > 0 ? (
+                                <div className="bom-modules-list">
+                                  {productModules.map(module => {
+                                    const isModuleExpanded = expandedBomModules[module.id];
+                                    const hasParts = module.parts && module.parts.length > 0;
+                                    
+                                    return (
+                                      <div key={module.id} className="bom-module-group">
+                                        <div 
+                                          className={`bom-module-item ${hasParts ? 'expandable' : ''} ${isModuleExpanded ? 'expanded' : ''}`}
+                                          onClick={() => hasParts && toggleBomModule(module.id)}
+                                        >
+                                          <span className="module-icon">⚙️</span>
+                                          <span className="module-name">{module.name}</span>
+                                          <span className="module-qty">×{module.quantity || 1}</span>
+                                          {hasParts && (
+                                            <span className="module-expand-arrow">
+                                              {isModuleExpanded ? '▼' : '▶'}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {hasParts && isModuleExpanded && (
+                                          <div className="bom-parts-list">
+                                            {module.parts.map(part => (
+                                              <div key={part.id} className="bom-part-item">
+                                                <span className="part-icon">🔩</span>
+                                                <span className="part-name">{part.name}</span>
+                                                <span className="part-qty">×{part.quantity || 1}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p className="bom-empty">No components found</p>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Product Details Overlay Dropdown */}
+              {selectedProduct && (
+                <div className="product-details-overlay active">
+                  <div className="product-details-modal">
+                    <button 
+                      className="product-details-close" 
+                      onClick={() => setSelectedProduct(null)}
+                    >
+                      ✕
+                    </button>
+                    
+                    <div className="product-details-header">
+                      <div className="product-image-large">
+                        <span className="product-emoji">
+                          {selectedProduct.name.includes('Car') ? '🚗' : 
+                           selectedProduct.name.includes('Truck') ? '🚚' : 
+                           selectedProduct.name.includes('Plane') ? '✈️' : '🧱'}
+                        </span>
+                      </div>
+                      <div className="product-info">
+                        <h2 className="product-name-large">{selectedProduct.name}</h2>
+                        <p className="product-id-large">Product ID: {selectedProduct.id}</p>
+                      </div>
+                    </div>
+
+                    <div className="product-details-body">
+                      <div className="product-details-section">
+                        <h4>Description</h4>
+                        <p>{selectedProduct.description}</p>
+                      </div>
+
+                      <div className="product-stats">
+                        <div className="product-stat">
+                          <span className="stat-value">${selectedProduct.price.toFixed(2)}</span>
+                          <span className="stat-label">Price</span>
+                        </div>
+                        <div className="product-stat">
+                          <span className="stat-value">{selectedProduct.estimatedTimeMinutes}</span>
+                          <span className="stat-label">Minutes</span>
+                        </div>
+                      </div>
+
+                      <div className="product-details-section">
+                        <h4>Components (Bill of Materials)</h4>
+                        
+                        {loadingModules ? (
+                          <p className="loading-text">Loading modules...</p>
+                        ) : productModules.length === 0 ? (
+                          <p className="no-data">No modules available for this product</p>
+                        ) : (
+                          <div className="bom-list">
+                            {productModules.map(module => (
+                              <div key={module.id} className="bom-item">
+                                <span className="bom-icon">🔧</span>
+                                <span className="bom-name">{module.name}</span>
+                                <span className="bom-qty">×{module.quantity}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Column 2: Navigation Guide */}
           <div className="home-navigation-column">
-            <h3 className="section-title">📋 Quick Navigation Guide</h3>
-            <div className="navigation-content">
-              <div className="nav-item">
-                <span className="nav-icon">🔑</span>
-                <div>
-                  <strong>Login:</strong> Hover over workstation cards above to see usernames. Generic password: <code>password</code>
+            <div className="glass-card">
+              <h3 className="section-title">📋 Quick Start Guide</h3>
+              <div className="nav-grid">
+                <div className="navigation-item">
+                  <span className="nav-icon">🔑</span>
+                  <div className="nav-content">
+                    <strong>Login</strong>
+                    <p>Hover over workstation cards to see usernames. Password: <code>password</code></p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="nav-item">
-                <span className="nav-icon">👥</span>
-                <div>
-                  <strong>User Roles:</strong> Each role has a dedicated dashboard (Admin, Production Planning, Plant Warehouse, 
-                  Modules Supermarket, Assembly Control, Parts Supply, Manufacturing)
+                
+                <div className="navigation-item">
+                  <span className="nav-icon">👥</span>
+                  <div className="nav-content">
+                    <strong>User Roles</strong>
+                    <p>9 specialized roles with dedicated dashboards for each function</p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="nav-item">
-                <span className="nav-icon">📦</span>
-                <div>
-                  <strong>Operations:</strong> Role-specific interfaces for customer orders, warehouse orders, production orders, 
-                  inventory management, and supply chain coordination
+                
+                <div className="navigation-item">
+                  <span className="nav-icon">📦</span>
+                  <div className="nav-content">
+                    <strong>Operations</strong>
+                    <p>Customer orders, production planning, inventory, and supply chain</p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="nav-item">
-                <span className="nav-icon">🔄</span>
-                <div>
-                  <strong>Real-time Updates:</strong> Dashboard data refreshes automatically every 5-30 seconds depending on the view
-                </div>
-              </div>
-              
-              <div className="nav-item">
-                <span className="nav-icon">📈</span>
-                <div>
-                  <strong>Production Scenarios:</strong> System supports 4 fulfillment workflows - direct fulfillment, warehouse orders, 
-                  production via modules, and high-volume direct production planning
+                
+                <div className="navigation-item">
+                  <span className="nav-icon">🔄</span>
+                  <div className="nav-content">
+                    <strong>Real-time</strong>
+                    <p>Dashboard auto-refresh every 5-30 seconds depending on view</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Column 2: Microservices Architecture Diagram */}
-          <div className="home-architecture-column">
-            <h3 className="section-title">🏗️ Microservice Communication</h3>
-            <div className="architecture-diagram">
-              {/* Frontend Layer */}
-              <div className="service-group frontend-group">
-                <div className="group-label">Frontend Layer</div>
-                <div className="arch-layer">
-                  <div 
-                    className={`service-box frontend ${serviceHealth['frontend'] || 'unknown'}`}
-                    data-tooltip="React SPA | 9 role-based dashboards + real-time updates | React 18 + Vite"
-                  >
-                    <span className="service-name">React App</span>
-                    <span className="service-tech">UI Layer</span>
+          {/* Column 2: Feature Highlights */}
+          <div className="home-highlights-column">
+            <div className="glass-card">
+              <h3 className="section-title">✨ Feature Highlights</h3>
+              <div className="highlights-grid">
+                <div className="feature-highlight-card">
+                  <div className="feature-highlight-icon">🏗️</div>
+                  <div className="feature-highlight-content">
+                    <h4 className="feature-highlight-title">Microservices</h4>
+                    <p className="feature-highlight-description">6 Spring Boot services with isolated databases</p>
+                  </div>
+                </div>
+                
+                <div className="feature-highlight-card">
+                  <div className="feature-highlight-icon">🔐</div>
+                  <div className="feature-highlight-content">
+                    <h4 className="feature-highlight-title">Enterprise Security</h4>
+                    <p className="feature-highlight-description">JWT authentication with 9-role RBAC</p>
+                  </div>
+                </div>
+                
+                <div className="feature-highlight-card">
+                  <div className="feature-highlight-icon">⚡</div>
+                  <div className="feature-highlight-content">
+                    <h4 className="feature-highlight-title">Modern Stack</h4>
+                    <p className="feature-highlight-description">Java 21, Spring Boot 3.4, React 18, Vite</p>
+                  </div>
+                </div>
+                
+                <div className="feature-highlight-card">
+                  <div className="feature-highlight-icon">📊</div>
+                  <div className="feature-highlight-content">
+                    <h4 className="feature-highlight-title">SimAL Integration</h4>
+                    <p className="feature-highlight-description">Interactive Gantt charts for scheduling</p>
                   </div>
                 </div>
               </div>
-              
-              <div className="arch-arrow-down">▼</div>
-              
-              {/* API Gateway Layer */}
-              <div className="arch-layer">
-                <div 
-                  className={`service-box gateway ${serviceHealth['api-gateway'] || 'unknown'}`}
-                  data-tooltip="Routing Hub | JWT auth + request filtering + load balancing | Spring Cloud Gateway"
-                >
-                  <span className="service-name">API Gateway</span>
-                  <span className="service-tech">Auth & Routing</span>
-                  <span className={`health-indicator ${serviceHealth['api-gateway'] || 'unknown'}`}></span>
-                </div>
-              </div>
-              
-              <div className="arch-arrow-down">▼</div>
-              
-              {/* Backend Services Layer - Show Gateway Communication */}
-              <div className="service-group backend-group">
-                <div className="group-label">Backend Services</div>
-                
-                {/* Primary Services (Gateway Routes) */}
-                <div className="arch-layer services-primary">
-                  <div 
-                    className={`service-box service-user ${serviceHealth['user-service'] || 'unknown'}`}
-                    data-tooltip="Auth & Users | JWT tokens + 9 role RBAC + workstation assignments | Spring Boot 3.4"
-                  >
-                    <span className="service-name">User</span>
-                    <span className={`health-indicator ${serviceHealth['user-service'] || 'unknown'}`}></span>
-                  </div>
-                  
-                  <div 
-                    className={`service-box service-order ${serviceHealth['order-processing-service'] || 'unknown'}`}
-                    data-tooltip="Order Engine | Customer/warehouse/production orders + fulfillment workflows | Spring Boot 3.4"
-                  >
-                    <span className="service-name">Order</span>
-                    <span className={`health-indicator ${serviceHealth['order-processing-service'] || 'unknown'}`}></span>
-                  </div>
-                  
-                  <div 
-                    className={`service-box service-simal ${serviceHealth['simal-integration-service'] || 'unknown'}`}
-                    data-tooltip="Scheduling AI | Production optimization + interactive Gantt charts | SimAL API"
-                  >
-                    <span className="service-name">SimAL</span>
-                    <span className={`health-indicator ${serviceHealth['simal-integration-service'] || 'unknown'}`}></span>
-                  </div>
-                </div>
-                
-                <div className="service-communication-arrows">
-                  <div className="comm-arrow">Inter-service Communication</div>
-                </div>
-                
-                {/* Secondary Services (Called by other services) */}
-                <div className="arch-layer services-secondary">
-                  <div 
-                    className={`service-box service-masterdata ${serviceHealth['masterdata-service'] || 'unknown'}`}
-                    data-tooltip="Product Catalog | BOM hierarchy + product/module/part definitions | Spring Boot 3.4"
-                  >
-                    <span className="service-name">Masterdata</span>
-                    <span className={`health-indicator ${serviceHealth['masterdata-service'] || 'unknown'}`}></span>
-                  </div>
-                  
-                  <div 
-                    className={`service-box service-inventory ${serviceHealth['inventory-service'] || 'unknown'}`}
-                    data-tooltip="Stock Tracker | Real-time inventory across 9 workstations + audit ledger | Spring Boot 3.4"
-                  >
-                    <span className="service-name">Inventory</span>
-                    <span className={`health-indicator ${serviceHealth['inventory-service'] || 'unknown'}`}></span>
-                  </div>
-                </div>
-                
-                <div className="arch-note">
-                  <span className="db-icon">💾</span> Independent H2 Databases
-                  <span className="note-separator">•</span>
-                  <span className="comm-icon">📡</span> Docker DNS Communication
-                </div>
-              </div>
-            </div>
-            
-            <div className="health-legend">
-              <span className="legend-item">
-                <span className="health-dot healthy"></span> Healthy
-              </span>
-              <span className="legend-item">
-                <span className="health-dot degraded"></span> Degraded
-              </span>
-              <span className="legend-item">
-                <span className="health-dot down"></span> Down
-              </span>
-              <span className="legend-item">
-                <span className="health-dot unknown"></span> Unknown
-              </span>
             </div>
           </div>
         </div>
@@ -708,9 +1007,9 @@ function HomePage() {
 
       {/* Footer */}
       <Footer />
-    </>
+    </div>
   );
-}
+  }
 
   // If authenticated, show the dashboard
   return <DashboardPage />;

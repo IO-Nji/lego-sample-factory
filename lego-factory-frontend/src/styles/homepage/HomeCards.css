@@ -1,0 +1,938 @@
+/* ============================================================================
+   HOME PAGE - CARD COMPONENTS
+   ============================================================================
+   Glassmorphism cards, overview sections, navigation items, and feature cards.
+   ============================================================================ */
+
+@import '../variables.css';
+
+/* ============================================================================
+   GLASSMORPHISM CARD BASE
+   ============================================================================ */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  box-shadow: 
+    0 4px 24px rgba(44, 90, 160, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  /* Ensure cards fill their parent containers */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Transparent glass cards for Row 3 */
+.home-guide-row .glass-card {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+  height: auto;
+}
+
+.glass-card:hover {
+  box-shadow: 
+    0 12px 40px rgba(44, 90, 160, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: rgba(44, 90, 160, 0.2);
+}
+
+/* ============================================================================
+   INDUSTRY 4.0 TAGLINE CARD
+   ============================================================================ */
+.industry-tagline-card {
+  background: linear-gradient(135deg, rgba(44, 90, 160, 0.08) 0%, rgba(51, 167, 217, 0.12) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 2px solid rgba(44, 90, 160, 0.15);
+  border-radius: 16px;
+  padding: 2rem 1.75rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.industry-tagline-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(51, 167, 217, 0.1) 0%, transparent 60%);
+  animation: shimmer 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(25%, 25%); }
+}
+
+.tagline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #2c5aa0 0%, #33a7d9 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.3);
+}
+
+.tagline-badge .badge-icon {
+  font-size: 1.1rem;
+}
+
+.tagline-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1e3d66;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.3;
+}
+
+.tagline-description {
+  font-size: 0.9rem;
+  color: #4a5568;
+  line-height: 1.6;
+  margin: 0;
+  flex: 1;
+}
+
+.tagline-highlight {
+  color: #2c5aa0;
+  font-weight: 600;
+}
+
+/* ============================================================================
+   SYSTEM DESCRIPTION CARD (Legacy)
+   ============================================================================ */
+.system-description-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(44, 90, 160, 0.1);
+  border-radius: 16px;
+  padding: 0.75rem 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* ============================================================================
+   OVERVIEW CARD V2 - Redesigned Layout
+   ============================================================================ */
+.overview-card-v2 {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(44, 90, 160, 0.12);
+  border-radius: 14px;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  overflow: hidden;
+  padding: 0.8rem;
+}
+
+.overview-card-v2 .overview-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  margin: -0.8rem -0.8rem 0.6rem -0.8rem;
+  background: linear-gradient(135deg, rgba(44, 90, 160, 0.08) 0%, rgba(51, 167, 217, 0.06) 100%);
+  border-bottom: 1px solid rgba(44, 90, 160, 0.08);
+}
+
+.overview-card-v2 .overview-icon {
+  font-size: 1.5rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2c5aa0 0%, #33a7d9 100%);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.overview-card-v2 .overview-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.overview-card-v2 .overview-title-block h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e3d66;
+  margin: 0;
+  padding: 0;
+  line-height: 1.1;
+}
+
+.overview-card-v2 .overview-badge {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  opacity: 0.8;
+}
+
+.overview-card-v2 .overview-body {
+  padding: 0.5rem 0.8rem;
+}
+
+.overview-card-v2 .overview-body p {
+  font-size: 0.82rem;
+  color: #444;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+.overview-card-v2 .overview-body strong {
+  color: #2c5aa0;
+  font-weight: 600;
+}
+
+.overview-card-v2 .overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  background: rgba(44, 90, 160, 0.03);
+}
+
+.overview-card-v2 .metric-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.35rem 0.2rem;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  border: 1px solid rgba(44, 90, 160, 0.08);
+}
+
+.overview-card-v2 .metric-num {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #2c5aa0;
+  line-height: 1;
+}
+
+.overview-card-v2 .metric-lbl {
+  font-size: 0.5rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 0.15rem;
+}
+
+.overview-card-v2 .overview-tech {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.45rem 0.8rem;
+  justify-content: center;
+  border-top: 1px solid rgba(44, 90, 160, 0.06);
+}
+
+.overview-card-v2 .tech-pill {
+  font-size: 0.52rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  background: linear-gradient(135deg, rgba(44, 90, 160, 0.08) 0%, rgba(51, 167, 217, 0.08) 100%);
+  padding: 0.2rem 0.4rem;
+  border-radius: 10px;
+  border: 1px solid rgba(44, 90, 160, 0.1);
+  transition: all 0.2s ease;
+}
+
+.overview-card-v2 .tech-pill:hover {
+  background: rgba(44, 90, 160, 0.15);
+  transform: scale(1.05);
+}
+
+.description-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.description-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #2c5aa0 0%, #33a7d9 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.25);
+}
+
+.description-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1e3d66;
+  margin: 0;
+}
+
+.description-subtitle {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.description-text {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.description-text strong {
+  color: #2c5aa0;
+}
+
+/* ============================================================================
+   OVERVIEW SECTION (Legacy Support)
+   ============================================================================ */
+.home-overview-section {
+  flex: 1;
+  background: transparent;
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  box-shadow: none;
+  border: none;
+}
+
+.overview-content {
+  line-height: 1.7;
+}
+
+.overview-description {
+  color: #333;
+  font-size: 1.05rem;
+  margin-bottom: 1.5rem;
+  text-align: justify;
+  line-height: 1.8;
+}
+
+.overview-business-value {
+  color: #1e3d66;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #e3f2fd 100%);
+  border-left: 4px solid #2c5aa0;
+  border-radius: 6px;
+  line-height: 1.7;
+  text-align: justify;
+  box-shadow: 0 2px 8px rgba(44, 90, 160, 0.1);
+}
+
+.overview-business-value strong {
+  color: #2c5aa0;
+  font-size: 1.05rem;
+}
+
+/* ============================================================================
+   TECH HIGHLIGHTS (Split Layout)
+   ============================================================================ */
+.tech-highlights-split {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-top: 1.5rem;
+  position: relative;
+}
+
+.tech-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0 2rem;
+}
+
+.tech-column-left {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.tech-column-right {
+  text-align: left;
+  align-items: flex-start;
+}
+
+.tech-divider {
+  width: 2px;
+  background: linear-gradient(to bottom, transparent 0%, #2c5aa0 20%, #2c5aa0 80%, transparent 100%);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.tech-feature {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 90%;
+}
+
+.feature-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #2c5aa0;
+  font-size: 0.95rem;
+}
+
+.tech-column-left .feature-header {
+  flex-direction: row-reverse;
+}
+
+.tech-column-right .feature-header {
+  flex-direction: row;
+}
+
+.feature-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.tech-feature strong {
+  font-weight: 600;
+}
+
+.tech-feature p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #555;
+  line-height: 1.6;
+}
+
+/* ============================================================================
+   NAVIGATION GUIDE
+   ============================================================================ */
+.navigation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.nav-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0.85rem;
+  border-radius: 8px;
+  border-left: 3px solid #2c5aa0;
+  box-shadow: 0 2px 8px rgba(44, 90, 160, 0.06);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #444;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.nav-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.nav-item strong {
+  color: #2c5aa0;
+}
+
+.nav-item code {
+  background: #f0f4f8;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  color: #1a3a5c;
+}
+
+/* ============================================================================
+   FEATURE HIGHLIGHT CARDS (New)
+   ============================================================================ */
+.feature-highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.feature-highlight-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(44, 90, 160, 0.1);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-highlight-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #2c5aa0 0%, #33a7d9 100%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.feature-highlight-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(44, 90, 160, 0.15);
+}
+
+.feature-highlight-card:hover::before {
+  transform: scaleX(1);
+}
+
+.feature-highlight-icon {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  margin-bottom: 0.75rem;
+  transition: transform 0.3s ease;
+}
+
+.feature-highlight-card:hover .feature-highlight-icon {
+  transform: scale(1.1);
+}
+
+.feature-highlight-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e3d66;
+  margin: 0 0 0.5rem 0;
+}
+
+.feature-highlight-text {
+  font-size: 0.8rem;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ============================================================================
+   LEGACY HIGHLIGHT STYLES
+   ============================================================================ */
+.tech-highlights {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.highlight-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  background: transparent;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 3px solid #2c5aa0;
+  box-shadow: none;
+  transition: all 0.3s ease;
+}
+
+.highlight-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.15);
+}
+
+.highlight-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.highlight-content strong {
+  display: block;
+  color: #2c5aa0;
+  font-size: 0.95rem;
+  margin-bottom: 0.35rem;
+}
+
+.highlight-content p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.navigation-guide {
+  background: #f8f9fa;
+  border-left: 4px solid #2c5aa0;
+  padding: 1rem 1.5rem;
+  border-radius: 6px;
+}
+
+.navigation-guide h4 {
+  color: #2c5aa0;
+  font-size: 1.1rem;
+  margin: 0 0 0.75rem 0;
+}
+
+.navigation-guide ul {
+  margin: 0 0 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.navigation-guide li {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.navigation-guide .tip {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: #666;
+  margin: 0;
+}
+
+/* ============================================================================
+   SECTION TITLE (Used in all cards)
+   ============================================================================ */
+.section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gray-800, #2d3748);
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(44, 90, 160, 0.15);
+}
+
+/* ============================================================================
+   TAGLINE CARD ENHANCEMENTS
+   ============================================================================ */
+.industry-tagline-card .tagline-icon {
+  font-size: 2rem;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+.industry-tagline-card h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2c5aa0;
+  margin: 0;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.industry-tagline-card .tagline-subtitle {
+  font-size: 0.78rem;
+  color: #4a5568;
+  line-height: 1.55;
+  margin: 0.5rem 0 1rem 0;
+  font-style: italic;
+  position: relative;
+  padding: 0;
+  text-align: center;
+}
+
+.industry-tagline-card .tagline-subtitle::before {
+  display: none;
+}
+
+.industry-tagline-card .tagline-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.tech-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.6rem;
+  background: rgba(44, 90, 160, 0.1);
+  border: 1px solid rgba(44, 90, 160, 0.2);
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  transition: all 0.2s ease;
+}
+
+.tech-badge:hover {
+  background: rgba(44, 90, 160, 0.18);
+  transform: scale(1.05);
+}
+
+.tech-badge .tech-icon {
+  font-size: 0.75rem;
+}
+
+/* ============================================================================
+   SYSTEM STATS ROW
+   ============================================================================ */
+.system-stats {
+  display: flex;
+  justify-content: space-around;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.stat-item .stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #2c5aa0;
+  line-height: 1;
+}
+
+.stat-item .stat-label {
+  font-size: 0.65rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 0.25rem;
+}
+
+/* ============================================================================
+   CARD TITLE & DESCRIPTION
+   ============================================================================ */
+.system-description-card .card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2c5aa0;
+  margin: 0 0 -0.25rem 0;
+  padding: 0;
+  line-height: 1;
+}
+
+.system-description-card .card-description {
+  font-size: 0.8rem;
+  color: #555;
+  line-height: 1.45;
+  margin: 0;
+  padding: 0;
+}
+
+/* Tech Stack Badges in Overview Card */
+.system-description-card .tech-stack-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
+.system-description-card .tech-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.45rem;
+  background: linear-gradient(135deg, rgba(44, 90, 160, 0.08) 0%, rgba(51, 167, 217, 0.1) 100%);
+  border: 1px solid rgba(44, 90, 160, 0.15);
+  border-radius: 12px;
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  transition: all 0.2s ease;
+}
+
+.system-description-card .tech-tag:hover {
+  background: rgba(44, 90, 160, 0.15);
+  transform: scale(1.05);
+}
+
+.system-description-card .tech-tag .tag-icon {
+  font-size: 0.65rem;
+}
+
+.system-description-card .card-note {
+  font-size: 0.75rem;
+  color: #666;
+  font-style: italic;
+  line-height: 1.5;
+  margin: 0;
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(44, 90, 160, 0.15);
+}
+
+/* ============================================================================
+   NAVIGATION GRID (New Layout)
+   ============================================================================ */
+.nav-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+}
+
+.navigation-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(44, 90, 160, 0.04);
+  border-radius: 10px;
+  border: 1px solid rgba(44, 90, 160, 0.08);
+  transition: all 0.2s ease;
+}
+
+.navigation-item:hover {
+  background: rgba(44, 90, 160, 0.08);
+  border-color: rgba(44, 90, 160, 0.15);
+}
+
+.navigation-item .nav-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.navigation-item .nav-content {
+  flex: 1;
+}
+
+.navigation-item .nav-content strong {
+  display: block;
+  font-size: 0.8rem;
+  color: #2c5aa0;
+  margin-bottom: 0.2rem;
+}
+
+.navigation-item .nav-content p {
+  font-size: 0.7rem;
+  color: #666;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.navigation-item .nav-content code {
+  background: rgba(44, 90, 160, 0.1);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-family: 'Monaco', 'Consolas', monospace;
+}
+
+/* ============================================================================
+   HIGHLIGHTS GRID (New Layout)
+   ============================================================================ */
+.highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.feature-highlight-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
+  border: 1px solid rgba(44, 90, 160, 0.12);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+}
+
+.feature-highlight-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(44, 90, 160, 0.15);
+  border-color: rgba(44, 90, 160, 0.25);
+}
+
+.feature-highlight-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  background: linear-gradient(135deg, rgba(44, 90, 160, 0.1) 0%, rgba(33, 150, 243, 0.15) 100%);
+  border-radius: 12px;
+  margin-bottom: 0.6rem;
+}
+
+.feature-highlight-content {
+  flex: 1;
+}
+
+.feature-highlight-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #2c5aa0;
+  margin: 0 0 0.25rem 0;
+}
+
+.feature-highlight-description {
+  font-size: 0.7rem;
+  color: #666;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ============================================================================
+   LOADING & EMPTY STATES
+   ============================================================================ */
+.loading-text {
+  font-size: 0.8rem;
+  color: #888;
+  text-align: center;
+  padding: 1rem;
+}
+
+.no-data {
+  font-size: 0.8rem;
+  color: #999;
+  text-align: center;
+  font-style: italic;
+  padding: 1rem;
+}

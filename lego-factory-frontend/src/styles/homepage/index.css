@@ -1,0 +1,36 @@
+/* ============================================================================
+   HOME PAGE - MODULAR CSS INDEX
+   ============================================================================
+   Central import file for all homepage styling modules.
+   Import this single file in HomePage.jsx instead of the monolithic HomePage.css.
+   
+   Module Structure:
+   - HomeBase.css        → Layout structure, hero section, row containers
+   - HomeCards.css       → Glassmorphism cards, tagline, feature highlights
+   - HomeFlowDiagram.css → Order fulfillment flow diagram, workstation cards
+   - HomeArchitecture.css → Microservices architecture visualization
+   - HomeProducts.css    → Product showcase grid and details overlay
+   - HomeAnimations.css  → All keyframe animations
+   - HomeResponsive.css  → Media queries for all breakpoints
+   ============================================================================ */
+
+/* Base layout and structure */
+@import './HomeBase.css';
+
+/* Card components and glassmorphism */
+@import './HomeCards.css';
+
+/* Flow diagram components */
+@import './HomeFlowDiagram.css';
+
+/* Architecture diagram components */
+@import './HomeArchitecture.css';
+
+/* Product showcase components */
+@import './HomeProducts.css';
+
+/* Animation keyframes */
+@import './HomeAnimations.css';
+
+/* Responsive breakpoints (MUST be last for proper cascade) */
+@import './HomeResponsive.css';
