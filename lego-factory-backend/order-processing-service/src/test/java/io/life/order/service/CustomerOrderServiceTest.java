@@ -5,6 +5,7 @@ import io.life.order.dto.OrderItemDTO;
 import io.life.order.entity.CustomerOrder;
 import io.life.order.entity.OrderItem;
 import io.life.order.repository.CustomerOrderRepository;
+import io.life.order.repository.WarehouseOrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +33,19 @@ class CustomerOrderServiceTest {
     private CustomerOrderRepository customerOrderRepository;
 
     @Mock
+    private WarehouseOrderRepository warehouseOrderRepository;
+
+    @Mock
+    private FinalAssemblyOrderService finalAssemblyOrderService;
+
+    @Mock
     private OrderAuditService orderAuditService;
+
+    @Mock
+    private InventoryService inventoryService;
+
+    @Mock
+    private SystemConfigService systemConfigService;
 
     @InjectMocks
     private CustomerOrderService customerOrderService;
@@ -256,6 +269,9 @@ class CustomerOrderServiceTest {
             order.setStatus("CONFIRMED");
             return order;
         });
+        // Mock dependencies for confirmOrder
+        when(systemConfigService.getLotSizeThreshold()).thenReturn(3);
+        when(inventoryService.checkStock(anyLong(), anyLong(), anyInt())).thenReturn(true);
 
         // When
         CustomerOrderDTO result = customerOrderService.confirmOrder(1L);

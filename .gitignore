@@ -201,3 +201,10 @@ restart-docker-for-registry.sh
 check-server-state.sh
 PRE_COMMIT_CHECKLIST.md
 REFACTORING_IMPLEMENTATION_PLAN.md
+.github/copilot-refs/API_REFERENCE.md
+.github/copilot-refs/BACKEND_PATTERNS.md
+.github/copilot-refs/DEV_WORKFLOW.md
+.github/copilot-refs/FRONTEND_PATTERNS.md
+.github/copilot-refs/ORDER_PROCESSING_RULES.md
+.github/copilot-refs/ROLES_AND_WORKSTATIONS.md
+.github/copilot-refs/TROUBLESHOOTING.md

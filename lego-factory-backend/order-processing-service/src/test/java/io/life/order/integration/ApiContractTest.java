@@ -5,7 +5,6 @@ import io.life.order.dto.*;
 import io.life.order.dto.masterdata.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -15,7 +14,7 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * API Contract Integration Tests
+ * API Contract Validation Tests
  * 
  * Validates that all DTOs marked with @ApiContract annotation:
  * 1. Have the annotation properly configured
@@ -24,8 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 
  * Purpose: Prevent silent deserialization failures by validating
  * API contract compliance at compile/test time.
+ * 
+ * Note: This is a pure unit test using reflection - no Spring context needed.
  */
-@SpringBootTest
 @DisplayName("API Contract Validation Tests")
 public class ApiContractTest {
 
