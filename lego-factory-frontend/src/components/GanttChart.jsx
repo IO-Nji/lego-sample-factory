@@ -1,23 +1,37 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import '../styles/GanttChart.css';
 
 /**
- * GanttChart Component
+ * GanttChart Component - Enhanced Version
  * 
  * Visualizes production schedules in a timeline format showing:
  * - Tasks assigned to different workstations
  * - Duration and time allocation
  * - Dependencies between tasks
  * - Current progress status
+ * - Real-time current time indicator
+ * - Zoom and pan controls
+ * - Keyboard navigation support
  * 
  * @param {Array} scheduledTasks - Array of task objects with workstation, duration, start/end times
  * @param {Function} onTaskClick - Handler when a task bar is clicked
  * @param {Function} onTaskDragEnd - Handler for drag-and-drop rescheduling
  * @param {boolean} editable - Whether tasks can be dragged/edited
+ * @param {Function} onRefresh - Optional callback to refresh data
+ * @param {number} refreshInterval - Auto-refresh interval in ms (default: 30000, 0 to disable)
+ * @param {boolean} showCurrentTime - Show current time indicator line (default: true)
  */
-function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable = false }) {
+function GanttChart({ 
+  scheduledTasks = [], 
+  onTaskClick, 
+  onTaskDragEnd, 
+  editable = false,
+  onRefresh,
+  refreshInterval = 30000,
+  showCurrentTime = true
+}) {
   const [timeScale, setTimeScale] = useState('hours'); // 'hours', 'days', 'weeks'
   const [viewStart, setViewStart] = useState(null);
   const [viewEnd, setViewEnd] = useState(null);
@@ -28,7 +42,13 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
   const [dragStartX, setDragStartX] = useState(0);
   const [dragCurrentX, setDragCurrentX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1); // 0.5 to 3
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [focusedTaskIndex, setFocusedTaskIndex] = useState(-1);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(new Date());
   const chartRef = useRef(null);
+  const timelineRef = useRef(null);
 
   // Initialize view range based on tasks
   useEffect(() => {
@@ -63,6 +83,179 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
       setViewEnd(end);
     }
   }, [scheduledTasks]);
+
+  // Current time indicator update
+  useEffect(() => {
+    if (!showCurrentTime) return;
+    
+    const updateCurrentTime = () => setCurrentTime(new Date());
+    updateCurrentTime();
+    
+    // Update every minute for efficiency
+    const interval = setInterval(updateCurrentTime, 60000);
+    return () => clearInterval(interval);
+  }, [showCurrentTime]);
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    if (!onRefresh || refreshInterval <= 0) return;
+    
+    const interval = setInterval(async () => {
+      setIsRefreshing(true);
+      try {
+        await onRefresh();
+        setLastRefresh(new Date());
+      } finally {
+        setIsRefreshing(false);
+      }
+    }, refreshInterval);
+    
+    return () => clearInterval(interval);
+  }, [onRefresh, refreshInterval]);
+
+  // Keyboard navigation
+  const handleKeyDown = useCallback((e) => {
+    if (!chartRef.current?.contains(document.activeElement)) return;
+    
+    const flatTasks = Object.values(groupTasksByWorkstation()).flat();
+    
+    switch (e.key) {
+      case 'ArrowRight':
+        if (e.shiftKey) {
+          // Pan right
+          panTimeline(0.25);
+        } else {
+          // Next task
+          setFocusedTaskIndex(prev => Math.min(prev + 1, flatTasks.length - 1));
+        }
+        e.preventDefault();
+        break;
+      case 'ArrowLeft':
+        if (e.shiftKey) {
+          // Pan left
+          panTimeline(-0.25);
+        } else {
+          // Previous task
+          setFocusedTaskIndex(prev => Math.max(prev - 1, 0));
+        }
+        e.preventDefault();
+        break;
+      case '+':
+      case '=':
+        handleZoomIn();
+        e.preventDefault();
+        break;
+      case '-':
+        handleZoomOut();
+        e.preventDefault();
+        break;
+      case 'Enter':
+      case ' ':
+        if (focusedTaskIndex >= 0 && focusedTaskIndex < flatTasks.length) {
+          onTaskClick?.(flatTasks[focusedTaskIndex]);
+        }
+        e.preventDefault();
+        break;
+      case 'Home':
+        scrollToNow();
+        e.preventDefault();
+        break;
+      case 'Escape':
+        setFocusedTaskIndex(-1);
+        break;
+      default:
+        break;
+    }
+  }, [focusedTaskIndex, onTaskClick]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Zoom handlers
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev * 1.5, 3));
+    if (viewStart && viewEnd) {
+      const center = new Date((viewStart.getTime() + viewEnd.getTime()) / 2);
+      const duration = viewEnd - viewStart;
+      const newDuration = duration / 1.5;
+      setViewStart(new Date(center.getTime() - newDuration / 2));
+      setViewEnd(new Date(center.getTime() + newDuration / 2));
+    }
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev / 1.5, 0.5));
+    if (viewStart && viewEnd) {
+      const center = new Date((viewStart.getTime() + viewEnd.getTime()) / 2);
+      const duration = viewEnd - viewStart;
+      const newDuration = duration * 1.5;
+      setViewStart(new Date(center.getTime() - newDuration / 2));
+      setViewEnd(new Date(center.getTime() + newDuration / 2));
+    }
+  };
+
+  const handleZoomReset = () => {
+    setZoomLevel(1);
+    // Re-initialize from tasks
+    if (scheduledTasks.length > 0) {
+      const startTimes = scheduledTasks
+        .map(task => new Date(task.startTime || task.scheduledStartTime))
+        .filter(date => !isNaN(date));
+      const endTimes = scheduledTasks
+        .map(task => new Date(task.endTime || task.scheduledEndTime))
+        .filter(date => !isNaN(date));
+      if (startTimes.length > 0 && endTimes.length > 0) {
+        const minStart = new Date(Math.min(...startTimes));
+        const maxEnd = new Date(Math.max(...endTimes));
+        minStart.setHours(minStart.getHours() - 1);
+        maxEnd.setHours(maxEnd.getHours() + 1);
+        setViewStart(minStart);
+        setViewEnd(maxEnd);
+      }
+    }
+  };
+
+  // Pan timeline
+  const panTimeline = (percentage) => {
+    if (!viewStart || !viewEnd) return;
+    const duration = viewEnd - viewStart;
+    const offset = duration * percentage;
+    setViewStart(new Date(viewStart.getTime() + offset));
+    setViewEnd(new Date(viewEnd.getTime() + offset));
+  };
+
+  // Scroll to current time
+  const scrollToNow = () => {
+    if (!viewStart || !viewEnd) return;
+    const duration = viewEnd - viewStart;
+    const now = new Date();
+    setViewStart(new Date(now.getTime() - duration / 2));
+    setViewEnd(new Date(now.getTime() + duration / 2));
+  };
+
+  // Manual refresh handler
+  const handleManualRefresh = async () => {
+    if (!onRefresh || isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+      setLastRefresh(new Date());
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Calculate current time position
+  const getCurrentTimePosition = () => {
+    if (!viewStart || !viewEnd || !showCurrentTime) return null;
+    const totalDuration = viewEnd - viewStart;
+    const offset = currentTime - viewStart;
+    const percentage = (offset / totalDuration) * 100;
+    if (percentage < 0 || percentage > 100) return null;
+    return percentage;
+  };
 
   // Drag-and-drop handlers
   const handleDragStart = (task, e) => {
@@ -265,6 +458,7 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
 
   const groupedTasks = groupTasksByWorkstation();
   const timeMarkers = generateTimeMarkers();
+  const currentTimePosition = getCurrentTimePosition();
   
   // Fixed height for 5 manufacturing/assembly workstations - no dynamic calculation
   // This ensures consistent display regardless of active workstations
@@ -276,6 +470,14 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
   // Fixed height: 5 workstations × 60px + header + legend = 450px
   const timelineHeight = headerHeight + (WORKSTATION_COUNT * rowHeight) + legendHeight;
 
+  // Format last refresh time
+  const formatLastRefresh = () => {
+    const diff = Math.floor((new Date() - lastRefresh) / 1000);
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return lastRefresh.toLocaleTimeString();
+  };
+
   if (!viewStart || !viewEnd) {
     return (
       <div className="gantt-chart-empty">
@@ -285,20 +487,105 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
   }
 
   return (
-    <div className="gantt-chart-container" ref={chartRef}>
+    <div className="gantt-chart-container" ref={chartRef} tabIndex={0} role="application" aria-label="Production Schedule Gantt Chart">
       {/* Header */}
       <div className="gantt-header">
-        <h3 className="gantt-title">Production Schedule Timeline</h3>
+        <div className="gantt-header-left">
+          <h3 className="gantt-title">Production Schedule Timeline</h3>
+          {onRefresh && (
+            <span className="gantt-refresh-status">
+              {isRefreshing ? '🔄 Refreshing...' : `Updated ${formatLastRefresh()}`}
+            </span>
+          )}
+        </div>
         <div className="gantt-controls">
+          {/* Navigation Controls */}
+          <div className="gantt-nav-controls">
+            <button 
+              className="gantt-nav-btn" 
+              onClick={() => panTimeline(-0.5)}
+              title="Pan Left (Shift+←)"
+              aria-label="Pan timeline left"
+            >
+              ◀
+            </button>
+            <button 
+              className="gantt-nav-btn gantt-now-btn" 
+              onClick={scrollToNow}
+              title="Jump to Now (Home)"
+              aria-label="Jump to current time"
+            >
+              📍 Now
+            </button>
+            <button 
+              className="gantt-nav-btn" 
+              onClick={() => panTimeline(0.5)}
+              title="Pan Right (Shift+→)"
+              aria-label="Pan timeline right"
+            >
+              ▶
+            </button>
+          </div>
+          
+          {/* Zoom Controls */}
+          <div className="gantt-zoom-controls">
+            <button 
+              className="gantt-zoom-btn" 
+              onClick={handleZoomOut}
+              disabled={zoomLevel <= 0.5}
+              title="Zoom Out (-)"
+              aria-label="Zoom out"
+            >
+              −
+            </button>
+            <span className="gantt-zoom-level" title="Current zoom level">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <button 
+              className="gantt-zoom-btn" 
+              onClick={handleZoomIn}
+              disabled={zoomLevel >= 3}
+              title="Zoom In (+)"
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+            <button 
+              className="gantt-zoom-btn gantt-zoom-reset" 
+              onClick={handleZoomReset}
+              title="Reset Zoom"
+              aria-label="Reset zoom to 100%"
+            >
+              ⟲
+            </button>
+          </div>
+          
+          {/* Scale Selector */}
           <select 
             value={timeScale} 
             onChange={(e) => setTimeScale(e.target.value)}
             className="gantt-scale-selector"
+            aria-label="Time scale"
           >
-            <option value="hours">Hourly View</option>
-            <option value="days">Daily View</option>
-            <option value="weeks">Weekly View</option>
+            <option value="hours">Hourly</option>
+            <option value="days">Daily</option>
+            <option value="weeks">Weekly</option>
           </select>
+          
+          {/* Refresh Button */}
+          {onRefresh && (
+            <button 
+              className={`gantt-refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              title="Refresh data"
+              aria-label="Refresh timeline data"
+            >
+              🔄
+            </button>
+          )}
+          
+          {/* Date Range */}
           <span className="gantt-date-range">
             {viewStart.toLocaleDateString()} - {viewEnd.toLocaleDateString()}
           </span>
@@ -306,7 +593,7 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
       </div>
 
       {/* Timeline - Fixed height for 5 manufacturing/assembly workstations */}
-      <div className="gantt-timeline" style={{ minHeight: `${timelineHeight}px`, maxHeight: `${timelineHeight}px` }}>
+      <div className="gantt-timeline" ref={timelineRef} style={{ minHeight: `${timelineHeight}px`, maxHeight: `${timelineHeight}px` }}>
         {/* Time markers */}
         <div className="gantt-time-axis">
           {timeMarkers.map((marker, idx) => (
@@ -322,6 +609,30 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
 
         {/* Workstation rows - Always show all 5 workstations with fixed heights */}
         <div className="gantt-rows" style={{ overflowY: 'hidden', minHeight: `${WORKSTATION_COUNT * rowHeight}px`, maxHeight: `${WORKSTATION_COUNT * rowHeight}px` }}>
+          {/* Current time indicator container - positioned to span only the timeline area (after 200px labels) */}
+          <div 
+            className="gantt-current-time-container"
+            style={{ 
+              position: 'absolute', 
+              left: '200px', 
+              right: 0, 
+              top: 0, 
+              bottom: 0, 
+              pointerEvents: 'none',
+              zIndex: 100
+            }}
+          >
+            {currentTimePosition !== null && (
+              <div 
+                className="gantt-current-time-indicator"
+                style={{ left: `${currentTimePosition}%` }}
+                title={`Current time: ${formatTime(currentTime)}`}
+              >
+                <div className="current-time-label">{formatTime(currentTime)}</div>
+              </div>
+            )}
+          </div>
+          
           {Object.entries(groupedTasks).map(([workstation, tasks]) => (
             <div key={workstation} className="gantt-row" style={{ minHeight: `${rowHeight}px`, maxHeight: `${rowHeight}px` }}>
                 <div className="gantt-row-label">
@@ -333,11 +644,14 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
                     const position = calculateTaskPosition(task);
                     const isBeingDragged = draggedTask?.id === task.id || draggedTask?.taskId === task.taskId;
                     const statusColors = getStatusColor(task.status);
+                    const flatTasks = Object.values(groupedTasks).flat();
+                    const taskGlobalIndex = flatTasks.findIndex(t => (t.id || t.taskId) === (task.id || task.taskId));
+                    const isFocused = taskGlobalIndex === focusedTaskIndex;
                     
                     return (
                       <div
                         key={task.id || idx}
-                        className={`gantt-task ${editable ? 'editable' : ''} ${hoveredTask === task.id ? 'hovered' : ''} ${isBeingDragged ? 'dragging' : ''}`}
+                        className={`gantt-task ${editable ? 'editable' : ''} ${hoveredTask === task.id ? 'hovered' : ''} ${isBeingDragged ? 'dragging' : ''} ${isFocused ? 'focused' : ''}`}
                         style={{
                           left: `${position.left}%`,
                           width: `${position.width}%`,
@@ -347,6 +661,9 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
                           cursor: editable ? 'grab' : 'pointer',
                           opacity: isBeingDragged ? 0.6 : 1
                         }}
+                        role="button"
+                        tabIndex={-1}
+                        aria-label={`${task.taskType || task.operationType || 'Task'} - ${task.status || 'PENDING'}`}
                         onClick={() => onTaskClick && onTaskClick(task)}
                         onMouseEnter={(e) => {
                           setHoveredTask(task.id);
@@ -470,8 +787,11 @@ function GanttChart({ scheduledTasks = [], onTaskClick, onTaskDragEnd, editable 
 GanttChart.propTypes = {
   scheduledTasks: PropTypes.array,
   onTaskClick: PropTypes.func,
-  onTaskDrag: PropTypes.func,
-  editable: PropTypes.bool
+  onTaskDragEnd: PropTypes.func,
+  editable: PropTypes.bool,
+  onRefresh: PropTypes.func,
+  refreshInterval: PropTypes.number,
+  showCurrentTime: PropTypes.bool
 };
 
 export default GanttChart;

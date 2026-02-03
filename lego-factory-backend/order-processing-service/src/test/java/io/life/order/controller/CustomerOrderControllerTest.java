@@ -1,5 +1,6 @@
 package io.life.order.controller;
 
+import io.life.order.config.OrderProcessingConfig;
 import io.life.order.dto.CustomerOrderDTO;
 import io.life.order.dto.OrderItemDTO;
 import io.life.order.service.CustomerOrderService;
@@ -45,10 +46,18 @@ class CustomerOrderControllerTest {
     @MockBean
     private FulfillmentService fulfillmentService;
 
+    @MockBean
+    private OrderProcessingConfig orderProcessingConfig;
+
     private CustomerOrderDTO testOrderDTO;
 
     @BeforeEach
     void setUp() {
+        // Setup config mock for controller that needs workstation IDs
+        OrderProcessingConfig.Workstations workstations = new OrderProcessingConfig.Workstations();
+        workstations.setPlantWarehouse(7L);
+        when(orderProcessingConfig.getWorkstations()).thenReturn(workstations);
+        
         testOrderDTO = new CustomerOrderDTO();
         testOrderDTO.setId(1L);
         testOrderDTO.setOrderNumber("ORD-TEST001");
@@ -116,12 +125,12 @@ class CustomerOrderControllerTest {
                 }
                 """;
 
-        // When/Then
+        // When/Then - IllegalArgumentException should return 400 Bad Request
         mockMvc.perform(post("/api/customer-orders")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidRequestBody))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -238,10 +247,10 @@ class CustomerOrderControllerTest {
         when(customerOrderService.confirmOrder(1L))
                 .thenThrow(new IllegalStateException("Only PENDING orders can be confirmed"));
 
-        // When/Then
+        // When/Then - IllegalStateException should return 400 Bad Request
         mockMvc.perform(put("/api/customer-orders/1/confirm")
                         .with(csrf()))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isBadRequest());
 
         verify(customerOrderService, times(1)).confirmOrder(1L);
     }
@@ -285,8 +294,8 @@ class CustomerOrderControllerTest {
         when(customerOrderService.completeOrder(1L))
                 .thenReturn(testOrderDTO);
 
-        // When/Then
-        mockMvc.perform(put("/api/customer-orders/1/complete")
+        // When/Then - Complete uses POST, not PUT
+        mockMvc.perform(post("/api/customer-orders/1/complete")
                         .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("COMPLETED")));
@@ -301,8 +310,8 @@ class CustomerOrderControllerTest {
         when(customerOrderService.cancelOrder(1L))
                 .thenReturn(testOrderDTO);
 
-        // When/Then
-        mockMvc.perform(put("/api/customer-orders/1/cancel")
+        // When/Then - Cancel uses POST, not PUT
+        mockMvc.perform(post("/api/customer-orders/1/cancel")
                         .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("CANCELLED")));
@@ -316,10 +325,10 @@ class CustomerOrderControllerTest {
         when(customerOrderService.cancelOrder(1L))
                 .thenThrow(new IllegalStateException("Completed orders cannot be cancelled"));
 
-        // When/Then
-        mockMvc.perform(put("/api/customer-orders/1/cancel")
+        // When/Then - Cancel uses POST, IllegalStateException returns 400
+        mockMvc.perform(post("/api/customer-orders/1/cancel")
                         .with(csrf()))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isBadRequest());
 
         verify(customerOrderService, times(1)).cancelOrder(1L);
     }

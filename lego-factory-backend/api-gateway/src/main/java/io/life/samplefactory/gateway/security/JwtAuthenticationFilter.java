@@ -89,6 +89,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         String token = authHeader.substring(BEARER_PREFIX.length());
+        if (!StringUtils.hasText(token)) {
+            return sendJsonError(exchange, HttpStatus.UNAUTHORIZED, "Missing or invalid Authorization header");
+        }
         try {
             // Use the non-deprecated parseSignedClaims method for jjwt 0.12.x and above
             io.jsonwebtoken.Jws<io.jsonwebtoken.Claims> jws = jwtParser.parseSignedClaims(token);

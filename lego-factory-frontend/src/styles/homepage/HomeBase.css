@@ -1,0 +1,397 @@
+/* ============================================================================
+   HOME PAGE - BASE STYLES & LAYOUT
+   ============================================================================
+   Core layout structure, hero section, and row containers.
+   
+   @import order:
+   1. HomeBase.css (this file)
+   2. HomeCards.css
+   3. HomeFlowDiagram.css
+   4. HomeArchitecture.css
+   5. HomeProducts.css
+   6. HomeAnimations.css
+   7. HomeResponsive.css
+   ============================================================================ */
+
+@import '../variables.css';
+
+/* ============================================================================
+   PAGE CONTAINER
+   ============================================================================ */
+.home-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  padding: 0;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* ============================================================================
+   HERO SECTION
+   ============================================================================ */
+.home-hero {
+  background: linear-gradient(135deg, 
+    rgba(44, 90, 160, 0.08) 0%, 
+    rgba(99, 102, 241, 0.05) 50%,
+    rgba(51, 167, 217, 0.08) 100%),
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(44,90,160,.08)" stroke-width="1"/></pattern></defs><rect width="1200" height="600" fill="url(%23grid)"/></svg>');
+  color: rgb(31, 64, 84);
+  padding: 1.25rem 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(44, 90, 160, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.home-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+              radial-gradient(circle at 70% 50%, rgba(51, 167, 217, 0.08) 0%, transparent 50%);
+  animation: heroGradientShift 15s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes heroGradientShift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(5%, 2%); }
+}
+
+.home-hero h2 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* L.I.F.E Title Styling - Enhanced */
+.hero-title-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-title-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.hero-main-title {
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: 0.15rem;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+}
+
+.hero-main-title .title-letter {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 40%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: letterPop 3s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.15s);
+}
+
+.hero-main-title .title-dot {
+  color: #f59e0b;
+  font-weight: 900;
+  margin: 0 0.05rem;
+  animation: dotPulse 2s ease-in-out infinite;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+@keyframes letterPop {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+.hero-slogan {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.hero-slogan .slogan-word {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.1rem;
+}
+
+.hero-slogan .slogan-separator {
+  color: #9ca3af;
+  font-size: 0.6rem;
+}
+
+.hero-version-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.15) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+}
+
+.hero-version-badge .version-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: #059669;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hero-version-badge .version-number {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #047857;
+}
+
+/* ============================================================================
+   ROW LAYOUTS - NEW STRUCTURE PER WIREFRAME
+   ============================================================================ */
+
+/* Row 1: Application Overview (Industry 4.0 + Description + Login) */
+.home-overview-row {
+  display: flex;
+  gap: 1.5rem;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  align-items: stretch;
+}
+
+/* Row 2: Core Features (Flow Diagram + Architecture) - 2 columns */
+.home-features-row {
+  display: flex;
+  gap: 1.5rem;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  align-items: stretch;
+}
+
+/* Row 2 glass cards - 70% more transparent */
+.home-features-row .glass-card {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.home-features-row .glass-card:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Row 3: Products | Navigation Guide | Feature Highlights - 3 columns */
+.home-guide-row {
+  display: flex;
+  gap: 1.5rem;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+  align-items: center;
+}
+
+/* Row 3 glass cards - add internal padding */
+.home-guide-row .glass-card {
+  padding: 1.25rem;
+}
+
+/* ============================================================================
+   SECTION COLUMNS
+   ============================================================================ */
+
+/* Industry 4.0 Tagline Card */
+.home-tagline-column {
+  flex: 1 1 280px;
+  min-width: 0; /* Allow shrinking on mobile */
+  max-width: 320px;
+}
+
+/* System Overview/Description */
+.home-overview-column {
+  flex: 2 1 400px;
+  min-width: 0; /* Allow shrinking on mobile */
+}
+
+/* System Description */
+.home-description-column {
+  flex: 2 1 400px;
+  min-width: 0; /* Allow shrinking on mobile */
+}
+
+/* Login Section */
+.home-login-column {
+  flex: 1 1 280px;
+  min-width: 0; /* Allow shrinking on mobile */
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+}
+
+/* Login Section (Legacy) */
+.home-login-section {
+  flex: 1 1 280px;
+  min-width: 0;
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+
+/* Flow Diagram Column - Takes more space in 2-column layout */
+.home-flow-column {
+  flex: 1.8 1 650px;
+  min-width: 0; /* Allow shrinking on mobile */
+  display: flex;
+  flex-direction: column;
+}
+
+.home-flow-column .glass-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Flow Diagram Section (Legacy) */
+.home-flow-diagram-section {
+  flex: 2 1 500px;
+  min-width: 0;
+  max-width: 850px;
+  padding: 0.75rem 1rem;
+}
+
+/* Architecture Column - Compact layout */
+.home-architecture-column {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-architecture-column .glass-card {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+}
+
+/* Navigation Column */
+.home-navigation-column {
+  flex: 1 1 35%;
+  min-width: 0; /* Allow shrinking on mobile */
+}
+
+/* Feature Highlights Column */
+.home-highlights-column {
+  flex: 1 1 35%;
+  min-width: 0; /* Allow shrinking on mobile */
+}
+
+/* Products Column in Row 3 */
+.home-products-column-row3 {
+  flex: 0 0 280px;
+  min-width: 0; /* Allow shrinking on mobile */
+  max-width: 300px;
+}
+
+/* ============================================================================
+   SECTION TITLES
+   ============================================================================ */
+.section-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  margin: 0 0 0.75rem 0;
+  text-align: center;
+  border-bottom: 3px solid #2c5aa0;
+  padding-bottom: 0.5rem;
+}
+
+/* ============================================================================
+   COMMON UTILITIES
+   ============================================================================ */
+.loading-text,
+.no-data {
+  text-align: center;
+  color: #999;
+  padding: 2rem;
+  font-style: italic;
+}
+
+.alert-message {
+  background-color: #fef3cd;
+  border: 1px solid #ffc107;
+  padding: 12px 20px;
+  margin: 20px auto;
+  max-width: 600px;
+  border-radius: 4px;
+  text-align: center;
+  color: #856404;
+}
+
+/* ============================================================================
+   LEGACY ROW LAYOUTS (Backward Compatibility)
+   ============================================================================ */
+.home-top-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.home-bottom-row {
+  display: flex;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0 1.5rem 2rem 1.5rem;
+}
+
+.home-intro-column-fullwidth {
+  flex: 1;
+  background: transparent;
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  box-shadow: none;
+}
+
+.home-intro-column {
+  flex: 1;
+  background: transparent;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: none;
+}

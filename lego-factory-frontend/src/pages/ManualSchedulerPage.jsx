@@ -56,17 +56,15 @@ function ManualSchedulerPage() {
     }
   };
 
+  // Combined refresh function for GanttChart callback
+  const handleRefresh = async () => {
+    await Promise.all([fetchScheduledOrders(), fetchProductionOrders()]);
+  };
+
   useEffect(() => {
     fetchScheduledOrders();
     fetchProductionOrders();
-    
-    // Refresh every 30 seconds
-    const interval = setInterval(() => {
-      fetchScheduledOrders();
-      fetchProductionOrders();
-    }, 30000);
-    
-    return () => clearInterval(interval);
+    // Note: GanttChart handles its own refresh interval via onRefresh prop
   }, []);
 
   // Convert scheduled orders to tasks for Gantt chart
@@ -226,6 +224,9 @@ function ManualSchedulerPage() {
           onTaskClick={handleTaskClick}
           onTaskDragEnd={handleTaskDragEnd}
           editable={true}
+          onRefresh={handleRefresh}
+          refreshInterval={30000}
+          showCurrentTime={true}
         />
       </div>
 

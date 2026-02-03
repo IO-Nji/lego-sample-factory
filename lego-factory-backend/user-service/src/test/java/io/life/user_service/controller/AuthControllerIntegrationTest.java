@@ -8,8 +8,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
+@ActiveProfiles("test")
 class AuthControllerIntegrationTest {
 
     @Autowired
@@ -17,8 +19,9 @@ class AuthControllerIntegrationTest {
 
     @Test
     void defaultAdminCredentialsAuthenticateSuccessfully() {
+        // UserInitializer creates lego_admin with password "password"
         Authentication result = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken("lego_admin", "lego_Pass"));
+            new UsernamePasswordAuthenticationToken("lego_admin", "password"));
 
         assertThat(result.isAuthenticated()).isTrue();
         assertThat(result.getName()).isEqualTo("lego_admin");

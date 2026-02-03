@@ -12,10 +12,16 @@ spring:
     defer-datasource-initialization: true
   sql:
     init:
-      mode: always
+      mode: never  # Disable SQL script initialization - we use UserInitializer
   h2:
     console:
       enabled: false
+
+# JWT configuration for tests
+security:
+  jwt:
+    secret: test-secret-key-that-is-at-least-32-bytes-long-for-hs256
+    expiration: PT1H
 
 logging:
   level:

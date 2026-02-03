@@ -31,6 +31,7 @@ public class WarehouseOrderDTO {
     private Long id;
     private String orderNumber;
     private Long customerOrderId;
+    private Long productionOrderId;
     private Long workstationId;
     private LocalDateTime orderDate;
     private String status;

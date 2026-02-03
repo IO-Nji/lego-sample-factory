@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import '../styles/GanttChart.css';
@@ -12,18 +12,39 @@ import '../styles/GanttChart.css';
  * - Visual distinction for overlapping tasks
  * - Fits in activity log area (300px height)
  * - Enhanced legibility with high contrast colors
+ * - Current time indicator
+ * - Mini navigation controls
  * 
  * @param {Array} scheduledTasks - Array of task objects with workstation, duration, status, start/end times
  * @param {Function} onTaskClick - Handler when a task bar is clicked
  * @param {string} title - Optional title override
  * @param {boolean} showTitle - Whether to show the internal title (default: true, set false when inside Card with title)
+ * @param {boolean} showCurrentTime - Show current time indicator (default: true)
+ * @param {boolean} showMiniControls - Show mini zoom/pan controls (default: true)
  */
-function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Production Schedule Timeline", showTitle = true }) {
+function CompactScheduleTimeline({ 
+  scheduledTasks = [], 
+  onTaskClick, 
+  title = "Production Schedule Timeline", 
+  showTitle = true,
+  showCurrentTime = true,
+  showMiniControls = true
+}) {
   const [viewStart, setViewStart] = useState(null);
   const [viewEnd, setViewEnd] = useState(null);
   const [hoveredTask, setHoveredTask] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [tooltipContent, setTooltipContent] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const containerRef = useRef(null);
+
+  // Current time update
+  useEffect(() => {
+    if (!showCurrentTime) return;
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, [showCurrentTime]);
 
   // Initialize view range based on tasks
   useEffect(() => {
@@ -58,6 +79,46 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
       setViewEnd(end);
     }
   }, [scheduledTasks]);
+
+  // Zoom handlers
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev * 1.5, 3));
+    if (viewStart && viewEnd) {
+      const center = new Date((viewStart.getTime() + viewEnd.getTime()) / 2);
+      const duration = viewEnd - viewStart;
+      const newDuration = duration / 1.5;
+      setViewStart(new Date(center.getTime() - newDuration / 2));
+      setViewEnd(new Date(center.getTime() + newDuration / 2));
+    }
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev / 1.5, 0.5));
+    if (viewStart && viewEnd) {
+      const center = new Date((viewStart.getTime() + viewEnd.getTime()) / 2);
+      const duration = viewEnd - viewStart;
+      const newDuration = duration * 1.5;
+      setViewStart(new Date(center.getTime() - newDuration / 2));
+      setViewEnd(new Date(center.getTime() + newDuration / 2));
+    }
+  };
+
+  const scrollToNow = () => {
+    if (!viewStart || !viewEnd) return;
+    const duration = viewEnd - viewStart;
+    const now = new Date();
+    setViewStart(new Date(now.getTime() - duration / 2));
+    setViewEnd(new Date(now.getTime() + duration / 2));
+  };
+
+  const getCurrentTimePosition = () => {
+    if (!viewStart || !viewEnd || !showCurrentTime) return null;
+    const totalDuration = viewEnd - viewStart;
+    const offset = currentTime - viewStart;
+    const percentage = (offset / totalDuration) * 100;
+    if (percentage < 0 || percentage > 100) return null;
+    return percentage;
+  };
 
   // Group tasks by workstation - ALWAYS show all 5 manufacturing/assembly workstations
   const groupTasksByWorkstation = () => {
@@ -202,6 +263,7 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
 
   const groupedTasks = groupTasksByWorkstation();
   const timeMarkers = generateTimeMarkers();
+  const currentTimePosition = getCurrentTimePosition();
 
   if (!viewStart || !viewEnd) {
     return (
@@ -212,7 +274,7 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
   }
 
   return (
-    <div className="compact-schedule-timeline" style={{ 
+    <div className="compact-schedule-timeline" ref={containerRef} style={{ 
       height: '100%', 
       display: 'flex', 
       flexDirection: 'column',
@@ -227,7 +289,8 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
           alignItems: 'center',
           paddingBottom: '0.5rem',
           borderBottom: '2px solid #e5e7eb',
-          flexShrink: 0
+          flexShrink: 0,
+          gap: '0.5rem'
         }}>
           <h3 style={{ 
             margin: 0, 
@@ -237,6 +300,60 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
           }}>
             📅 {title}
           </h3>
+          
+          {/* Mini Controls */}
+          {showMiniControls && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              background: '#f3f4f6',
+              borderRadius: '0.25rem',
+              padding: '0.125rem'
+            }}>
+              <button
+                onClick={handleZoomOut}
+                disabled={zoomLevel <= 0.5}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: zoomLevel <= 0.5 ? 'not-allowed' : 'pointer',
+                  opacity: zoomLevel <= 0.5 ? 0.4 : 1,
+                  fontSize: '0.75rem',
+                  padding: '0.125rem 0.25rem',
+                  borderRadius: '0.125rem'
+                }}
+                title="Zoom Out"
+              >−</button>
+              <button
+                onClick={scrollToNow}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  fontSize: '0.65rem',
+                  padding: '0.125rem 0.25rem',
+                  borderRadius: '0.125rem'
+                }}
+                title="Jump to Now"
+              >📍</button>
+              <button
+                onClick={handleZoomIn}
+                disabled={zoomLevel >= 3}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: zoomLevel >= 3 ? 'not-allowed' : 'pointer',
+                  opacity: zoomLevel >= 3 ? 0.4 : 1,
+                  fontSize: '0.75rem',
+                  padding: '0.125rem 0.25rem',
+                  borderRadius: '0.125rem'
+                }}
+                title="Zoom In"
+              >+</button>
+            </div>
+          )}
+          
           <span style={{ 
             fontSize: '0.7rem', 
             color: '#6b7280',
@@ -244,6 +361,77 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
           }}>
             {viewStart.toLocaleDateString()} - {viewEnd.toLocaleDateString()}
           </span>
+        </div>
+      )}
+
+      {/* Mini Controls Bar - Shows when title is hidden (controls go in parent Card header) */}
+      {!showTitle && showMiniControls && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingBottom: '0.5rem',
+          marginBottom: '0.25rem',
+          borderBottom: '1px solid #e5e7eb',
+          flexShrink: 0
+        }}>
+          <span style={{ 
+            fontSize: '0.7rem', 
+            color: '#6b7280',
+            whiteSpace: 'nowrap'
+          }}>
+            📅 {viewStart.toLocaleDateString()} - {viewEnd.toLocaleDateString()}
+          </span>
+          
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            background: '#f3f4f6',
+            borderRadius: '0.25rem',
+            padding: '0.125rem'
+          }}>
+            <button
+              onClick={handleZoomOut}
+              disabled={zoomLevel <= 0.5}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: zoomLevel <= 0.5 ? 'not-allowed' : 'pointer',
+                opacity: zoomLevel <= 0.5 ? 0.4 : 1,
+                fontSize: '0.75rem',
+                padding: '0.125rem 0.25rem',
+                borderRadius: '0.125rem'
+              }}
+              title="Zoom Out"
+            >−</button>
+            <button
+              onClick={scrollToNow}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                fontSize: '0.65rem',
+                padding: '0.125rem 0.25rem',
+                borderRadius: '0.125rem'
+              }}
+              title="Jump to Now"
+            >📍</button>
+            <button
+              onClick={handleZoomIn}
+              disabled={zoomLevel >= 3}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: zoomLevel >= 3 ? 'not-allowed' : 'pointer',
+                opacity: zoomLevel >= 3 ? 0.4 : 1,
+                fontSize: '0.75rem',
+                padding: '0.125rem 0.25rem',
+                borderRadius: '0.125rem'
+              }}
+              title="Zoom In"
+            >+</button>
+          </div>
         </div>
       )}
 
@@ -282,6 +470,46 @@ function CompactScheduleTimeline({ scheduledTasks = [], onTaskClick, title = "Pr
         overflowX: 'visible',
         paddingTop: '0.5rem'
       }}>
+        {/* Current Time Indicator */}
+        {currentTimePosition !== null && (
+          <div style={{
+            position: 'absolute',
+            left: `${currentTimePosition}%`,
+            top: 0,
+            bottom: 0,
+            width: '2px',
+            background: '#ef4444',
+            zIndex: 50,
+            pointerEvents: 'none'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '-2px',
+              left: '-4px',
+              width: '10px',
+              height: '10px',
+              background: '#ef4444',
+              borderRadius: '50%',
+              boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.2)'
+            }} />
+            <div style={{
+              position: 'absolute',
+              top: '-18px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: '#ef4444',
+              color: 'white',
+              fontSize: '0.55rem',
+              fontWeight: '600',
+              padding: '1px 4px',
+              borderRadius: '2px',
+              whiteSpace: 'nowrap'
+            }}>
+              {formatTime(currentTime)}
+            </div>
+          </div>
+        )}
+        
         {/* Time markers - Compact */}
         <div style={{
           position: 'relative',
@@ -518,7 +746,9 @@ CompactScheduleTimeline.propTypes = {
   })),
   onTaskClick: PropTypes.func,
   title: PropTypes.string,
-  showTitle: PropTypes.bool
+  showTitle: PropTypes.bool,
+  showCurrentTime: PropTypes.bool,
+  showMiniControls: PropTypes.bool
 };
 
 export default CompactScheduleTimeline;
