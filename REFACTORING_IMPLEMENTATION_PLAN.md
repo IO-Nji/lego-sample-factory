@@ -1,7 +1,7 @@
 # Refactoring Implementation Plan – Industrial-Grade Evolution
 
 > **Last Updated:** February 4, 2026  
-> **Current Production Version:** v1.7.0 (Phases 1-6 Complete + Redis Caching, February 2026)  
+> **Current Production Version:** v1.7.1 (Phases 1-6 Complete + Redis Caching + Async Processing, February 2026)  
 > **Total Tests:** 775 (all passing across 6 services)  
 > **Target:** Cloud-native, modular, enterprise-grade architecture  
 > **Strategy:** Incremental enhancement with zero-downtime deployment
@@ -2125,22 +2125,111 @@ order-processing-service:
 
 ---
 
+## ✅ Performance Optimization: Async Processing (COMPLETE)
+
+**Status:** 🎉 **COMPLETE**  
+**Completion Date:** February 4, 2026  
+**Branch:** `master`
+
+**Deliverables:**
+- ✅ **AsyncOperation Entity**: Tracks async operation status with UUID operationId
+  - Status: PENDING → PROCESSING → COMPLETED/FAILED
+  - Progress tracking (0-100%)
+  - JSON result storage
+- ✅ **AsyncOperationRepository**: JPA repository with custom queries
+  - `findByOperationId(UUID)` - Get operation status
+  - `findActiveOperations()` - List in-progress operations
+  - `findLatestForEntity(type, entityId)` - Get latest op for entity
+- ✅ **AsyncProductionService**: Core async service with @Async methods
+  - `initiateScheduleProduction(productionOrderId)` - Returns operationId immediately
+  - `executeScheduleProductionAsync()` - Runs in background thread pool
+  - `initiateDispatchControlOrders()` - Async control order dispatch
+  - `updateOperationProgress()` - Progress reporting
+- ✅ **AsyncOperationController**: REST endpoints for async operations
+  - `GET /api/async/operations/{id}` - Get operation status
+  - `POST /api/async/production-orders/{id}/schedule` - Initiate async scheduling
+  - `POST /api/async/production-orders/{id}/dispatch` - Initiate async dispatch
+- ✅ **API Gateway Route**: Added `/api/async/**` route (route[23])
+- ✅ **Feature Flag**: `ENABLE_ASYNC=false` default, toggleable via environment
+- ✅ **All 4 Scenarios Passing**: 100% backward compatibility verified
+
+**Technical Implementation:**
+```java
+// AsyncOperation.java - Status tracking entity
+@Entity
+@Table(name = "async_operations")
+public class AsyncOperation {
+    @Id @GeneratedValue private Long id;
+    @Column(unique = true) private String operationId;
+    private String operationType;  // SCHEDULE_PRODUCTION, DISPATCH_CONTROL_ORDERS
+    private String status;         // PENDING, PROCESSING, COMPLETED, FAILED
+    private Integer progressPercent;
+    @Lob private String result;    // JSON serialized result
+}
+
+// AsyncProductionService.java - Async methods
+@Service
+public class AsyncProductionService {
+    @Async
+    public CompletableFuture<ProductionScheduleResult> executeScheduleProductionAsync(
+        Long productionOrderId, String operationId) {
+        // Long-running SimAL scheduling in background
+    }
+}
+
+// Endpoints return HTTP 202 Accepted with pollUrl
+{
+    "operationId": "550e8400-e29b-41d4-a716-446655440000",
+    "status": "PROCESSING",
+    "progressPercent": 0,
+    "pollUrl": "/api/async/operations/550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Thread Pool Configuration (already existed):**
+```java
+// OrderProcessingServiceConfig.java
+@Bean
+public TaskExecutor taskExecutor() {
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(10);
+    executor.setMaxPoolSize(20);
+    executor.setQueueCapacity(100);
+    executor.setThreadNamePrefix("order-processing-");
+    return executor;
+}
+```
+
+**Feature Flag:**
+```properties
+# application.properties
+life.order-processing.features.enable-async-processing=${ENABLE_ASYNC:false}
+```
+
+**Performance Impact:**
+- Long-running SimAL scheduling no longer blocks HTTP requests
+- Frontend can poll for progress updates
+- Better UX for complex production order workflows
+- Thread pool enables parallel processing of multiple orders
+
+---
+
 ## PHASE 3: Performance Optimization - Remaining Items (FUTURE)
 
 **Timeline:** 10-15 days  
-**Branches:** `feature/phase3-async`, `feature/phase3-events`  
+**Branches:** `feature/phase3-events`  
 **Risk:** MEDIUM-HIGH (changes execution model)  
 **Cloud-Native Impact:** VERY HIGH (enables horizontal scaling, resilience)
 
 **Remaining Enhancements:**
 1. ~~Redis caching for masterdata (BOM, products)~~ ✅ COMPLETE
-2. Async processing for long operations (SimAL scheduling)
+2. ~~Async processing for long operations (SimAL scheduling)~~ ✅ COMPLETE
 3. Event-driven architecture (Spring Events → Kafka)
 4. Circuit breaker pattern (Resilience4j) - Already implemented
 5. Batch processing optimizations
 6. Database query optimizations
 
-**This phase will be detailed after Redis caching stabilization.**
+**This phase will be detailed after async processing stabilization.**
 
 ---
 
@@ -2741,8 +2830,8 @@ curl http://localhost:1011/api/health
 
 ---
 
-**Document Version:** 1.6.0  
-**Last Updated:** February 3, 2026  
-**Status:** ✅ ALL PHASES COMPLETE (Phases 1-6)  
+**Document Version:** 1.7.1  
+**Last Updated:** February 4, 2026  
+**Status:** ✅ ALL PHASES COMPLETE (Phases 1-6 + Redis Caching + Async Processing)  
 **Total Tests:** 775 (all passing)  
-**Next Steps:** Phase 3 Performance Optimization - Remaining Items (Async Processing, Kafka Events)
+**Next Steps:** Phase 3 Performance Optimization - Remaining Items (Kafka Events, Batch Processing)

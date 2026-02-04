@@ -344,6 +344,7 @@ public class MasterdataService {
      * - componentName: The part/module name
      * - componentType: "PART" or "MODULE"
      * - quantity: Quantity required per parent item
+     * - partId: Legacy field, mapped to componentId
      */
     public static class ModulePartDTO implements java.io.Serializable {
         private static final long serialVersionUID = 1L;
@@ -352,6 +353,7 @@ public class MasterdataService {
         private String componentName;
         private String componentType;
         private Integer quantity;
+        private Long partId;  // Legacy field from old API responses
 
         public ModulePartDTO() {}
 
@@ -388,11 +390,23 @@ public class MasterdataService {
         }
         
         /**
+         * Sets the legacy partId field. Maps to componentId.
+         */
+        public void setPartId(Long partId) {
+            this.partId = partId;
+            // Also set componentId if not already set
+            if (this.componentId == null && partId != null) {
+                this.componentId = partId;
+            }
+        }
+        
+        /**
          * Convenience method for backward compatibility.
          * Returns componentId as partId for supply order logic.
+         * If componentId is null but partId was set, returns partId.
          */
         public Long getPartId() {
-            return componentId;
+            return componentId != null ? componentId : partId;
         }
     }
 }
