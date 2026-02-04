@@ -35,33 +35,49 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtParser jwtParser;
+    
+    /**
+     * Public paths that do NOT require authentication.
+     * All other endpoints require a valid JWT token.
+     * 
+     * SECURITY NOTE (Issue #2 Fix - Feb 4, 2026):
+     * Removed all workstation endpoints from public paths.
+     * Only truly public endpoints (login, health, docs) are allowed.
+     */
     private final List<String> publicPaths = List.of(
+        // Authentication - must be public for login
         "/api/auth/login",
-        "/api/masterdata/products/**",
-        "/api/masterdata/modules/**",
-        "/api/masterdata/parts/**",
-        "/api/production-control-orders",
-        "/api/production-control-orders/**",
-        "/api/assembly-control-orders",
-        "/api/assembly-control-orders/**",
-        "/api/supply-orders/**",
-        // Workstation-specific order endpoints (WS-1 to WS-5)
-        "/api/injection-molding-orders/**",
-        "/api/part-preproduction-orders/**",
-        "/api/part-finishing-orders/**",
-        "/api/gear-assembly-orders/**",
-        "/api/motor-assembly-orders/**",
+        
+        // Health checks - for load balancers and monitoring
         "/api/health",
         "/actuator/health",
         "/actuator/info",
+        
+        // Error handling
         "/error",
-        // Swagger/OpenAPI documentation (public access)
+        
+        // Swagger/OpenAPI documentation (optional - remove in production if needed)
         "/api/docs/**",
         "/swagger-ui/**",
         "/swagger-ui.html",
         "/v3/api-docs/**",
         "/swagger-resources/**",
         "/webjars/**"
+        
+        // NOTE: The following endpoints now REQUIRE authentication:
+        // - /api/masterdata/** (products, modules, parts)
+        // - /api/production-control-orders/**
+        // - /api/assembly-control-orders/**
+        // - /api/supply-orders/**
+        // - /api/injection-molding-orders/**
+        // - /api/part-preproduction-orders/**
+        // - /api/part-finishing-orders/**
+        // - /api/gear-assembly-orders/**
+        // - /api/motor-assembly-orders/**
+        // - /api/customer-orders/**
+        // - /api/warehouse-orders/**
+        // - /api/final-assembly-orders/**
+        // - /api/inventory/**
     );
 
     public JwtAuthenticationFilter(GatewayJwtProperties properties) {

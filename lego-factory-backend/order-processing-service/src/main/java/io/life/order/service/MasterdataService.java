@@ -1,5 +1,7 @@
 package io.life.order.service;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +37,8 @@ public class MasterdataService {
      * @param itemId The item's ID
      * @return The item's name, or a fallback string if not found
      */
+    @CircuitBreaker(name = "masterdataService", fallbackMethod = "getItemNameFallback")
+    @Retry(name = "masterdataService")
     public String getItemName(String itemType, Long itemId) {
         try {
             String endpoint = getEndpointForType(itemType);
@@ -73,6 +77,8 @@ public class MasterdataService {
      * @param productId The product ID
      * @return List of ProductModuleDTO containing module IDs and quantities
      */
+    @CircuitBreaker(name = "masterdataService", fallbackMethod = "getProductModulesFallback")
+    @Retry(name = "masterdataService")
     public List<ProductModuleDTO> getProductModules(Long productId) {
         try {
             String url = masterdataServiceUrl + "/api/masterdata/products/" + productId + "/modules";
@@ -124,6 +130,8 @@ public class MasterdataService {
      * @param moduleId The module ID
      * @return List of ModulePartDTO containing part IDs and quantities
      */
+    @CircuitBreaker(name = "masterdataService", fallbackMethod = "getModulePartsFallback")
+    @Retry(name = "masterdataService")
     public List<ModulePartDTO> getModuleParts(Long moduleId) {
         try {
             String url = masterdataServiceUrl + "/api/masterdata/modules/" + moduleId + "/parts";
@@ -165,6 +173,43 @@ public class MasterdataService {
         }
         
         return requirements;
+    }
+
+    // ================================================
+    // Circuit Breaker Fallback Methods
+    // ================================================
+
+    /**
+     * Fallback for getItemName when masterdata service is unavailable.
+     * Returns a generic label with the item type and ID.
+     */
+    @SuppressWarnings("unused")
+    private String getItemNameFallback(String itemType, Long itemId, Throwable t) {
+        log.warn("Circuit breaker fallback: getItemName failed for {} #{}. Reason: {}", 
+                itemType, itemId, t.getMessage());
+        return String.format("%s #%d (name unavailable)", itemType, itemId);
+    }
+
+    /**
+     * Fallback for getProductModules when masterdata service is unavailable.
+     * Returns empty list - caller should handle accordingly.
+     */
+    @SuppressWarnings("unused")
+    private List<ProductModuleDTO> getProductModulesFallback(Long productId, Throwable t) {
+        log.error("Circuit breaker fallback: getProductModules failed for product {}. Reason: {}", 
+                productId, t.getMessage());
+        return Collections.emptyList();
+    }
+
+    /**
+     * Fallback for getModuleParts when masterdata service is unavailable.
+     * Returns empty list - caller should handle accordingly.
+     */
+    @SuppressWarnings("unused")
+    private List<ModulePartDTO> getModulePartsFallback(Long moduleId, Throwable t) {
+        log.error("Circuit breaker fallback: getModuleParts failed for module {}. Reason: {}", 
+                moduleId, t.getMessage());
+        return Collections.emptyList();
     }
 
     /**

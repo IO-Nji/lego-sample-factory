@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +26,7 @@ public class StockLedgerController {
                description = "Record a stock adjustment (credit or debit) with reason. Creates ledger entry for audit trail.")
     @ApiResponse(responseCode = "200", description = "Stock adjusted and ledger entry created")
     @PostMapping("/adjust")
-    public ResponseEntity<StockLedgerEntryDto> adjust(@RequestBody StockAdjustmentRequest request) {
+    public ResponseEntity<StockLedgerEntryDto> adjust(@Valid @RequestBody StockAdjustmentRequest request) {
         return ResponseEntity.ok(ledgerService.adjustStock(request));
     }
 

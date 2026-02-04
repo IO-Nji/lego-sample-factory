@@ -1,24 +1,91 @@
 package io.life.order.exception;
 
 import io.life.order.dto.ApiErrorResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Global exception handler for the Order Processing Service.
  * Provides consistent error response format across all endpoints.
+ * 
+ * <p>Validation Support (Issue #3 Fix - Feb 4, 2026):</p>
+ * - MethodArgumentNotValidException: @Valid annotation failures on request bodies
+ * - ConstraintViolationException: @Validated annotation failures on service methods
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /**
+     * Handle Bean Validation errors from @Valid on request body DTOs.
+     * Returns field-level error details for frontend form validation.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            WebRequest request) {
+        
+        Map<String, Object> fieldErrors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> {
+            fieldErrors.put(error.getField(), error.getDefaultMessage());
+        });
+        
+        // Also include global errors (class-level validation)
+        ex.getBindingResult().getGlobalErrors().forEach(error -> {
+            fieldErrors.put(error.getObjectName(), error.getDefaultMessage());
+        });
+        
+        logger.warn("Validation failed: {} field errors on {}", 
+                fieldErrors.size(), request.getDescription(false));
+        
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                "ORDER_VALIDATION_ERROR",
+                "Validation failed: " + fieldErrors.size() + " error(s)",
+                fieldErrors,
+                request.getDescription(false)
+        );
+    }
+
+    /**
+     * Handle constraint violations from @Validated service methods.
+     * Returns list of constraint violations.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleConstraintViolation(
+            ConstraintViolationException ex,
+            WebRequest request) {
+        
+        List<String> violations = ex.getConstraintViolations().stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .collect(Collectors.toList());
+        
+        Map<String, Object> details = new HashMap<>();
+        details.put("violations", violations);
+        
+        logger.warn("Constraint violations: {}", violations);
+        
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                "ORDER_CONSTRAINT_VIOLATION",
+                "Constraint violation: " + violations.size() + " error(s)",
+                details,
+                request.getDescription(false)
+        );
+    }
 
     /**
      * Handle entity not found exceptions
