@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import DashboardPage from "./DashboardPage";
 import LoginForm from "../components/LoginForm";
 import FeatureCard from "../components/FeatureCard";
@@ -82,15 +83,32 @@ function HomePage() {
         const modulesResponse = await api.get(`/masterdata/products/${product.id}/modules`);
         const modulesData = modulesResponse.data || [];
         
-        // Fetch parts for each module
+        // Fetch parts for each module - API returns componentId, componentName
         const modulesWithParts = await Promise.all(
           modulesData.map(async (module) => {
             try {
-              const partsResponse = await api.get(`/masterdata/modules/${module.id}/parts`);
-              return { ...module, parts: partsResponse.data || [] };
+              // Use componentId to fetch parts for this module
+              const partsResponse = await api.get(`/masterdata/modules/${module.componentId}/parts`);
+              const partsData = partsResponse.data || [];
+              // Map API response fields to expected names
+              return {
+                id: module.componentId,
+                name: module.componentName,
+                quantity: module.quantity,
+                parts: partsData.map(part => ({
+                  id: part.componentId,
+                  name: part.componentName,
+                  quantity: part.quantity
+                }))
+              };
             } catch (err) {
-              console.error(`Failed to fetch parts for module ${module.id}:`, err);
-              return { ...module, parts: [] };
+              console.error(`Failed to fetch parts for module ${module.componentId}:`, err);
+              return {
+                id: module.componentId,
+                name: module.componentName,
+                quantity: module.quantity,
+                parts: []
+              };
             }
           })
         );
@@ -383,10 +401,145 @@ function HomePage() {
         </div>
 
         {/* ================================================================
-            ROW 2: Order Fulfillment Flow | Microservices Architecture
+            ROW 2: Products | Order Fulfillment Flow | Microservices Architecture
             ================================================================ */}
         <div className="home-features-row">
-          {/* Column 1: Flow Diagram */}
+          {/* Column 1: Products - Portrait Cards */}
+          <div className="home-products-column">
+            <div className="glass-card products-column-card">
+              <h3 className="section-title">🧱 Products</h3>
+              {loadingProducts ? (
+                <p className="loading-text">Loading products...</p>
+              ) : products.length === 0 ? (
+                <p className="no-data">No products available</p>
+              ) : (
+                <div className="products-grid-portrait">
+                  {products.map(product => {
+                    const productIcon = getProductIcon(product.name);
+                    
+                    return (
+                      <div key={product.id} className="product-card-portrait">
+                        <div className="product-card-portrait-inner">
+                          <div className="product-portrait-icon">
+                            <span className="portrait-emoji">{productIcon.icon}</span>
+                            <span className="portrait-color-dot" style={{background: productIcon.color}}></span>
+                          </div>
+                          <div className="product-portrait-info">
+                            <h4 className="portrait-name">{product.name}</h4>
+                            <span className="portrait-sku">SKU: PRD-{String(product.id).padStart(3, '0')}</span>
+                          </div>
+                          <button 
+                            className="view-components-btn"
+                            onClick={() => handleBomToggle(product)}
+                            title="View Bill of Materials"
+                          >
+                            📋 Components
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              
+              {/* BOM Modal - Rendered via portal to document.body for proper layering */}
+              {Object.keys(expandedModules).some(key => expandedModules[key]) && createPortal(
+                <div className="bom-modal-overlay" onClick={() => {
+                  setExpandedModules({});
+                  setProductModules([]);
+                  setExpandedBomModules({});
+                }}>
+                  <div className="bom-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="bom-modal-header">
+                      <div className="bom-modal-title">
+                        <span className="bom-modal-icon">🛠️</span>
+                        <div className="bom-modal-title-text">
+                          <h3>Bill of Materials</h3>
+                          <span className="bom-modal-product">
+                            {products.find(p => expandedModules[p.id])?.name || 'Product'}
+                          </span>
+                        </div>
+                      </div>
+                      <button 
+                        className="bom-modal-close"
+                        onClick={() => {
+                          setExpandedModules({});
+                          setProductModules([]);
+                          setExpandedBomModules({});
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    
+                    <div className="bom-modal-body">
+                      {loadingModules ? (
+                        <div className="bom-modal-loading">
+                          <span className="loading-spinner">⏳</span>
+                          <span>Loading components...</span>
+                        </div>
+                      ) : productModules.length > 0 ? (
+                        <div className="bom-modal-modules">
+                          {productModules.map(module => {
+                            const isModuleExpanded = expandedBomModules[module.id];
+                            const hasParts = module.parts && module.parts.length > 0;
+                            
+                            return (
+                              <div key={module.id} className="bom-modal-module-group">
+                                <div 
+                                  className={`bom-modal-module ${hasParts ? 'expandable' : ''} ${isModuleExpanded ? 'expanded' : ''}`}
+                                  onClick={() => hasParts && toggleBomModule(module.id)}
+                                >
+                                  <span className="module-icon-large">⚙️</span>
+                                  <div className="module-info">
+                                    <span className="module-name-large">{module.name}</span>
+                                    <span className="module-meta">
+                                      Qty: {module.quantity || 1} • {module.parts?.length || 0} parts
+                                    </span>
+                                  </div>
+                                  {hasParts && (
+                                    <span className="module-expand-icon">
+                                      {isModuleExpanded ? '▼' : '▶'}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {hasParts && isModuleExpanded && (
+                                  <div className="bom-modal-parts">
+                                    <div className="parts-header">
+                                      <span className="parts-col">Part</span>
+                                      <span className="parts-col-qty">Qty</span>
+                                    </div>
+                                    {module.parts.map(part => (
+                                      <div key={part.id} className="bom-modal-part">
+                                        <div className="part-info">
+                                          <span className="part-icon-small">🔩</span>
+                                          <span className="part-name-large">{part.name}</span>
+                                        </div>
+                                        <span className="part-qty-large">×{part.quantity || 1}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="bom-modal-empty">
+                          <span className="empty-icon">📦</span>
+                          <span>No components found for this product</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>,
+                document.body
+              )}
+            </div>
+          </div>
+
+          {/* Column 2: Flow Diagram */}
           <div className="home-flow-column">
             <div className="glass-card">
               <h3 className="section-title">🔄 Order Fulfillment Process</h3>
@@ -735,195 +888,10 @@ function HomePage() {
         </div>
 
         {/* ================================================================
-            ROW 3: Products | Quick Navigation Guide | Feature Highlights
+            ROW 3: Quick Navigation Guide | Feature Highlights
             ================================================================ */}
         <div className="home-guide-row">
-          {/* Column 1: Products */}
-          <div className="home-products-column-row3">
-            <div className="glass-card">
-              <h3 className="section-title">🧱 Our Products</h3>
-              {loadingProducts ? (
-                <p className="loading-text">Loading products...</p>
-              ) : products.length === 0 ? (
-                <p className="no-data">No products available</p>
-              ) : (
-                <div className="products-grid-row3">
-                  {products.map(product => {
-                    const productIcon = getProductIcon(product.name);
-                    const isExpanded = expandedModules[product.id];
-                    
-                    return (
-                      <div key={product.id} className="product-card-enhanced">
-                        <div className="product-card-main">
-                          <div className="product-visual">
-                            <span className="product-icon-realistic">{productIcon.icon}</span>
-                            <span className="product-color-dot" style={{background: productIcon.color}}></span>
-                          </div>
-                          <div className="product-info-block">
-                            <h4 className="product-title">{product.name}</h4>
-                            <span className="product-sku">SKU: PRD-{String(product.id).padStart(3, '0')}</span>
-                          </div>
-                          <button 
-                            className={`bom-toggle-btn ${isExpanded ? 'expanded' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleBomToggle(product);
-                            }}
-                            title="View Bill of Materials"
-                          >
-                            <span className="bom-icon">📋</span>
-                            <span className="bom-arrow">{isExpanded ? '▲' : '▼'}</span>
-                          </button>
-                        </div>
-                        
-                        {/* Expandable BOM Section - Modal-style popout */}
-                        {isExpanded && (
-                          <>
-                            <div 
-                              className="bom-backdrop" 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedModules({});
-                                setProductModules([]);
-                                setExpandedBomModules({});
-                              }}
-                            />
-                            <div className="bom-dropdown">
-                              <div className="bom-header">
-                                <span className="bom-title">🛠️ Bill of Materials</span>
-                                <button 
-                                  className="bom-close-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedModules({});
-                                    setProductModules([]);
-                                    setExpandedBomModules({});
-                                  }}
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                              {loadingModules ? (
-                                <div className="bom-loading-container">
-                                  <span className="bom-loading">Loading components...</span>
-                                </div>
-                              ) : productModules.length > 0 ? (
-                                <div className="bom-modules-list">
-                                  {productModules.map(module => {
-                                    const isModuleExpanded = expandedBomModules[module.id];
-                                    const hasParts = module.parts && module.parts.length > 0;
-                                    
-                                    return (
-                                      <div key={module.id} className="bom-module-group">
-                                        <div 
-                                          className={`bom-module-item ${hasParts ? 'expandable' : ''} ${isModuleExpanded ? 'expanded' : ''}`}
-                                          onClick={() => hasParts && toggleBomModule(module.id)}
-                                        >
-                                          <span className="module-icon">⚙️</span>
-                                          <span className="module-name">{module.name}</span>
-                                          <span className="module-qty">×{module.quantity || 1}</span>
-                                          {hasParts && (
-                                            <span className="module-expand-arrow">
-                                              {isModuleExpanded ? '▼' : '▶'}
-                                            </span>
-                                          )}
-                                        </div>
-                                        {hasParts && isModuleExpanded && (
-                                          <div className="bom-parts-list">
-                                            {module.parts.map(part => (
-                                              <div key={part.id} className="bom-part-item">
-                                                <span className="part-icon">🔩</span>
-                                                <span className="part-name">{part.name}</span>
-                                                <span className="part-qty">×{part.quantity || 1}</span>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <p className="bom-empty">No components found</p>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Product Details Overlay Dropdown */}
-              {selectedProduct && (
-                <div className="product-details-overlay active">
-                  <div className="product-details-modal">
-                    <button 
-                      className="product-details-close" 
-                      onClick={() => setSelectedProduct(null)}
-                    >
-                      ✕
-                    </button>
-                    
-                    <div className="product-details-header">
-                      <div className="product-image-large">
-                        <span className="product-emoji">
-                          {selectedProduct.name.includes('Car') ? '🚗' : 
-                           selectedProduct.name.includes('Truck') ? '🚚' : 
-                           selectedProduct.name.includes('Plane') ? '✈️' : '🧱'}
-                        </span>
-                      </div>
-                      <div className="product-info">
-                        <h2 className="product-name-large">{selectedProduct.name}</h2>
-                        <p className="product-id-large">Product ID: {selectedProduct.id}</p>
-                      </div>
-                    </div>
-
-                    <div className="product-details-body">
-                      <div className="product-details-section">
-                        <h4>Description</h4>
-                        <p>{selectedProduct.description}</p>
-                      </div>
-
-                      <div className="product-stats">
-                        <div className="product-stat">
-                          <span className="stat-value">${selectedProduct.price.toFixed(2)}</span>
-                          <span className="stat-label">Price</span>
-                        </div>
-                        <div className="product-stat">
-                          <span className="stat-value">{selectedProduct.estimatedTimeMinutes}</span>
-                          <span className="stat-label">Minutes</span>
-                        </div>
-                      </div>
-
-                      <div className="product-details-section">
-                        <h4>Components (Bill of Materials)</h4>
-                        
-                        {loadingModules ? (
-                          <p className="loading-text">Loading modules...</p>
-                        ) : productModules.length === 0 ? (
-                          <p className="no-data">No modules available for this product</p>
-                        ) : (
-                          <div className="bom-list">
-                            {productModules.map(module => (
-                              <div key={module.id} className="bom-item">
-                                <span className="bom-icon">🔧</span>
-                                <span className="bom-name">{module.name}</span>
-                                <span className="bom-qty">×{module.quantity}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Column 2: Navigation Guide */}
+          {/* Column 1: Navigation Guide */}
           <div className="home-navigation-column">
             <div className="glass-card">
               <h3 className="section-title">📋 Quick Start Guide</h3>

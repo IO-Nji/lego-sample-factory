@@ -1,9 +1,10 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import Navigation from "../components/Navigation.jsx";
 
 function DashboardLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, logout, session } = useAuth();
 
   // Handle logout and redirect to home page
@@ -39,7 +40,7 @@ function DashboardLayout() {
         {isAuthenticated && <Navigation />}
       </header>
       <main className="app-content">
-        <Outlet />
+        <Outlet key={location.pathname} />
       </main>
     </div>
   );

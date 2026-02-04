@@ -129,7 +129,26 @@
     max-width: 100%;
   }
 
-  .home-products-column,
+  /* Products column in Row 2 - horizontal on tablets */
+  .home-products-column {
+    flex: 1 1 100%;
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .home-products-column .products-grid-portrait {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    overflow-y: visible;
+  }
+
+  .home-products-column .product-card-portrait {
+    flex: 0 0 auto;
+    width: calc(25% - 0.75rem);
+    min-width: 100px;
+  }
+
   .home-flow-column,
   .home-architecture-column {
     flex: 1 1 45%;

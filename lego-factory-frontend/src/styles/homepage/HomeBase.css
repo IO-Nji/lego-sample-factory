@@ -187,33 +187,58 @@
   align-items: stretch;
 }
 
-/* Row 2: Core Features (Flow Diagram + Architecture) - 2 columns */
+/* Row 2: Core Features (Products + Flow Diagram + Architecture) - 3 columns */
 .home-features-row {
   display: flex;
   gap: 1.5rem;
   max-width: 1800px;
   margin: 0 auto;
   padding: 1rem 1.5rem;
-  align-items: stretch;
+  align-items: center;
 }
 
-/* Row 2 glass cards - 70% more transparent */
+/* Row 2 glass cards - 70% more transparent, independent heights */
 .home-features-row .glass-card {
   background: rgba(255, 255, 255, 0.25);
+  height: auto;
+  flex: none;
 }
 
 .home-features-row .glass-card:hover {
   background: rgba(255, 255, 255, 0.35);
 }
 
-/* Row 3: Products | Navigation Guide | Feature Highlights - 3 columns */
+/* Products column in Row 2 - narrower */
+.home-products-column {
+  flex: 0 0 200px;
+  min-width: 180px;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-products-column .glass-card,
+.home-products-column .products-column-card {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  padding: 0.75rem;
+}
+
+.home-products-column .section-title {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
+}
+
+/* Row 3: Navigation Guide | Feature Highlights - 2 columns */
 .home-guide-row {
   display: flex;
   gap: 1.5rem;
   max-width: 1800px;
   margin: 0 auto;
   padding: 1rem 1.5rem 1.5rem 1.5rem;
-  align-items: center;
+  align-items: stretch;
 }
 
 /* Row 3 glass cards - add internal padding */
@@ -304,19 +329,19 @@
   width: fit-content;
 }
 
-/* Navigation Column */
+/* Navigation Column - Now 50% in 2-column layout */
 .home-navigation-column {
-  flex: 1 1 35%;
+  flex: 1 1 50%;
   min-width: 0; /* Allow shrinking on mobile */
 }
 
-/* Feature Highlights Column */
+/* Feature Highlights Column - Now 50% in 2-column layout */
 .home-highlights-column {
-  flex: 1 1 35%;
+  flex: 1 1 50%;
   min-width: 0; /* Allow shrinking on mobile */
 }
 
-/* Products Column in Row 3 */
+/* Products Column in Row 3 - DEPRECATED, moved to Row 2 */
 .home-products-column-row3 {
   flex: 0 0 280px;
   min-width: 0; /* Allow shrinking on mobile */
