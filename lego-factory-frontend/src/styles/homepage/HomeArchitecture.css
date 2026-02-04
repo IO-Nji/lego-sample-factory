@@ -450,16 +450,18 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.35rem 0.5rem;
+  gap: 0.15rem;
+  padding: 0.25rem 0.35rem;
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
   border: 2px solid #2c5aa0;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   min-width: 0;
-  max-width: 85px;
+  max-width: none;
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
 .service-box-horizontal:hover {
@@ -470,30 +472,54 @@
 }
 
 .service-box-horizontal .service-icon {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   flex-shrink: 0;
 }
 
 .service-box-horizontal .service-name-vertical {
-  font-size: 0.62rem;
+  font-size: 0.52rem;
   font-weight: 600;
   color: #2c5aa0;
   text-align: center;
-  line-height: 1.15;
-  flex: 1;
+  line-height: 1.1;
+  flex: 0 0 auto;
   min-width: 0;
+  white-space: nowrap;
 }
 
-.service-box-horizontal .health-indicator {
-  position: relative;
-  top: auto;
-  right: auto;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #4caf50;
-  box-shadow: 0 0 3px rgba(76, 175, 80, 0.5);
-  flex-shrink: 0;
+/* Health status glowing borders */
+.service-box-horizontal.healthy {
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.6), 0 0 16px rgba(76, 175, 80, 0.3);
+  animation: glowHealthy 2s ease-in-out infinite alternate;
+}
+
+.service-box-horizontal.warning {
+  box-shadow: 0 0 8px rgba(255, 193, 7, 0.6), 0 0 16px rgba(255, 193, 7, 0.3);
+  animation: glowWarning 1.5s ease-in-out infinite alternate;
+}
+
+.service-box-horizontal.error {
+  box-shadow: 0 0 8px rgba(244, 67, 54, 0.6), 0 0 16px rgba(244, 67, 54, 0.3);
+  animation: glowError 1s ease-in-out infinite alternate;
+}
+
+.service-box-horizontal.unknown {
+  box-shadow: 0 0 6px rgba(158, 158, 158, 0.4), 0 0 12px rgba(158, 158, 158, 0.2);
+}
+
+@keyframes glowHealthy {
+  from { box-shadow: 0 0 6px rgba(76, 175, 80, 0.4), 0 0 12px rgba(76, 175, 80, 0.2); }
+  to { box-shadow: 0 0 10px rgba(76, 175, 80, 0.7), 0 0 20px rgba(76, 175, 80, 0.4); }
+}
+
+@keyframes glowWarning {
+  from { box-shadow: 0 0 6px rgba(255, 193, 7, 0.4), 0 0 12px rgba(255, 193, 7, 0.2); }
+  to { box-shadow: 0 0 10px rgba(255, 193, 7, 0.7), 0 0 20px rgba(255, 193, 7, 0.4); }
+}
+
+@keyframes glowError {
+  from { box-shadow: 0 0 6px rgba(244, 67, 54, 0.4), 0 0 12px rgba(244, 67, 54, 0.2); }
+  to { box-shadow: 0 0 12px rgba(244, 67, 54, 0.8), 0 0 24px rgba(244, 67, 54, 0.5); }
 }
 
 /* Service type colors */
@@ -517,26 +543,54 @@
 .architecture-legend-horizontal {
   display: flex;
   justify-content: center;
-  gap: 0.75rem;
-  padding: 0.4rem 0.4rem;
+  gap: 0.5rem;
+  padding: 0.4rem;
   background: rgba(0, 0, 0, 0.02);
   border-radius: 6px;
   flex-wrap: wrap;
   margin-top: 0.3rem;
 }
 
+.architecture-legend-horizontal .legend-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.architecture-legend-horizontal .legend-section-title {
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #94a3b8;
+}
+
+.architecture-legend-horizontal .legend-items {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.architecture-legend-horizontal .legend-divider {
+  width: 1px;
+  background: rgba(0, 0, 0, 0.1);
+  margin: 0 0.3rem;
+}
+
 .architecture-legend-horizontal .legend-item {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.6rem;
+  gap: 0.2rem;
+  font-size: 0.55rem;
   font-weight: 500;
   color: #666;
 }
 
 .architecture-legend-horizontal .legend-color {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 3px;
 }
 
@@ -554,6 +608,38 @@
 
 .architecture-legend-horizontal .legend-color.integration {
   background: #d97706;
+}
+
+.architecture-legend-horizontal .legend-color.frontend {
+  background: #3b82f6;
+}
+
+/* Health status glow indicators in legend */
+.architecture-legend-horizontal .legend-glow {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.architecture-legend-horizontal .legend-glow.healthy {
+  border-color: #4caf50;
+  box-shadow: 0 0 4px rgba(76, 175, 80, 0.6), 0 0 8px rgba(76, 175, 80, 0.3);
+}
+
+.architecture-legend-horizontal .legend-glow.warning {
+  border-color: #ffc107;
+  box-shadow: 0 0 4px rgba(255, 193, 7, 0.6), 0 0 8px rgba(255, 193, 7, 0.3);
+}
+
+.architecture-legend-horizontal .legend-glow.error {
+  border-color: #f44336;
+  box-shadow: 0 0 4px rgba(244, 67, 54, 0.6), 0 0 8px rgba(244, 67, 54, 0.3);
+}
+
+.architecture-legend-horizontal .legend-glow.unknown {
+  border-color: #9e9e9e;
+  box-shadow: 0 0 4px rgba(158, 158, 158, 0.4);
 }
 
 /* Tooltip for horizontal service boxes */
@@ -599,7 +685,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0;
-  padding: 0.75rem 0.5rem;
+  padding: 0.4rem 0.3rem;
   background: linear-gradient(180deg, 
     rgba(99, 102, 241, 0.03) 0%, 
     rgba(44, 90, 160, 0.05) 40%,
@@ -609,6 +695,8 @@
   position: relative;
   overflow: visible;
   margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Architecture Layer Container */
@@ -640,7 +728,7 @@
 .arch-layer .layer-services {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.25rem;
   width: 100%;
   justify-content: center;
   align-items: center;
@@ -650,19 +738,20 @@
 /* Inline label within services row */
 .arch-layer .layer-services.with-label {
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.3rem;
   position: relative;
+  padding-left: 0.1rem;
 }
 
 .arch-layer .layer-label-inline {
   position: absolute;
-  left: 0;
-  font-size: 0.55rem;
+  left: -0.1rem;
+  font-size: 0.5rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   color: #64748b;
-  padding: 0.2rem 0.5rem;
+  padding: 0.15rem 0.25rem;
   background: rgba(100, 116, 139, 0.1);
   border-radius: 4px;
   border-left: 2px solid rgba(100, 116, 139, 0.4);
@@ -680,6 +769,20 @@
 
 .arch-layer.services-layer {
   background: linear-gradient(90deg, rgba(44, 90, 160, 0.05) 0%, transparent 100%);
+}
+
+/* Single-service cards - minimal width */
+.arch-layer.client-layer .service-box-horizontal,
+.arch-layer.gateway-layer .service-box-horizontal {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: fit-content;
+}
+
+.services-row-auth .service-box-horizontal {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: fit-content;
 }
 
 /* Frontend service box variant */
@@ -899,7 +1002,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.3rem;
   width: 100%;
   position: relative;
 }
@@ -910,13 +1013,13 @@
 
 .services-row-auth.with-label .layer-label-inline {
   position: absolute;
-  left: 0;
-  font-size: 0.55rem;
+  left: -0.1rem;
+  font-size: 0.5rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   color: #64748b;
-  padding: 0.2rem 0.5rem;
+  padding: 0.15rem 0.25rem;
   background: rgba(100, 116, 139, 0.1);
   border-radius: 4px;
   border-left: 2px solid rgba(100, 116, 139, 0.4);

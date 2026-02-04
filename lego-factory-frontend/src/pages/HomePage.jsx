@@ -728,10 +728,9 @@ function HomePage() {
                 <div className="arch-layer client-layer">
                   <div className="layer-services with-label">
                     <div className="layer-label-inline">Client</div>
-                    <div className="service-box-horizontal frontend" data-tooltip="React 18 + Vite SPA | Port: 5173">
+                    <div className={`service-box-horizontal frontend ${serviceHealth['frontend'] || 'unknown'}`} data-tooltip="React 18 + Vite SPA | Port: 5173">
                       <span className="service-icon">⚛️</span>
                       <span className="service-name-vertical">React<br/>Frontend</span>
-                      <span className={`health-indicator ${serviceHealth['frontend'] || 'unknown'}`}></span>
                     </div>
                   </div>
                 </div>
@@ -747,10 +746,9 @@ function HomePage() {
                 <div className="arch-layer gateway-layer">
                   <div className="layer-services with-label">
                     <div className="layer-label-inline">Gateway</div>
-                    <div className="service-box-horizontal gateway" data-tooltip="Spring Cloud Gateway | Auth & Routing | Port: 8011">
+                    <div className={`service-box-horizontal gateway ${serviceHealth['api-gateway'] || 'unknown'}`} data-tooltip="Spring Cloud Gateway | Auth & Routing | Port: 8011">
                       <span className="service-icon">🚪</span>
                       <span className="service-name-vertical">API<br/>Gateway</span>
-                      <span className={`health-indicator ${serviceHealth['api-gateway'] || 'unknown'}`}></span>
                     </div>
                   </div>
                 </div>
@@ -778,11 +776,10 @@ function HomePage() {
                     
                     {/* Row 1: Auth Service (standalone) */}
                     <div className="services-row-auth with-label">
-                      <div className="layer-label-inline">Microservices</div>
-                      <div className="service-box-horizontal core" data-tooltip="Authentication & Authorization | Port: 8012">
+                      <div className="layer-label-inline">Backend</div>
+                      <div className={`service-box-horizontal core ${serviceHealth['user-service'] || 'unknown'}`} data-tooltip="Authentication & Authorization | Port: 8012">
                         <span className="service-icon">👤</span>
                         <span className="service-name-vertical">User<br/>Service</span>
-                        <span className={`health-indicator ${serviceHealth['user-service'] || 'unknown'}`}></span>
                       </div>
                     </div>
                     
@@ -794,10 +791,9 @@ function HomePage() {
                     
                     {/* Row 2: Central Orchestrator + Integration */}
                     <div className="services-row-core">
-                      <div className="service-box-horizontal core orchestrator" data-tooltip="Order Processing Engine | Port: 8015">
+                      <div className={`service-box-horizontal core orchestrator ${serviceHealth['order-processing-service'] || 'unknown'}`} data-tooltip="Order Processing Engine | Port: 8015">
                         <span className="service-icon">📋</span>
                         <span className="service-name-vertical">Order<br/>Service</span>
-                        <span className={`health-indicator ${serviceHealth['order-processing-service'] || 'unknown'}`}></span>
                       </div>
                       
                       {/* Horizontal connector to SimAL */}
@@ -806,10 +802,9 @@ function HomePage() {
                         <span className="connector-label">Schedule</span>
                       </div>
                       
-                      <div className="service-box-horizontal integration" data-tooltip="SimAL Scheduling & Optimization | Port: 8016">
+                      <div className={`service-box-horizontal integration ${serviceHealth['simal-integration-service'] || 'unknown'}`} data-tooltip="SimAL Scheduling & Optimization | Port: 8016">
                         <span className="service-icon">📊</span>
                         <span className="service-name-vertical">SimAL<br/>Service</span>
-                        <span className={`health-indicator ${serviceHealth['simal-integration-service'] || 'unknown'}`}></span>
                       </div>
                     </div>
                     
@@ -827,16 +822,14 @@ function HomePage() {
                     
                     {/* Row 3: Data Services */}
                     <div className="services-row-data">
-                      <div className="service-box-horizontal data" data-tooltip="Product Catalog & BOM | Port: 8013">
+                      <div className={`service-box-horizontal data ${serviceHealth['masterdata-service'] || 'unknown'}`} data-tooltip="Product Catalog & BOM | Port: 8013">
                         <span className="service-icon">📦</span>
                         <span className="service-name-vertical">Master<br/>Data</span>
-                        <span className={`health-indicator ${serviceHealth['masterdata-service'] || 'unknown'}`}></span>
                       </div>
                       
-                      <div className="service-box-horizontal data" data-tooltip="Stock Management | Port: 8014">
+                      <div className={`service-box-horizontal data ${serviceHealth['inventory-service'] || 'unknown'}`} data-tooltip="Stock Management | Port: 8014">
                         <span className="service-icon">📈</span>
                         <span className="service-name-vertical">Inventory<br/>Service</span>
-                        <span className={`health-indicator ${serviceHealth['inventory-service'] || 'unknown'}`}></span>
                       </div>
                     </div>
                     
@@ -845,25 +838,52 @@ function HomePage() {
 
                 {/* Architecture Legend */}
                 <div className="architecture-legend-horizontal">
-                  <div className="legend-item">
-                    <span className="legend-color frontend"></span>
-                    <span>Frontend</span>
+                  <div className="legend-section">
+                    <span className="legend-section-title">Service Types</span>
+                    <div className="legend-items">
+                      <div className="legend-item">
+                        <span className="legend-color frontend"></span>
+                        <span>Frontend</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-color gateway"></span>
+                        <span>Gateway</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-color core"></span>
+                        <span>Core</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-color data"></span>
+                        <span>Data</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-color integration"></span>
+                        <span>Integration</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="legend-item">
-                    <span className="legend-color gateway"></span>
-                    <span>Gateway</span>
-                  </div>
-                  <div className="legend-item">
-                    <span className="legend-color core"></span>
-                    <span>Core</span>
-                  </div>
-                  <div className="legend-item">
-                    <span className="legend-color data"></span>
-                    <span>Data</span>
-                  </div>
-                  <div className="legend-item">
-                    <span className="legend-color integration"></span>
-                    <span>Integration</span>
+                  <div className="legend-divider"></div>
+                  <div className="legend-section">
+                    <span className="legend-section-title">Health Status</span>
+                    <div className="legend-items">
+                      <div className="legend-item">
+                        <span className="legend-glow healthy"></span>
+                        <span>Healthy</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-glow warning"></span>
+                        <span>Warning</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-glow error"></span>
+                        <span>Error</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-glow unknown"></span>
+                        <span>Unknown</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
