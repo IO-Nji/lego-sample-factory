@@ -1,5 +1,24 @@
 services:
   # ==============================================
+  # REDIS - Caching Layer (Phase 3 - Feb 4, 2026)
+  # ==============================================
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - lego-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==============================================
   # ROOT NGINX PROXY - Entry point for all traffic
   # ==============================================
   nginx-root-proxy:
@@ -159,6 +178,8 @@ services:
     build:
       context: ./lego-factory-backend/order-processing-service
       dockerfile: Dockerfile
+    depends_on:
+      - redis
     environment:
       # Core configuration
       - SERVER_PORT=${ORDER_PROCESSING_SERVICE_PORT}
@@ -172,6 +193,11 @@ services:
       # Service URLs
       - inventory.service.url=http://inventory-service:${INVENTORY_SERVICE_PORT}
       - simal.api.base-url=http://simal-integration-service:${SIMAL_INTEGRATION_SERVICE_PORT}/api
+      # Redis Cache Configuration (Phase 3)
+      - CACHE_TYPE=${CACHE_TYPE:-redis}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ENABLE_CACHING=${ENABLE_CACHING:-true}
       # Thresholds (externalized configuration)
       - LOT_SIZE_THRESHOLD=${LOT_SIZE_THRESHOLD:-3}
       - MAX_ORDER_ITEMS=${MAX_ORDER_ITEMS:-100}
@@ -183,9 +209,8 @@ services:
       - INVENTORY_TIMEOUT_MS=${INVENTORY_TIMEOUT_MS:-10000}
       - SIMAL_TIMEOUT_MS=${SIMAL_TIMEOUT_MS:-30000}
       # Feature flags
-      - ENABLE_CACHING=${ENABLE_CACHING:-false}
       - ENABLE_ASYNC_PROCESSING=${ENABLE_ASYNC_PROCESSING:-false}
-      - ENABLE_CIRCUIT_BREAKER=${ENABLE_CIRCUIT_BREAKER:-false}
+      - ENABLE_CIRCUIT_BREAKER=${ENABLE_CIRCUIT_BREAKER:-true}
       - ENABLE_DETAILED_LOGGING=${ENABLE_DETAILED_LOGGING:-true}
       - ENABLE_AUTO_STATUS_PROPAGATION=${ENABLE_AUTO_STATUS_PROPAGATION:-true}
     networks:
@@ -239,3 +264,4 @@ volumes:
   inventory_h2_data:
   order_processing_h2_data:
   simal_h2_data:
+  redis_data:
