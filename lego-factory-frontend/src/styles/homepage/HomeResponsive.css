@@ -321,6 +321,34 @@
     padding: 1rem;
   }
 
+  .life-title-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .life-title-card .life-title {
+    font-size: 2.6rem;
+  }
+
+  .life-title-card .life-title-row {
+    gap: 0.75rem;
+  }
+
+  .life-title-card .life-subtitle {
+    font-size: 0.65rem;
+  }
+
+  .life-title-card .life-version-badge {
+    padding: 0.35rem 0.5rem;
+  }
+
+  .life-title-card .life-version-badge .version-label {
+    font-size: 0.5rem;
+  }
+
+  .life-title-card .life-version-badge .version-number {
+    font-size: 0.6rem;
+  }
+
   .industry-tagline-card h2 {
     font-size: 1.25rem;
   }
@@ -717,6 +745,42 @@
   .glass-card {
     padding: 0.75rem;
     border-radius: 12px;
+  }
+
+  .life-title-card {
+    padding: 1.25rem 1rem;
+  }
+
+  .life-title-card .life-title {
+    font-size: 2rem;
+  }
+
+  .life-title-card .life-title-row {
+    gap: 0.5rem;
+  }
+
+  .life-title-card .life-subtitle {
+    font-size: 0.55rem;
+  }
+
+  .life-title-card .life-slogan {
+    font-size: 0.6rem;
+  }
+
+  .life-title-card .life-industry-title {
+    font-size: 0.75rem;
+  }
+
+  .life-title-card .life-version-badge {
+    padding: 0.25rem 0.4rem;
+  }
+
+  .life-title-card .life-version-badge .version-label {
+    font-size: 0.45rem;
+  }
+
+  .life-title-card .life-version-badge .version-number {
+    font-size: 0.55rem;
   }
 
   .industry-tagline-card h2 {

@@ -17,12 +17,14 @@ nginx:1011 → api-gateway:8011 → {user:8012, masterdata:8013, inventory:8014,
 - **No shared DB** – REST-only via Docker DNS (`http://inventory-service:8014`)
 - **New endpoints** require gateway route in `api-gateway/src/main/resources/application.properties`
 - **JWT secret** must match across `.env`, api-gateway, and user-service
+- **H2 in-memory DBs** reset on restart – use DataInitializer for seed data
 
 ## Domain Model
 - **Order chain:** CustomerOrder → WarehouseOrder → ProductionOrder → ControlOrders → SupplyOrders → WorkstationOrders
 - **Workstations:** WS-1,2,3 (Manufacturing) → WS-4,5,6 (Assembly) → WS-7 (Plant Warehouse) ← WS-8 (Modules) ← WS-9 (Parts)
-- **Scenarios:** 1=Direct fulfill, 2=Warehouse+Assembly, 3=Full production (auto-completes), 4=High-volume (qty≥3)
+- **Scenarios:** 1=Direct fulfill, 2=Warehouse+Assembly, 3=Full production (auto-completes), 4=High-volume (qty≥LOT_SIZE_THRESHOLD)
 - **Supply orders MUST complete** before workstation orders can start (Scenario 3 gating)
+- **productionOrderId linking:** WarehouseOrder.productionOrderId prevents concurrent orders from stealing each other's modules
 
 ## Stock & Order Rules (MOST COMMON MISTAKES)
 ```java
@@ -56,15 +58,8 @@ config.getWorkstations().getPlantWarehouse();  // 7L
 session?.user?.workstationId  // ✅ Correct
 session?.user?.workstation?.id  // ❌ Wrong
 
-// All dashboards extend StandardDashboardLayout
+// All dashboards extend StandardDashboardLayout (DashboardLayout.jsx is DEPRECATED)
 // Import hooks from src/hooks/index.js
-
-// GanttChart enhanced props (Feb 2026)
-<GanttChart 
-  onRefresh={handleRefresh}   // Auto-refresh callback
-  refreshInterval={30000}      // ms, 0 to disable
-  showCurrentTime={true}       // Red current-time indicator
-/>
 ```
 - **Homepage CSS:** Modular structure in `src/styles/homepage/` – import via `index.css`
 - **Workstation dashboards:** `src/pages/dashboards/{WorkstationName}Dashboard.jsx`
@@ -74,13 +69,50 @@ session?.user?.workstation?.id  // ❌ Wrong
 |---------|----------|
 | Gateway routes | `api-gateway/src/main/resources/application.properties` |
 | Order orchestration | `order-processing-service/.../service/OrderOrchestrationService.java` |
-| Config properties | `order-processing-service/.../config/OrderProcessingConfig.java` |
+| Config (thresholds, IDs) | `order-processing-service/.../config/OrderProcessingConfig.java` |
 | Workstation config | `lego-factory-frontend/src/config/workstationConfig.js` |
 | Error handling | Each service: `GlobalExceptionHandler.java` + `ApiErrorResponse` |
-| Homepage CSS modules | `lego-factory-frontend/src/styles/homepage/index.css` |
+| Dashboard layout | `lego-factory-frontend/src/components/StandardDashboardLayout.jsx` |
 
 ## Test Credentials (password: `password`)
-`lego_admin` (all), `warehouse_operator` (WS-7), `modules_supermarket` (WS-8), `production_planning`, `final_assembly` (WS-6)
+| Username | Role | Workstation |
+|----------|------|-------------|
+| `lego_admin` | ADMIN | All |
+| `warehouse_operator` | PLANT_WAREHOUSE | WS-7 |
+| `modules_supermarket` | MODULES_SUPERMARKET | WS-8 |
+| `parts_supply` | PARTS_SUPPLY | WS-9 |
+| `production_planning` | PRODUCTION_PLANNING | All (planning) |
+| `production_control` | PRODUCTION_CONTROL | WS-1,2,3,9 |
+| `assembly_control` | ASSEMBLY_CONTROL | WS-4,5,6,8 |
+| `injection_molding` | MANUFACTURING | WS-1 |
+| `parts_preproduction` | MANUFACTURING | WS-2 |
+| `part_finishing` | MANUFACTURING | WS-3 |
+| `gear_assembly` | ASSEMBLY_CONTROL | WS-4 |
+| `motor_assembly` | ASSEMBLY_CONTROL | WS-5 |
+| `final_assembly` | ASSEMBLY_CONTROL | WS-6 |
+| `viewer_user` | VIEWER | Read-only |
+
+## SimAL Integration (Scheduling Service)
+SimAL (simal-integration-service:8016) handles production scheduling and Gantt chart generation.
+
+**Key Flow:**
+```
+ProductionOrder created → POST /api/simal/production-order → Schedule generated
+→ ControlOrderIntegrationService.createControlOrdersFromSchedule() → ProductionControlOrder + AssemblyControlOrder
+```
+
+**Critical Files:**
+- `simal-integration-service/.../controller/SimalController.java` – Scheduling endpoints
+- `simal-integration-service/.../service/ControlOrderIntegrationService.java` – Creates control orders from schedule
+
+**Workstation Assignment:**
+- WS-1,2,3 → ProductionControlOrder (manufacturing tasks)
+- WS-4,5,6 → AssemblyControlOrder (assembly tasks)
+
+**Frontend Integration:**
+- Production Planning dashboard fetches schedules via `/api/simal/schedules`
+- GanttChart component renders `scheduledTasks` with zoom/pan controls
+- Task status updates via `/api/simal/tasks/{taskId}/status`
 
 ## Common Commands
 ```bash

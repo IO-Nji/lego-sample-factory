@@ -287,32 +287,6 @@ function HomePage() {
       <section className="home-page">
         {/* Welcome Header */}
         <div className="home-hero">
-          <div className="hero-title-container">
-            <div className="hero-title-row">
-              <h1 className="hero-main-title">
-                <span className="title-letter" style={{'--i': 0}}>L</span>
-                <span className="title-dot">.</span>
-                <span className="title-letter" style={{'--i': 1}}>I</span>
-                <span className="title-dot">.</span>
-                <span className="title-letter" style={{'--i': 2}}>F</span>
-                <span className="title-dot">.</span>
-                <span className="title-letter" style={{'--i': 3}}>E</span>
-              </h1>
-              <div className="hero-version-badge">
-                <span className="version-label">MES</span>
-                <span className="version-number">v2.0</span>
-              </div>
-            </div>
-            <p className="hero-slogan">
-              <span className="slogan-word">LEGO</span>
-              <span className="slogan-separator">•</span>
-              <span className="slogan-word">Integrated</span>
-              <span className="slogan-separator">•</span>
-              <span className="slogan-word">Factory</span>
-              <span className="slogan-separator">•</span>
-              <span className="slogan-word">Execution</span>
-            </p>
-          </div>
         </div>
 
         {message && (
@@ -331,24 +305,34 @@ function HomePage() {
         )}
         
         {/* ================================================================
-            ROW 1: Industry 4.0 Tagline | Application Overview | Login Form
+            ROW 1: L.I.F.E Title | Application Overview | Login Form
             ================================================================ */}
         <div className="home-overview-row">
-          {/* Column 1: Industry 4.0 Tagline Card */}
+          {/* Column 1: L.I.F.E Title Card */}
           <div className="home-tagline-column">
-            <div className="glass-card industry-tagline-card">
-              <h2>Industry 4.0 Digital Manufacturing</h2>
-              <p className="tagline-subtitle">
+            <div className="glass-card life-title-card">
+              <div className="life-title-row">
+                <h1 className="life-title">
+                  <span className="title-letter" style={{'--i': 0}}>L</span>
+                  <span className="title-dot">.</span>
+                  <span className="title-letter" style={{'--i': 1}}>I</span>
+                  <span className="title-dot">.</span>
+                  <span className="title-letter" style={{'--i': 2}}>F</span>
+                  <span className="title-dot">.</span>
+                  <span className="title-letter" style={{'--i': 3}}>E</span>
+                </h1>
+                <div className="life-version-badge">
+                  <span className="version-label">MES</span>
+                  <span className="version-number">v2.0</span>
+                </div>
+              </div>
+              <p className="life-subtitle">LEGO INTEGRATED FACTORY EXECUTION</p>
+              <h2 className="life-industry-title">Industry 4.0 Digital Manufacturing</h2>
+              <p className="life-slogan">
                 Enterprise-grade Manufacturing Execution System demonstrating 
                 smart factory automation, real-time production orchestration, 
                 and intelligent supply chain management.
               </p>
-              <div className="tagline-badges">
-                <span className="tech-badge"><span className="tech-icon">☕</span> Java 21</span>
-                <span className="tech-badge"><span className="tech-icon">🌱</span> Spring Boot</span>
-                <span className="tech-badge"><span className="tech-icon">⚛️</span> React 18</span>
-                <span className="tech-badge"><span className="tech-icon">🐳</span> Docker</span>
-              </div>
             </div>
           </div>
 
@@ -380,7 +364,7 @@ function HomePage() {
                   <span className="metric-lbl">Scenarios</span>
                 </div>
                 <div className="metric-box">
-                  <span className="metric-num">5</span>
+                  <span className="metric-num">9</span>
                   <span className="metric-lbl">User Roles</span>
                 </div>
               </div>
