@@ -2,8 +2,6 @@
 @import './styles/StandardPage.css';
 @import './styles/LoginForm.css';
 @import './styles/AddNewUserForm.css';
-@import './styles/CustomerOrderCard.css';
-@import './styles/WarehouseOrderCard.css';
 
 /* ==============================
    Global CSS Variables - Design System

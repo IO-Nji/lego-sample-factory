@@ -3,9 +3,9 @@ import {
   OrdersSection,
   ActivityLog,
   StatisticsGrid,
-  WorkstationOrderCard,
   Card
 } from "../../components";
+import UnifiedOrderCard, { ORDER_TYPES, ACTION_TYPES } from "../../components/orders/UnifiedOrderCard";
 import { useWorkstationOrders } from "../../hooks/useWorkstationOrders";
 import { STANDARD_FILTER_OPTIONS, STANDARD_SORT_OPTIONS } from "../../config/workstationConfig";
 import "../../styles/DashboardLayout.css";
@@ -51,11 +51,14 @@ function MotorAssemblyDashboard() {
       searchKeys={['orderNumber']}
       sortKey="orderNumber"
       renderCard={(order) => (
-        <WorkstationOrderCard
+        <UnifiedOrderCard
           key={order.id}
+          orderType={ORDER_TYPES.WORKSTATION}
           order={order}
-          onStart={handleStartOrder}
-          onComplete={handleCompleteOrder}
+          onAction={(action, orderId) => {
+            if (action === ACTION_TYPES.START) handleStartOrder(orderId);
+            else if (action === ACTION_TYPES.COMPLETE) handleCompleteOrder(orderId);
+          }}
           isProcessing={processingOrderId === order.id}
         />
       )}

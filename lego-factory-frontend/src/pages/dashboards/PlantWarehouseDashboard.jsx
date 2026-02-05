@@ -11,7 +11,7 @@ import {
   ActivityLog,
   Card
 } from "../../components";
-import CustomerOrderCard from "../../components/CustomerOrderCard";
+import UnifiedOrderCard, { ORDER_TYPES, ACTION_TYPES } from "../../components/orders/UnifiedOrderCard";
 import { getProductDisplayName, getInventoryStatusColor } from "../../utils/dashboardHelpers";
 import { useInventoryDisplay } from "../../hooks/useInventoryDisplay";
 import { useActivityLog } from "../../hooks/useActivityLog";
@@ -31,6 +31,7 @@ function PlantWarehouseDashboard() {
     inventory, 
     masterdata: products,
     getItemName: getProductName,
+    getStockLevel,
     fetchInventory,
     error: inventoryError
   } = useInventoryDisplay('PRODUCT', 7);
@@ -296,6 +297,26 @@ function PlantWarehouseDashboard() {
     }
   };
 
+  // Handle UnifiedOrderCard actions
+  const handleOrderAction = async (actionType, orderId, payload) => {
+    switch (actionType) {
+      case ACTION_TYPES.CONFIRM:
+        return handleConfirm(orderId);
+      case ACTION_TYPES.FULFILL:
+        return handleFulfillOrder(orderId);
+      case ACTION_TYPES.COMPLETE:
+        return handleComplete(orderId);
+      case ACTION_TYPES.REQUEST_WO:
+        return handleProcessing(orderId);
+      case ACTION_TYPES.ORDER_PRODUCTION:
+        return handleOrderProduction(orderId);
+      case ACTION_TYPES.CANCEL:
+        return handleCancel(orderId);
+      default:
+        console.warn('Unhandled action:', actionType);
+    }
+  };
+
   // Stats data for StatisticsGrid
   const statsData = [
     { value: orders.length, label: 'Total Orders', variant: 'default', icon: '📦' },
@@ -390,20 +411,14 @@ function PlantWarehouseDashboard() {
         { value: 'status', label: 'Status' }
       ]}
       renderCard={(order) => (
-        <CustomerOrderCard
+        <UnifiedOrderCard
           key={order.id}
-          order={order}
-          inventory={inventory}
-          onConfirm={handleConfirm}
-          onFulfill={handleFulfillOrder}
-          onProcess={handleProcessing}
-          onOrderProduction={handleOrderProduction}
-          onComplete={handleComplete}
-          onCancel={handleCancel}
+          orderType={ORDER_TYPES.CUSTOMER_ORDER}
+          order={{ ...order, canComplete: orderCanComplete[order.id] === true }}
+          onAction={handleOrderAction}
           isProcessing={fulfillingOrderId === order.id}
-          canComplete={orderCanComplete[order.id] === true}
-          getProductDisplayName={getProductDisplayName}
-          getInventoryStatusColor={getInventoryStatusColor}
+          getItemName={getProductDisplayName}
+          getStockLevel={getStockLevel}
         />
       )}
       searchPlaceholder="CUST-XXX"

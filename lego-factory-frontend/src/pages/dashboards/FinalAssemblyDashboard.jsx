@@ -3,9 +3,9 @@ import {
   OrdersSection,
   ActivityLog,
   StatisticsGrid,
-  FinalAssemblyOrderCard,
   Card
 } from "../../components";
+import UnifiedOrderCard, { ORDER_TYPES, ACTION_TYPES } from "../../components/orders/UnifiedOrderCard";
 import { useWorkstationOrders } from "../../hooks/useWorkstationOrders";
 import { getProductDisplayName } from "../../utils/dashboardHelpers";
 import { STANDARD_FILTER_OPTIONS, STANDARD_SORT_OPTIONS } from "../../config/workstationConfig";
@@ -59,15 +59,18 @@ function FinalAssemblyDashboard() {
       searchKeys={['orderNumber']}
       sortKey="orderNumber"
       renderCard={(order) => (
-        <FinalAssemblyOrderCard
+        <UnifiedOrderCard
           key={order.id}
+          orderType={ORDER_TYPES.FINAL_ASSEMBLY}
           order={order}
-          onConfirm={handleConfirmOrder}
-          onStart={handleStartOrder}
-          onComplete={handleCompleteOrder}
-          onSubmit={handleSubmitOrder}
+          onAction={(action, orderId) => {
+            if (action === ACTION_TYPES.CONFIRM) handleConfirmOrder(orderId);
+            else if (action === ACTION_TYPES.START) handleStartOrder(orderId);
+            else if (action === ACTION_TYPES.COMPLETE) handleCompleteOrder(orderId);
+            else if (action === ACTION_TYPES.SUBMIT) handleSubmitOrder(orderId);
+          }}
           isProcessing={processingOrderId === order.id}
-          getProductDisplayName={getProductDisplayName}
+          getItemName={getProductDisplayName}
         />
       )}
       emptyMessage={config.emptyMessage}

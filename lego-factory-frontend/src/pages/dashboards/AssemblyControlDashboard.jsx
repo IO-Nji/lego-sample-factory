@@ -8,9 +8,9 @@ import {
   StatisticsGrid, 
   Button, 
   Card, 
-  Badge,
-  AssemblyControlOrderCard 
+  Badge
 } from "../../components";
+import UnifiedOrderCard, { ORDER_TYPES, ACTION_TYPES } from "../../components/orders/UnifiedOrderCard";
 import "../../styles/DashboardLayout.css";
 
 function AssemblyControlDashboard() {
@@ -349,15 +349,19 @@ function AssemblyControlDashboard() {
       sortKey="controlOrderNumber"
       searchKeys={['controlOrderNumber', 'assemblyInstructions']}
       renderCard={(order) => (
-        <AssemblyControlOrderCard
+        <UnifiedOrderCard
+          key={order.id}
+          orderType={ORDER_TYPES.ASSEMBLY_CONTROL}
           order={order}
-          onConfirm={handleConfirmOrder}
-          onStart={handleStartAssembly}
-          onComplete={handleCompleteAssembly}
-          onHalt={(orderId) => handleHaltAssembly(orderId, "Operator initiated halt")}
-          onRequestParts={handleCreateSupplyOrder}
-          onDispatch={handleDispatchToWorkstation}
-          onViewDetails={handleViewDetails}
+          onAction={(action, orderId) => {
+            if (action === ACTION_TYPES.CONFIRM) handleConfirmOrder(orderId);
+            else if (action === ACTION_TYPES.START) handleStartAssembly(orderId);
+            else if (action === ACTION_TYPES.COMPLETE) handleCompleteAssembly(orderId);
+            else if (action === ACTION_TYPES.HALT) handleHaltAssembly(orderId, "Operator initiated halt");
+            else if (action === ACTION_TYPES.REQUEST_PARTS) handleCreateSupplyOrder(order);
+            else if (action === ACTION_TYPES.DISPATCH) handleDispatchToWorkstation(order);
+            else if (action === ACTION_TYPES.VIEW_DETAILS) handleViewDetails(order);
+          }}
         />
       )}
       emptyMessage="Control orders will appear here when assigned by Production Planning"
