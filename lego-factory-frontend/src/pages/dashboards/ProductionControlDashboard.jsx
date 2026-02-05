@@ -53,6 +53,7 @@ function ProductionControlDashboard() {
   });
 
   // Fetch all production control orders (Production Control manages all manufacturing orders)
+  // Then enrich with supply order status for proper button display
   const fetchControlOrders = async () => {
     setLoading(true);
     setError(null);
@@ -60,8 +61,37 @@ function ProductionControlDashboard() {
     try {
       const response = await api.get('/production-control-orders');
       const ordersList = Array.isArray(response.data) ? response.data : [];
-      setControlOrders(ordersList);
-      applyFilter(ordersList, filterStatus);
+      
+      // Enrich orders with supply order status for button logic
+      const enrichedOrders = await Promise.all(
+        ordersList.map(async (order) => {
+          // Only fetch supply orders for CONFIRMED orders (workflow: Confirm → Request Parts → Dispatch)
+          if (order.status === 'CONFIRMED') {
+            try {
+              const supplyResponse = await api.get(`/supply-orders/source/${order.id}?type=PRODUCTION`);
+              const supplyOrders = Array.isArray(supplyResponse.data) ? supplyResponse.data : [];
+              
+              if (supplyOrders.length > 0) {
+                // Get the most recent supply order
+                const latestSupply = supplyOrders[0];
+                return {
+                  ...order,
+                  supplyOrderId: latestSupply.id,
+                  supplyOrderStatus: latestSupply.status,
+                  supplyOrderNumber: latestSupply.supplyOrderNumber,
+                };
+              }
+            } catch (err) {
+              // No supply orders or error - continue without enrichment
+              console.debug(`No supply orders for control order ${order.id}`);
+            }
+          }
+          return order;
+        })
+      );
+      
+      setControlOrders(enrichedOrders);
+      applyFilter(enrichedOrders, filterStatus);
     } catch (err) {
       setError("Failed to load control orders: " + (err.response?.data?.message || err.message));
     } finally {
@@ -166,6 +196,18 @@ function ProductionControlDashboard() {
     } catch (err) {
       setError("Failed to halt production: " + (err.response?.data?.message || err.message));
       addNotification("Failed to halt production", "error");
+    }
+  };
+
+  const handleResumeProduction = async (orderId) => {
+    try {
+      await api.post(`/production-control-orders/${orderId}/resume`);
+      setSuccess("Production resumed");
+      addNotification("Production resumed", "success");
+      fetchControlOrders();
+    } catch (err) {
+      setError("Failed to resume production: " + (err.response?.data?.message || err.message));
+      addNotification("Failed to resume production", "error");
     }
   };
 
@@ -350,16 +392,16 @@ function ProductionControlDashboard() {
       renderCard={(order) => (
         <UnifiedOrderCard
           key={order.id}
-          orderType={ORDER_TYPES.PRODUCTION_CONTROL}
+          orderType={ORDER_TYPES.PRODUCTION_CONTROL_ORDER}
           order={order}
           onAction={(action, orderId) => {
             if (action === ACTION_TYPES.CONFIRM) handleConfirmOrder(orderId);
             else if (action === ACTION_TYPES.START) handleStartProduction(orderId);
             else if (action === ACTION_TYPES.COMPLETE) handleCompleteProduction(orderId);
             else if (action === ACTION_TYPES.HALT) handleHaltProduction(orderId, "Operator initiated halt");
+            else if (action === ACTION_TYPES.RESUME) handleResumeProduction(orderId);
             else if (action === ACTION_TYPES.REQUEST_PARTS) handleCreateSupplyOrder(order);
-            else if (action === ACTION_TYPES.DISPATCH) handleDispatchToWorkstation(order);
-            else if (action === ACTION_TYPES.VIEW_DETAILS) handleViewDetails(order);
+            else if (action === ACTION_TYPES.DISPATCH) handleDispatchToWorkstation(orderId);
           }}
         />
       )}

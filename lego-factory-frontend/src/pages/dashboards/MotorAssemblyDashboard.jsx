@@ -26,6 +26,8 @@ function MotorAssemblyDashboard() {
     statsData,
     handleStartOrder,
     handleCompleteOrder,
+    handleHaltOrder,
+    handleResumeOrder,
     clearNotifications,
     clearError,
     config,
@@ -53,11 +55,13 @@ function MotorAssemblyDashboard() {
       renderCard={(order) => (
         <UnifiedOrderCard
           key={order.id}
-          orderType={ORDER_TYPES.WORKSTATION}
+          orderType={ORDER_TYPES.WORKSTATION_ORDER}
           order={order}
           onAction={(action, orderId) => {
             if (action === ACTION_TYPES.START) handleStartOrder(orderId);
             else if (action === ACTION_TYPES.COMPLETE) handleCompleteOrder(orderId);
+            else if (action === ACTION_TYPES.HALT) handleHaltOrder(orderId, 'Operator initiated halt');
+            else if (action === ACTION_TYPES.RESUME) handleResumeOrder(orderId);
           }}
           isProcessing={processingOrderId === order.id}
         />

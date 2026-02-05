@@ -24,6 +24,7 @@ nginx:1011 → api-gateway:8011 → {user:8012, masterdata:8013, inventory:8014,
 - **Workstations:** WS-1,2,3 (Manufacturing) → WS-4,5,6 (Assembly) → WS-7 (Plant Warehouse) ← WS-8 (Modules) ← WS-9 (Parts)
 - **Scenarios:** 1=Direct fulfill, 2=Warehouse+Assembly, 3=Full production, 4=High-volume (qty≥LOT_SIZE_THRESHOLD)
 - **WarehouseOrder.productionOrderId** links production to prevent concurrent order interference
+- **triggerScenario field:** `DIRECT_FULFILLMENT`, `WAREHOUSE_ORDER_NEEDED`, `PRODUCTION_REQUIRED` – set on confirmation, drives UI buttons
 
 ## Critical Rules (Common Mistakes)
 ```java
@@ -43,20 +44,25 @@ inventoryClient.creditStock(7L, "PRODUCT", productId, qty, "FULFILLMENT", "reaso
 // Use constants: STATUS_COMPLETED, not "COMPLETED"
 // Use config: config.getThresholds().getLotSizeThreshold() (default: 3)
 ```
+- Package structure: `io.life.<service>/{controller,service,entity,dto,repository,exception}`
+- Error responses use `ApiErrorResponse` with `errorCode` + `details` map
 
 ## Frontend Patterns
 ```javascript
 session?.user?.workstationId   // ✅ FLAT field
 session?.user?.workstation?.id // ❌ WRONG - not nested
 // All dashboards use StandardDashboardLayout (DashboardLayout.jsx DEPRECATED)
-// Import hooks from src/hooks/index.js
+// Import hooks from src/hooks/index.js: useWorkstationOrders, useActivityLog, useInventoryDisplay
 ```
+- API client: `src/api/api.js` (axios with auto-JWT injection)
+- Workstation dashboards: `src/pages/dashboards/{WorkstationName}Dashboard.jsx`
 
 ## Key Files
 | Purpose | Location |
 |---------|----------|
 | Gateway routes | `api-gateway/.../application.properties` |
 | Order orchestration | `order-processing-service/.../OrderOrchestrationService.java` |
+| Fulfillment logic | `order-processing-service/.../orchestration/FulfillmentOrchestrationService.java` |
 | Workstation config | `lego-factory-frontend/src/config/workstationConfig.js` |
 | Dashboard wrapper | `lego-factory-frontend/src/components/StandardDashboardLayout.jsx` |
 

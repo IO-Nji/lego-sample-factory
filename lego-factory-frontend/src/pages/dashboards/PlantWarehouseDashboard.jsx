@@ -33,6 +33,7 @@ function PlantWarehouseDashboard() {
     getItemName: getProductName,
     getStockLevel,
     fetchInventory,
+    loading: inventoryLoading,
     error: inventoryError
   } = useInventoryDisplay('PRODUCT', 7);
   
@@ -81,8 +82,12 @@ function PlantWarehouseDashboard() {
     
     fetchWorkstations();
     if (workstationId) {
-      fetchOrders();
-      // fetchInventory is handled by useInventoryDisplay hook
+      // Fetch inventory FIRST, then orders - ensures getStockLevel has data when cards render
+      const initializeData = async () => {
+        await fetchInventory(); // Wait for inventory to load
+        fetchOrders(); // Then fetch orders
+      };
+      initializeData();
     } else {
       console.warn('[PlantWarehouse] No workstationId in session, skipping orders/inventory fetch');
     }
@@ -198,7 +203,8 @@ function PlantWarehouseDashboard() {
       const orderNum = response.data.orderNumber;
       addNotification(`Created ${orderNum}`, 'success', { orderNumber: orderNum });
       setSelectedProducts({});
-      fetchOrders();
+      await fetchInventory(); // Refresh inventory to show current stock levels
+      await fetchOrders(); // Await to ensure orders render AFTER inventory is loaded
       refresh(); // Trigger global dashboard refresh
     } catch (err) {
       setError("Failed to create order: " + (err.response?.data?.message || err.message));

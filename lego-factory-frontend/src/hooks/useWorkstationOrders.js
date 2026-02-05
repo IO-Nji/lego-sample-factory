@@ -152,6 +152,42 @@ export function useWorkstationOrders(workstationId, options = {}) {
     }
   }, [apiEndpoint, addNotification, fetchOrders]);
 
+  // Halt order handler - pause work in progress
+  const handleHaltOrder = useCallback(async (orderId, reason = 'Operator initiated halt') => {
+    setProcessingOrderId(orderId);
+    setError(null);
+
+    try {
+      await api.post(`${apiEndpoint}/${orderId}/halt`, { reason });
+      addNotification(`Order halted - ${reason}`, 'warning');
+      await fetchOrders();
+    } catch (err) {
+      const errorMessage = `Failed to halt order: ${err.response?.data?.message || err.message}`;
+      setError(errorMessage);
+      addNotification('Failed to halt order', 'error');
+    } finally {
+      setProcessingOrderId(null);
+    }
+  }, [apiEndpoint, addNotification, fetchOrders]);
+
+  // Resume order handler - continue halted work
+  const handleResumeOrder = useCallback(async (orderId, orderNumber) => {
+    setProcessingOrderId(orderId);
+    setError(null);
+
+    try {
+      await api.post(`${apiEndpoint}/${orderId}/resume`);
+      addNotification(`Order ${orderNumber} resumed`, 'success');
+      await fetchOrders();
+    } catch (err) {
+      const errorMessage = `Failed to resume order: ${err.response?.data?.message || err.message}`;
+      setError(errorMessage);
+      addNotification('Failed to resume order', 'error');
+    } finally {
+      setProcessingOrderId(null);
+    }
+  }, [apiEndpoint, addNotification, fetchOrders]);
+
   // Clear error
   const clearError = useCallback(() => {
     setError(null);
@@ -181,6 +217,8 @@ export function useWorkstationOrders(workstationId, options = {}) {
     handleStartOrder,
     handleCompleteOrder,
     handleSubmitOrder,
+    handleHaltOrder,
+    handleResumeOrder,
     fetchOrders,
     clearError,
     addNotification,

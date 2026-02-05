@@ -168,7 +168,8 @@ const UnifiedOrderCard = ({
             let stockQty = null;
             if (getStockLevel && item.itemId) {
               stockQty = getStockLevel(item.itemId, item.itemType);
-              if (stockQty !== null && stockQty !== undefined) {
+              // Only update stockAvailable if we have real stock data (not null)
+              if (stockQty !== null) {
                 stockAvailable = stockQty >= qty ? true : (stockQty > 0 ? 'partial' : false);
               }
             }

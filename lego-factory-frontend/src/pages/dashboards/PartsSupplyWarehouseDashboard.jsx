@@ -224,7 +224,7 @@ function PartsSupplyWarehouseDashboard() {
       renderCard={(order) => (
         <UnifiedOrderCard
           key={order.id}
-          orderType={ORDER_TYPES.SUPPLY}
+          orderType={ORDER_TYPES.SUPPLY_ORDER}
           order={{
             ...order,
             // Map supply order fields to unified structure
@@ -236,6 +236,7 @@ function PartsSupplyWarehouseDashboard() {
           onAction={(action, orderId) => {
             if (action === ACTION_TYPES.FULFILL) handleFulfillOrder(orderId);
             else if (action === ACTION_TYPES.REJECT) handleRejectOrder(orderId);
+            else if (action === ACTION_TYPES.VIEW) handleViewDetails(order);
             else if (action === ACTION_TYPES.VIEW_DETAILS) handleViewDetails(order);
           }}
           getItemName={getItemName}

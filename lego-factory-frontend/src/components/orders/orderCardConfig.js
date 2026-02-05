@@ -208,6 +208,7 @@ export const TIMESTAMP_LABELS = {
 // ═══════════════════════════════════════════════════════════════
 
 export const ACTION_TYPES = {
+  VIEW: 'view',
   CONFIRM: 'confirm',
   START: 'start',
   COMPLETE: 'complete',
@@ -225,9 +226,11 @@ export const ACTION_TYPES = {
   DETAILS: 'details',
   REQUEST_PARTS: 'requestParts',
   VIEW_SUPPLY: 'viewSupply',
+  VIEW_WORKSTATION: 'viewWorkstation',
 };
 
 export const ACTION_CONFIG = {
+  [ACTION_TYPES.VIEW]: { label: 'View', variant: 'ghost' },
   [ACTION_TYPES.CONFIRM]: { label: 'Confirm', variant: 'primary' },
   [ACTION_TYPES.START]: { label: 'Start', variant: 'primary' },
   [ACTION_TYPES.COMPLETE]: { label: 'Complete', variant: 'success' },
@@ -245,6 +248,7 @@ export const ACTION_CONFIG = {
   [ACTION_TYPES.DETAILS]: { label: 'Details', variant: 'secondary' },
   [ACTION_TYPES.REQUEST_PARTS]: { label: 'Request Parts', variant: 'secondary' },
   [ACTION_TYPES.VIEW_SUPPLY]: { label: 'View Supply', variant: 'secondary' },
+  [ACTION_TYPES.VIEW_WORKSTATION]: { label: 'View Workstation', variant: 'secondary' },
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -365,24 +369,62 @@ export const getOrderActions = (order, orderType) => {
       break;
       
     case ORDER_TYPES.PRODUCTION_ORDER:
-      if (status === 'CREATED' || status === 'CONFIRMED') {
+      // ProductionOrder workflow:
+      // CREATED/PENDING → Confirm
+      // CONFIRMED → Schedule with SimAL
+      // SCHEDULED → Dispatch to create control orders
+      // DISPATCHED/IN_PRODUCTION → Monitoring (auto-completes when control orders done)
+      // COMPLETED → No actions (terminal state)
+      if (status === 'CREATED' || status === 'PENDING') {
+        actions.push({ type: ACTION_TYPES.CONFIRM, ...ACTION_CONFIG[ACTION_TYPES.CONFIRM] });
+      } else if (status === 'CONFIRMED') {
         actions.push({ type: ACTION_TYPES.SCHEDULE, ...ACTION_CONFIG[ACTION_TYPES.SCHEDULE] });
       } else if (status === 'SCHEDULED') {
         actions.push({ type: ACTION_TYPES.DISPATCH, ...ACTION_CONFIG[ACTION_TYPES.DISPATCH] });
+      } else if (status === 'DISPATCHED' || status === 'IN_PRODUCTION') {
+        // Show status indicator - control orders are running
+        actions.push({ type: ACTION_TYPES.DISPATCH, label: 'In Production', variant: 'ghost', disabled: true });
       }
-      actions.push({ type: ACTION_TYPES.DETAILS, ...ACTION_CONFIG[ACTION_TYPES.DETAILS] });
+      // COMPLETED status has no actions
       break;
       
     case ORDER_TYPES.PRODUCTION_CONTROL_ORDER:
     case ORDER_TYPES.ASSEMBLY_CONTROL_ORDER:
-      if (status === 'PENDING' || status === 'ASSIGNED') {
-        actions.push({ type: ACTION_TYPES.DISPATCH, ...ACTION_CONFIG[ACTION_TYPES.DISPATCH] });
+      // Control order workflow:
+      // PENDING → Confirm
+      // CONFIRMED (no supply) → Request Parts
+      // CONFIRMED (supply pending) → Waiting for Parts (disabled Dispatch)
+      // CONFIRMED (supply fulfilled) → Dispatch to Workstation
+      // ASSIGNED → Waiting for workstation completion (no actions)
+      // IN_PROGRESS → Halt
+      // HALTED → Resume
+      // COMPLETED → No actions (terminal state)
+      if (status === 'PENDING') {
+        actions.push({ type: ACTION_TYPES.CONFIRM, ...ACTION_CONFIG[ACTION_TYPES.CONFIRM] });
+      } else if (status === 'CONFIRMED') {
+        // Check if supply order exists and its status
+        const hasSupplyOrder = order.supplyOrderId || order.supplyOrderStatus;
+        const supplyFulfilled = order.supplyOrderStatus === 'FULFILLED';
+        
+        if (!hasSupplyOrder) {
+          // No supply order yet - show Request Parts
+          actions.push({ type: ACTION_TYPES.REQUEST_PARTS, ...ACTION_CONFIG[ACTION_TYPES.REQUEST_PARTS] });
+        } else if (supplyFulfilled) {
+          // Supply fulfilled - can dispatch
+          actions.push({ type: ACTION_TYPES.DISPATCH, ...ACTION_CONFIG[ACTION_TYPES.DISPATCH] });
+        } else {
+          // Supply order exists but not fulfilled - show disabled waiting button
+          actions.push({ type: ACTION_TYPES.DISPATCH, label: 'Waiting for Parts', variant: 'secondary', disabled: true });
+        }
+      } else if (status === 'ASSIGNED') {
+        // Workstation order created and running - show status indicator only
+        actions.push({ type: ACTION_TYPES.DISPATCH, label: 'Workstation Active', variant: 'ghost', disabled: true });
       } else if (status === 'IN_PROGRESS') {
         actions.push({ type: ACTION_TYPES.HALT, ...ACTION_CONFIG[ACTION_TYPES.HALT] });
       } else if (status === 'HALTED') {
         actions.push({ type: ACTION_TYPES.RESUME, ...ACTION_CONFIG[ACTION_TYPES.RESUME] });
       }
-      actions.push({ type: ACTION_TYPES.VIEW_SUPPLY, ...ACTION_CONFIG[ACTION_TYPES.VIEW_SUPPLY] });
+      // COMPLETED status has no actions (terminal state)
       break;
       
     case ORDER_TYPES.WORKSTATION_ORDER:
@@ -399,24 +441,44 @@ export const getOrderActions = (order, orderType) => {
       break;
       
     case ORDER_TYPES.SUPPLY_ORDER:
+      // Supply orders have no confirm step - View action always available
+      // PENDING → View + Fulfill / Reject
+      // IN_PROGRESS → View + Fulfill
+      // FULFILLED/REJECTED/CANCELLED → View only
       if (status === 'PENDING') {
+        actions.push({ type: ACTION_TYPES.VIEW, ...ACTION_CONFIG[ACTION_TYPES.VIEW] });
+        actions.push({ type: ACTION_TYPES.FULFILL, ...ACTION_CONFIG[ACTION_TYPES.FULFILL] });
         actions.push({ type: ACTION_TYPES.REJECT, ...ACTION_CONFIG[ACTION_TYPES.REJECT] });
-        actions.push({ type: ACTION_TYPES.FULFILL, ...ACTION_CONFIG[ACTION_TYPES.FULFILL] });
       } else if (status === 'IN_PROGRESS') {
+        actions.push({ type: ACTION_TYPES.VIEW, ...ACTION_CONFIG[ACTION_TYPES.VIEW] });
         actions.push({ type: ACTION_TYPES.FULFILL, ...ACTION_CONFIG[ACTION_TYPES.FULFILL] });
+      } else {
+        // FULFILLED, REJECTED, CANCELLED - view only
+        actions.push({ type: ACTION_TYPES.VIEW, ...ACTION_CONFIG[ACTION_TYPES.VIEW] });
       }
       break;
       
     case ORDER_TYPES.FINAL_ASSEMBLY_ORDER:
+      // Final Assembly workflow:
+      // PENDING → Confirm Order
+      // CONFIRMED → Start Assembly
+      // IN_PROGRESS → Complete Assembly + Halt
+      // COMPLETED (or COMPLETED_ASSEMBLY) → Submit Completion
+      // SUBMITTED → View Details only
       if (status === 'PENDING') {
         actions.push({ type: ACTION_TYPES.CONFIRM, ...ACTION_CONFIG[ACTION_TYPES.CONFIRM] });
       } else if (status === 'CONFIRMED') {
         actions.push({ type: ACTION_TYPES.START, ...ACTION_CONFIG[ACTION_TYPES.START] });
       } else if (status === 'IN_PROGRESS') {
         actions.push({ type: ACTION_TYPES.COMPLETE, ...ACTION_CONFIG[ACTION_TYPES.COMPLETE] });
-      } else if (status === 'COMPLETED') {
+        actions.push({ type: ACTION_TYPES.HALT, ...ACTION_CONFIG[ACTION_TYPES.HALT] });
+      } else if (status === 'HALTED') {
+        actions.push({ type: ACTION_TYPES.RESUME, ...ACTION_CONFIG[ACTION_TYPES.RESUME] });
+      } else if (status === 'COMPLETED' || status === 'COMPLETED_ASSEMBLY') {
+        // Assembly work done, awaiting submission to Plant Warehouse
         actions.push({ type: ACTION_TYPES.SUBMIT, ...ACTION_CONFIG[ACTION_TYPES.SUBMIT] });
       }
+      // SUBMITTED status = final, no buttons needed
       break;
   }
   

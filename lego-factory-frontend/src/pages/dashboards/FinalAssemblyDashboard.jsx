@@ -34,6 +34,8 @@ function FinalAssemblyDashboard() {
     handleStartOrder,
     handleCompleteOrder,
     handleSubmitOrder,
+    handleHaltOrder,
+    handleResumeOrder,
     clearNotifications,
     clearError,
     config,
@@ -61,13 +63,15 @@ function FinalAssemblyDashboard() {
       renderCard={(order) => (
         <UnifiedOrderCard
           key={order.id}
-          orderType={ORDER_TYPES.FINAL_ASSEMBLY}
+          orderType={ORDER_TYPES.FINAL_ASSEMBLY_ORDER}
           order={order}
           onAction={(action, orderId) => {
             if (action === ACTION_TYPES.CONFIRM) handleConfirmOrder(orderId);
             else if (action === ACTION_TYPES.START) handleStartOrder(orderId);
             else if (action === ACTION_TYPES.COMPLETE) handleCompleteOrder(orderId);
             else if (action === ACTION_TYPES.SUBMIT) handleSubmitOrder(orderId);
+            else if (action === ACTION_TYPES.HALT) handleHaltOrder(orderId, 'Operator initiated halt');
+            else if (action === ACTION_TYPES.RESUME) handleResumeOrder(orderId);
           }}
           isProcessing={processingOrderId === order.id}
           getItemName={getProductDisplayName}
