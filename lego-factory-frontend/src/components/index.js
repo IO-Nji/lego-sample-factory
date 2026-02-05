@@ -17,6 +17,23 @@ export { default as StatCard } from './StatCard';
 export { default as StatisticsGrid } from './StatisticsGrid';
 export { default as Badge } from './Badge';
 
+// Statistics Cards (New Glassmorphism Design System)
+export {
+  StatCardTrend,
+  StatCardProgress,
+  StatCardSparkline,
+  StatCardThreshold,
+  StatCardCompact,
+  StatCardMulti,
+  StatCardTimeline,
+  StatCardDonut,
+  StatCardHero,
+  StatCardWorkstation,
+  StatCardScenario,
+  StatisticsGrid as StatsGrid,  // Alias for convenience
+  statisticsStyles,
+} from './statistics';
+
 // Data Display
 export { default as Table } from './Table';
 export { default as PieChart } from './PieChart';
