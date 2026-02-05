@@ -142,6 +142,14 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
     return getItemName(item);
   }, [masterdata, getItemName]);
 
+  // Get stock quantity for a specific item
+  // Returns the quantity in stock or 0 if not found
+  const getStockLevel = useCallback((itemId, itemTypeParam = itemType) => {
+    if (!itemId) return 0;
+    const item = inventory.find(inv => inv.itemId === itemId && inv.itemType === itemTypeParam);
+    return item?.quantity ?? 0;
+  }, [inventory, itemType]);
+
   // Auto-fetch masterdata on mount
   useEffect(() => {
     fetchMasterdata();
@@ -166,6 +174,7 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
     fetchMasterdata,
     getItemName,
     getItemNameWithDescription,
+    getStockLevel,
     setInventory, // Allow manual updates
     setMasterdata, // Allow manual updates
   };

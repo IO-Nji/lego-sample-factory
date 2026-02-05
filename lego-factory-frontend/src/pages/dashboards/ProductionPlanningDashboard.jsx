@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../../api/api";
 import { StandardDashboardLayout, CompactScheduleTimeline, OrdersSection, StatisticsGrid, Button, Card } from "../../components";
-import ProductionOrderCard from "../../components/ProductionOrderCard";
+import UnifiedOrderCard, { ORDER_TYPES, ACTION_TYPES } from "../../components/orders/UnifiedOrderCard";
 import "../../styles/DashboardLayout.css";
 
 /**
@@ -338,18 +338,31 @@ function ProductionPlanningDashboard() {
         { value: 'status', label: 'Status' }
       ]}
       renderCard={(order) => (
-        <ProductionOrderCard
+        <UnifiedOrderCard
           key={order.id}
+          orderType={ORDER_TYPES.PRODUCTION_ORDER}
           order={order}
-          onConfirm={(orderId) => handleConfirmOrder(orderId)}
-          onSchedule={(order) => {
-            setSelectedOrder(order);
-            handleShowSchedulePreview(order);
+          onAction={(actionType, orderId, payload) => {
+            switch (actionType) {
+              case ACTION_TYPES.CONFIRM:
+                return handleConfirmOrder(orderId);
+              case ACTION_TYPES.SCHEDULE:
+                setSelectedOrder(order);
+                return handleShowSchedulePreview(order);
+              case ACTION_TYPES.DISPATCH:
+                return handleDispatchProduction(orderId);
+              case ACTION_TYPES.COMPLETE:
+                return handleCompleteProductionOrder(orderId);
+              case ACTION_TYPES.CANCEL:
+                return handleCancelOrder(orderId);
+              case ACTION_TYPES.DETAILS:
+                setSelectedOrder(order);
+                return;
+              default:
+                console.warn('Unhandled action:', actionType);
+            }
           }}
-          onStart={(orderId) => handleDispatchProduction(orderId)}
-          onComplete={(orderId) => handleCompleteProductionOrder(orderId)}
-          onCancel={handleCancelOrder}
-          isScheduling={schedulingInProgress[order.id]}
+          isProcessing={schedulingInProgress[order.id]}
         />
       )}
       searchPlaceholder="Search by order number..."

@@ -47,16 +47,9 @@ export { default as OrdersSection } from './OrdersSection';
 export { default as FormCard } from './FormCard';
 export { default as ActivityLog } from './ActivityLog';
 
-// Order Cards
-export { default as BaseOrderCard } from './BaseOrderCard';
-export { default as CustomerOrderCard } from './CustomerOrderCard';
-export { default as WarehouseOrderCard } from './WarehouseOrderCard';
-export { default as ProductionOrderCard } from './ProductionOrderCard';
-export { default as FinalAssemblyOrderCard } from './FinalAssemblyOrderCard';
-export { default as ProductionControlOrderCard } from './ProductionControlOrderCard';
-export { default as AssemblyControlOrderCard } from './AssemblyControlOrderCard';
-export { default as SupplyOrderCard } from './SupplyOrderCard';
-export { default as WorkstationOrderCard } from './WorkstationOrderCard';
+// Unified Order Card (use this for all order card implementations)
+export { default as UnifiedOrderCard, ORDER_TYPES } from './orders/UnifiedOrderCard';
+export * from './orders/orderCardConfig';
 
 // Feedback & Interaction
 export { default as Tooltip } from './Tooltip';

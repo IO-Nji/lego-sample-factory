@@ -8,9 +8,9 @@ import {
   StatisticsGrid, 
   Button, 
   Card, 
-  Badge,
-  ProductionControlOrderCard 
+  Badge
 } from "../../components";
+import UnifiedOrderCard, { ORDER_TYPES, ACTION_TYPES } from "../../components/orders/UnifiedOrderCard";
 import "../../styles/DashboardLayout.css";
 
 function ProductionControlDashboard() {
@@ -348,16 +348,19 @@ function ProductionControlDashboard() {
       searchKeys={['controlOrderNumber', 'assemblyInstructions']}
       sortKey="controlOrderNumber"
       renderCard={(order) => (
-        <ProductionControlOrderCard
+        <UnifiedOrderCard
           key={order.id}
+          orderType={ORDER_TYPES.PRODUCTION_CONTROL}
           order={order}
-          onConfirm={handleConfirmOrder}
-          onStart={handleStartProduction}
-          onComplete={handleCompleteProduction}
-          onHalt={(orderId) => handleHaltProduction(orderId, "Operator initiated halt")}
-          onRequestParts={handleCreateSupplyOrder}
-          onDispatch={handleDispatchToWorkstation}
-          onViewDetails={handleViewDetails}
+          onAction={(action, orderId) => {
+            if (action === ACTION_TYPES.CONFIRM) handleConfirmOrder(orderId);
+            else if (action === ACTION_TYPES.START) handleStartProduction(orderId);
+            else if (action === ACTION_TYPES.COMPLETE) handleCompleteProduction(orderId);
+            else if (action === ACTION_TYPES.HALT) handleHaltProduction(orderId, "Operator initiated halt");
+            else if (action === ACTION_TYPES.REQUEST_PARTS) handleCreateSupplyOrder(order);
+            else if (action === ACTION_TYPES.DISPATCH) handleDispatchToWorkstation(order);
+            else if (action === ACTION_TYPES.VIEW_DETAILS) handleViewDetails(order);
+          }}
         />
       )}
       searchPlaceholder="Search by order number..."

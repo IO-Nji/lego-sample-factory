@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
 import { StandardDashboardLayout, StatisticsGrid, InventoryTable, ActivityLog, OrdersSection, Card } from "../../components";
-import WarehouseOrderCard from "../../components/WarehouseOrderCard";
+import UnifiedOrderCard, { ORDER_TYPES, ACTION_TYPES } from "../../components/orders/UnifiedOrderCard";
 import { getInventoryStatusColor, generateAcronym } from "../../utils/dashboardHelpers";
 import { useInventoryDisplay } from "../../hooks/useInventoryDisplay";
 import { useActivityLog } from "../../hooks/useActivityLog";
@@ -16,6 +16,7 @@ function ModulesSupermarketDashboard() {
     inventory, 
     masterdata: modules,
     getItemName: getModuleName,
+    getStockLevel,
     fetchInventory 
   } = useInventoryDisplay('MODULE', 8);
   
@@ -386,21 +387,29 @@ function ModulesSupermarketDashboard() {
         { value: 'status', label: 'Status' }
       ]}
       renderCard={(order) => (
-        <WarehouseOrderCard
+        <UnifiedOrderCard
           key={order.id}
+          orderType={ORDER_TYPES.WAREHOUSE_ORDER}
           order={order}
-          onConfirm={handleConfirmOrder}
-          onFulfill={handleFulfillOrder}
-          onCancel={handleCancel}
-          onCreateProductionOrder={handleCreateProductionOrder}
-          onSelectPriority={handleSelectPriority}
-          needsProduction={checkIfProductionNeeded(order)}
-          isProcessing={fulfillmentInProgress[order.id]}
-          isConfirming={confirmationInProgress[order.id]}
-          showPrioritySelection={prioritySelectionMode[order.id]}
-          creatingOrder={creatingProductionOrder}
-          notificationMessage={orderMessages[order.id]}
-          getProductDisplayName={getModuleDisplayName}
+          onAction={(actionType, orderId, payload) => {
+            const orderNum = order.orderNumber || order.warehouseOrderNumber || `ID-${order.id}`;
+            switch (actionType) {
+              case ACTION_TYPES.CONFIRM:
+                return handleConfirmOrder(orderId, orderNum);
+              case ACTION_TYPES.FULFILL:
+                return handleFulfillOrder(orderId, orderNum);
+              case ACTION_TYPES.REQUEST_PRODUCTION:
+                return handleCreateProductionOrder(order);
+              case ACTION_TYPES.CANCEL:
+                return handleCancel(orderId);
+              default:
+                console.warn('Unhandled action:', actionType);
+            }
+          }}
+          isProcessing={fulfillmentInProgress[order.id] || confirmationInProgress[order.id]}
+          notification={orderMessages[order.id]}
+          getItemName={getModuleDisplayName}
+          getStockLevel={getStockLevel}
         />
       )}
       searchPlaceholder="Search by order number..."

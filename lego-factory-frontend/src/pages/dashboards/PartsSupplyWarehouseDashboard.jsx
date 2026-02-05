@@ -11,6 +11,7 @@ import {
   Card, 
   Badge 
 } from "../../components";
+import UnifiedOrderCard, { ORDER_TYPES, ACTION_TYPES } from "../../components/orders/UnifiedOrderCard";
 import { useInventoryDisplay } from "../../hooks/useInventoryDisplay";
 import "../../styles/DashboardLayout.css";
 
@@ -221,77 +222,24 @@ function PartsSupplyWarehouseDashboard() {
       searchKeys={['supplyOrderNumber', 'notes']}
       sortKey="supplyOrderNumber"
       renderCard={(order) => (
-        <Card key={order.id} variant="default">
-          <div style={{ padding: "1rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.75rem" }}>
-              <div>
-                <h3 style={{ fontWeight: "600", fontSize: "1rem", marginBottom: "0.25rem" }}>
-                  {order.supplyOrderNumber}
-                </h3>
-                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-                  <Badge variant={
-                    order.status === "FULFILLED" ? "success" : 
-                    order.status === "REJECTED" ? "danger" : 
-                    order.status === "CANCELLED" ? "secondary" :
-                    order.status === "IN_PROGRESS" ? "info" : "warning"
-                  }>
-                    {order.status}
-                  </Badge>
-                  <Badge variant={order.sourceControlOrderType === "PRODUCTION" ? "primary" : "info"}>
-                    {order.sourceControlOrderType || 'SUPPLY'}
-                  </Badge>
-                  {order.priority && (
-                    <Badge variant={
-                      order.priority === "URGENT" ? "danger" :
-                      order.priority === "HIGH" ? "warning" : "secondary"
-                    }>
-                      {order.priority}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.75rem" }}>
-              <div><strong>Workstation:</strong> WS-{order.requestingWorkstationId}</div>
-              <div><strong>Items:</strong> {order.supplyOrderItems?.length || 0} part types</div>
-              {order.requestedByTime && (
-                <div><strong>Requested By:</strong> {new Date(order.requestedByTime).toLocaleString()}</div>
-              )}
-              {order.notes && (
-                <div style={{ marginTop: "0.5rem", fontStyle: "italic" }}>{order.notes}</div>
-              )}
-            </div>
-
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              <Button 
-                variant="secondary" 
-                size="small" 
-                onClick={() => handleViewDetails(order)}
-              >
-                View Details
-              </Button>
-              {order.status === "PENDING" && (
-                <>
-                  <Button 
-                    variant="success" 
-                    size="small"
-                    onClick={() => handleFulfillOrder(order.id)}
-                  >
-                    Fulfill
-                  </Button>
-                  <Button 
-                    variant="danger" 
-                    size="small"
-                    onClick={() => handleRejectOrder(order.id)}
-                  >
-                    Reject
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </Card>
+        <UnifiedOrderCard
+          key={order.id}
+          orderType={ORDER_TYPES.SUPPLY}
+          order={{
+            ...order,
+            // Map supply order fields to unified structure
+            orderNumber: order.supplyOrderNumber,
+            fromWorkstation: 9, // Parts Supply
+            toWorkstation: order.requestingWorkstationId,
+            items: order.supplyOrderItems || [],
+          }}
+          onAction={(action, orderId) => {
+            if (action === ACTION_TYPES.FULFILL) handleFulfillOrder(orderId);
+            else if (action === ACTION_TYPES.REJECT) handleRejectOrder(orderId);
+            else if (action === ACTION_TYPES.VIEW_DETAILS) handleViewDetails(order);
+          }}
+          getItemName={getItemName}
+        />
       )}
       emptyMessage="Orders will appear here when production/assembly control requests parts"
       searchPlaceholder="Search by order number or notes..."

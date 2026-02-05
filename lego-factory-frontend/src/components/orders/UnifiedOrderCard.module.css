@@ -1,0 +1,560 @@
+/* ═══════════════════════════════════════════════════════════════
+   UNIFIED ORDER CARD - CSS Module
+   Extracted from UnifiedOrderCard.mockup.html
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════════════════════════════ */
+.orderCard {
+  /* Card dimensions - COMPACT */
+  --card-width: 280px;
+  --card-min-height: 120px;
+  --card-padding: 0.5rem;
+  --card-padding-sm: 0.35rem;
+  --card-gap: 0.25rem;
+  --card-border-radius: 8px;
+  
+  /* Typography - MINIMAL but smooth */
+  --font-size-2xs: 0.55rem;
+  --font-size-xs: 0.6rem;
+  --font-size-sm: 0.65rem;
+  --font-size-base: 0.7rem;
+  --font-size-lg: 0.75rem;
+  --line-height: 1.3;
+  
+  /* Zone heights - TIGHT */
+  --header-height: 32px;
+  --item-row-height: 18px;
+  --timestamp-row-height: 14px;
+  --action-zone-height: 28px;
+  
+  /* Order type colors */
+  --color-customer: #2c5aa0;
+  --color-warehouse: #7c3aed;
+  --color-production: #059669;
+  --color-control-prod: #dc2626;
+  --color-control-asm: #f59e0b;
+  --color-workstation: #6366f1;
+  --color-supply: #0891b2;
+  --color-final-assembly: #ec4899;
+  
+  /* Status colors */
+  --status-pending: #6b7280;
+  --status-confirmed: #3b82f6;
+  --status-in-progress: #f59e0b;
+  --status-completed: #10b981;
+  --status-error: #ef4444;
+  --status-waiting: #8b5cf6;
+  
+  /* Priority colors */
+  --priority-urgent: #ef4444;
+  --priority-high: #f59e0b;
+  --priority-normal: #6b7280;
+  --priority-low: #9ca3af;
+  
+  /* Scenario colors */
+  --scenario-s1: #10b981;
+  --scenario-s2: #3b82f6;
+  --scenario-s3: #f59e0b;
+  --scenario-s4: #ef4444;
+  
+  /* Background & borders */
+  --bg-card: #ffffff;
+  --bg-zone: #fafafa;
+  --border-color: #e5e7eb;
+  --border-light: #f0f0f0;
+  
+  /* Shadows - SUBTLE */
+  --shadow-md: 0 2px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-hover: 0 4px 8px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
+.orderCard {
+  width: var(--card-width);
+  min-height: var(--card-min-height);
+  background: var(--bg-card);
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  line-height: var(--line-height);
+  position: relative;
+  border-left: 2px solid transparent;
+}
+
+.orderCard:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+
+/* Order type border colors */
+.orderCard.customer { border-left-color: var(--color-customer); }
+.orderCard.warehouse { border-left-color: var(--color-warehouse); }
+.orderCard.production { border-left-color: var(--color-production); }
+.orderCard.controlProd { border-left-color: var(--color-control-prod); }
+.orderCard.controlAsm { border-left-color: var(--color-control-asm); }
+.orderCard.workstation { border-left-color: var(--color-workstation); }
+.orderCard.supply { border-left-color: var(--color-supply); }
+.orderCard.finalAssembly { border-left-color: var(--color-final-assembly); }
+
+/* ═══════════════════════════════════════════════════════════════
+   HEADER ZONE
+   ═══════════════════════════════════════════════════════════════ */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--card-padding);
+  border-bottom: 1px solid var(--border-light);
+  min-height: var(--header-height);
+  gap: 0.35rem;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.orderIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+  color: white;
+}
+
+.orderIcon.customer { background: var(--color-customer); }
+.orderIcon.warehouse { background: var(--color-warehouse); }
+.orderIcon.production { background: var(--color-production); }
+.orderIcon.controlProd { background: var(--color-control-prod); }
+.orderIcon.controlAsm { background: var(--color-control-asm); }
+.orderIcon.workstation { background: var(--color-workstation); }
+.orderIcon.supply { background: var(--color-supply); }
+.orderIcon.finalAssembly { background: var(--color-final-assembly); }
+
+.orderInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.orderNumber {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.orderSubtitle {
+  font-size: var(--font-size-2xs);
+  color: #6b7280;
+  margin-top: 1px;
+}
+
+.headerRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.headerBadges {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BADGES
+   ═══════════════════════════════════════════════════════════════ */
+.badge {
+  font-size: var(--font-size-2xs);
+  font-weight: 500;
+  padding: 1px 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Status badges */
+.badgeStatus {
+  color: white;
+}
+.badgeStatus.pending { background: var(--status-pending); }
+.badgeStatus.confirmed { background: var(--status-confirmed); }
+.badgeStatus.inProgress { background: var(--status-in-progress); }
+.badgeStatus.completed { background: var(--status-completed); }
+.badgeStatus.error { background: var(--status-error); }
+.badgeStatus.waiting { background: var(--status-waiting); }
+
+/* Priority badges */
+.badgePriority {
+  background: transparent;
+  border: 1px solid currentColor;
+}
+.badgePriority.urgent { color: var(--priority-urgent); }
+.badgePriority.high { color: var(--priority-high); }
+.badgePriority.normal { color: var(--priority-normal); }
+.badgePriority.low { color: var(--priority-low); }
+
+/* Scenario badges */
+.badgeScenario {
+  color: white;
+  font-weight: 600;
+  min-width: 18px;
+  text-align: center;
+}
+.badgeScenario.s1 { background: var(--scenario-s1); }
+.badgeScenario.s2 { background: var(--scenario-s2); }
+.badgeScenario.s3 { background: var(--scenario-s3); }
+.badgeScenario.s4 { background: var(--scenario-s4); }
+
+/* ═══════════════════════════════════════════════════════════════
+   ITEMS ZONE
+   ═══════════════════════════════════════════════════════════════ */
+.items {
+  padding: var(--card-padding-sm) var(--card-padding);
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-zone);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--item-row-height);
+  gap: 0.25rem;
+  padding: 1px 0;
+}
+
+.itemLeft {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.itemIcon {
+  font-size: 0.6rem;
+  opacity: 0.7;
+}
+
+.itemName {
+  font-size: var(--font-size-xs);
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.itemQty {
+  font-size: var(--font-size-xs);
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+}
+
+.itemQtyFulfilled {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.itemQtyPartial {
+  color: #f59e0b;
+}
+
+.stockIndicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.5rem;
+}
+
+.stockAvailable {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.stockPartial {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.stockUnavailable {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.itemsExpand {
+  font-size: var(--font-size-2xs);
+  color: #6b7280;
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: center;
+}
+
+.itemsExpand:hover {
+  color: #3b82f6;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   WORKSTATION FLOW (Supply Orders)
+   ═══════════════════════════════════════════════════════════════ */
+.workstationFlow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 3px var(--card-padding);
+  background: var(--bg-zone);
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--font-size-xs);
+}
+
+.wsBadge {
+  background: #e0e7ff;
+  color: #4338ca;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 500;
+  font-size: var(--font-size-2xs);
+}
+
+.flowArrow {
+  color: #9ca3af;
+  font-size: var(--font-size-xs);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TIMESTAMPS ZONE
+   ═══════════════════════════════════════════════════════════════ */
+.timestamps {
+  padding: var(--card-padding-sm) var(--card-padding);
+  border-bottom: 1px solid var(--border-light);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px 8px;
+}
+
+.timestampItem {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: var(--timestamp-row-height);
+}
+
+.timestampLabel {
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+  color: #9ca3af;
+  min-width: 18px;
+}
+
+.timestampValue {
+  font-size: var(--font-size-2xs);
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+}
+
+.timestampOverdue {
+  color: #ef4444;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NOTES ZONE
+   ═══════════════════════════════════════════════════════════════ */
+.notes {
+  padding: var(--card-padding-sm) var(--card-padding);
+  border-bottom: 1px solid var(--border-light);
+  background: #fffbeb;
+}
+
+.notesContent {
+  font-size: var(--font-size-2xs);
+  color: #92400e;
+  display: flex;
+  gap: 4px;
+}
+
+.notesIcon {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+}
+
+.notesText {
+  line-height: 1.3;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NOTIFICATION ZONE
+   ═══════════════════════════════════════════════════════════════ */
+.notification {
+  padding: 3px var(--card-padding);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-2xs);
+}
+
+.notificationSuccess {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.notificationInfo {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.notificationWarning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.notificationError {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ACTIONS ZONE
+   ═══════════════════════════════════════════════════════════════ */
+.actions {
+  padding: var(--card-padding-sm) var(--card-padding);
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: auto;
+  min-height: var(--action-zone-height);
+}
+
+.btn {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnPrimary {
+  background: #2563eb;
+  color: white;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btnSecondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid var(--border-color);
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.btnSuccess {
+  background: #059669;
+  color: white;
+}
+
+.btnSuccess:hover:not(:disabled) {
+  background: #047857;
+}
+
+.btnWarning {
+  background: #f59e0b;
+  color: white;
+}
+
+.btnWarning:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.btnDanger {
+  background: #ef4444;
+  color: white;
+}
+
+.btnDanger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   COMPACT VARIANT
+   ═══════════════════════════════════════════════════════════════ */
+.orderCard.compact {
+  --card-padding: 0.35rem;
+  --card-padding-sm: 0.25rem;
+  --card-gap: 0.15rem;
+  --header-height: 26px;
+  --item-row-height: 16px;
+  --font-size-2xs: 0.5rem;
+  --font-size-xs: 0.55rem;
+  --font-size-sm: 0.6rem;
+  --font-size-base: 0.65rem;
+}
+
+.orderCard.compact .orderIcon {
+  width: 16px;
+  height: 16px;
+  font-size: 0.55rem;
+}
+
+.orderCard.compact .btn {
+  padding: 2px 6px;
+  font-size: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PROCESSING STATE (Loading overlay)
+   ═══════════════════════════════════════════════════════════════ */
+.orderCard.processing::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
