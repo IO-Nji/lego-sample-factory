@@ -183,8 +183,8 @@
   gap: 1.5rem;
   max-width: 1800px;
   margin: 0 auto;
-  padding: 1rem 1.5rem;
-  align-items: stretch;
+  padding: 0 1.5rem;
+  align-items: center;
 }
 
 /* Row 2: Core Features (Products + Flow Diagram + Architecture) - 3 columns */
@@ -266,6 +266,9 @@
   flex: 2 1 50%;
   min-width: 0; /* Allow shrinking on mobile */
   max-width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* System Description */
@@ -282,7 +285,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: stretch;
 }
 
 /* Login Section (Legacy) */

@@ -348,7 +348,7 @@ function HomePage() {
               </div>
               <div className="overview-body">
                 <p>The <strong>LIFE System</strong> (LEGO Integrated Factory Execution) is an enterprise-grade digital manufacturing execution system built to demonstrate academic research in industrial engineering. This platform digitizes end-to-end supply chain operations across <strong>nine autonomous workstations</strong>, coordinating complex production workflows from raw materials to finished products. Supporting <strong>four distinct business scenarios</strong>, it handles direct fulfillment, warehouse replenishment, full production cycles, and high-volume batch processing with real-time inventory tracking.</p>
-                <p>Login with username <strong>lego_admin</strong> to access the Admin Dashboard for a complete overview of system state and operations.</p>
+                <p><strong>Quick Login:</strong> Use password <code>password</code> for all accounts. Login as <strong>lego_admin</strong> for admin access, or hover over workstation cards below to see usernames.</p>
               </div>
               <div className="overview-metrics">
                 <div className="metric-box">
@@ -380,7 +380,7 @@ function HomePage() {
 
           {/* Column 3: Login Form */}
           <div className="home-login-column">
-            <LoginForm embedded={true} showHeader={true} showHelpText={true} />
+            <LoginForm embedded={true} showHeader={true} showHelpText={false} />
           </div>
         </div>
 
@@ -575,11 +575,14 @@ function HomePage() {
                 </div>
               </div>
 
-              {/* Arrow: Customer → Warehouse Order */}
+              {/* Arrow: Customer ↔ Warehouse Order */}
               <div className="layer-connector">
-                <div className="connector-vertical">
-                  <span className="connector-line-v"></span>
-                  <span className="connector-text">Creates</span>
+                <div className="connector-vertical bidirectional">
+                  <span className="arrow-down">▼</span>
+                  <span className="label-down">📋 Orders</span>
+                  <span className="connector-divider"></span>
+                  <span className="label-up">📦 Products</span>
+                  <span className="arrow-up">▲</span>
                 </div>
               </div>
 
@@ -602,7 +605,7 @@ function HomePage() {
                       <div className="branch-path production-needed vertical-branch">
                         <span className="path-label">✗ Need Production</span>
                         <span className="path-arrow">↓</span>
-                        <span className="scenario-indicator s3-4">S3/S4</span>
+                        <span className="scenario-indicator s3">S3</span>
                       </div>
                     </div>
                     <div className="flow-connector-enhanced success-path">
@@ -619,17 +622,21 @@ function HomePage() {
                       <div className="flow-node-enhanced assembly-node" data-tooltip="Combines modules into finished products ready for shipment&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 final_assembly">
                         <span className="node-icon">🔨</span>
                         <span className="node-label">Final Assembly</span>
+                        <span className="stage-output">→ Products</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Arrow: Warehouse → Production Order */}
+              {/* Arrow: Warehouse ↔ Production Order */}
               <div className="layer-connector">
-                <div className="connector-vertical">
-                  <span className="connector-line-v"></span>
-                  <span className="connector-text">Triggers</span>
+                <div className="connector-vertical bidirectional">
+                  <span className="arrow-down">▼</span>
+                  <span className="label-down">📋 Orders</span>
+                  <span className="connector-divider"></span>
+                  <span className="label-up">🧩 Modules</span>
+                  <span className="arrow-up">▲</span>
                 </div>
               </div>
 
@@ -658,6 +665,7 @@ function HomePage() {
                   <div className="pipeline-stage-v2 supply" data-tooltip="Distributes raw materials and components to workstations&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 parts_supply">
                     <span className="stage-icon">📦</span>
                     <span className="stage-label">Parts Supply</span>
+                    <span className="stage-output">→ Parts</span>
                   </div>
                   <span className="pipeline-arrow-v2">→</span>
 
@@ -665,7 +673,7 @@ function HomePage() {
                   <div className="pipeline-stage-v2 manufacturing" data-tooltip="Produces parts through injection molding, pre-production, and finishing&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 injection_molding&#10;👤 parts_preproduction&#10;👤 part_finishing">
                     <span className="stage-icon">🔧</span>
                     <span className="stage-label">Manufacturing</span>
-                    <span className="stage-output">→ Parts</span>
+                    <span className="stage-output">→ Modules</span>
                   </div>
                   <span className="pipeline-arrow-v2">→</span>
 
@@ -939,36 +947,36 @@ function HomePage() {
           <div className="home-highlights-column">
             <div className="glass-card">
               <h3 className="section-title">✨ Feature Highlights</h3>
-              <div className="highlights-grid">
-                <div className="feature-highlight-card">
-                  <div className="feature-highlight-icon">🏗️</div>
-                  <div className="feature-highlight-content">
-                    <h4 className="feature-highlight-title">Microservices</h4>
-                    <p className="feature-highlight-description">6 Spring Boot services with isolated databases</p>
+              <div className="nav-grid">
+                <div className="navigation-item">
+                  <span className="nav-icon">🏗️</span>
+                  <div className="nav-content">
+                    <strong>Microservices</strong>
+                    <p>6 Spring Boot services with isolated databases</p>
                   </div>
                 </div>
                 
-                <div className="feature-highlight-card">
-                  <div className="feature-highlight-icon">🔐</div>
-                  <div className="feature-highlight-content">
-                    <h4 className="feature-highlight-title">Enterprise Security</h4>
-                    <p className="feature-highlight-description">JWT authentication with 9-role RBAC</p>
+                <div className="navigation-item">
+                  <span className="nav-icon">🔐</span>
+                  <div className="nav-content">
+                    <strong>Enterprise Security</strong>
+                    <p>JWT authentication with 9-role RBAC</p>
                   </div>
                 </div>
                 
-                <div className="feature-highlight-card">
-                  <div className="feature-highlight-icon">⚡</div>
-                  <div className="feature-highlight-content">
-                    <h4 className="feature-highlight-title">Modern Stack</h4>
-                    <p className="feature-highlight-description">Java 21, Spring Boot 3.4, React 18, Vite</p>
+                <div className="navigation-item">
+                  <span className="nav-icon">⚡</span>
+                  <div className="nav-content">
+                    <strong>Modern Stack</strong>
+                    <p>Java 21, Spring Boot 3.4, React 18, Vite</p>
                   </div>
                 </div>
                 
-                <div className="feature-highlight-card">
-                  <div className="feature-highlight-icon">📊</div>
-                  <div className="feature-highlight-content">
-                    <h4 className="feature-highlight-title">SimAL Integration</h4>
-                    <p className="feature-highlight-description">Interactive Gantt charts for scheduling</p>
+                <div className="navigation-item">
+                  <span className="nav-icon">📊</span>
+                  <div className="nav-content">
+                    <strong>SimAL Integration</strong>
+                    <p>Interactive Gantt charts for scheduling</p>
                   </div>
                 </div>
               </div>

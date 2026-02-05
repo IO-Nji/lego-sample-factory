@@ -43,10 +43,17 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
      * SECURITY NOTE (Issue #2 Fix - Feb 4, 2026):
      * Removed all workstation endpoints from public paths.
      * Only truly public endpoints (login, health, docs) are allowed.
+     * 
+     * UPDATE (Feb 5, 2026): Added masterdata endpoints as public for homepage display.
      */
     private final List<String> publicPaths = List.of(
         // Authentication - must be public for login
         "/api/auth/login",
+        
+        // Masterdata - public for homepage product showcase
+        "/api/masterdata/products",
+        "/api/masterdata/products/*/modules",
+        "/api/masterdata/modules/*/parts",
         
         // Health checks - for load balancers and monitoring
         "/api/health",
