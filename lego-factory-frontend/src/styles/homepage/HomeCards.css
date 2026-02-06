@@ -57,7 +57,7 @@
   backdrop-filter: blur(14px);
   border: 1.5px solid rgba(59, 130, 246, 0.25);
   border-radius: 14px;
-  padding: 1rem 1.2rem;
+  padding: 10% 1.2rem;
   height: auto;
   align-self: center;
   display: flex;
@@ -968,6 +968,121 @@
   margin: 0;
   padding-top: 0.5rem;
   border-top: 1px dashed rgba(44, 90, 160, 0.15);
+}
+
+/* ============================================================================
+   QUICK START COMPACT CARD (2x2 Grid - Row 2)
+   ============================================================================ */
+.quickstart-compact-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0.1rem;
+  margin-bottom: 0.15rem;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.quickstart-compact-card .section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2c5aa0;
+  margin: 0 0 0.4rem 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid rgba(44, 90, 160, 0.2);
+  text-align: center;
+}
+
+.quickstart-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 0.5rem;
+  padding: 0;
+  justify-items: center;
+  align-items: center;
+}
+
+.quickstart-item-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0;
+  background: rgba(44, 90, 160, 0.04);
+  border-radius: 50%;
+  border: 1px solid rgba(44, 90, 160, 0.08);
+  transition: all 0.2s ease;
+  text-align: center;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  width: 75%;
+  max-width: 75%;
+  overflow: hidden;
+}
+
+.quickstart-item-compact:hover {
+  background: rgba(44, 90, 160, 0.08);
+  border-color: rgba(44, 90, 160, 0.15);
+  transform: translateY(-1px);
+}
+
+.quickstart-item-compact .quickstart-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.quickstart-item-compact .quickstart-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  width: 100%;
+  padding: 0;
+}
+
+.quickstart-item-compact .quickstart-info strong {
+  font-size: 0.9rem;
+  color: #2c5aa0;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.quickstart-item-compact .quickstart-info span {
+  font-size: 0.65rem;
+  color: #555;
+  line-height: 1.1;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.quickstart-item-compact .quickstart-info code {
+  background: rgba(44, 90, 160, 0.12);
+  padding: 0.05rem 0.15rem;
+  border-radius: 3px;
+  font-size: 0.6rem;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-weight: 600;
+}
+
+/* ============================================================================
+   FEATURE HIGHLIGHTS HORIZONTAL (Full Width Row 3)
+   ============================================================================ */
+.home-highlights-column.full-width {
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: 100%;
+}
+
+.nav-grid.highlights-horizontal {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
 }
 
 /* ============================================================================

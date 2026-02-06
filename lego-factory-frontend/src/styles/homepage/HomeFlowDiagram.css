@@ -15,10 +15,13 @@
 }
 
 .home-flow-column .section-title {
-  font-size: 0.9rem;
-  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2c5aa0;
+  margin: 0 0 0.4rem 0;
   padding-bottom: 0.25rem;
-  border-bottom: 2px solid rgba(44, 90, 160, 0.15);
+  border-bottom: 2px solid rgba(44, 90, 160, 0.2);
+  text-align: center;
 }
 
 /* ============================================================================
@@ -1439,7 +1442,7 @@
   padding: 0.2rem 0.4rem;
   background: linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 152, 0, 0.2) 100%);
   border: 1px solid rgba(255, 152, 0, 0.4);
-  border-radius: 4px;
+  border-radius: 9999px;
   animation: pulse-subtle 2s ease-in-out infinite;
 }
 
@@ -1478,6 +1481,7 @@
 .branch-path.vertical-branch {
   flex-direction: row;
   justify-content: center;
+  border-radius: 9999px;
 }
 
 /* Enhanced Flow Nodes - Horizontal Layout */
@@ -1608,15 +1612,23 @@
   color: #7b1fa2;
 }
 
+/* Node text wrapper for stacking label and output on separate lines */
+.flow-node-enhanced .node-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 /* Flow Connectors */
 .flow-connector-enhanced {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
+  gap: 0.15rem;
   position: relative;
-  padding: 0 0.3rem;
-  min-width: 50px;
-  flex-shrink: 1;
+  padding: 0 0.2rem;
+  min-width: auto;
+  flex-shrink: 0;
 }
 
 .flow-connector-enhanced .connector-line {
@@ -1624,23 +1636,22 @@
   height: 2px;
   background: #4caf50;
   border-radius: 1px;
-  flex-shrink: 1;
+  flex-shrink: 0;
 }
 
 .flow-connector-enhanced .connector-label {
-  position: absolute;
-  top: -18px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: static;
+  transform: none;
   font-size: 0.48rem;
   font-weight: 600;
   color: #555;
   text-transform: uppercase;
   white-space: nowrap;
   background: rgba(255, 255, 255, 0.95);
-  padding: 0.1rem 0.35rem;
+  padding: 0.1rem 0.25rem;
   border-radius: 3px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  order: -1;
 }
 
 .flow-connector-enhanced .connector-arrow {
@@ -1970,6 +1981,13 @@
   color: #4caf50;
 }
 
+/* Stage text wrapper for stacking label and output on separate lines */
+.pipeline-stage-v2 .stage-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .pipeline-arrow-v2 {
   font-size: 0.75rem;
   font-weight: bold;
@@ -1992,7 +2010,7 @@
   gap: 0.2rem;
   font-size: 0.65rem;
   padding: 0.3rem 0.6rem;
-  border-radius: 5px;
+  border-radius: 9999px;
   background: rgba(33, 150, 243, 0.08);
   border: 1px solid rgba(33, 150, 243, 0.3);
 }
@@ -2000,6 +2018,7 @@
 .output-path.direct {
   background: rgba(255, 87, 34, 0.08);
   border-color: rgba(255, 87, 34, 0.2);
+  border-radius: 9999px;
 }
 
 .output-path .output-arrow {

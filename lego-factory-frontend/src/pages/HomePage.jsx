@@ -385,11 +385,47 @@ function HomePage() {
         </div>
 
         {/* ================================================================
-            ROW 2: Products | Order Fulfillment Flow | Microservices Architecture
+            ROW 2: Quick Start + Products | Order Fulfillment Flow | Microservices Architecture
             ================================================================ */}
         <div className="home-features-row">
-          {/* Column 1: Products - Portrait Cards */}
+          {/* Column 1: Quick Start Guide + Products - Stacked */}
           <div className="home-products-column">
+            {/* Quick Start Guide - Compact 2x2 Grid */}
+            <div className="glass-card quickstart-compact-card">
+              <h3 className="section-title">📋 Quick Start</h3>
+              <div className="quickstart-grid-compact">
+                <div className="quickstart-item-compact">
+                  <span className="quickstart-icon">🔑</span>
+                  <div className="quickstart-info">
+                    <strong>Login</strong>
+                    <span>Password: <code>password</code></span>
+                  </div>
+                </div>
+                <div className="quickstart-item-compact">
+                  <span className="quickstart-icon">👥</span>
+                  <div className="quickstart-info">
+                    <strong>Roles</strong>
+                    <span>9 specialized roles</span>
+                  </div>
+                </div>
+                <div className="quickstart-item-compact">
+                  <span className="quickstart-icon">📦</span>
+                  <div className="quickstart-info">
+                    <strong>Operations</strong>
+                    <span>Orders & inventory</span>
+                  </div>
+                </div>
+                <div className="quickstart-item-compact">
+                  <span className="quickstart-icon">🔄</span>
+                  <div className="quickstart-info">
+                    <strong>Real-time</strong>
+                    <span>Auto-refresh 5-30s</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Products - Portrait Cards */}
             <div className="glass-card products-column-card">
               <h3 className="section-title">🧱 Products</h3>
               {loadingProducts ? (
@@ -417,7 +453,7 @@ function HomePage() {
                             onClick={() => handleBomToggle(product)}
                             title="View Bill of Materials"
                           >
-                            📋 Components
+                            �️ VIEW
                           </button>
                         </div>
                       </div>
@@ -598,8 +634,10 @@ function HomePage() {
                     <div className="modules-decision-wrapper">
                       <div className="flow-node-enhanced modules-node" data-tooltip="Stores pre-assembled modules and fulfills internal warehouse orders&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 modules_supermarket">
                         <span className="node-icon">🏢</span>
-                        <span className="node-label">Modules Supermarket</span>
-                        <span className="node-sublabel">Module Check</span>
+                        <div className="node-text-wrapper">
+                          <span className="node-label">Modules Supermarket</span>
+                          <span className="node-sublabel">Module Check</span>
+                        </div>
                       </div>
                       {/* Escalation path below Modules Supermarket */}
                       <div className="branch-path production-needed vertical-branch">
@@ -621,8 +659,10 @@ function HomePage() {
                       </div>
                       <div className="flow-node-enhanced assembly-node" data-tooltip="Combines modules into finished products ready for shipment&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 final_assembly">
                         <span className="node-icon">🔨</span>
-                        <span className="node-label">Final Assembly</span>
-                        <span className="stage-output">→ Products</span>
+                        <div className="node-text-wrapper">
+                          <span className="node-label">Final Assembly</span>
+                          <span className="stage-output">→ Products</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -664,24 +704,30 @@ function HomePage() {
                   {/* Parts Supply */}
                   <div className="pipeline-stage-v2 supply" data-tooltip="Distributes raw materials and components to workstations&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 parts_supply">
                     <span className="stage-icon">📦</span>
-                    <span className="stage-label">Parts Supply</span>
-                    <span className="stage-output">→ Parts</span>
+                    <div className="stage-text-wrapper">
+                      <span className="stage-label">Parts Supply</span>
+                      <span className="stage-output">→ Parts</span>
+                    </div>
                   </div>
                   <span className="pipeline-arrow-v2">→</span>
 
                   {/* Manufacturing Stage */}
                   <div className="pipeline-stage-v2 manufacturing" data-tooltip="Produces parts through injection molding, pre-production, and finishing&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 injection_molding&#10;👤 parts_preproduction&#10;👤 part_finishing">
                     <span className="stage-icon">🔧</span>
-                    <span className="stage-label">Manufacturing</span>
-                    <span className="stage-output">→ Modules</span>
+                    <div className="stage-text-wrapper">
+                      <span className="stage-label">Manufacturing</span>
+                      <span className="stage-output">→ Modules</span>
+                    </div>
                   </div>
                   <span className="pipeline-arrow-v2">→</span>
 
                   {/* Assembly Stage */}
                   <div className="pipeline-stage-v2 assembly" data-tooltip="Assembles gear and motor modules from manufactured parts&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 gear_assembly&#10;👤 motor_assembly">
                     <span className="stage-icon">⚙️</span>
-                    <span className="stage-label">Assembly</span>
-                    <span className="stage-output">→ Modules</span>
+                    <div className="stage-text-wrapper">
+                      <span className="stage-label">Assembly</span>
+                      <span className="stage-output">→ Modules</span>
+                    </div>
                   </div>
                 </div>
                 
@@ -900,54 +946,14 @@ function HomePage() {
         </div>
 
         {/* ================================================================
-            ROW 3: Quick Navigation Guide | Feature Highlights
+            ROW 3: Feature Highlights
             ================================================================ */}
         <div className="home-guide-row">
-          {/* Column 1: Navigation Guide */}
-          <div className="home-navigation-column">
-            <div className="glass-card">
-              <h3 className="section-title">📋 Quick Start Guide</h3>
-              <div className="nav-grid">
-                <div className="navigation-item">
-                  <span className="nav-icon">🔑</span>
-                  <div className="nav-content">
-                    <strong>Login</strong>
-                    <p>Hover over workstation cards to see usernames. Password: <code>password</code></p>
-                  </div>
-                </div>
-                
-                <div className="navigation-item">
-                  <span className="nav-icon">👥</span>
-                  <div className="nav-content">
-                    <strong>User Roles</strong>
-                    <p>9 specialized roles with dedicated dashboards for each function</p>
-                  </div>
-                </div>
-                
-                <div className="navigation-item">
-                  <span className="nav-icon">📦</span>
-                  <div className="nav-content">
-                    <strong>Operations</strong>
-                    <p>Customer orders, production planning, inventory, and supply chain</p>
-                  </div>
-                </div>
-                
-                <div className="navigation-item">
-                  <span className="nav-icon">🔄</span>
-                  <div className="nav-content">
-                    <strong>Real-time</strong>
-                    <p>Dashboard auto-refresh every 5-30 seconds depending on view</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Column 2: Feature Highlights */}
-          <div className="home-highlights-column">
+          {/* Column 1: Feature Highlights - Full Width */}
+          <div className="home-highlights-column full-width">
             <div className="glass-card">
               <h3 className="section-title">✨ Feature Highlights</h3>
-              <div className="nav-grid">
+              <div className="nav-grid highlights-horizontal">
                 <div className="navigation-item">
                   <span className="nav-icon">🏗️</span>
                   <div className="nav-content">
