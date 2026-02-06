@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import DashboardPage from "./DashboardPage";
 import LoginForm from "../components/LoginForm";
 import FeatureCard from "../components/FeatureCard";
@@ -82,15 +83,32 @@ function HomePage() {
         const modulesResponse = await api.get(`/masterdata/products/${product.id}/modules`);
         const modulesData = modulesResponse.data || [];
         
-        // Fetch parts for each module
+        // Fetch parts for each module - API returns componentId, componentName
         const modulesWithParts = await Promise.all(
           modulesData.map(async (module) => {
             try {
-              const partsResponse = await api.get(`/masterdata/modules/${module.id}/parts`);
-              return { ...module, parts: partsResponse.data || [] };
+              // Use componentId to fetch parts for this module
+              const partsResponse = await api.get(`/masterdata/modules/${module.componentId}/parts`);
+              const partsData = partsResponse.data || [];
+              // Map API response fields to expected names
+              return {
+                id: module.componentId,
+                name: module.componentName,
+                quantity: module.quantity,
+                parts: partsData.map(part => ({
+                  id: part.componentId,
+                  name: part.componentName,
+                  quantity: part.quantity
+                }))
+              };
             } catch (err) {
-              console.error(`Failed to fetch parts for module ${module.id}:`, err);
-              return { ...module, parts: [] };
+              console.error(`Failed to fetch parts for module ${module.componentId}:`, err);
+              return {
+                id: module.componentId,
+                name: module.componentName,
+                quantity: module.quantity,
+                parts: []
+              };
             }
           })
         );
@@ -269,32 +287,6 @@ function HomePage() {
       <section className="home-page">
         {/* Welcome Header */}
         <div className="home-hero">
-          <div className="hero-title-container">
-            <div className="hero-title-row">
-              <h1 className="hero-main-title">
-                <span className="title-letter" style={{'--i': 0}}>L</span>
-                <span className="title-dot">.</span>
-                <span className="title-letter" style={{'--i': 1}}>I</span>
-                <span className="title-dot">.</span>
-                <span className="title-letter" style={{'--i': 2}}>F</span>
-                <span className="title-dot">.</span>
-                <span className="title-letter" style={{'--i': 3}}>E</span>
-              </h1>
-              <div className="hero-version-badge">
-                <span className="version-label">MES</span>
-                <span className="version-number">v2.0</span>
-              </div>
-            </div>
-            <p className="hero-slogan">
-              <span className="slogan-word">LEGO</span>
-              <span className="slogan-separator">•</span>
-              <span className="slogan-word">Integrated</span>
-              <span className="slogan-separator">•</span>
-              <span className="slogan-word">Factory</span>
-              <span className="slogan-separator">•</span>
-              <span className="slogan-word">Execution</span>
-            </p>
-          </div>
         </div>
 
         {message && (
@@ -313,24 +305,34 @@ function HomePage() {
         )}
         
         {/* ================================================================
-            ROW 1: Industry 4.0 Tagline | Application Overview | Login Form
+            ROW 1: L.I.F.E Title | Application Overview | Login Form
             ================================================================ */}
         <div className="home-overview-row">
-          {/* Column 1: Industry 4.0 Tagline Card */}
+          {/* Column 1: L.I.F.E Title Card */}
           <div className="home-tagline-column">
-            <div className="glass-card industry-tagline-card">
-              <h2>Industry 4.0 Digital Manufacturing</h2>
-              <p className="tagline-subtitle">
+            <div className="glass-card life-title-card">
+              <div className="life-title-row">
+                <h1 className="life-title">
+                  <span className="title-letter" style={{'--i': 0}}>L</span>
+                  <span className="title-dot">.</span>
+                  <span className="title-letter" style={{'--i': 1}}>I</span>
+                  <span className="title-dot">.</span>
+                  <span className="title-letter" style={{'--i': 2}}>F</span>
+                  <span className="title-dot">.</span>
+                  <span className="title-letter" style={{'--i': 3}}>E</span>
+                </h1>
+                <div className="life-version-badge">
+                  <span className="version-label">MES</span>
+                  <span className="version-number">v2.0</span>
+                </div>
+              </div>
+              <p className="life-subtitle">LEGO INTEGRATED FACTORY EXECUTION</p>
+              <h2 className="life-industry-title">Industry 4.0 Digital Manufacturing</h2>
+              <p className="life-slogan">
                 Enterprise-grade Manufacturing Execution System demonstrating 
                 smart factory automation, real-time production orchestration, 
                 and intelligent supply chain management.
               </p>
-              <div className="tagline-badges">
-                <span className="tech-badge"><span className="tech-icon">☕</span> Java 21</span>
-                <span className="tech-badge"><span className="tech-icon">🌱</span> Spring Boot</span>
-                <span className="tech-badge"><span className="tech-icon">⚛️</span> React 18</span>
-                <span className="tech-badge"><span className="tech-icon">🐳</span> Docker</span>
-              </div>
             </div>
           </div>
 
@@ -346,7 +348,7 @@ function HomePage() {
               </div>
               <div className="overview-body">
                 <p>The <strong>LIFE System</strong> (LEGO Integrated Factory Execution) is an enterprise-grade digital manufacturing execution system built to demonstrate academic research in industrial engineering. This platform digitizes end-to-end supply chain operations across <strong>nine autonomous workstations</strong>, coordinating complex production workflows from raw materials to finished products. Supporting <strong>four distinct business scenarios</strong>, it handles direct fulfillment, warehouse replenishment, full production cycles, and high-volume batch processing with real-time inventory tracking.</p>
-                <p>Login with username <strong>lego_admin</strong> to access the Admin Dashboard for a complete overview of system state and operations.</p>
+                <p><strong>Quick Login:</strong> Use password <code>password</code> for all accounts. Login as <strong>lego_admin</strong> for admin access, or hover over workstation cards below to see usernames.</p>
               </div>
               <div className="overview-metrics">
                 <div className="metric-box">
@@ -362,7 +364,7 @@ function HomePage() {
                   <span className="metric-lbl">Scenarios</span>
                 </div>
                 <div className="metric-box">
-                  <span className="metric-num">5</span>
+                  <span className="metric-num">9</span>
                   <span className="metric-lbl">User Roles</span>
                 </div>
               </div>
@@ -378,15 +380,150 @@ function HomePage() {
 
           {/* Column 3: Login Form */}
           <div className="home-login-column">
-            <LoginForm embedded={true} showHeader={true} showHelpText={true} />
+            <LoginForm embedded={true} showHeader={true} showHelpText={false} />
           </div>
         </div>
 
         {/* ================================================================
-            ROW 2: Order Fulfillment Flow | Microservices Architecture
+            ROW 2: Products | Order Fulfillment Flow | Microservices Architecture
             ================================================================ */}
         <div className="home-features-row">
-          {/* Column 1: Flow Diagram */}
+          {/* Column 1: Products - Portrait Cards */}
+          <div className="home-products-column">
+            <div className="glass-card products-column-card">
+              <h3 className="section-title">🧱 Products</h3>
+              {loadingProducts ? (
+                <p className="loading-text">Loading products...</p>
+              ) : products.length === 0 ? (
+                <p className="no-data">No products available</p>
+              ) : (
+                <div className="products-grid-portrait">
+                  {products.map(product => {
+                    const productIcon = getProductIcon(product.name);
+                    
+                    return (
+                      <div key={product.id} className="product-card-portrait">
+                        <div className="product-card-portrait-inner">
+                          <div className="product-portrait-icon">
+                            <span className="portrait-emoji">{productIcon.icon}</span>
+                            <span className="portrait-color-dot" style={{background: productIcon.color}}></span>
+                          </div>
+                          <div className="product-portrait-info">
+                            <h4 className="portrait-name">{product.name}</h4>
+                            <span className="portrait-sku">SKU: PRD-{String(product.id).padStart(3, '0')}</span>
+                          </div>
+                          <button 
+                            className="view-components-btn"
+                            onClick={() => handleBomToggle(product)}
+                            title="View Bill of Materials"
+                          >
+                            📋 Components
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              
+              {/* BOM Modal - Rendered via portal to document.body for proper layering */}
+              {Object.keys(expandedModules).some(key => expandedModules[key]) && createPortal(
+                <div className="bom-modal-overlay" onClick={() => {
+                  setExpandedModules({});
+                  setProductModules([]);
+                  setExpandedBomModules({});
+                }}>
+                  <div className="bom-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="bom-modal-header">
+                      <div className="bom-modal-title">
+                        <span className="bom-modal-icon">🛠️</span>
+                        <div className="bom-modal-title-text">
+                          <h3>Bill of Materials</h3>
+                          <span className="bom-modal-product">
+                            {products.find(p => expandedModules[p.id])?.name || 'Product'}
+                          </span>
+                        </div>
+                      </div>
+                      <button 
+                        className="bom-modal-close"
+                        onClick={() => {
+                          setExpandedModules({});
+                          setProductModules([]);
+                          setExpandedBomModules({});
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    
+                    <div className="bom-modal-body">
+                      {loadingModules ? (
+                        <div className="bom-modal-loading">
+                          <span className="loading-spinner">⏳</span>
+                          <span>Loading components...</span>
+                        </div>
+                      ) : productModules.length > 0 ? (
+                        <div className="bom-modal-modules">
+                          {productModules.map(module => {
+                            const isModuleExpanded = expandedBomModules[module.id];
+                            const hasParts = module.parts && module.parts.length > 0;
+                            
+                            return (
+                              <div key={module.id} className="bom-modal-module-group">
+                                <div 
+                                  className={`bom-modal-module ${hasParts ? 'expandable' : ''} ${isModuleExpanded ? 'expanded' : ''}`}
+                                  onClick={() => hasParts && toggleBomModule(module.id)}
+                                >
+                                  <span className="module-icon-large">⚙️</span>
+                                  <div className="module-info">
+                                    <span className="module-name-large">{module.name}</span>
+                                    <span className="module-meta">
+                                      Qty: {module.quantity || 1} • {module.parts?.length || 0} parts
+                                    </span>
+                                  </div>
+                                  {hasParts && (
+                                    <span className="module-expand-icon">
+                                      {isModuleExpanded ? '▼' : '▶'}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {hasParts && isModuleExpanded && (
+                                  <div className="bom-modal-parts">
+                                    <div className="parts-header">
+                                      <span className="parts-col">Part</span>
+                                      <span className="parts-col-qty">Qty</span>
+                                    </div>
+                                    {module.parts.map(part => (
+                                      <div key={part.id} className="bom-modal-part">
+                                        <div className="part-info">
+                                          <span className="part-icon-small">🔩</span>
+                                          <span className="part-name-large">{part.name}</span>
+                                        </div>
+                                        <span className="part-qty-large">×{part.quantity || 1}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="bom-modal-empty">
+                          <span className="empty-icon">📦</span>
+                          <span>No components found for this product</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>,
+                document.body
+              )}
+            </div>
+          </div>
+
+          {/* Column 2: Flow Diagram */}
           <div className="home-flow-column">
             <div className="glass-card">
               <h3 className="section-title">🔄 Order Fulfillment Process</h3>
@@ -438,11 +575,14 @@ function HomePage() {
                 </div>
               </div>
 
-              {/* Arrow: Customer → Warehouse Order */}
+              {/* Arrow: Customer ↔ Warehouse Order */}
               <div className="layer-connector">
-                <div className="connector-vertical">
-                  <span className="connector-line-v"></span>
-                  <span className="connector-text">Creates</span>
+                <div className="connector-vertical bidirectional">
+                  <span className="arrow-down">▼</span>
+                  <span className="label-down">📋 Orders</span>
+                  <span className="connector-divider"></span>
+                  <span className="label-up">📦 Products</span>
+                  <span className="arrow-up">▲</span>
                 </div>
               </div>
 
@@ -465,7 +605,7 @@ function HomePage() {
                       <div className="branch-path production-needed vertical-branch">
                         <span className="path-label">✗ Need Production</span>
                         <span className="path-arrow">↓</span>
-                        <span className="scenario-indicator s3-4">S3/S4</span>
+                        <span className="scenario-indicator s3">S3</span>
                       </div>
                     </div>
                     <div className="flow-connector-enhanced success-path">
@@ -482,17 +622,21 @@ function HomePage() {
                       <div className="flow-node-enhanced assembly-node" data-tooltip="Combines modules into finished products ready for shipment&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 final_assembly">
                         <span className="node-icon">🔨</span>
                         <span className="node-label">Final Assembly</span>
+                        <span className="stage-output">→ Products</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Arrow: Warehouse → Production Order */}
+              {/* Arrow: Warehouse ↔ Production Order */}
               <div className="layer-connector">
-                <div className="connector-vertical">
-                  <span className="connector-line-v"></span>
-                  <span className="connector-text">Triggers</span>
+                <div className="connector-vertical bidirectional">
+                  <span className="arrow-down">▼</span>
+                  <span className="label-down">📋 Orders</span>
+                  <span className="connector-divider"></span>
+                  <span className="label-up">🧩 Modules</span>
+                  <span className="arrow-up">▲</span>
                 </div>
               </div>
 
@@ -521,6 +665,7 @@ function HomePage() {
                   <div className="pipeline-stage-v2 supply" data-tooltip="Distributes raw materials and components to workstations&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 parts_supply">
                     <span className="stage-icon">📦</span>
                     <span className="stage-label">Parts Supply</span>
+                    <span className="stage-output">→ Parts</span>
                   </div>
                   <span className="pipeline-arrow-v2">→</span>
 
@@ -528,7 +673,7 @@ function HomePage() {
                   <div className="pipeline-stage-v2 manufacturing" data-tooltip="Produces parts through injection molding, pre-production, and finishing&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;👤 injection_molding&#10;👤 parts_preproduction&#10;👤 part_finishing">
                     <span className="stage-icon">🔧</span>
                     <span className="stage-label">Manufacturing</span>
-                    <span className="stage-output">→ Parts</span>
+                    <span className="stage-output">→ Modules</span>
                   </div>
                   <span className="pipeline-arrow-v2">→</span>
 
@@ -591,10 +736,9 @@ function HomePage() {
                 <div className="arch-layer client-layer">
                   <div className="layer-services with-label">
                     <div className="layer-label-inline">Client</div>
-                    <div className="service-box-horizontal frontend" data-tooltip="React 18 + Vite SPA | Port: 5173">
+                    <div className={`service-box-horizontal frontend ${serviceHealth['frontend'] || 'unknown'}`} data-tooltip="React 18 + Vite SPA | Port: 5173">
                       <span className="service-icon">⚛️</span>
                       <span className="service-name-vertical">React<br/>Frontend</span>
-                      <span className={`health-indicator ${serviceHealth['frontend'] || 'unknown'}`}></span>
                     </div>
                   </div>
                 </div>
@@ -610,10 +754,9 @@ function HomePage() {
                 <div className="arch-layer gateway-layer">
                   <div className="layer-services with-label">
                     <div className="layer-label-inline">Gateway</div>
-                    <div className="service-box-horizontal gateway" data-tooltip="Spring Cloud Gateway | Auth & Routing | Port: 8011">
+                    <div className={`service-box-horizontal gateway ${serviceHealth['api-gateway'] || 'unknown'}`} data-tooltip="Spring Cloud Gateway | Auth & Routing | Port: 8011">
                       <span className="service-icon">🚪</span>
                       <span className="service-name-vertical">API<br/>Gateway</span>
-                      <span className={`health-indicator ${serviceHealth['api-gateway'] || 'unknown'}`}></span>
                     </div>
                   </div>
                 </div>
@@ -641,11 +784,10 @@ function HomePage() {
                     
                     {/* Row 1: Auth Service (standalone) */}
                     <div className="services-row-auth with-label">
-                      <div className="layer-label-inline">Microservices</div>
-                      <div className="service-box-horizontal core" data-tooltip="Authentication & Authorization | Port: 8012">
+                      <div className="layer-label-inline">Backend</div>
+                      <div className={`service-box-horizontal core ${serviceHealth['user-service'] || 'unknown'}`} data-tooltip="Authentication & Authorization | Port: 8012">
                         <span className="service-icon">👤</span>
                         <span className="service-name-vertical">User<br/>Service</span>
-                        <span className={`health-indicator ${serviceHealth['user-service'] || 'unknown'}`}></span>
                       </div>
                     </div>
                     
@@ -657,10 +799,9 @@ function HomePage() {
                     
                     {/* Row 2: Central Orchestrator + Integration */}
                     <div className="services-row-core">
-                      <div className="service-box-horizontal core orchestrator" data-tooltip="Order Processing Engine | Port: 8015">
+                      <div className={`service-box-horizontal core orchestrator ${serviceHealth['order-processing-service'] || 'unknown'}`} data-tooltip="Order Processing Engine | Port: 8015">
                         <span className="service-icon">📋</span>
                         <span className="service-name-vertical">Order<br/>Service</span>
-                        <span className={`health-indicator ${serviceHealth['order-processing-service'] || 'unknown'}`}></span>
                       </div>
                       
                       {/* Horizontal connector to SimAL */}
@@ -669,10 +810,9 @@ function HomePage() {
                         <span className="connector-label">Schedule</span>
                       </div>
                       
-                      <div className="service-box-horizontal integration" data-tooltip="SimAL Scheduling & Optimization | Port: 8016">
+                      <div className={`service-box-horizontal integration ${serviceHealth['simal-integration-service'] || 'unknown'}`} data-tooltip="SimAL Scheduling & Optimization | Port: 8016">
                         <span className="service-icon">📊</span>
                         <span className="service-name-vertical">SimAL<br/>Service</span>
-                        <span className={`health-indicator ${serviceHealth['simal-integration-service'] || 'unknown'}`}></span>
                       </div>
                     </div>
                     
@@ -690,16 +830,14 @@ function HomePage() {
                     
                     {/* Row 3: Data Services */}
                     <div className="services-row-data">
-                      <div className="service-box-horizontal data" data-tooltip="Product Catalog & BOM | Port: 8013">
+                      <div className={`service-box-horizontal data ${serviceHealth['masterdata-service'] || 'unknown'}`} data-tooltip="Product Catalog & BOM | Port: 8013">
                         <span className="service-icon">📦</span>
                         <span className="service-name-vertical">Master<br/>Data</span>
-                        <span className={`health-indicator ${serviceHealth['masterdata-service'] || 'unknown'}`}></span>
                       </div>
                       
-                      <div className="service-box-horizontal data" data-tooltip="Stock Management | Port: 8014">
+                      <div className={`service-box-horizontal data ${serviceHealth['inventory-service'] || 'unknown'}`} data-tooltip="Stock Management | Port: 8014">
                         <span className="service-icon">📈</span>
                         <span className="service-name-vertical">Inventory<br/>Service</span>
-                        <span className={`health-indicator ${serviceHealth['inventory-service'] || 'unknown'}`}></span>
                       </div>
                     </div>
                     
@@ -708,25 +846,52 @@ function HomePage() {
 
                 {/* Architecture Legend */}
                 <div className="architecture-legend-horizontal">
-                  <div className="legend-item">
-                    <span className="legend-color frontend"></span>
-                    <span>Frontend</span>
+                  <div className="legend-section">
+                    <span className="legend-section-title">Service Types</span>
+                    <div className="legend-items">
+                      <div className="legend-item">
+                        <span className="legend-color frontend"></span>
+                        <span>Frontend</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-color gateway"></span>
+                        <span>Gateway</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-color core"></span>
+                        <span>Core</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-color data"></span>
+                        <span>Data</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-color integration"></span>
+                        <span>Integration</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="legend-item">
-                    <span className="legend-color gateway"></span>
-                    <span>Gateway</span>
-                  </div>
-                  <div className="legend-item">
-                    <span className="legend-color core"></span>
-                    <span>Core</span>
-                  </div>
-                  <div className="legend-item">
-                    <span className="legend-color data"></span>
-                    <span>Data</span>
-                  </div>
-                  <div className="legend-item">
-                    <span className="legend-color integration"></span>
-                    <span>Integration</span>
+                  <div className="legend-divider"></div>
+                  <div className="legend-section">
+                    <span className="legend-section-title">Health Status</span>
+                    <div className="legend-items">
+                      <div className="legend-item">
+                        <span className="legend-glow healthy"></span>
+                        <span>Healthy</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-glow warning"></span>
+                        <span>Warning</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-glow error"></span>
+                        <span>Error</span>
+                      </div>
+                      <div className="legend-item">
+                        <span className="legend-glow unknown"></span>
+                        <span>Unknown</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -735,195 +900,10 @@ function HomePage() {
         </div>
 
         {/* ================================================================
-            ROW 3: Products | Quick Navigation Guide | Feature Highlights
+            ROW 3: Quick Navigation Guide | Feature Highlights
             ================================================================ */}
         <div className="home-guide-row">
-          {/* Column 1: Products */}
-          <div className="home-products-column-row3">
-            <div className="glass-card">
-              <h3 className="section-title">🧱 Our Products</h3>
-              {loadingProducts ? (
-                <p className="loading-text">Loading products...</p>
-              ) : products.length === 0 ? (
-                <p className="no-data">No products available</p>
-              ) : (
-                <div className="products-grid-row3">
-                  {products.map(product => {
-                    const productIcon = getProductIcon(product.name);
-                    const isExpanded = expandedModules[product.id];
-                    
-                    return (
-                      <div key={product.id} className="product-card-enhanced">
-                        <div className="product-card-main">
-                          <div className="product-visual">
-                            <span className="product-icon-realistic">{productIcon.icon}</span>
-                            <span className="product-color-dot" style={{background: productIcon.color}}></span>
-                          </div>
-                          <div className="product-info-block">
-                            <h4 className="product-title">{product.name}</h4>
-                            <span className="product-sku">SKU: PRD-{String(product.id).padStart(3, '0')}</span>
-                          </div>
-                          <button 
-                            className={`bom-toggle-btn ${isExpanded ? 'expanded' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleBomToggle(product);
-                            }}
-                            title="View Bill of Materials"
-                          >
-                            <span className="bom-icon">📋</span>
-                            <span className="bom-arrow">{isExpanded ? '▲' : '▼'}</span>
-                          </button>
-                        </div>
-                        
-                        {/* Expandable BOM Section - Modal-style popout */}
-                        {isExpanded && (
-                          <>
-                            <div 
-                              className="bom-backdrop" 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedModules({});
-                                setProductModules([]);
-                                setExpandedBomModules({});
-                              }}
-                            />
-                            <div className="bom-dropdown">
-                              <div className="bom-header">
-                                <span className="bom-title">🛠️ Bill of Materials</span>
-                                <button 
-                                  className="bom-close-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedModules({});
-                                    setProductModules([]);
-                                    setExpandedBomModules({});
-                                  }}
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                              {loadingModules ? (
-                                <div className="bom-loading-container">
-                                  <span className="bom-loading">Loading components...</span>
-                                </div>
-                              ) : productModules.length > 0 ? (
-                                <div className="bom-modules-list">
-                                  {productModules.map(module => {
-                                    const isModuleExpanded = expandedBomModules[module.id];
-                                    const hasParts = module.parts && module.parts.length > 0;
-                                    
-                                    return (
-                                      <div key={module.id} className="bom-module-group">
-                                        <div 
-                                          className={`bom-module-item ${hasParts ? 'expandable' : ''} ${isModuleExpanded ? 'expanded' : ''}`}
-                                          onClick={() => hasParts && toggleBomModule(module.id)}
-                                        >
-                                          <span className="module-icon">⚙️</span>
-                                          <span className="module-name">{module.name}</span>
-                                          <span className="module-qty">×{module.quantity || 1}</span>
-                                          {hasParts && (
-                                            <span className="module-expand-arrow">
-                                              {isModuleExpanded ? '▼' : '▶'}
-                                            </span>
-                                          )}
-                                        </div>
-                                        {hasParts && isModuleExpanded && (
-                                          <div className="bom-parts-list">
-                                            {module.parts.map(part => (
-                                              <div key={part.id} className="bom-part-item">
-                                                <span className="part-icon">🔩</span>
-                                                <span className="part-name">{part.name}</span>
-                                                <span className="part-qty">×{part.quantity || 1}</span>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <p className="bom-empty">No components found</p>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Product Details Overlay Dropdown */}
-              {selectedProduct && (
-                <div className="product-details-overlay active">
-                  <div className="product-details-modal">
-                    <button 
-                      className="product-details-close" 
-                      onClick={() => setSelectedProduct(null)}
-                    >
-                      ✕
-                    </button>
-                    
-                    <div className="product-details-header">
-                      <div className="product-image-large">
-                        <span className="product-emoji">
-                          {selectedProduct.name.includes('Car') ? '🚗' : 
-                           selectedProduct.name.includes('Truck') ? '🚚' : 
-                           selectedProduct.name.includes('Plane') ? '✈️' : '🧱'}
-                        </span>
-                      </div>
-                      <div className="product-info">
-                        <h2 className="product-name-large">{selectedProduct.name}</h2>
-                        <p className="product-id-large">Product ID: {selectedProduct.id}</p>
-                      </div>
-                    </div>
-
-                    <div className="product-details-body">
-                      <div className="product-details-section">
-                        <h4>Description</h4>
-                        <p>{selectedProduct.description}</p>
-                      </div>
-
-                      <div className="product-stats">
-                        <div className="product-stat">
-                          <span className="stat-value">${selectedProduct.price.toFixed(2)}</span>
-                          <span className="stat-label">Price</span>
-                        </div>
-                        <div className="product-stat">
-                          <span className="stat-value">{selectedProduct.estimatedTimeMinutes}</span>
-                          <span className="stat-label">Minutes</span>
-                        </div>
-                      </div>
-
-                      <div className="product-details-section">
-                        <h4>Components (Bill of Materials)</h4>
-                        
-                        {loadingModules ? (
-                          <p className="loading-text">Loading modules...</p>
-                        ) : productModules.length === 0 ? (
-                          <p className="no-data">No modules available for this product</p>
-                        ) : (
-                          <div className="bom-list">
-                            {productModules.map(module => (
-                              <div key={module.id} className="bom-item">
-                                <span className="bom-icon">🔧</span>
-                                <span className="bom-name">{module.name}</span>
-                                <span className="bom-qty">×{module.quantity}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Column 2: Navigation Guide */}
+          {/* Column 1: Navigation Guide */}
           <div className="home-navigation-column">
             <div className="glass-card">
               <h3 className="section-title">📋 Quick Start Guide</h3>
@@ -967,36 +947,36 @@ function HomePage() {
           <div className="home-highlights-column">
             <div className="glass-card">
               <h3 className="section-title">✨ Feature Highlights</h3>
-              <div className="highlights-grid">
-                <div className="feature-highlight-card">
-                  <div className="feature-highlight-icon">🏗️</div>
-                  <div className="feature-highlight-content">
-                    <h4 className="feature-highlight-title">Microservices</h4>
-                    <p className="feature-highlight-description">6 Spring Boot services with isolated databases</p>
+              <div className="nav-grid">
+                <div className="navigation-item">
+                  <span className="nav-icon">🏗️</span>
+                  <div className="nav-content">
+                    <strong>Microservices</strong>
+                    <p>6 Spring Boot services with isolated databases</p>
                   </div>
                 </div>
                 
-                <div className="feature-highlight-card">
-                  <div className="feature-highlight-icon">🔐</div>
-                  <div className="feature-highlight-content">
-                    <h4 className="feature-highlight-title">Enterprise Security</h4>
-                    <p className="feature-highlight-description">JWT authentication with 9-role RBAC</p>
+                <div className="navigation-item">
+                  <span className="nav-icon">🔐</span>
+                  <div className="nav-content">
+                    <strong>Enterprise Security</strong>
+                    <p>JWT authentication with 9-role RBAC</p>
                   </div>
                 </div>
                 
-                <div className="feature-highlight-card">
-                  <div className="feature-highlight-icon">⚡</div>
-                  <div className="feature-highlight-content">
-                    <h4 className="feature-highlight-title">Modern Stack</h4>
-                    <p className="feature-highlight-description">Java 21, Spring Boot 3.4, React 18, Vite</p>
+                <div className="navigation-item">
+                  <span className="nav-icon">⚡</span>
+                  <div className="nav-content">
+                    <strong>Modern Stack</strong>
+                    <p>Java 21, Spring Boot 3.4, React 18, Vite</p>
                   </div>
                 </div>
                 
-                <div className="feature-highlight-card">
-                  <div className="feature-highlight-icon">📊</div>
-                  <div className="feature-highlight-content">
-                    <h4 className="feature-highlight-title">SimAL Integration</h4>
-                    <p className="feature-highlight-description">Interactive Gantt charts for scheduling</p>
+                <div className="navigation-item">
+                  <span className="nav-icon">📊</span>
+                  <div className="nav-content">
+                    <strong>SimAL Integration</strong>
+                    <p>Interactive Gantt charts for scheduling</p>
                   </div>
                 </div>
               </div>

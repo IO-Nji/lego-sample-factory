@@ -370,13 +370,13 @@ function CompactScheduleTimeline({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          paddingBottom: '0.5rem',
-          marginBottom: '0.25rem',
+          paddingBottom: '0.25rem',
+          marginBottom: '0.125rem',
           borderBottom: '1px solid #e5e7eb',
           flexShrink: 0
         }}>
           <span style={{ 
-            fontSize: '0.7rem', 
+            fontSize: '0.6rem', 
             color: '#6b7280',
             whiteSpace: 'nowrap'
           }}>
@@ -438,19 +438,19 @@ function CompactScheduleTimeline({
       {/* Status Legend - Matches GanttChart */}
       <div style={{
         display: 'flex',
-        gap: '0.5rem',
-        padding: '0.25rem 0',
-        fontSize: '0.65rem',
+        gap: '0.375rem',
+        padding: '0.125rem 0',
+        fontSize: '0.6rem',
         flexShrink: 0,
         flexWrap: 'wrap'
       }}>
         {['PENDING', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].map(status => {
           const colors = getStatusColor(status);
           return (
-            <div key={status} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <div key={status} style={{ display: 'flex', alignItems: 'center', gap: '0.125rem' }}>
               <div style={{ 
-                width: '12px', 
-                height: '12px', 
+                width: '10px', 
+                height: '10px', 
                 backgroundColor: colors.base,
                 border: `1px solid ${colors.border}`,
                 borderRadius: '2px'
@@ -461,14 +461,14 @@ function CompactScheduleTimeline({
         })}
       </div>
 
-      {/* Timeline Container - Fixed Height for 5 Manufacturing/Assembly Workstations */}
+      {/* Timeline Container - Compact height for 5 Manufacturing/Assembly Workstations */}
       <div style={{ 
-        minHeight: '290px', // Fixed: 5 workstations × 48px + time markers 20px + padding 30px
-        maxHeight: '290px',
+        minHeight: '210px', // Compact: 5 workstations × 36px + time markers 16px + padding 14px
+        maxHeight: '210px',
         position: 'relative',
         overflowY: 'hidden', // No vertical scrolling needed
         overflowX: 'visible',
-        paddingTop: '0.5rem'
+        paddingTop: '0.25rem'
       }}>
         {/* Current Time Indicator */}
         {currentTimePosition !== null && (
@@ -484,24 +484,24 @@ function CompactScheduleTimeline({
           }}>
             <div style={{
               position: 'absolute',
-              top: '-2px',
-              left: '-4px',
-              width: '10px',
-              height: '10px',
+              top: '-1px',
+              left: '-3px',
+              width: '8px',
+              height: '8px',
               background: '#ef4444',
               borderRadius: '50%',
               boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.2)'
             }} />
             <div style={{
               position: 'absolute',
-              top: '-18px',
+              top: '-14px',
               left: '50%',
               transform: 'translateX(-50%)',
               background: '#ef4444',
               color: 'white',
-              fontSize: '0.55rem',
+              fontSize: '0.5rem',
               fontWeight: '600',
-              padding: '1px 4px',
+              padding: '1px 3px',
               borderRadius: '2px',
               whiteSpace: 'nowrap'
             }}>
@@ -513,9 +513,9 @@ function CompactScheduleTimeline({
         {/* Time markers - Compact */}
         <div style={{
           position: 'relative',
-          height: '20px',
+          height: '16px',
           borderBottom: '1px solid #d1d5db',
-          marginBottom: '0.25rem',
+          marginBottom: '0.125rem',
           flexShrink: 0
         }}>
           {timeMarkers.map((marker, idx) => {
@@ -532,11 +532,11 @@ function CompactScheduleTimeline({
               >
                 <div style={{ 
                   borderLeft: '1px solid #d1d5db', 
-                  height: '4px',
-                  marginBottom: '2px'
+                  height: '3px',
+                  marginBottom: '1px'
                 }} />
                 <span style={{ 
-                  fontSize: '0.65rem', 
+                  fontSize: '0.6rem', 
                   color: '#6b7280',
                   whiteSpace: 'nowrap'
                 }}>
@@ -554,26 +554,26 @@ function CompactScheduleTimeline({
               key={workstation}
               style={{
                 display: 'flex',
-                marginBottom: '0.25rem',
-                minHeight: '48px', // Fixed height per workstation row
-                maxHeight: '48px',
+                marginBottom: '0.125rem',
+                minHeight: '36px', // Compact fixed height per workstation row
+                maxHeight: '36px',
                 borderBottom: '1px solid #f3f4f6'
               }}
             >
                 {/* Workstation label - Compact */}
                 <div style={{
-                  width: '120px',
+                  width: '100px',
                   flexShrink: 0,
-                  paddingRight: '0.5rem',
+                  paddingRight: '0.25rem',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'center',
-                  fontSize: '0.7rem'
+                  fontSize: '0.65rem'
                 }}>
-                  <span style={{ fontWeight: '600', color: '#1f2937', lineHeight: '1.2' }}>
+                  <span style={{ fontWeight: '600', color: '#1f2937', lineHeight: '1.1' }}>
                     {workstation}
                   </span>
-                  <span style={{ fontSize: '0.65rem', color: '#6b7280' }}>
+                  <span style={{ fontSize: '0.6rem', color: '#6b7280' }}>
                     {tasks.length} task{tasks.length !== 1 ? 's' : ''}
                   </span>
                 </div>
@@ -584,8 +584,8 @@ function CompactScheduleTimeline({
                   position: 'relative',
                   backgroundColor: '#fafafa',
                   borderRadius: '3px',
-                  minHeight: '40px',
-                  maxHeight: '40px'
+                  minHeight: '28px',
+                  maxHeight: '28px'
                 }}>
                   {tasks.map((task, idx) => {
                     const position = calculateTaskPosition(task);
@@ -605,17 +605,17 @@ function CompactScheduleTimeline({
                           top: `${(idx % 2) * 50}%`, // Alternate rows for overlapping tasks
                           height: '45%',
                           backgroundColor: colors.base,
-                          border: `2px solid ${colors.border}`,
-                          borderRadius: '3px',
+                          border: `1px solid ${colors.border}`,
+                          borderRadius: '2px',
                           color: colors.text,
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
-                          transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
-                          boxShadow: isHovered ? '0 4px 6px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.1)',
+                          transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
+                          boxShadow: isHovered ? '0 2px 4px rgba(0,0,0,0.15)' : '0 1px 2px rgba(0,0,0,0.1)',
                           zIndex: isHovered ? 10 : idx,
                           opacity: colors.opacity || 1,
-                          fontSize: '0.65rem',
-                          padding: '0.25rem',
+                          fontSize: '0.55rem',
+                          padding: '0.125rem',
                           display: 'flex',
                           alignItems: 'center',
                           overflow: 'visible',
@@ -650,11 +650,11 @@ function CompactScheduleTimeline({
                       >
                         {/* Status indicator dot */}
                         <span style={{
-                          width: '6px',
-                          height: '6px',
+                          width: '5px',
+                          height: '5px',
                           borderRadius: '50%',
                           backgroundColor: colors.text,
-                          marginRight: '0.25rem',
+                          marginRight: '0.125rem',
                           flexShrink: 0
                         }} />
                         <span style={{ 

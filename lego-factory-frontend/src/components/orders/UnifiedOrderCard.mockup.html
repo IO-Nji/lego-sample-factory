@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unified Order Card - Design Mockup</title>
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       DESIGN TOKENS - Edit these to change the overall look
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      /* Card dimensions - COMPACT */
+      --card-width: 280px;
+      --card-min-height: 120px;
+      --card-padding: 0.5rem;
+      --card-padding-sm: 0.35rem;
+      --card-gap: 0.25rem;
+      --card-border-radius: 8px;
+      
+      /* Typography - MINIMAL but smooth */
+      --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-size-2xs: 0.55rem;
+      --font-size-xs: 0.6rem;
+      --font-size-sm: 0.65rem;
+      --font-size-base: 0.7rem;
+      --font-size-lg: 0.75rem;
+      --line-height: 1.3;
+      
+      /* Zone heights - TIGHT */
+      --header-height: 32px;
+      --item-row-height: 18px;
+      --timestamp-row-height: 14px;
+      --action-zone-height: 28px;
+      
+      /* Order type colors */
+      --color-customer: #2c5aa0;
+      --color-warehouse: #7c3aed;
+      --color-production: #059669;
+      --color-control-prod: #dc2626;
+      --color-control-asm: #f59e0b;
+      --color-workstation: #6366f1;
+      --color-supply: #0891b2;
+      --color-final-assembly: #ec4899;
+      
+      /* Status colors */
+      --status-pending: #6b7280;
+      --status-confirmed: #3b82f6;
+      --status-in-progress: #f59e0b;
+      --status-completed: #10b981;
+      --status-error: #ef4444;
+      --status-waiting: #8b5cf6;
+      
+      /* Priority colors */
+      --priority-urgent: #ef4444;
+      --priority-high: #f59e0b;
+      --priority-normal: #6b7280;
+      --priority-low: #9ca3af;
+      
+      /* Scenario colors */
+      --scenario-s1: #10b981;
+      --scenario-s2: #3b82f6;
+      --scenario-s3: #f59e0b;
+      --scenario-s4: #ef4444;
+      
+      /* Background & borders */
+      --bg-card: #ffffff;
+      --bg-page: #f3f4f6;
+      --bg-zone: #fafafa;
+      --border-color: #e5e7eb;
+      --border-light: #f0f0f0;
+      
+      /* Shadows - SUBTLE */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 2px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-hover: 0 4px 8px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       PAGE LAYOUT - For mockup display only
+       ═══════════════════════════════════════════════════════════════ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-page);
+      padding: 2rem;
+      color: #1f2937;
+    }
+    
+    .mockup-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .mockup-header h1 {
+      font-size: 1.5rem;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+    
+    .mockup-header p {
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+    
+    .mockup-section {
+      margin-bottom: 3rem;
+    }
+    
+    .mockup-section h2 {
+      font-size: 1rem;
+      color: #374151;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border-color);
+    }
+    
+    .card-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       UNIFIED ORDER CARD - Main Component
+       ═══════════════════════════════════════════════════════════════ */
+    .order-card {
+      width: var(--card-width);
+      min-height: var(--card-min-height);
+      background: var(--bg-card);
+      border-radius: var(--card-border-radius);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow 0.15s ease, transform 0.15s ease;
+      line-height: var(--line-height);
+    }
+    
+    .order-card:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-1px);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       HEADER ZONE
+       ═══════════════════════════════════════════════════════════════ */
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: var(--card-padding);
+      border-bottom: 1px solid var(--border-light);
+      min-height: var(--header-height);
+      gap: 0.35rem;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.35rem;
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .order-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      flex-shrink: 0;
+      color: white;
+    }
+    
+    .order-icon.customer { background: var(--color-customer); }
+    .order-icon.warehouse { background: var(--color-warehouse); }
+    .order-icon.production { background: var(--color-production); }
+    .order-icon.control-prod { background: var(--color-control-prod); }
+    .order-icon.control-asm { background: var(--color-control-asm); }
+    .order-icon.workstation { background: var(--color-workstation); }
+    .order-icon.supply { background: var(--color-supply); }
+    .order-icon.final-assembly { background: var(--color-final-assembly); }
+    
+    .order-info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .order-number {
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      color: #1f2937;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .order-subtitle {
+      font-size: var(--font-size-2xs);
+      color: #6b7280;
+      margin-top: 1px;
+    }
+    
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    
+    .header-badges {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       BADGES (Status, Priority, Scenario)
+       ═══════════════════════════════════════════════════════════════ */
+    .badge {
+      font-size: var(--font-size-2xs);
+      font-weight: 500;
+      padding: 1px 4px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    
+    /* Status badges */
+    .badge.status {
+      color: white;
+    }
+    .badge.status.pending { background: var(--status-pending); }
+    .badge.status.confirmed { background: var(--status-confirmed); }
+    .badge.status.in-progress { background: var(--status-in-progress); }
+    .badge.status.completed { background: var(--status-completed); }
+    .badge.status.error { background: var(--status-error); }
+    .badge.status.waiting { background: var(--status-waiting); }
+    
+    /* Priority badges */
+    .badge.priority {
+      background: transparent;
+      border: 1px solid currentColor;
+    }
+    .badge.priority.urgent { color: var(--priority-urgent); }
+    .badge.priority.high { color: var(--priority-high); }
+    .badge.priority.normal { color: var(--priority-normal); }
+    .badge.priority.low { color: var(--priority-low); }
+    
+    /* Scenario badges */
+    .badge.scenario {
+      color: white;
+      font-weight: 600;
+      min-width: 18px;
+      text-align: center;
+    }
+    .badge.scenario.s1 { background: var(--scenario-s1); }
+    .badge.scenario.s2 { background: var(--scenario-s2); }
+    .badge.scenario.s3 { background: var(--scenario-s3); }
+    .badge.scenario.s4 { background: var(--scenario-s4); }
+
+    /* ═══════════════════════════════════════════════════════════════
+       ITEMS ZONE
+       ═══════════════════════════════════════════════════════════════ */
+    .card-items {
+      padding: var(--card-padding-sm) var(--card-padding);
+      border-bottom: 1px solid var(--border-light);
+      background: var(--bg-zone);
+    }
+    
+    .item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: var(--item-row-height);
+      gap: 0.35rem;
+    }
+    
+    .item-row + .item-row {
+      border-top: 1px solid var(--border-light);
+      padding-top: 2px;
+      margin-top: 2px;
+    }
+    
+    .item-left {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .item-icon {
+      font-size: 0.6rem;
+      opacity: 0.7;
+    }
+    
+    .item-name {
+      font-size: var(--font-size-xs);
+      color: #374151;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .item-right {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    
+    .item-qty {
+      font-size: var(--font-size-xs);
+      color: #6b7280;
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .item-qty .fulfilled {
+      color: #10b981;
+      font-weight: 500;
+    }
+    
+    .item-qty .partial {
+      color: #f59e0b;
+    }
+    
+    .stock-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.5rem;
+    }
+    
+    .stock-indicator.available {
+      background: #d1fae5;
+      color: #059669;
+    }
+    
+    .stock-indicator.partial {
+      background: #fef3c7;
+      color: #d97706;
+    }
+    
+    .stock-indicator.unavailable {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    
+    .items-expand {
+      font-size: var(--font-size-2xs);
+      color: #6b7280;
+      cursor: pointer;
+      padding: 2px 0;
+      text-align: center;
+    }
+    
+    .items-expand:hover {
+      color: #3b82f6;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       WORKSTATION FLOW (for Supply Orders)
+       ═══════════════════════════════════════════════════════════════ */
+    .workstation-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 3px var(--card-padding);
+      background: var(--bg-zone);
+      border-bottom: 1px solid var(--border-light);
+      font-size: var(--font-size-xs);
+    }
+    
+    .ws-badge {
+      background: #e0e7ff;
+      color: #4338ca;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-weight: 500;
+      font-size: var(--font-size-2xs);
+    }
+    
+    .flow-arrow {
+      color: #9ca3af;
+      font-size: var(--font-size-xs);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       TIMESTAMPS ZONE
+       ═══════════════════════════════════════════════════════════════ */
+    .card-timestamps {
+      padding: var(--card-padding-sm) var(--card-padding);
+      border-bottom: 1px solid var(--border-light);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px 8px;
+    }
+    
+    .timestamp-item {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: var(--timestamp-row-height);
+    }
+    
+    .timestamp-label {
+      font-size: var(--font-size-2xs);
+      font-weight: 600;
+      color: #9ca3af;
+      min-width: 18px;
+    }
+    
+    .timestamp-value {
+      font-size: var(--font-size-2xs);
+      color: #6b7280;
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .timestamp-value.overdue {
+      color: #ef4444;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       NOTES ZONE
+       ═══════════════════════════════════════════════════════════════ */
+    .card-notes {
+      padding: var(--card-padding-sm) var(--card-padding);
+      border-bottom: 1px solid var(--border-light);
+      background: #fffbeb;
+    }
+    
+    .notes-content {
+      font-size: var(--font-size-2xs);
+      color: #92400e;
+      display: flex;
+      gap: 4px;
+    }
+    
+    .notes-icon {
+      flex-shrink: 0;
+      font-size: 0.6rem;
+    }
+    
+    .notes-text {
+      line-height: 1.3;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       NOTIFICATION ZONE
+       ═══════════════════════════════════════════════════════════════ */
+    .card-notification {
+      padding: 3px var(--card-padding);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: var(--font-size-2xs);
+    }
+    
+    .card-notification.success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .card-notification.info {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .card-notification.warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .card-notification.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       ACTIONS ZONE
+       ═══════════════════════════════════════════════════════════════ */
+    .card-actions {
+      padding: var(--card-padding-sm) var(--card-padding);
+      display: flex;
+      gap: 4px;
+      justify-content: flex-end;
+      margin-top: auto;
+      min-height: var(--action-zone-height);
+    }
+    
+    .btn {
+      font-size: var(--font-size-xs);
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn.primary {
+      background: #2563eb;
+      color: white;
+    }
+    
+    .btn.primary:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+    
+    .btn.secondary {
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid var(--border-color);
+    }
+    
+    .btn.secondary:hover:not(:disabled) {
+      background: #e5e7eb;
+    }
+    
+    .btn.success {
+      background: #059669;
+      color: white;
+    }
+    
+    .btn.success:hover:not(:disabled) {
+      background: #047857;
+    }
+    
+    .btn.warning {
+      background: #f59e0b;
+      color: white;
+    }
+    
+    .btn.warning:hover:not(:disabled) {
+      background: #d97706;
+    }
+    
+    .btn.danger {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .btn.danger:hover:not(:disabled) {
+      background: #dc2626;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       COMPACT VARIANT
+       ═══════════════════════════════════════════════════════════════ */
+    .order-card.compact {
+      --card-padding: 0.35rem;
+      --card-padding-sm: 0.25rem;
+      --card-gap: 0.15rem;
+      --header-height: 26px;
+      --item-row-height: 16px;
+      --font-size-2xs: 0.5rem;
+      --font-size-xs: 0.55rem;
+      --font-size-sm: 0.6rem;
+      --font-size-base: 0.65rem;
+    }
+    
+    .order-card.compact .order-icon {
+      width: 16px;
+      height: 16px;
+      font-size: 0.55rem;
+    }
+    
+    .order-card.compact .btn {
+      padding: 2px 6px;
+      font-size: var(--font-size-2xs);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       COLOR-CODED LEFT BORDER VARIANT
+       ═══════════════════════════════════════════════════════════════ */
+    .order-card.bordered {
+      border-left: 2px solid transparent;
+    }
+    
+    .order-card.bordered.customer { border-left-color: var(--color-customer); }
+    .order-card.bordered.warehouse { border-left-color: var(--color-warehouse); }
+    .order-card.bordered.production { border-left-color: var(--color-production); }
+    .order-card.bordered.control-prod { border-left-color: var(--color-control-prod); }
+    .order-card.bordered.control-asm { border-left-color: var(--color-control-asm); }
+    .order-card.bordered.workstation { border-left-color: var(--color-workstation); }
+    .order-card.bordered.supply { border-left-color: var(--color-supply); }
+    .order-card.bordered.final-assembly { border-left-color: var(--color-final-assembly); }
+
+    /* ═══════════════════════════════════════════════════════════════
+       PROCESSING STATE (Loading overlay)
+       ═══════════════════════════════════════════════════════════════ */
+    .order-card.processing::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .order-card {
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+  <div class="mockup-header">
+    <h1>🎨 Unified Order Card - Design Mockup</h1>
+    <p>Edit the CSS above to customize. All order types use the same card structure.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SECTION: All Order Types
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="mockup-section">
+    <h2>📦 All Order Types</h2>
+    <div class="card-grid">
+
+      <!-- Customer Order -->
+      <div class="order-card bordered customer">
+        <div class="card-header">
+          <div class="header-left">
+            <div class="order-icon customer">📦</div>
+            <div class="order-info">
+              <div class="order-number">#CUST-2026-0001</div>
+              <div class="order-subtitle">Customer Order</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="header-badges">
+              <span class="badge scenario s2">S2</span>
+              <span class="badge status confirmed">Confirmed</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-items">
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">🚗</span>
+              <span class="item-name">Dump Truck Model</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty">Qty: 10</span>
+              <span class="stock-indicator available">✓</span>
+            </div>
+          </div>
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">🚛</span>
+              <span class="item-name">Garbage Truck</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty"><span class="partial">5</span>/10</span>
+              <span class="stock-indicator partial">!</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-timestamps">
+          <div class="timestamp-item">
+            <span class="timestamp-label">OD:</span>
+            <span class="timestamp-value">2026-02-05 10:30</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn secondary">Cancel</button>
+          <button class="btn primary">Request WO</button>
+        </div>
+      </div>
+
+      <!-- Warehouse Order -->
+      <div class="order-card bordered warehouse">
+        <div class="card-header">
+          <div class="header-left">
+            <div class="order-icon warehouse">🏢</div>
+            <div class="order-info">
+              <div class="order-number">#WO-2026-0042</div>
+              <div class="order-subtitle">Source: CUST-2026-0001</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="header-badges">
+              <span class="badge scenario s3">S3</span>
+              <span class="badge status waiting">Awaiting</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-items">
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">⚙️</span>
+              <span class="item-name">Gear Module A</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty">Qty: 20</span>
+              <span class="stock-indicator unavailable">✗</span>
+            </div>
+          </div>
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">🔌</span>
+              <span class="item-name">Motor Module B</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty">Qty: 20</span>
+              <span class="stock-indicator unavailable">✗</span>
+            </div>
+          </div>
+          <div class="items-expand">▼ Show 2 more items...</div>
+        </div>
+        <div class="card-timestamps">
+          <div class="timestamp-item">
+            <span class="timestamp-label">OD:</span>
+            <span class="timestamp-value">2026-02-05 10:35</span>
+          </div>
+        </div>
+        <div class="card-notification info">
+          <span>ℹ️</span>
+          <span>Production in progress - PO-2026-0015</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn secondary" disabled>Fulfill</button>
+        </div>
+      </div>
+
+      <!-- Production Order -->
+      <div class="order-card bordered production">
+        <div class="card-header">
+          <div class="header-left">
+            <div class="order-icon production">⚙️</div>
+            <div class="order-info">
+              <div class="order-number">#PO-2026-0015</div>
+              <div class="order-subtitle">Source: WO-2026-0042</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="header-badges">
+              <span class="badge priority high">High</span>
+              <span class="badge status in-progress">In Progress</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-items">
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">🚗</span>
+              <span class="item-name">Dump Truck Model (Red)</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty">Qty: 10</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-timestamps">
+          <div class="timestamp-item">
+            <span class="timestamp-label">OD:</span>
+            <span class="timestamp-value">2026-02-05 10:40</span>
+          </div>
+          <div class="timestamp-item">
+            <span class="timestamp-label">DD:</span>
+            <span class="timestamp-value overdue">2026-02-05 14:00</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn secondary">Details</button>
+        </div>
+      </div>
+
+      <!-- Production Control Order -->
+      <div class="order-card bordered control-prod">
+        <div class="card-header">
+          <div class="header-left">
+            <div class="order-icon control-prod">🔧</div>
+            <div class="order-info">
+              <div class="order-number">#PCO-2026-0031</div>
+              <div class="order-subtitle">Production: PO-2026-0015</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="header-badges">
+              <span class="badge priority urgent">Urgent</span>
+              <span class="badge status in-progress">In Progress</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-items">
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">🔩</span>
+              <span class="item-name">Chassis Part A</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty"><span class="fulfilled">15</span>/30</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-timestamps">
+          <div class="timestamp-item">
+            <span class="timestamp-label">TS:</span>
+            <span class="timestamp-value">10:45</span>
+          </div>
+          <div class="timestamp-item">
+            <span class="timestamp-label">TC:</span>
+            <span class="timestamp-value">12:30</span>
+          </div>
+          <div class="timestamp-item">
+            <span class="timestamp-label">AS:</span>
+            <span class="timestamp-value">10:48</span>
+          </div>
+          <div class="timestamp-item">
+            <span class="timestamp-label">AF:</span>
+            <span class="timestamp-value">—</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn secondary">View Supply</button>
+          <button class="btn warning">Halt</button>
+        </div>
+      </div>
+
+      <!-- Assembly Control Order -->
+      <div class="order-card bordered control-asm">
+        <div class="card-header">
+          <div class="header-left">
+            <div class="order-icon control-asm">🔩</div>
+            <div class="order-info">
+              <div class="order-number">#ACO-2026-0022</div>
+              <div class="order-subtitle">Production: PO-2026-0015</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="header-badges">
+              <span class="badge priority normal">Normal</span>
+              <span class="badge status pending">Pending</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-items">
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">⚙️</span>
+              <span class="item-name">Gear Assembly</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty">Qty: 10</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-timestamps">
+          <div class="timestamp-item">
+            <span class="timestamp-label">TS:</span>
+            <span class="timestamp-value">12:30</span>
+          </div>
+          <div class="timestamp-item">
+            <span class="timestamp-label">TC:</span>
+            <span class="timestamp-value">14:00</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn primary">Dispatch</button>
+        </div>
+      </div>
+
+      <!-- Supply Order -->
+      <div class="order-card bordered supply">
+        <div class="card-header">
+          <div class="header-left">
+            <div class="order-icon supply">📦</div>
+            <div class="order-info">
+              <div class="order-number">#SO-2026-0088</div>
+              <div class="order-subtitle">Control: PCO-2026-0031</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="header-badges">
+              <span class="badge priority high">High</span>
+              <span class="badge status pending">Pending</span>
+            </div>
+          </div>
+        </div>
+        <div class="workstation-flow">
+          <span class="ws-badge">WS-9</span>
+          <span class="flow-arrow">→</span>
+          <span class="ws-badge">WS-1</span>
+        </div>
+        <div class="card-items">
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">🔘</span>
+              <span class="item-name">Plastic Pellets (Red)</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty">Qty: 500g</span>
+            </div>
+          </div>
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">🔩</span>
+              <span class="item-name">Metal Axles</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty">Qty: 40</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-timestamps">
+          <div class="timestamp-item">
+            <span class="timestamp-label">OD:</span>
+            <span class="timestamp-value">2026-02-05 10:42</span>
+          </div>
+          <div class="timestamp-item">
+            <span class="timestamp-label">ND:</span>
+            <span class="timestamp-value">2026-02-05 10:45</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn danger">Reject</button>
+          <button class="btn success">Fulfill</button>
+        </div>
+      </div>
+
+      <!-- Workstation Order -->
+      <div class="order-card bordered workstation">
+        <div class="card-header">
+          <div class="header-left">
+            <div class="order-icon workstation">🏭</div>
+            <div class="order-info">
+              <div class="order-number">#IM-2026-0156</div>
+              <div class="order-subtitle">WS-1 • Injection Molding</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="header-badges">
+              <span class="badge status in-progress">In Progress</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-items">
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">🔲</span>
+              <span class="item-name">Chassis Body (Red)</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty"><span class="fulfilled">8</span>/10</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-timestamps">
+          <div class="timestamp-item">
+            <span class="timestamp-label">TS:</span>
+            <span class="timestamp-value">10:50</span>
+          </div>
+          <div class="timestamp-item">
+            <span class="timestamp-label">TC:</span>
+            <span class="timestamp-value">11:20</span>
+          </div>
+          <div class="timestamp-item">
+            <span class="timestamp-label">AS:</span>
+            <span class="timestamp-value">10:52</span>
+          </div>
+          <div class="timestamp-item">
+            <span class="timestamp-label">AF:</span>
+            <span class="timestamp-value">—</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn warning">Halt</button>
+          <button class="btn success">Complete</button>
+        </div>
+      </div>
+
+      <!-- Final Assembly Order -->
+      <div class="order-card bordered final-assembly">
+        <div class="card-header">
+          <div class="header-left">
+            <div class="order-icon final-assembly">🔨</div>
+            <div class="order-info">
+              <div class="order-number">#FA-2026-0073</div>
+              <div class="order-subtitle">WO: WO-2026-0040</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="header-badges">
+              <span class="badge status completed">Completed</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-items">
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">🚗</span>
+              <span class="item-name">Dump Truck Model (Blue)</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty"><span class="fulfilled">5</span>/5</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-timestamps">
+          <div class="timestamp-item">
+            <span class="timestamp-label">ST:</span>
+            <span class="timestamp-value">11:00</span>
+          </div>
+          <div class="timestamp-item">
+            <span class="timestamp-label">CT:</span>
+            <span class="timestamp-value">11:45</span>
+          </div>
+        </div>
+        <div class="card-notification success">
+          <span>✓</span>
+          <span>Ready to submit - will credit 5 units to WS-7</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn primary">Submit</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SECTION: Compact Variant
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="mockup-section">
+    <h2>📐 Compact Variant (for dense lists)</h2>
+    <div class="card-grid">
+
+      <div class="order-card compact bordered customer">
+        <div class="card-header">
+          <div class="header-left">
+            <div class="order-icon customer">📦</div>
+            <div class="order-info">
+              <div class="order-number">#CUST-2026-0002</div>
+              <div class="order-subtitle">Customer Order</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="header-badges">
+              <span class="badge scenario s1">S1</span>
+              <span class="badge status confirmed">Confirmed</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-items">
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">🚗</span>
+              <span class="item-name">Fire Truck</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty">Qty: 2</span>
+              <span class="stock-indicator available">✓</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn success">Complete</button>
+        </div>
+      </div>
+
+      <div class="order-card compact bordered workstation">
+        <div class="card-header">
+          <div class="header-left">
+            <div class="order-icon workstation">🏭</div>
+            <div class="order-info">
+              <div class="order-number">#PF-2026-0044</div>
+              <div class="order-subtitle">WS-3 • Part Finishing</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="header-badges">
+              <span class="badge status pending">Pending</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-items">
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">🔲</span>
+              <span class="item-name">Wheel Assembly</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty">Qty: 40</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn primary">Start</button>
+        </div>
+      </div>
+
+      <div class="order-card compact bordered supply">
+        <div class="card-header">
+          <div class="header-left">
+            <div class="order-icon supply">📦</div>
+            <div class="order-info">
+              <div class="order-number">#SO-2026-0089</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="header-badges">
+              <span class="badge status completed">Fulfilled</span>
+            </div>
+          </div>
+        </div>
+        <div class="workstation-flow">
+          <span class="ws-badge">WS-9</span>
+          <span class="flow-arrow">→</span>
+          <span class="ws-badge">WS-4</span>
+        </div>
+        <div class="card-actions">
+          <!-- No actions for fulfilled -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SECTION: Status States
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="mockup-section">
+    <h2>🚦 Status Badge Examples</h2>
+    <div class="card-grid" style="gap: 0.5rem; flex-wrap: wrap;">
+      <span class="badge status pending">Pending</span>
+      <span class="badge status confirmed">Confirmed</span>
+      <span class="badge status in-progress">In Progress</span>
+      <span class="badge status waiting">Awaiting</span>
+      <span class="badge status completed">Completed</span>
+      <span class="badge status error">Cancelled</span>
+    </div>
+    <br>
+    <h2>🎯 Priority Badge Examples</h2>
+    <div class="card-grid" style="gap: 0.5rem; flex-wrap: wrap;">
+      <span class="badge priority urgent">Urgent</span>
+      <span class="badge priority high">High</span>
+      <span class="badge priority normal">Normal</span>
+      <span class="badge priority low">Low</span>
+    </div>
+    <br>
+    <h2>📍 Scenario Badge Examples</h2>
+    <div class="card-grid" style="gap: 0.5rem; flex-wrap: wrap;">
+      <span class="badge scenario s1">S1</span>
+      <span class="badge scenario s2">S2</span>
+      <span class="badge scenario s3">S3</span>
+      <span class="badge scenario s4">S4</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SECTION: With Notes
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="mockup-section">
+    <h2>📝 Card with Notes</h2>
+    <div class="card-grid">
+      <div class="order-card bordered customer">
+        <div class="card-header">
+          <div class="header-left">
+            <div class="order-icon customer">📦</div>
+            <div class="order-info">
+              <div class="order-number">#CUST-2026-0003</div>
+              <div class="order-subtitle">Customer Order</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="header-badges">
+              <span class="badge status pending">Pending</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-items">
+          <div class="item-row">
+            <div class="item-left">
+              <span class="item-icon">🚗</span>
+              <span class="item-name">Police Car Model</span>
+            </div>
+            <div class="item-right">
+              <span class="item-qty">Qty: 25</span>
+              <span class="stock-indicator partial">!</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-notes">
+          <div class="notes-content">
+            <span class="notes-icon">📝</span>
+            <span class="notes-text">Urgent customer request - needs delivery by end of day. Contact sales manager if any issues.</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn primary">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

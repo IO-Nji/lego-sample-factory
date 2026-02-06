@@ -34,3 +34,58 @@
 
 /* Responsive breakpoints (MUST be last for proper cascade) */
 @import './HomeResponsive.css';
+
+/* ============================================================================
+   GLOBAL TOOLTIP FIX
+   ============================================================================
+   Ensures all tooltips appear above every other element.
+   Placed after all imports to override any conflicting styles.
+   ============================================================================ */
+
+/* Allow tooltips to escape containers */
+.home-flow-column,
+.home-architecture-column,
+.flow-diagram-v2,
+.flow-diagram-compact,
+.architecture-diagram,
+.architecture-diagram-horizontal,
+.architecture-content,
+.flow-main-path,
+.flow-secondary-path,
+.pipeline-row,
+.pipeline-stages {
+  overflow: visible !important;
+}
+
+/* Ensure parent cards allow tooltip overflow */
+.home-guide-row .glass-card,
+.home-bottom-row .glass-card {
+  overflow: visible !important;
+}
+
+/* Universal tooltip z-index fix */
+[data-tooltip]:hover::after,
+[data-tooltip]:hover::before {
+  z-index: 99999 !important;
+  pointer-events: none;
+}
+
+/* Ensure station cards can show tooltips */
+.station-card {
+  position: relative;
+  overflow: visible !important;
+}
+
+/* Ensure service boxes can show tooltips */
+.service-box,
+.service-box-horizontal {
+  position: relative;
+  overflow: visible !important;
+}
+
+/* Ensure flow nodes and pipeline stages can show tooltips */
+.flow-node-enhanced,
+.pipeline-stage-v2 {
+  position: relative;
+  overflow: visible !important;
+}

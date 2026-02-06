@@ -31,6 +31,42 @@
 }
 
 /* ============================================================================
+   OVERFLOW PROTECTION & CONTAINMENT
+   ============================================================================ */
+.home-overview-row,
+.home-features-row,
+.home-guide-row,
+.home-top-row,
+.home-bottom-row {
+  overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.home-tagline-column,
+.home-overview-column,
+.home-login-column,
+.home-products-column,
+.home-flow-column,
+.home-architecture-column,
+.home-navigation-column,
+.home-highlights-column,
+.home-products-column-row3 {
+  overflow: hidden;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.glass-card,
+.life-title-card,
+.overview-card-v2,
+.products-column-card {
+  overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ============================================================================
    HERO SECTION
    ============================================================================ */
 .home-hero {
@@ -183,37 +219,63 @@
   gap: 1.5rem;
   max-width: 1800px;
   margin: 0 auto;
-  padding: 1rem 1.5rem;
-  align-items: stretch;
+  padding: 0 1.5rem;
+  align-items: center;
 }
 
-/* Row 2: Core Features (Flow Diagram + Architecture) - 2 columns */
+/* Row 2: Core Features (Products + Flow Diagram + Architecture) - 3 columns */
 .home-features-row {
   display: flex;
-  gap: 1.5rem;
+  gap: 0;
   max-width: 1800px;
   margin: 0 auto;
   padding: 1rem 1.5rem;
   align-items: stretch;
 }
 
-/* Row 2 glass cards - 70% more transparent */
+/* Row 2 glass cards - 70% more transparent, independent heights */
 .home-features-row .glass-card {
   background: rgba(255, 255, 255, 0.25);
+  height: auto;
 }
 
 .home-features-row .glass-card:hover {
   background: rgba(255, 255, 255, 0.35);
 }
 
-/* Row 3: Products | Navigation Guide | Feature Highlights - 3 columns */
+/* Products column in Row 2 - 25% width, card centered */
+.home-products-column {
+  flex: 0 0 25%;
+  width: 25%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-products-column .glass-card,
+.home-products-column .products-column-card {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  padding: 0.5rem 0.4rem;
+  width: auto;
+}
+
+.home-products-column .section-title {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
+}
+
+/* Row 3: Navigation Guide | Feature Highlights - 2 columns */
 .home-guide-row {
   display: flex;
   gap: 1.5rem;
   max-width: 1800px;
   margin: 0 auto;
   padding: 1rem 1.5rem 1.5rem 1.5rem;
-  align-items: center;
+  align-items: stretch;
 }
 
 /* Row 3 glass cards - add internal padding */
@@ -225,17 +287,24 @@
    SECTION COLUMNS
    ============================================================================ */
 
-/* Industry 4.0 Tagline Card */
+/* Industry 4.0 Tagline Card - 25% of row width */
 .home-tagline-column {
-  flex: 1 1 280px;
+  flex: 1 1 25%;
   min-width: 0; /* Allow shrinking on mobile */
-  max-width: 320px;
+  max-width: 25%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* System Overview/Description */
+/* System Overview/Description - 50% of row width, centered */
 .home-overview-column {
-  flex: 2 1 400px;
+  flex: 2 1 50%;
   min-width: 0; /* Allow shrinking on mobile */
+  max-width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* System Description */
@@ -244,15 +313,14 @@
   min-width: 0; /* Allow shrinking on mobile */
 }
 
-/* Login Section */
+/* Login Section - 25% of row width */
 .home-login-column {
-  flex: 1 1 280px;
+  flex: 1 1 25%;
   min-width: 0; /* Allow shrinking on mobile */
-  max-width: 340px;
+  max-width: 25%;
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: stretch;
 }
 
 /* Login Section (Legacy) */
@@ -266,18 +334,21 @@
   align-self: center;
 }
 
-/* Flow Diagram Column - Takes more space in 2-column layout */
+/* Flow Diagram Column - 50% of row width, centered */
 .home-flow-column {
-  flex: 1.8 1 650px;
-  min-width: 0; /* Allow shrinking on mobile */
+  flex: 0 0 50%;
+  width: 50%;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .home-flow-column .glass-card {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  width: auto;
+  max-width: 100%;
 }
 
 /* Flow Diagram Section (Legacy) */
@@ -288,35 +359,44 @@
   padding: 0.75rem 1rem;
 }
 
-/* Architecture Column - Compact layout */
+/* Architecture Column - 25% of row width, card centered */
 .home-architecture-column {
-  flex: 0 0 auto;
-  min-width: 0;
-  max-width: none;
+  flex: 0 0 25%;
+  width: 25%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .home-architecture-column .glass-card {
   display: flex;
   flex-direction: column;
-  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  width: 80%;
+  max-width: 80%;
+  height: auto;
+  padding: 0.4rem 0.5rem;
+  margin: 0 auto;
+  overflow: visible;
 }
 
-/* Navigation Column */
+/* Navigation Column - Now 50% in 2-column layout */
 .home-navigation-column {
-  flex: 1 1 35%;
+  flex: 1 1 50%;
   min-width: 0; /* Allow shrinking on mobile */
 }
 
-/* Feature Highlights Column */
+/* Feature Highlights Column - Now 50% in 2-column layout */
 .home-highlights-column {
-  flex: 1 1 35%;
+  flex: 1 1 50%;
   min-width: 0; /* Allow shrinking on mobile */
 }
 
-/* Products Column in Row 3 */
+/* Products Column in Row 3 - DEPRECATED, moved to Row 2 */
 .home-products-column-row3 {
   flex: 0 0 280px;
   min-width: 0; /* Allow shrinking on mobile */

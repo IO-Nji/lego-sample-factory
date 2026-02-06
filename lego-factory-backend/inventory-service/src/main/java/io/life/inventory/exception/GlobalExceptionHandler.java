@@ -1,6 +1,7 @@
 package io.life.inventory.exception;
 
 import io.life.inventory.dto.ApiErrorResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -121,6 +123,35 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 "INVENTORY_VALIDATION_ERROR",
                 "Invalid request parameters: " + detailsMessage,
+                details,
+                request.getDescription(false).replace("uri=", "")
+        );
+        
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handle ConstraintViolationException (for @Validated service methods)
+     * Added as part of Issue #3 fix - Feb 4, 2026
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleConstraintViolation(
+            ConstraintViolationException ex,
+            WebRequest request) {
+        
+        List<String> violations = ex.getConstraintViolations().stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .collect(Collectors.toList());
+        
+        Map<String, Object> details = new HashMap<>();
+        details.put("violations", violations);
+        
+        logger.warn("Constraint violations: {}", violations);
+        
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                "INVENTORY_CONSTRAINT_VIOLATION",
+                "Constraint violation: " + violations.size() + " error(s)",
                 details,
                 request.getDescription(false).replace("uri=", "")
         );

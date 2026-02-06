@@ -1,0 +1,1195 @@
+/* ============================================================================
+   STATISTICS CARDS - SHARED STYLES
+   ============================================================================
+   Glassmorphism design system for all statistics card components.
+   Follows homepage aesthetic with semi-transparent backgrounds and soft shadows.
+   ============================================================================ */
+
+@import '../../styles/variables.css';
+
+/* ============================================================================
+   CSS CUSTOM PROPERTIES (Design Tokens)
+   ============================================================================ */
+:root {
+  /* Brand Colors */
+  --stat-brand-primary: #2c5aa0;
+  --stat-brand-primary-light: #3b82f6;
+  --stat-brand-secondary: #33a7d9;
+  --stat-brand-accent: #f59e0b;
+  --stat-brand-cyan: #06b6d4;
+  
+  /* Semantic Colors */
+  --stat-color-success: #10b981;
+  --stat-color-success-light: #d1fae5;
+  --stat-color-success-dark: #047857;
+  
+  --stat-color-warning: #f59e0b;
+  --stat-color-warning-light: #fef3c7;
+  --stat-color-warning-dark: #b45309;
+  
+  --stat-color-danger: #ef4444;
+  --stat-color-danger-light: #fee2e2;
+  --stat-color-danger-dark: #dc2626;
+  
+  --stat-color-info: #3b82f6;
+  --stat-color-info-light: #dbeafe;
+  --stat-color-info-dark: #1d4ed8;
+  
+  --stat-color-neutral: #64748b;
+  --stat-color-neutral-light: #f1f5f9;
+  --stat-color-neutral-dark: #475569;
+  
+  /* Text Colors */
+  --stat-text-primary: #1e3d66;
+  --stat-text-secondary: #4a5568;
+  --stat-text-muted: #718096;
+  
+  /* Glassmorphism */
+  --stat-glass-bg: rgba(255, 255, 255, 0.85);
+  --stat-glass-bg-strong: rgba(255, 255, 255, 0.92);
+  --stat-glass-border: rgba(255, 255, 255, 0.3);
+  
+  /* Shadows */
+  --stat-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --stat-shadow-md: 0 4px 24px rgba(44, 90, 160, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --stat-shadow-lg: 0 12px 40px rgba(44, 90, 160, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+  
+  /* Border Radius */
+  --stat-radius-sm: 8px;
+  --stat-radius-md: 12px;
+  --stat-radius-lg: 16px;
+  --stat-radius-xl: 20px;
+  --stat-radius-full: 9999px;
+  
+  /* Transitions */
+  --stat-transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --stat-transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================================
+   TYPE 1: BASIC STAT CARD (Enhanced from existing)
+   ============================================================================ */
+.statCard {
+  background: var(--stat-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--stat-glass-border);
+  border-radius: var(--stat-radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--stat-shadow-md);
+  transition: var(--stat-transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.statCard:hover {
+  box-shadow: var(--stat-shadow-lg);
+  transform: translateY(-2px);
+  border-color: rgba(44, 90, 160, 0.2);
+}
+
+.statCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--card-accent, var(--stat-brand-primary-light)), var(--card-accent-end, var(--stat-brand-secondary)));
+  border-radius: var(--stat-radius-lg) var(--stat-radius-lg) 0 0;
+}
+
+.statCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.statCardIcon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  background: var(--icon-bg, rgba(59, 130, 246, 0.1));
+  border-radius: var(--stat-radius-md);
+  color: var(--icon-color, var(--stat-brand-primary));
+}
+
+.statCardValue {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--value-color, var(--stat-text-primary));
+  line-height: 1.1;
+  margin-bottom: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.statCardLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--stat-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Color Variants */
+.primary { --card-accent: #3b82f6; --card-accent-end: #06b6d4; --icon-bg: rgba(59, 130, 246, 0.1); --icon-color: #3b82f6; --value-color: #1d4ed8; }
+.success { --card-accent: #10b981; --card-accent-end: #059669; --icon-bg: rgba(16, 185, 129, 0.1); --icon-color: #10b981; --value-color: #047857; }
+.warning { --card-accent: #f59e0b; --card-accent-end: #f97316; --icon-bg: rgba(245, 158, 11, 0.1); --icon-color: #f59e0b; --value-color: #b45309; }
+.danger { --card-accent: #ef4444; --card-accent-end: #dc2626; --icon-bg: rgba(239, 68, 68, 0.1); --icon-color: #ef4444; --value-color: #dc2626; }
+.info { --card-accent: #06b6d4; --card-accent-end: #0891b2; --icon-bg: rgba(6, 182, 212, 0.1); --icon-color: #06b6d4; --value-color: #0e7490; }
+.neutral { --card-accent: #64748b; --card-accent-end: #475569; --icon-bg: rgba(100, 116, 139, 0.1); --icon-color: #64748b; --value-color: #475569; }
+
+/* Clickable State */
+.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.clickable:active {
+  transform: translateY(0);
+}
+
+/* ============================================================================
+   TYPE 2: TREND CARD
+   ============================================================================ */
+.trendCard {
+  background: var(--stat-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--stat-glass-border);
+  border-radius: var(--stat-radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--stat-shadow-md);
+  transition: var(--stat-transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.trendCard:hover {
+  box-shadow: var(--stat-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.trendCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.trendCardIcon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+  border-radius: var(--stat-radius-md);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.trendBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--stat-radius-full);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.trendBadgeUp {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--stat-color-success-dark);
+}
+
+.trendBadgeDown {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--stat-color-danger-dark);
+}
+
+.trendBadgeNeutral {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--stat-color-neutral-dark);
+}
+
+.trendCardValue {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--stat-text-primary);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.trendCardLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--stat-text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.trendCardComparison {
+  font-size: 0.7rem;
+  color: var(--stat-text-muted);
+}
+
+/* ============================================================================
+   TYPE 3: PROGRESS CARD
+   ============================================================================ */
+.progressCard {
+  background: var(--stat-glass-bg-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--stat-glass-border);
+  border-radius: var(--stat-radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--stat-shadow-md);
+  transition: var(--stat-transition-normal);
+}
+
+.progressCard:hover {
+  box-shadow: var(--stat-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.progressCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.progressCardLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--stat-text-secondary);
+}
+
+.progressCardValue {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--stat-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.progressBarContainer {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: var(--stat-radius-full);
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progressBarFill {
+  height: 100%;
+  border-radius: var(--stat-radius-full);
+  transition: width 0.5s ease-out;
+  background: linear-gradient(90deg, var(--progress-start, #3b82f6), var(--progress-end, #06b6d4));
+}
+
+.progressBarFill.success { --progress-start: #10b981; --progress-end: #059669; }
+.progressBarFill.warning { --progress-start: #f59e0b; --progress-end: #f97316; }
+.progressBarFill.danger { --progress-start: #ef4444; --progress-end: #dc2626; }
+
+.progressCardDetail {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--stat-text-muted);
+}
+
+/* ============================================================================
+   TYPE 4: SPARKLINE CARD
+   ============================================================================ */
+.sparklineCard {
+  background: var(--stat-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--stat-glass-border);
+  border-radius: var(--stat-radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--stat-shadow-md);
+  transition: var(--stat-transition-normal);
+  position: relative;
+}
+
+.sparklineCard:hover {
+  box-shadow: var(--stat-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.sparklineCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.sparklineCardLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--stat-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sparklineCardValue {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--stat-text-primary);
+  line-height: 1;
+  margin-bottom: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.sparklineContainer {
+  height: 40px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  padding: 0 4px;
+}
+
+.sparklineBar {
+  flex: 1;
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.6) 0%, rgba(59, 130, 246, 0.2) 100%);
+  border-radius: 2px 2px 0 0;
+  min-width: 6px;
+  transition: var(--stat-transition-fast);
+}
+
+.sparklineBar:hover {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.9) 0%, rgba(59, 130, 246, 0.4) 100%);
+}
+
+/* ============================================================================
+   TYPE 5: THRESHOLD CARD
+   ============================================================================ */
+.thresholdCard {
+  background: var(--stat-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--stat-glass-border);
+  border-radius: var(--stat-radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--stat-shadow-md);
+  transition: var(--stat-transition-normal);
+  position: relative;
+}
+
+.thresholdCard:hover {
+  box-shadow: var(--stat-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.thresholdCard.alert {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: linear-gradient(135deg, var(--stat-glass-bg) 0%, rgba(254, 226, 226, 0.5) 100%);
+}
+
+.thresholdCard.alert::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: var(--stat-radius-lg);
+  animation: alertPulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes alertPulse {
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.2); }
+  50% { box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.5); }
+}
+
+.thresholdCard.warningState {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, var(--stat-glass-bg) 0%, rgba(254, 243, 199, 0.5) 100%);
+}
+
+.thresholdCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.thresholdCardIcon {
+  font-size: 1.25rem;
+}
+
+.thresholdStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--stat-radius-full);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.thresholdStatusBadge.critical {
+  background: var(--stat-color-danger-light);
+  color: var(--stat-color-danger-dark);
+}
+
+.thresholdStatusBadge.low {
+  background: var(--stat-color-warning-light);
+  color: var(--stat-color-warning-dark);
+}
+
+.thresholdStatusBadge.ok {
+  background: var(--stat-color-success-light);
+  color: var(--stat-color-success-dark);
+}
+
+.thresholdCardValue {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.thresholdCardValue.critical { color: var(--stat-color-danger); }
+.thresholdCardValue.low { color: var(--stat-color-warning-dark); }
+.thresholdCardValue.ok { color: var(--stat-text-primary); }
+
+.thresholdCardLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--stat-text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.thresholdIndicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--stat-text-muted);
+}
+
+.thresholdIndicatorLine {
+  flex: 1;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: var(--stat-radius-full);
+  position: relative;
+}
+
+.thresholdIndicatorFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: var(--stat-radius-full);
+  transition: width 0.3s ease-out;
+}
+
+.thresholdIndicatorMark {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 12px;
+  background: var(--stat-color-neutral);
+  border-radius: 1px;
+}
+
+/* ============================================================================
+   TYPE 6: COMPACT CARD
+   ============================================================================ */
+.compactCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--stat-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--stat-glass-border);
+  border-radius: var(--stat-radius-md);
+  padding: 0.75rem 1rem;
+  box-shadow: var(--stat-shadow-sm);
+  transition: var(--stat-transition-fast);
+}
+
+.compactCard:hover {
+  box-shadow: var(--stat-shadow-md);
+  border-color: rgba(44, 90, 160, 0.2);
+}
+
+.compactCardIcon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  background: var(--icon-bg, rgba(59, 130, 246, 0.1));
+  border-radius: var(--stat-radius-sm);
+  flex-shrink: 0;
+}
+
+.compactCard.success .compactCardIcon { --icon-bg: rgba(16, 185, 129, 0.1); color: var(--stat-color-success); }
+.compactCard.warning .compactCardIcon { --icon-bg: rgba(245, 158, 11, 0.1); color: var(--stat-color-warning); }
+.compactCard.danger .compactCardIcon { --icon-bg: rgba(239, 68, 68, 0.1); color: var(--stat-color-danger); }
+.compactCard.info .compactCardIcon { --icon-bg: rgba(6, 182, 212, 0.1); color: var(--stat-color-info); }
+
+.compactCardContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.compactCardLabel {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--stat-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.compactCardValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--stat-text-primary);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================================
+   TYPE 7: MULTI-METRIC CARD
+   ============================================================================ */
+.multiCard {
+  background: var(--stat-glass-bg-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--stat-glass-border);
+  border-radius: var(--stat-radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--stat-shadow-md);
+  transition: var(--stat-transition-normal);
+}
+
+.multiCard:hover {
+  box-shadow: var(--stat-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.multiCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.multiCardIcon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  background: linear-gradient(135deg, var(--stat-brand-primary) 0%, var(--stat-brand-secondary) 100%);
+  border-radius: var(--stat-radius-md);
+  color: white;
+}
+
+.multiCardTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--stat-text-primary);
+}
+
+.multiCardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.multiCardItem {
+  text-align: center;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: var(--stat-radius-sm);
+}
+
+.multiCardItemValue {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--stat-text-primary);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.multiCardItemLabel {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--stat-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ============================================================================
+   TYPE 8: TIMELINE CARD
+   ============================================================================ */
+.timelineCard {
+  background: var(--stat-glass-bg-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--stat-glass-border);
+  border-radius: var(--stat-radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--stat-shadow-md);
+  transition: var(--stat-transition-normal);
+}
+
+.timelineCard:hover {
+  box-shadow: var(--stat-shadow-lg);
+}
+
+.timelineCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.timelineCardTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--stat-text-primary);
+}
+
+.timelineCardTotal {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--stat-text-muted);
+}
+
+.timelineFlow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.timelineStep {
+  flex: 1;
+  text-align: center;
+}
+
+.timelineStepBar {
+  height: 24px;
+  background: var(--step-color, #e2e8f0);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: white;
+  position: relative;
+  font-variant-numeric: tabular-nums;
+}
+
+.timelineStepBar.pending { --step-color: #fbbf24; color: #92400e; }
+.timelineStepBar.confirmed { --step-color: #3b82f6; }
+.timelineStepBar.inProgress { --step-color: #06b6d4; }
+.timelineStepBar.completed { --step-color: #10b981; }
+
+.timelineStepLabel {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--stat-text-muted);
+  margin-top: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.timelineArrow {
+  width: 16px;
+  height: 16px;
+  color: var(--stat-text-muted);
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+/* ============================================================================
+   TYPE 9: DONUT CARD
+   ============================================================================ */
+.donutCard {
+  background: var(--stat-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--stat-glass-border);
+  border-radius: var(--stat-radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--stat-shadow-md);
+  transition: var(--stat-transition-normal);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.donutCard:hover {
+  box-shadow: var(--stat-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.donutChart {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.donutChart svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.donutChart circle {
+  fill: none;
+  stroke-width: 8;
+}
+
+.donutBg { stroke: rgba(0, 0, 0, 0.06); }
+.donutFill { 
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.5s ease-out;
+}
+
+.donutCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.donutCenterValue {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--stat-text-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.donutCenterLabel {
+  font-size: 0.5rem;
+  font-weight: 500;
+  color: var(--stat-text-muted);
+  text-transform: uppercase;
+}
+
+.donutCardContent {
+  flex: 1;
+}
+
+.donutCardTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--stat-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.donutLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.donutLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--stat-text-secondary);
+}
+
+.donutLegendColor {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* ============================================================================
+   TYPE 10: HERO CARD
+   ============================================================================ */
+.heroCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(239, 246, 255, 0.95) 50%, rgba(219, 234, 254, 0.95) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(59, 130, 246, 0.25);
+  border-radius: var(--stat-radius-xl);
+  padding: 1.5rem;
+  box-shadow: 
+    0 6px 24px rgba(44, 90, 160, 0.12),
+    0 3px 12px rgba(59, 130, 246, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: var(--stat-transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.heroCard::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, rgba(6, 182, 212, 0.05) 40%, transparent 70%);
+  animation: heroShimmer 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes heroShimmer {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(25%, 25%); }
+}
+
+.heroCard::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 50%, #f59e0b 100%);
+  border-radius: var(--stat-radius-xl) var(--stat-radius-xl) 0 0;
+}
+
+.heroCard:hover {
+  box-shadow: 
+    0 12px 40px rgba(44, 90, 160, 0.18),
+    0 6px 20px rgba(59, 130, 246, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transform: translateY(-4px);
+}
+
+.heroCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.heroCardIcon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  background: linear-gradient(135deg, var(--stat-brand-primary) 0%, var(--stat-brand-secondary) 100%);
+  border-radius: var(--stat-radius-lg);
+  color: white;
+  box-shadow: 0 4px 12px rgba(44, 90, 160, 0.25);
+}
+
+.heroCardTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--stat-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.heroCardValue {
+  font-size: 3.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--stat-text-primary) 0%, var(--stat-brand-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  position: relative;
+  z-index: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.heroCardSubtitle {
+  font-size: 0.85rem;
+  color: var(--stat-text-secondary);
+  position: relative;
+  z-index: 1;
+}
+
+.heroCardTrend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--stat-radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-left: 0.5rem;
+}
+
+.heroCardTrend.up {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--stat-color-success-dark);
+}
+
+.heroCardTrend.down {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--stat-color-danger-dark);
+}
+
+/* ============================================================================
+   TYPE 11: WORKSTATION CARD
+   ============================================================================ */
+.workstationCard {
+  background: var(--stat-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--stat-glass-border);
+  border-radius: var(--stat-radius-lg);
+  padding: 1rem;
+  box-shadow: var(--stat-shadow-md);
+  transition: var(--stat-transition-normal);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.workstationCard:hover {
+  box-shadow: var(--stat-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.workstationStatusIndicator {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  border-radius: var(--stat-radius-md);
+  position: relative;
+}
+
+.workstationStatusIndicator.active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.1) 100%);
+  border: 2px solid rgba(16, 185, 129, 0.4);
+}
+
+.workstationStatusIndicator.active::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 10px;
+  height: 10px;
+  background: var(--stat-color-success);
+  border-radius: 50%;
+  border: 2px solid white;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+}
+
+.workstationStatusIndicator.idle {
+  background: linear-gradient(135deg, rgba(100, 116, 139, 0.15) 0%, rgba(71, 85, 105, 0.1) 100%);
+  border: 2px solid rgba(100, 116, 139, 0.3);
+}
+
+.workstationStatusIndicator.alertStatus {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%);
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  animation: alertBorder 2s ease-in-out infinite;
+}
+
+@keyframes alertBorder {
+  0%, 100% { border-color: rgba(239, 68, 68, 0.4); }
+  50% { border-color: rgba(239, 68, 68, 0.8); }
+}
+
+.workstationInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.workstationName {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--stat-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workstationDetail {
+  font-size: 0.7rem;
+  color: var(--stat-text-muted);
+  margin-top: 0.15rem;
+}
+
+.workstationMetrics {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.workstationMetric {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.workstationMetric.orders { color: var(--stat-brand-primary); }
+.workstationMetric.time { color: var(--stat-text-muted); }
+
+/* ============================================================================
+   TYPE 12: SCENARIO CARD
+   ============================================================================ */
+.scenarioCard {
+  background: var(--stat-glass-bg-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--stat-glass-border);
+  border-radius: var(--stat-radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--stat-shadow-md);
+  transition: var(--stat-transition-normal);
+}
+
+.scenarioCard:hover {
+  box-shadow: var(--stat-shadow-lg);
+}
+
+.scenarioCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.scenarioCardTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--stat-text-primary);
+}
+
+.scenarioGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.scenarioItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--stat-radius-sm);
+  transition: var(--stat-transition-fast);
+}
+
+.scenarioItem:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.scenarioBadge {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  border-radius: var(--stat-radius-sm);
+  color: white;
+}
+
+.scenarioBadge.s1 { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+.scenarioBadge.s2 { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+.scenarioBadge.s3 { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+.scenarioBadge.s4 { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+
+.scenarioInfo {
+  flex: 1;
+}
+
+.scenarioName {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--stat-text-secondary);
+}
+
+.scenarioCount {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--stat-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================================
+   STATISTICS GRID LAYOUT
+   ============================================================================ */
+.statsGrid {
+  display: grid;
+  gap: 1rem;
+}
+
+.statsGrid2 { grid-template-columns: repeat(2, 1fr); }
+.statsGrid3 { grid-template-columns: repeat(3, 1fr); }
+.statsGrid4 { grid-template-columns: repeat(4, 1fr); }
+.statsGrid6 { grid-template-columns: repeat(6, 1fr); }
+.statsGridAuto { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+@media (max-width: 1200px) {
+  .statsGrid6 { grid-template-columns: repeat(3, 1fr); }
+  .statsGrid4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .statsGrid6, .statsGrid4, .statsGrid3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .statsGrid6, .statsGrid4, .statsGrid3, .statsGrid2 { grid-template-columns: 1fr; }
+}
+
+/* ============================================================================
+   LOADING STATE
+   ============================================================================ */
+.loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: loadingShimmer 1.5s infinite;
+}
+
+@keyframes loadingShimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}

@@ -1,0 +1,286 @@
+/**
+ * ActivityPanel.css - Unified Activity Log Styling
+ * 
+ * Consistent styling for activity logs across all dashboards.
+ * Works with both workstation dashboards and admin dashboard.
+ */
+
+/* ============================================================================
+   ACTIVITY PANEL CONTAINER
+   ============================================================================ */
+.activity-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 150px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.activity-panel--compact {
+  min-height: 120px;
+}
+
+/* ============================================================================
+   HEADER
+   ============================================================================ */
+.activity-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.1);
+  flex-shrink: 0;
+}
+
+.activity-panel__title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #1e3d66;
+  margin: 0;
+}
+
+.activity-panel__icon {
+  font-size: 0.875rem;
+}
+
+.activity-panel__count {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.125rem 0.375rem;
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  border-radius: 8px;
+  margin-left: 0.25rem;
+}
+
+.activity-panel__clear {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.activity-panel__clear:hover {
+  background: rgba(100, 116, 139, 0.1);
+  border-color: rgba(100, 116, 139, 0.3);
+}
+
+/* ============================================================================
+   ACTIVITY LIST
+   ============================================================================ */
+.activity-panel__list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding-right: 0.25rem;
+  
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.2) transparent;
+}
+
+.activity-panel__list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.activity-panel__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.activity-panel__list::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.2);
+  border-radius: 2px;
+}
+
+.activity-panel__list::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.35);
+}
+
+/* ============================================================================
+   ACTIVITY ITEM
+   ============================================================================ */
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  border-left: 3px solid var(--accent-color, #64748b);
+  font-size: 0.6875rem;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.activity-item:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateX(2px);
+}
+
+/* Type-based border colors (fallback) */
+.activity-item--success { --accent-color: #10b981; }
+.activity-item--warning { --accent-color: #f59e0b; }
+.activity-item--error { --accent-color: #ef4444; }
+.activity-item--info { --accent-color: #3b82f6; }
+
+/* ============================================================================
+   ACTIVITY ITEM PARTS
+   ============================================================================ */
+.activity-item__icon {
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+}
+
+.activity-item__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.activity-item__message {
+  color: #1e3d66;
+  font-weight: 500;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.activity-item__station {
+  font-size: 0.5625rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.activity-item__time {
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  min-width: 3.5rem;
+  text-align: right;
+}
+
+/* ============================================================================
+   COMPACT MODE
+   ============================================================================ */
+.activity-panel--compact .activity-item {
+  padding: 0.375rem 0.5rem;
+  gap: 0.375rem;
+}
+
+.activity-panel--compact .activity-item__icon {
+  width: 1rem;
+  height: 1rem;
+  font-size: 0.625rem;
+}
+
+.activity-panel--compact .activity-item__message {
+  font-size: 0.625rem;
+}
+
+.activity-panel--compact .activity-item__time {
+  font-size: 0.5625rem;
+  min-width: 2rem;
+}
+
+/* ============================================================================
+   MORE ENTRIES INDICATOR
+   ============================================================================ */
+.activity-panel__more {
+  font-size: 0.5625rem;
+  color: #94a3b8;
+  text-align: center;
+  padding: 0.375rem;
+  font-style: italic;
+  background: rgba(100, 116, 139, 0.05);
+  border-radius: 4px;
+  margin-top: 0.25rem;
+}
+
+/* ============================================================================
+   EMPTY STATE
+   ============================================================================ */
+.activity-panel__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 1.5rem 1rem;
+  color: #94a3b8;
+  font-size: 0.6875rem;
+  text-align: center;
+  flex: 1;
+}
+
+.activity-panel__empty-icon {
+  font-size: 1.25rem;
+  opacity: 0.6;
+}
+
+/* ============================================================================
+   INTEGRATION WITH WORKSTATION DASHBOARD SIDEBAR
+   ============================================================================ */
+.ws-sidebar-panel--activity .activity-panel {
+  height: 100%;
+}
+
+.ws-sidebar-panel--activity .activity-panel__header {
+  padding-bottom: 0.375rem;
+  margin-bottom: 0.375rem;
+}
+
+/* ============================================================================
+   INTEGRATION WITH ADMIN DASHBOARD
+   ============================================================================ */
+.admin-activity-section .activity-panel {
+  height: 100%;
+}
+
+.admin-activity-section .activity-panel__header {
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+@media (max-width: 768px) {
+  .activity-panel__title {
+    font-size: 0.75rem;
+  }
+  
+  .activity-item {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.625rem;
+  }
+  
+  .activity-item__time {
+    min-width: 2.5rem;
+  }
+}

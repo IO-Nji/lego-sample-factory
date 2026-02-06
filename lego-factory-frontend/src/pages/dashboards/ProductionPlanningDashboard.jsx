@@ -1,8 +1,50 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "../../api/api";
-import { StandardDashboardLayout, CompactScheduleTimeline, OrdersSection, StatisticsGrid, Button, Card } from "../../components";
-import ProductionOrderCard from "../../components/ProductionOrderCard";
-import "../../styles/DashboardLayout.css";
+import { logger } from "../../utils/logger";
+import { 
+  CompactScheduleTimeline, 
+  OrdersGrid,
+  GridCard,
+  CompactCard,
+  ListRow,
+  Button, 
+  DashboardPanel,
+  Footer
+} from "../../components";
+import DashboardHeader from "../../components/dashboard/DashboardHeader";
+import AdminActivityLog from "../../components/AdminActivityLog";
+import "../../styles/WorkstationDashboard.css";
+import "../../styles/DashboardHeader.css";
+import "../../styles/DashboardPanels.css";
+import "./AdminDashboard.css";
+
+// Order actions for production orders
+const ORDER_ACTIONS = [
+  { type: 'CONFIRM', label: 'Confirm', icon: '✓', variant: 'info', showFor: ['CREATED'] },
+  { type: 'SCHEDULE', label: 'Schedule', icon: '📅', variant: 'primary', showFor: ['CONFIRMED'] },
+  { type: 'DISPATCH', label: 'Dispatch', icon: '🚀', variant: 'success', showFor: ['SCHEDULED'] },
+  { type: 'COMPLETE', label: 'Complete', icon: '✅', variant: 'success', showFor: ['IN_PRODUCTION'] },
+  { type: 'CANCEL', label: 'Cancel', icon: '✕', variant: 'danger', showFor: ['CREATED', 'CONFIRMED'] }
+];
+
+const FILTER_OPTIONS = [
+  { value: 'ALL', label: 'All Orders' },
+  { value: 'CREATED', label: 'Pending' },
+  { value: 'CONFIRMED', label: 'Confirmed' },
+  { value: 'SCHEDULED', label: 'Scheduled' },
+  { value: 'DISPATCHED', label: 'Dispatched' },
+  { value: 'IN_PRODUCTION', label: 'In Production' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'CANCELLED', label: 'Cancelled' }
+];
+
+const SORT_OPTIONS = [
+  { value: 'orderDate', label: 'Date (Newest)' },
+  { value: 'orderDateAsc', label: 'Date (Oldest)' },
+  { value: 'orderNumber', label: 'Order Number' },
+  { value: 'status', label: 'Status' },
+  { value: 'priority', label: 'Priority' }
+];
 
 /**
  * ProductionPlanningDashboard - 4-Step Production Order Workflow
@@ -18,12 +60,13 @@ function ProductionPlanningDashboard() {
   const [scheduledTasks, setScheduledTasks] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [processingOrderId, setProcessingOrderId] = useState(null);
   const [schedulingInProgress, setSchedulingInProgress] = useState({});
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [showSchedulePreview, setShowSchedulePreview] = useState(false);
   const [orderToSchedule, setOrderToSchedule] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   const addNotification = (message, type = 'info') => {
     const newNotification = {
@@ -45,18 +88,19 @@ function ProductionPlanningDashboard() {
    * Confirms that the production planner has reviewed the order
    */
   const handleConfirmOrder = async (orderId) => {
+    setProcessingOrderId(orderId);
     setError(null);
-    setSuccess(null);
     
     try {
       await api.post(`/production-orders/${orderId}/confirm`);
-      setSuccess("Production order confirmed - ready for scheduling");
       addNotification("Order confirmed and ready for scheduling", "success");
       await fetchProductionOrders();
     } catch (err) {
       const errorMsg = err.response?.data?.message || err.message || "Failed to confirm order";
       setError(errorMsg);
       addNotification(errorMsg, "error");
+    } finally {
+      setProcessingOrderId(null);
     }
   };
 
@@ -99,13 +143,13 @@ function ProductionPlanningDashboard() {
     try {
       const response = await api.get("/simal/scheduled-orders");
       const orders = Array.isArray(response.data) ? response.data : [];
-      console.log('Fetched scheduled orders:', orders.length, 'orders');
+      logger.debug('ProductionPlanning', 'Fetched scheduled orders', orders.length);
       setScheduledOrders(orders);
       
       // Extract and format all tasks for timeline
       const allTasks = [];
       orders.forEach(order => {
-        console.log('Processing order:', order.orderNumber, 'status:', order.status, 'tasks:', order.scheduledTasks?.length || 0);
+        logger.debug('ProductionPlanning', `Processing order ${order.orderNumber}`, { status: order.status, tasks: order.scheduledTasks?.length || 0 });
         if (order.scheduledTasks && Array.isArray(order.scheduledTasks)) {
           order.scheduledTasks.forEach(task => {
             const formattedTask = {
@@ -118,12 +162,12 @@ function ProductionPlanningDashboard() {
               orderId: order.id,
               scheduleId: order.scheduleId
             };
-            console.log('  Task:', task.taskId, 'ws:', task.workstationName, 'status:', task.status);
+            logger.debug('ProductionPlanning', `Task ${task.taskId}`, { ws: task.workstationName, status: task.status });
             allTasks.push(formattedTask);
           });
         }
       });
-      console.log('Total tasks extracted:', allTasks.length);
+      logger.debug('ProductionPlanning', 'Total tasks extracted', allTasks.length);
       setScheduledTasks(allTasks);
     } catch (err) {
       console.error("Failed to load scheduled orders:", err);
@@ -159,9 +203,9 @@ function ProductionPlanningDashboard() {
 
     try {
       // Call SimAL to schedule the production order
-      console.log('Scheduling production order:', order.id, order.productionOrderNumber);
+      logger.info('ProductionPlanning', `Scheduling production order ${order.productionOrderNumber}`, order.id);
       const response = await api.post(`/simal/schedule-production-order/${order.id}`);
-      console.log('SimAL schedule response:', response.data);
+      logger.success('ProductionPlanning', 'SimAL schedule response', response.data);
       
       // Update production order with SimAL schedule ID and set status to SCHEDULED
       try {
@@ -181,10 +225,10 @@ function ProductionPlanningDashboard() {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Refresh both order lists and scheduled tasks
-      console.log('Refreshing production orders and scheduled data...');
+      logger.debug('ProductionPlanning', 'Refreshing production orders and scheduled data');
       await fetchProductionOrders();
       await fetchScheduledOrders();
-      console.log('Data refresh complete');
+      logger.success('ProductionPlanning', 'Data refresh complete');
     } catch (err) {
       console.error('Scheduling error:', err);
       const errorMsg = err.response?.data?.message || err.message || "Failed to schedule with SimAL";
@@ -192,26 +236,14 @@ function ProductionPlanningDashboard() {
       addNotification(errorMsg, "error");
     } finally {
       setSchedulingInProgress(prev => ({ ...prev, [order.id]: false }));
-    }
-  };
-
-  const handleUpdateStatus = async (orderId, newStatus) => {
-    try {
-      await api.patch(`/production-orders/${orderId}/status`, { status: newStatus });
-      setSuccess(`Production order status updated to ${newStatus}`);
-      addNotification(`Status updated to ${newStatus}`, "info");
-      await fetchProductionOrders();
-    } catch (err) {
-      const errorMsg = err.response?.data?.message || err.message || "Failed to update status";
-      setError(errorMsg);
-      addNotification(errorMsg, "error");
+      setProcessingOrderId(null);
     }
   };
 
   const handleDispatchProduction = async (orderId) => {
+    setProcessingOrderId(orderId);
     try {
-      const response = await api.post(`/production-planning/${orderId}/dispatch`);
-      setSuccess(`Production order dispatched - Control orders created and sent to workstations`);
+      await api.post(`/production-planning/${orderId}/dispatch`);
       addNotification("Production dispatched to workstations", "success");
       await fetchProductionOrders();
       await fetchScheduledOrders();
@@ -219,6 +251,8 @@ function ProductionPlanningDashboard() {
       const errorMsg = err.response?.data?.message || err.message || "Failed to dispatch production";
       setError(errorMsg);
       addNotification(errorMsg, "error");
+    } finally {
+      setProcessingOrderId(null);
     }
   };
 
@@ -227,15 +261,17 @@ function ProductionPlanningDashboard() {
       return;
     }
 
+    setProcessingOrderId(orderId);
     try {
       await api.patch(`/production-orders/${orderId}/cancel`);
-      setSuccess("Production order cancelled successfully");
       addNotification("Production order cancelled", "warning");
       await fetchProductionOrders();
     } catch (err) {
       const errorMsg = err.response?.data?.message || err.message || "Failed to cancel order";
       setError(errorMsg);
       addNotification(errorMsg, "error");
+    } finally {
+      setProcessingOrderId(null);
     }
   };
 
@@ -246,32 +282,34 @@ function ProductionPlanningDashboard() {
    * - WarehouseOrder can then proceed to fulfill and create Final Assembly orders
    */
   const handleCompleteProductionOrder = async (orderId) => {
+    setProcessingOrderId(orderId);
     try {
       await api.post(`/production-orders/${orderId}/complete-with-notification`);
-      setSuccess("Production order completed! Modules credited to Modules Supermarket and Warehouse Order notified.");
       addNotification("Production completed - Modules Supermarket credited", "success");
       await fetchProductionOrders();
     } catch (err) {
       const errorMsg = err.response?.data?.message || err.message || "Failed to complete production order";
       setError(errorMsg);
       addNotification(errorMsg, "error");
+    } finally {
+      setProcessingOrderId(null);
     }
   };
-  
-  const handleTaskClick = (task) => {
-    // Find the related production order
-    const relatedOrder = productionOrders.find(order => {
-      return scheduledOrders.some(sched => 
-        sched.productionOrderId === order.id && 
-        sched.tasks?.some(t => t.id === task.id || t.taskId === task.taskId)
-      );
-    });
-    
-    if (relatedOrder) {
-      setSelectedOrder(relatedOrder);
-      addNotification(`Viewing task: ${task.taskType || task.operationType || 'Task'} from Order ${relatedOrder.productionOrderNumber}`, 'info');
+
+  // Unified action handler for OrdersGrid
+  const handleAction = useCallback((actionType, orderId, order) => {
+    switch (actionType) {
+      case 'CONFIRM': handleConfirmOrder(orderId); break;
+      case 'SCHEDULE': 
+        setSelectedOrder(order);
+        handleShowSchedulePreview(order);
+        break;
+      case 'DISPATCH': handleDispatchProduction(orderId); break;
+      case 'COMPLETE': handleCompleteProductionOrder(orderId); break;
+      case 'CANCEL': handleCancelOrder(orderId); break;
+      default: logger.warn('ProductionPlanning', 'Unknown action:', actionType);
     }
-  };
+  }, []);
 
   const getStatusBadgeColor = (status) => {
     const colors = {
@@ -295,66 +333,45 @@ function ProductionPlanningDashboard() {
     return colors[priority] || "#6b7280";
   };
 
-  // Render Statistics Cards
-  // Stats data for StatisticsGrid
-  const statsData = (() => {
-    const statusCounts = productionOrders.reduce((acc, order) => {
-      acc[order.status] = (acc[order.status] || 0) + 1;
-      return acc;
-    }, {});
+  // Stats data for panel row
+  const statusCounts = productionOrders.reduce((acc, order) => {
+    acc[order.status] = (acc[order.status] || 0) + 1;
+    return acc;
+  }, {});
+  const totalTasks = scheduledOrders.reduce((sum, s) => sum + (s.scheduledTasks?.length || 0), 0);
 
-    return [
-      { value: productionOrders.length, label: 'Total Orders', variant: 'default', icon: '📦' },
-      { value: statusCounts.CREATED || 0, label: 'Pending', variant: 'pending', icon: '⏳' },
-      { value: statusCounts.CONFIRMED || 0, label: 'Confirmed', variant: 'info', icon: '✓' },
-      { value: statusCounts.SCHEDULED || 0, label: 'Scheduled', variant: 'processing', icon: '📅' },
-      { value: statusCounts.DISPATCHED || 0, label: 'Dispatched', variant: 'info', icon: '🚀' },
-      { value: statusCounts.IN_PRODUCTION || 0, label: 'In Production', variant: 'warning', icon: '⚙️' },
-      { value: statusCounts.COMPLETED || 0, label: 'Completed', variant: 'success', icon: '✅' },
-      { value: scheduledOrders.length, label: 'Active Schedules', variant: 'info', icon: '📊' },
-    ];
-  })();
-
-  // Render Production Orders Section using standardized OrdersSection
-  const renderProductionOrders = () => (
-    <OrdersSection
-      title="Production Orders"
-      icon="📋"
-      orders={productionOrders}
-      filterOptions={[
-        { value: 'ALL', label: 'All Orders' },
-        { value: 'CREATED', label: 'Pending' },
-        { value: 'CONFIRMED', label: 'Confirmed' },
-        { value: 'SCHEDULED', label: 'Scheduled' },
-        { value: 'DISPATCHED', label: 'Dispatched' },
-        { value: 'IN_PRODUCTION', label: 'In Production' },
-        { value: 'COMPLETED', label: 'Completed' },
-        { value: 'CANCELLED', label: 'Cancelled' }
-      ]}
-      sortOptions={[
-        { value: 'productionOrderNumber', label: 'Order Number' },
-        { value: 'createdAt', label: 'Created Date' },
-        { value: 'priority', label: 'Priority' },
-        { value: 'status', label: 'Status' }
-      ]}
-      renderCard={(order) => (
-        <ProductionOrderCard
-          key={order.id}
-          order={order}
-          onConfirm={(orderId) => handleConfirmOrder(orderId)}
-          onSchedule={(order) => {
-            setSelectedOrder(order);
-            handleShowSchedulePreview(order);
-          }}
-          onStart={(orderId) => handleDispatchProduction(orderId)}
-          onComplete={(orderId) => handleCompleteProductionOrder(orderId)}
-          onCancel={handleCancelOrder}
-          isScheduling={schedulingInProgress[order.id]}
-        />
+  // Render order extra info (priority, schedule status)
+  const renderOrderExtra = (order) => (
+    <>
+      {order.priority && order.priority !== 'NORMAL' && (
+        <span style={{
+          fontSize: '0.625rem',
+          padding: '0.125rem 0.375rem',
+          borderRadius: '4px',
+          background: order.priority === 'URGENT' ? 'rgba(239, 68, 68, 0.1)' :
+                     order.priority === 'HIGH' ? 'rgba(245, 158, 11, 0.1)' :
+                     'rgba(59, 130, 246, 0.1)',
+          color: order.priority === 'URGENT' ? '#dc2626' :
+                 order.priority === 'HIGH' ? '#d97706' :
+                 '#2563eb',
+          fontWeight: 600
+        }}>
+          {order.priority}
+        </span>
       )}
-      searchPlaceholder="Search by order number..."
-      emptyMessage="Orders will appear here when created by Modules Supermarket"
-    />
+      {order.simalScheduleId && (
+        <span style={{
+          fontSize: '0.625rem',
+          padding: '0.125rem 0.375rem',
+          borderRadius: '4px',
+          background: 'rgba(139, 92, 246, 0.1)',
+          color: '#7c3aed',
+          fontWeight: 600
+        }}>
+          SimAL: {order.simalScheduleId}
+        </span>
+      )}
+    </>
   );
 
   // Render Schedule Preview Modal (Step 3a - before SimAL call)
@@ -472,48 +489,232 @@ function ProductionPlanningDashboard() {
     );
   };
 
-  // Render Production Schedule Timeline
-  const renderScheduleTimeline = () => (
-    <Card variant="framed" title="PRODUCTION SCHEDULE TIMELINE" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <CompactScheduleTimeline
-        scheduledTasks={scheduledTasks}
-        onTaskClick={handleTaskClick}
-        showTitle={false}
-      />
-    </Card>
-  );
+  // Handle task click for timeline
+  const handleTaskClick = (task) => {
+    const relatedOrder = productionOrders.find(order => {
+      return scheduledOrders.some(sched => 
+        sched.productionOrderId === order.id && 
+        sched.tasks?.some(t => t.id === task.id || t.taskId === task.taskId)
+      );
+    });
+    
+    if (relatedOrder) {
+      setSelectedOrder(relatedOrder);
+      addNotification(`Viewing task: ${task.taskType || task.operationType || 'Task'} from Order ${relatedOrder.productionOrderNumber}`, 'info');
+    }
+  };
 
-  // Render Statistics
-  const renderStats = () => <StatisticsGrid stats={statsData} />;
-
-  // Render placeholder for Gantt chart/schedule view
-  const renderScheduleView = () => (
-    <div className="dashboard-info-box" style={{ padding: '0.75rem' }}>
-      <h3 style={{ fontWeight: 'bold', fontSize: '0.875rem', marginBottom: '0.5rem', color: '#8b5cf6' }}>
-        Schedule Overview
-      </h3>
-      <ul style={{ marginLeft: '1rem', fontSize: '0.8125rem', lineHeight: '1.4', color: '#6b7280', marginBottom: '0' }}>
-        <li><strong>Active Schedules:</strong> {scheduledOrders.length}</li>
-        <li><strong>Total Tasks:</strong> {scheduledOrders.reduce((sum, s) => sum + (s.scheduledTasks?.length || 0), 0)}</li>
-        <li><strong>SimAL Integration:</strong> Enabled</li>
-      </ul>
-    </div>
-  );
+  if (loading && productionOrders.length === 0) {
+    return (
+      <div className="admin-page">
+        <div className="admin-loading">
+          <div className="admin-spinner" />
+          <p>Loading Production Planning...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <StandardDashboardLayout
-        title="Production Planning"
-        subtitle="Factory-Wide Scheduling & Order Management"
+    <div className="admin-page">
+      <div className="admin-bg" />
+      
+      {/* Header */}
+      <DashboardHeader
         icon="📅"
-        activityContent={renderScheduleTimeline()}
-        statsContent={renderStats()}
-        formContent={renderScheduleView()}
-        contentGrid={renderProductionOrders()}
-        inventoryContent={null}
+        title="Production Planning"
+        subtitle="Factory Scheduling • SimAL Integration"
+        onRefresh={async () => {
+          await fetchProductionOrders();
+          await fetchScheduledOrders();
+        }}
+        themeClass="ws-theme-planning"
       />
+
+      {/* Error/Success Messages */}
+      {error && (
+        <div className="admin-error">
+          ⚠️ {error}
+          <button onClick={() => setError(null)}>✕</button>
+        </div>
+      )}
+      {success && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.625rem 1rem',
+          background: 'rgba(209, 250, 229, 0.9)',
+          border: '1px solid rgba(16, 185, 129, 0.4)',
+          borderRadius: '8px',
+          color: '#065f46',
+          fontSize: '0.8125rem',
+          fontWeight: 500,
+          zIndex: 1
+        }}>
+          ✅ {success}
+          <button onClick={() => setSuccess(null)} style={{ background: 'none', border: 'none', color: '#065f46', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+        </div>
+      )}
+
+      {/* Row 1: Stats Panels */}
+      <div className="admin-grid">
+        {/* Production Orders Panel */}
+        <div className="admin-panel glass">
+          <div className="admin-panel__head">
+            <span className="admin-panel__icon">📋</span>
+            <h2 className="admin-panel__title">Production Orders</h2>
+            <span className="admin-panel__badge">{productionOrders.length}</span>
+          </div>
+          <div className="admin-stats-row">
+            <div className="admin-stat admin-stat--pending">
+              <span className="admin-stat__val">{statusCounts.CREATED || 0}</span>
+              <span className="admin-stat__lbl">Pending</span>
+            </div>
+            <div className="admin-stat admin-stat--processing">
+              <span className="admin-stat__val">{statusCounts.CONFIRMED || 0}</span>
+              <span className="admin-stat__lbl">Confirmed</span>
+            </div>
+            <div className="admin-stat admin-stat--highlight">
+              <span className="admin-stat__val">{statusCounts.SCHEDULED || 0}</span>
+              <span className="admin-stat__lbl">Scheduled</span>
+            </div>
+            <div className="admin-stat admin-stat--rate">
+              <span className="admin-stat__val">{statusCounts.IN_PRODUCTION || 0}</span>
+              <span className="admin-stat__lbl">Active</span>
+            </div>
+          </div>
+        </div>
+
+        {/* SimAL Scheduling Panel */}
+        <div className="admin-panel glass">
+          <div className="admin-panel__head">
+            <span className="admin-panel__icon">📅</span>
+            <h2 className="admin-panel__title">SimAL Scheduling</h2>
+            <span className="admin-panel__badge admin-panel__badge--active">{scheduledOrders.length} schedules</span>
+          </div>
+          <div className="admin-stats-row">
+            <div className="admin-stat">
+              <span className="admin-stat__val">{scheduledOrders.length}</span>
+              <span className="admin-stat__lbl">Schedules</span>
+            </div>
+            <div className="admin-stat">
+              <span className="admin-stat__val">{totalTasks}</span>
+              <span className="admin-stat__lbl">Tasks</span>
+            </div>
+            <div className="admin-stat admin-stat--completed">
+              <span className="admin-stat__val">✓</span>
+              <span className="admin-stat__lbl">SimAL</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Dispatch Panel */}
+        <div className="admin-panel glass">
+          <div className="admin-panel__head">
+            <span className="admin-panel__icon">🚀</span>
+            <h2 className="admin-panel__title">Dispatch</h2>
+          </div>
+          <div className="admin-stats-row">
+            <div className="admin-stat admin-stat--processing">
+              <span className="admin-stat__val">{statusCounts.DISPATCHED || 0}</span>
+              <span className="admin-stat__lbl">Dispatched</span>
+            </div>
+            <div className="admin-stat admin-stat--completed">
+              <span className="admin-stat__val">{statusCounts.COMPLETED || 0}</span>
+              <span className="admin-stat__lbl">Done</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Overview Panel */}
+        <div className="admin-panel glass">
+          <div className="admin-panel__head">
+            <span className="admin-panel__icon">📊</span>
+            <h2 className="admin-panel__title">Overview</h2>
+          </div>
+          <div className="admin-stats-row">
+            <div className="admin-stat admin-stat--rate">
+              <span className="admin-stat__val">
+                {productionOrders.length > 0 ? `${Math.round((statusCounts.COMPLETED || 0) / productionOrders.length * 100)}%` : '—'}
+              </span>
+              <span className="admin-stat__lbl">Efficiency</span>
+            </div>
+            <div className={`admin-stat ${(statusCounts.CANCELLED || 0) > 0 ? 'admin-stat--warning' : ''}`}>
+              <span className="admin-stat__val">{statusCounts.CANCELLED || 0}</span>
+              <span className="admin-stat__lbl">Cancelled</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2: Timeline + Activity (same as Admin) */}
+      <div className="admin-timeline-row">
+        <div className="admin-timeline-section glass">
+          <div className="admin-panel__head">
+            <span className="admin-panel__icon">📅</span>
+            <h2 className="admin-panel__title">Production Schedule</h2>
+          </div>
+          <div className="admin-timeline">
+            <CompactScheduleTimeline
+              scheduledTasks={scheduledTasks}
+              showTitle={false}
+              showCurrentTime={true}
+              showMiniControls={true}
+              onTaskClick={handleTaskClick}
+            />
+          </div>
+        </div>
+        
+        <div className="admin-activity-section glass">
+          <AdminActivityLog maxItems={20} />
+        </div>
+      </div>
+
+      {/* Row 3: Orders Table */}
+      <div className="glass" style={{ padding: '0.875rem', zIndex: 1 }}>
+        <OrdersGrid
+          title="Production Orders"
+          icon="📋"
+          orders={productionOrders}
+          filterOptions={FILTER_OPTIONS}
+          sortOptions={SORT_OPTIONS}
+          searchPlaceholder="Search PRO-XXX..."
+          emptyMessage="No production orders"
+          emptySubtext="Orders will appear here when created by Modules Supermarket"
+          searchKeys={['productionOrderNumber', 'notes']}
+          renderCard={(order) => (
+            <GridCard
+              order={order}
+              onAction={(type, id) => handleAction(type, id, order)}
+              actions={ORDER_ACTIONS}
+              renderExtra={renderOrderExtra}
+              isProcessing={processingOrderId === order.id || schedulingInProgress[order.id]}
+            />
+          )}
+          renderCompactCard={(order) => (
+            <CompactCard
+              order={order}
+              onAction={(type, id) => handleAction(type, id, order)}
+              actions={ORDER_ACTIONS}
+              isProcessing={processingOrderId === order.id || schedulingInProgress[order.id]}
+            />
+          )}
+          renderListItem={(order) => (
+            <ListRow
+              order={order}
+              onAction={(type, id) => handleAction(type, id, order)}
+              actions={ORDER_ACTIONS}
+              columns={['orderNumber', 'status', 'date', 'priority']}
+              isProcessing={processingOrderId === order.id || schedulingInProgress[order.id]}
+            />
+          )}
+        />
+      </div>
+
+      <Footer />
       {renderSchedulePreviewModal()}
-    </>
+    </div>
   );
 }
 

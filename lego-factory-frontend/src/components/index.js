@@ -17,6 +17,23 @@ export { default as StatCard } from './StatCard';
 export { default as StatisticsGrid } from './StatisticsGrid';
 export { default as Badge } from './Badge';
 
+// Statistics Cards (New Glassmorphism Design System)
+export {
+  StatCardTrend,
+  StatCardProgress,
+  StatCardSparkline,
+  StatCardThreshold,
+  StatCardCompact,
+  StatCardMulti,
+  StatCardTimeline,
+  StatCardDonut,
+  StatCardHero,
+  StatCardWorkstation,
+  StatCardScenario,
+  StatisticsGrid as StatsGrid,  // Alias for convenience
+  statisticsStyles,
+} from './statistics';
+
 // Data Display
 export { default as Table } from './Table';
 export { default as PieChart } from './PieChart';
@@ -37,9 +54,35 @@ export { default as Alert } from './Alert';
 export { default as Notification } from './Notification';
 
 // Layout Components
-export { default as DashboardLayout } from './DashboardLayout';
+// Note: DashboardLayout was removed in Feb 2026 cleanup - use StandardDashboardLayout
 export { default as StandardDashboardLayout } from './StandardDashboardLayout';
 export { default as PageHeader } from './PageHeader';
+
+// Dashboard System Components
+export {
+  BaseDashboard,
+  SectionCard,
+  EmptyState,
+  HeroStatsSection,
+  ActivityLogSection,
+  WorkstationMonitorSection,
+  DASHBOARD_TYPES,
+  SECTION_DEFAULTS,
+  getDashboardConfig,
+  resolveDashboardType,
+  // New unified workstation dashboard components
+  WorkstationDashboard,
+  WarehouseDashboard,
+  ControlDashboard,
+  ActivityPanel,
+  InventoryPanel,
+  FormPanel,
+  QuickOrderPanel,
+  // Panel row components (Feb 2026)
+  DashboardHeader,
+  DashboardPanel,
+  DashboardPanelRow,
+} from './dashboard';
 
 // Reusable Dashboard Components
 export { default as InventoryTable } from './InventoryTable';
@@ -47,16 +90,18 @@ export { default as OrdersSection } from './OrdersSection';
 export { default as FormCard } from './FormCard';
 export { default as ActivityLog } from './ActivityLog';
 
-// Order Cards
-export { default as BaseOrderCard } from './BaseOrderCard';
-export { default as CustomerOrderCard } from './CustomerOrderCard';
-export { default as WarehouseOrderCard } from './WarehouseOrderCard';
-export { default as ProductionOrderCard } from './ProductionOrderCard';
-export { default as FinalAssemblyOrderCard } from './FinalAssemblyOrderCard';
-export { default as ProductionControlOrderCard } from './ProductionControlOrderCard';
-export { default as AssemblyControlOrderCard } from './AssemblyControlOrderCard';
-export { default as SupplyOrderCard } from './SupplyOrderCard';
-export { default as WorkstationOrderCard } from './WorkstationOrderCard';
+// Unified Order Card (use this for all order card implementations)
+export { default as UnifiedOrderCard, ORDER_TYPES } from './orders/UnifiedOrderCard';
+export * from './orders/orderCardConfig';
+
+// New Order Grid System (use for migrated dashboards)
+export { 
+  default as OrdersGrid, 
+  VIEW_MODES, 
+  DEFAULT_FILTER_OPTIONS, 
+  DEFAULT_SORT_OPTIONS 
+} from './orders/OrdersGrid';
+export { GridCard, CompactCard, ListRow } from './orders/OrderCardVariants';
 
 // Feedback & Interaction
 export { default as Tooltip } from './Tooltip';

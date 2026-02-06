@@ -1,6 +1,7 @@
 package io.life.inventory.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,6 +18,14 @@ public class StockRecord {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	/**
+	 * Version field for optimistic locking.
+	 * JPA will automatically check this field during updates.
+	 * If another transaction modified the record, OptimisticLockException is thrown.
+	 */
+	@Version
+	private Long version;
+
 	@Column(nullable = false)
 	private Long workstationId;
 
@@ -26,6 +35,7 @@ public class StockRecord {
 	@Column(nullable = false)
 	private Long itemId;
 
+	@Min(value = 0, message = "Stock quantity cannot be negative")
 	@Column(nullable = false)
 	private Integer quantity;
 

@@ -19,6 +19,8 @@ import AdminOverviewPage from "./pages/AdminOverviewPage.jsx";
 import ManagerOverviewPage from "./pages/ManagerOverviewPage.jsx";
 import WarehouseOverviewPage from "./pages/WarehouseOverviewPage.jsx";
 import ManufacturingOverviewPage from "./pages/ManufacturingOverviewPage.jsx";
+// Demo Pages
+import OrderCardDemo from "./pages/demos/OrderCardDemo.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 import { AuthGuard, AdminGuard } from "./components/AuthGuard.jsx";
 
@@ -152,6 +154,12 @@ function App() {
               <ManualSchedulerPage />
             </AuthGuard>
           }
+        />
+
+        {/* Demo Pages - Public access for testing */}
+        <Route
+          path="demos/order-cards"
+          element={<OrderCardDemo />}
         />
       </Route>
       <Route path="/login" element={<LoginPage />} />

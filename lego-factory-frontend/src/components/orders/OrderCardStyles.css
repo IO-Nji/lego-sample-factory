@@ -1,0 +1,453 @@
+/**
+ * Order Card Styles - Unified styling for all order card variants
+ * 
+ * Supports three view modes:
+ * - Grid: Full-featured cards in 3-column layout
+ * - Compact: Smaller cards for dense displays
+ * - List: Horizontal rows for quick scanning
+ */
+
+/* ============================================================================
+   BASE CARD STYLES
+   ============================================================================ */
+
+.order-card {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 8px rgba(44, 90, 160, 0.06);
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.order-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(44, 90, 160, 0.12);
+}
+
+/* ============================================================================
+   GRID VIEW (Default)
+   ============================================================================ */
+
+.order-card--grid {
+  padding: 0.875rem;
+  border-top: 3px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.order-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.order-card__title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.order-card__number {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1e3d66;
+}
+
+.order-card__priority {
+  font-size: 0.75rem;
+}
+
+.order-card__status {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.order-card__date {
+  font-size: 0.6875rem;
+  color: #64748b;
+}
+
+.order-card__items {
+  font-size: 0.75rem;
+  color: #475569;
+  line-height: 1.5;
+  padding: 0.5rem;
+  background: rgba(100, 116, 139, 0.05);
+  border-radius: 6px;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.order-card__extra {
+  font-size: 0.6875rem;
+  color: #64748b;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.order-card__actions {
+  display: flex;
+  gap: 0.375rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(100, 116, 139, 0.1);
+}
+
+/* ============================================================================
+   ACTION BUTTONS
+   ============================================================================ */
+
+.order-card__btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.order-card__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.order-card__btn--default {
+  background: rgba(100, 116, 139, 0.1);
+  color: #475569;
+}
+
+.order-card__btn--default:hover:not(:disabled) {
+  background: rgba(100, 116, 139, 0.15);
+}
+
+.order-card__btn--primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.order-card__btn--primary:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.order-card__btn--success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.order-card__btn--success:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.order-card__btn--warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.order-card__btn--warning:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.order-card__btn--danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.order-card__btn--danger:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* ============================================================================
+   COMPACT VIEW
+   ============================================================================ */
+
+.order-card--compact {
+  padding: 0.5rem 0.625rem;
+  border-left: 3px solid #e2e8f0;
+  border-top: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.order-card__compact-header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.order-card__number--small {
+  font-size: 0.75rem;
+}
+
+.order-card__status--small {
+  font-size: 0.5rem;
+  padding: 0.125rem 0.375rem;
+  margin-left: auto;
+}
+
+.order-card__compact-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.order-card__date--small {
+  font-size: 0.5625rem;
+}
+
+.order-card__actions--compact {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.order-card__btn--compact {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+  min-width: 24px;
+}
+
+/* ============================================================================
+   LIST VIEW
+   ============================================================================ */
+
+.order-card--list {
+  padding: 0.625rem 0.875rem;
+  border-left: 3px solid #e2e8f0;
+  border-top: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.order-card--list:hover {
+  transform: none;
+}
+
+.order-card__list-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.order-card__number--list {
+  font-size: 0.8125rem;
+  min-width: 100px;
+}
+
+.order-card__status--list {
+  font-size: 0.5625rem;
+  min-width: 80px;
+  text-align: center;
+}
+
+.order-card__date--list {
+  font-size: 0.6875rem;
+  color: #64748b;
+  min-width: 120px;
+}
+
+.order-card__priority--list {
+  font-size: 0.625rem;
+  color: #64748b;
+  min-width: 70px;
+}
+
+.order-card__quantity {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #1e3d66;
+  background: rgba(59, 130, 246, 0.08);
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+}
+
+.order-card__list-actions {
+  display: flex;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.order-card__btn--list {
+  flex: 0 0 auto;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.6875rem;
+}
+
+/* ============================================================================
+   PROCESSING INDICATOR
+   ============================================================================ */
+
+.order-card__processing {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+  z-index: 10;
+}
+
+.order-card__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: order-card-spin 0.8s linear infinite;
+}
+
+.order-card__spinner--small {
+  width: 12px;
+  height: 12px;
+  border-width: 1.5px;
+}
+
+@keyframes order-card-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================================
+   OVERFLOW PROTECTION & CONTAINMENT
+   ============================================================================ */
+.order-card,
+.order-card--grid,
+.order-card--compact,
+.order-card--list {
+  overflow: hidden;
+  contain: layout paint;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.order-card__number,
+.order-card__status,
+.order-card__date {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-card__items,
+.order-card__extra {
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.order-card__actions {
+  flex-wrap: wrap;
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+
+@media (max-width: 1024px) {
+  .order-card--grid {
+    padding: 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  .order-card__items {
+    max-height: 60px;
+  }
+}
+
+@media (max-width: 768px) {
+  .order-card--grid {
+    padding: 0.625rem;
+  }
+  
+  .order-card__header {
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+  
+  .order-card__number {
+    font-size: 0.8125rem;
+  }
+  
+  .order-card__status {
+    font-size: 0.5rem;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .order-card__items {
+    max-height: 50px;
+    font-size: 0.6875rem;
+    padding: 0.375rem;
+  }
+  
+  .order-card__btn {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.625rem;
+    min-width: 0;
+  }
+  
+  .order-card__btn span:first-child {
+    display: none; /* Hide icons on mobile */
+  }
+  
+  .order-card__actions {
+    gap: 0.25rem;
+  }
+  
+  .order-card__list-content {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .order-card__date--list,
+  .order-card__priority--list {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .order-card--grid {
+    padding: 0.5rem;
+  }
+  
+  .order-card__number {
+    font-size: 0.75rem;
+  }
+  
+  .order-card__date {
+    font-size: 0.5625rem;
+  }
+  
+  .order-card__extra {
+    display: none;
+  }
+  
+  .order-card__btn {
+    padding: 0.3rem 0.375rem;
+    font-size: 0.5625rem;
+  }
+}

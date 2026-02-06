@@ -1,0 +1,67 @@
+/* HeroStatsSection.module.css */
+
+.heroStatsSection {
+  width: 100%;
+  --hero-columns: 4;
+}
+
+.heroStatsSection.compact {
+  --hero-columns: 5;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(var(--hero-columns), 1fr);
+  gap: 1.25rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+  .heroStatsSection {
+    --hero-columns: 3;
+  }
+  
+  .heroStatsSection.compact {
+    --hero-columns: 4;
+  }
+}
+
+@media (max-width: 1100px) {
+  .heroStatsSection {
+    --hero-columns: 2;
+  }
+  
+  .heroStatsSection.compact {
+    --hero-columns: 3;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroStatsSection {
+    --hero-columns: 1;
+  }
+  
+  .heroStatsSection.compact {
+    --hero-columns: 2;
+  }
+  
+  .statsGrid {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .heroStatsSection.compact {
+    --hero-columns: 1;
+  }
+}

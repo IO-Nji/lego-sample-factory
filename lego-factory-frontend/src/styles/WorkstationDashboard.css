@@ -1,0 +1,1619 @@
+/* ============================================================================
+   WORKSTATION DASHBOARD - UNIFIED DESIGN SYSTEM
+   ============================================================================
+   Glassmorphism-inspired design matching Admin Dashboard aesthetics.
+   Provides consistent layout for all workstation dashboards.
+   ============================================================================ */
+
+@import './variables.css';
+
+/* Page Layout */
+.ws-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #e1f5fe 100%);
+  gap: 1rem;
+  position: relative;
+}
+
+.ws-bg {
+  position: fixed;
+  inset: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><path d="M0 0h80v80H0z" fill="none"/><path d="M0 80V0h1v80zm20 0V0h1v80zm20 0V0h1v80zm20 0V0h1v80zm20 0V0h1v80zM0 0h80v1H0zm0 20h80v1H0zm0 20h80v1H0zm0 20h80v1H0zm0 20h80v1H0z" fill="rgba(44,90,160,.04)"/></svg>');
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Loading State */
+.ws-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 0.75rem;
+  color: #1e3d66;
+}
+
+.ws-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: ws-spin 0.8s linear infinite;
+}
+
+@keyframes ws-spin { to { transform: rotate(360deg); } }
+
+/* Glass Card Base */
+.ws-glass {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(44, 90, 160, 0.06);
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================================
+   HEADER
+   ============================================================================ */
+.ws-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1.25rem;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(44, 90, 160, 0.06);
+  position: relative;
+  z-index: 1;
+}
+
+.ws-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--ws-gradient, linear-gradient(90deg, #3b82f6, #06b6d4, #10b981));
+  border-radius: 12px 12px 0 0;
+}
+
+.ws-header__left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ws-header__icon {
+  font-size: 1.75rem;
+  background: var(--ws-icon-bg, linear-gradient(135deg, #3b82f6, #06b6d4));
+  padding: 0.625rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ws-header__info {
+  display: flex;
+  flex-direction: column;
+}
+
+.ws-header__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e3d66;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.ws-header__sub {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.ws-header__right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ws-header__status {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 20px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #059669;
+}
+
+.ws-header__status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: ws-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ws-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+}
+
+.ws-refresh {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ws-refresh:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.ws-refresh--spin {
+  animation: ws-spin 1s linear infinite;
+}
+
+/* ============================================================================
+   STATS ROW
+   ============================================================================ */
+.ws-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  z-index: 1;
+}
+
+.ws-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.875rem 0.75rem;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(44, 90, 160, 0.05);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.ws-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(44, 90, 160, 0.1);
+}
+
+.ws-stat-card__value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e3d66;
+  line-height: 1;
+}
+
+.ws-stat-card__label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 0.25rem;
+  text-align: center;
+}
+
+.ws-stat-card__icon {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  opacity: 0.8;
+}
+
+/* Stat Variants */
+.ws-stat-card--pending { border-left: 3px solid #f59e0b; }
+.ws-stat-card--pending .ws-stat-card__value { color: #d97706; }
+
+.ws-stat-card--progress { border-left: 3px solid #06b6d4; }
+.ws-stat-card--progress .ws-stat-card__value { color: #0891b2; }
+
+.ws-stat-card--completed { border-left: 3px solid #10b981; }
+.ws-stat-card--completed .ws-stat-card__value { color: #059669; }
+
+.ws-stat-card--total { border-left: 3px solid #3b82f6; }
+.ws-stat-card--total .ws-stat-card__value { color: #2563eb; }
+
+.ws-stat-card--warning { border-left: 3px solid #ef4444; }
+.ws-stat-card--warning .ws-stat-card__value { color: #dc2626; }
+
+/* ============================================================================
+   MAIN CONTENT GRID - Two Columns
+   ============================================================================ */
+.ws-main {
+  display: flex;
+  gap: 1rem;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Glass Card Container - Used in WarehouseDashboard and ControlDashboard */
+.ws-glass-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(44, 90, 160, 0.06);
+}
+
+/* Orders Column - Primary (60%) */
+.ws-orders-column {
+  flex: 0 0 65%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Sidebar Column (35%) */
+.ws-sidebar-column {
+  flex: 0 0 calc(35% - 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+/* ============================================================================
+   ORDERS PANEL - Main Orders Display
+   ============================================================================ */
+.ws-orders-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+}
+
+.ws-orders-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  background: rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid rgba(100, 116, 139, 0.1);
+  flex-shrink: 0;
+}
+
+.ws-orders-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ws-orders-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #1e3d66;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ws-orders-count {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  border-radius: 10px;
+}
+
+/* Controls Row */
+.ws-orders-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ws-control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.ws-control-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.ws-control-select {
+  min-width: 110px;
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #1e3d66;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.ws-control-select:hover,
+.ws-control-select:focus {
+  border-color: rgba(59, 130, 246, 0.4);
+  outline: none;
+}
+
+.ws-control-search {
+  width: 160px;
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #1e3d66;
+  transition: border-color 0.15s, width 0.2s;
+}
+
+.ws-control-search:focus {
+  border-color: rgba(59, 130, 246, 0.4);
+  outline: none;
+  width: 200px;
+}
+
+.ws-control-search::placeholder {
+  color: #94a3b8;
+}
+
+/* View Toggle Buttons */
+.ws-view-toggle {
+  display: flex;
+  background: rgba(100, 116, 139, 0.08);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.ws-view-btn {
+  padding: 0.375rem 0.625rem;
+  border: none;
+  background: transparent;
+  font-size: 0.75rem;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ws-view-btn:hover {
+  color: #1e3d66;
+}
+
+.ws-view-btn--active {
+  background: white;
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Orders Content Area */
+.ws-orders-content {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Orders Grid - 3 Columns */
+.ws-orders-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.ws-orders-grid--compact {
+  gap: 0.5rem;
+}
+
+.ws-orders-grid--list {
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+/* Empty State */
+.ws-orders-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.ws-orders-empty__icon {
+  font-size: 2.5rem;
+  opacity: 0.5;
+  margin-bottom: 0.75rem;
+}
+
+.ws-orders-empty__text {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.ws-orders-empty__sub {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  opacity: 0.7;
+}
+
+/* ============================================================================
+   SIDEBAR PANELS
+   ============================================================================ */
+.ws-sidebar-panel {
+  padding: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ws-sidebar-panel--activity {
+  flex: 0 0 auto;
+  max-height: 240px;
+}
+
+.ws-sidebar-panel--inventory {
+  flex: 1;
+  min-height: 200px;
+}
+
+.ws-sidebar-panel--form {
+  flex: 0 0 auto;
+}
+
+.ws-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.625rem;
+  flex-shrink: 0;
+}
+
+.ws-sidebar-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #1e3d66;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.ws-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ============================================================================
+   ACTIVITY LOG COMPACT
+   ============================================================================ */
+.ws-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.ws-activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  border-left: 3px solid #e2e8f0;
+  font-size: 0.6875rem;
+  transition: background 0.15s;
+}
+
+.ws-activity-item:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.ws-activity-item--success { border-color: #10b981; }
+.ws-activity-item--warning { border-color: #f59e0b; }
+.ws-activity-item--error { border-color: #ef4444; }
+.ws-activity-item--info { border-color: #3b82f6; }
+
+/* Compact Activity Item Variant */
+.ws-activity-item--compact {
+  padding: 0.375rem 0.5rem;
+  font-size: 0.625rem;
+  gap: 0.375rem;
+}
+
+.ws-activity-item--compact .ws-activity-icon {
+  font-size: 0.625rem;
+}
+
+.ws-activity-item--compact .ws-activity-time {
+  font-size: 0.5rem;
+}
+
+/* Compact Activity List Container */
+.ws-sidebar-content--compact {
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.ws-sidebar-count {
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-left: 0.25rem;
+}
+
+.ws-activity-more {
+  font-size: 0.5625rem;
+  color: #94a3b8;
+  text-align: center;
+  padding: 0.375rem;
+  font-style: italic;
+  background: rgba(100, 116, 139, 0.05);
+  border-radius: 4px;
+  margin-top: 0.25rem;
+}
+
+.ws-activity-icon {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.ws-activity-text {
+  flex: 1;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.ws-activity-time {
+  font-size: 0.5625rem;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.ws-activity-clear {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ws-activity-clear:hover {
+  background: rgba(100, 116, 139, 0.1);
+}
+
+/* ============================================================================
+   INVENTORY COMPACT TABLE
+   ============================================================================ */
+.ws-inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.6875rem;
+  table-layout: fixed;
+}
+
+.ws-inventory-table th {
+  text-align: left;
+  padding: 0.5rem 0.375rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.5625rem;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.15);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-inventory-table td {
+  padding: 0.5rem 0.375rem;
+  color: #334155;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.08);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-inventory-table tr:hover td {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.ws-inventory-name {
+  font-weight: 600;
+  color: #1e3d66;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.ws-inventory-qty {
+  font-weight: 700;
+  text-align: right;
+}
+
+.ws-inventory-qty--low {
+  color: #f59e0b;
+}
+
+.ws-inventory-qty--critical {
+  color: #ef4444;
+}
+
+.ws-inventory-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.5625rem;
+  font-weight: 600;
+}
+
+.ws-inventory-status--ok {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.ws-inventory-status--low {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+.ws-inventory-status--critical {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+/* ============================================================================
+   FORM PANEL
+   ============================================================================ */
+.ws-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.ws-form-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ws-form-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ws-form-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ws-form-input,
+.ws-form-select {
+  padding: 0.5rem 0.625rem;
+  font-size: 0.8125rem;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #1e3d66;
+  transition: border-color 0.15s;
+}
+
+.ws-form-input:focus,
+.ws-form-select:focus {
+  border-color: rgba(59, 130, 246, 0.4);
+  outline: none;
+}
+
+.ws-form-input::placeholder {
+  color: #94a3b8;
+}
+
+.ws-form-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ws-form-btn--primary {
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  color: white;
+}
+
+.ws-form-btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.ws-form-btn--secondary {
+  background: rgba(100, 116, 139, 0.1);
+  color: #475569;
+}
+
+.ws-form-btn--secondary:hover {
+  background: rgba(100, 116, 139, 0.15);
+}
+
+.ws-form-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============================================================================
+   ERROR / SUCCESS MESSAGES
+   ============================================================================ */
+.ws-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  z-index: 1;
+}
+
+.ws-message--error {
+  background: rgba(254, 226, 226, 0.9);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #991b1b;
+}
+
+.ws-message--success {
+  background: rgba(220, 252, 231, 0.9);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  color: #166534;
+}
+
+.ws-message__close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.ws-message__close:hover {
+  opacity: 1;
+}
+
+/* ============================================================================
+   FOOTER
+   ============================================================================ */
+.ws-footer {
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  color: #64748b;
+  z-index: 1;
+}
+
+/* ============================================================================
+   OVERFLOW PROTECTION & CONTAINMENT
+   ============================================================================ */
+.ws-page {
+  overflow-x: hidden;
+}
+
+.ws-main,
+.ws-main-split,
+.ws-main-warehouse,
+.ws-main-control {
+  overflow: hidden;
+}
+
+.ws-orders-column,
+.ws-sidebar-column,
+.ws-main-left,
+.ws-main-right,
+.ws-control-primary,
+.ws-control-secondary {
+  overflow: hidden;
+  min-width: 0; /* Prevent flex items from overflowing */
+}
+
+.ws-orders-panel,
+.ws-sidebar-panel {
+  overflow: hidden;
+  contain: layout;
+}
+
+.ws-header__title,
+.ws-header__sub,
+.ws-orders-title,
+.ws-sidebar-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+@media (max-width: 1200px) {
+  .ws-orders-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .ws-main {
+    flex-direction: column;
+  }
+  
+  .ws-orders-column,
+  .ws-sidebar-column {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+  
+  .ws-sidebar-column {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .ws-sidebar-panel {
+    flex: 1 1 calc(50% - 0.375rem);
+    min-width: 280px;
+  }
+  
+  /* Split layout stacks on tablets */
+  .ws-main-split {
+    flex-direction: column;
+  }
+  
+  .ws-main-left,
+  .ws-main-right {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+  
+  .ws-main-right {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  
+  .ws-activity-compact,
+  .ws-inventory-panel {
+    flex: 1 1 calc(50% - 0.375rem);
+    min-width: 280px;
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ws-page {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  
+  .ws-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+  
+  .ws-header__left {
+    gap: 0.5rem;
+  }
+  
+  .ws-header__icon {
+    font-size: 1.25rem;
+    padding: 0.5rem;
+  }
+  
+  .ws-header__title {
+    font-size: 1rem;
+  }
+  
+  .ws-header__right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .ws-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  
+  .ws-stat-card {
+    padding: 0.625rem 0.5rem;
+  }
+  
+  .ws-stat-card__value {
+    font-size: 1.25rem;
+  }
+  
+  .ws-stat-card__label {
+    font-size: 0.5625rem;
+  }
+  
+  .ws-orders-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .ws-orders-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  
+  .ws-control-group {
+    width: 100%;
+  }
+  
+  .ws-control-select,
+  .ws-control-search {
+    flex: 1;
+    width: 100%;
+  }
+  
+  .ws-view-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .ws-sidebar-panel {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  
+  .ws-sidebar-column {
+    flex-direction: column;
+  }
+  
+  /* Split layout fully stacks on mobile */
+  .ws-main-right {
+    flex-direction: column;
+  }
+  
+  .ws-activity-compact,
+  .ws-inventory-panel {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-height: 200px;
+  }
+  
+  /* Orders panel adjustments */
+  .ws-orders-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
+  }
+  
+  .ws-orders-content {
+    padding: 0.75rem;
+  }
+  
+  /* Sidebar adjustments */
+  .ws-sidebar-panel {
+    padding: 0.625rem;
+  }
+  
+  .ws-sidebar-panel--activity {
+    max-height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ws-page {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+  
+  .ws-header {
+    padding: 0.625rem 0.75rem;
+    border-radius: 8px;
+  }
+  
+  .ws-header__icon {
+    font-size: 1rem;
+    padding: 0.375rem;
+    border-radius: 6px;
+  }
+  
+  .ws-header__title {
+    font-size: 0.875rem;
+  }
+  
+  .ws-header__sub {
+    font-size: 0.625rem;
+  }
+  
+  .ws-header__status {
+    font-size: 0.5625rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .ws-refresh {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.625rem;
+  }
+  
+  .ws-refresh span:first-child {
+    display: none; /* Hide refresh icon text on very small screens */
+  }
+  
+  .ws-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.375rem;
+  }
+  
+  .ws-stat-card {
+    padding: 0.5rem 0.375rem;
+    border-radius: 8px;
+  }
+  
+  .ws-stat-card__value {
+    font-size: 1rem;
+  }
+  
+  .ws-stat-card__label {
+    font-size: 0.5rem;
+  }
+  
+  .ws-glass {
+    border-radius: 8px;
+  }
+  
+  .ws-orders-header {
+    padding: 0.5rem 0.625rem;
+  }
+  
+  .ws-orders-title {
+    font-size: 0.8125rem;
+  }
+  
+  .ws-orders-content {
+    padding: 0.5rem;
+  }
+  
+  .ws-orders-grid {
+    gap: 0.5rem;
+  }
+  
+  .ws-sidebar-panel {
+    padding: 0.5rem;
+    border-radius: 8px;
+  }
+  
+  .ws-sidebar-title {
+    font-size: 0.6875rem;
+  }
+  
+  .ws-activity-compact {
+    max-height: 150px;
+  }
+  
+  .ws-activity-item {
+    padding: 0.375rem;
+    font-size: 0.5625rem;
+  }
+}
+
+/* ============================================================================
+   WORKSTATION COLOR THEMES
+   ============================================================================ */
+/* WS-1: Injection Molding - Blue */
+.ws-theme-1 { --ws-gradient: linear-gradient(90deg, #3b82f6, #1d4ed8); --ws-accent: #3b82f6; }
+.ws-theme-1 .ws-header::before { background: var(--ws-gradient); }
+
+/* WS-2: Parts Pre-Production - Purple */
+.ws-theme-2 { --ws-gradient: linear-gradient(90deg, #8b5cf6, #6d28d9); --ws-accent: #8b5cf6; }
+.ws-theme-2 .ws-header::before { background: var(--ws-gradient); }
+
+/* WS-3: Part Finishing - Cyan */
+.ws-theme-3 { --ws-gradient: linear-gradient(90deg, #06b6d4, #0891b2); --ws-accent: #06b6d4; }
+.ws-theme-3 .ws-header::before { background: var(--ws-gradient); }
+
+/* WS-4: Gear Assembly - Amber */
+.ws-theme-4 { --ws-gradient: linear-gradient(90deg, #f59e0b, #d97706); --ws-accent: #f59e0b; }
+.ws-theme-4 .ws-header::before { background: var(--ws-gradient); }
+
+/* WS-5: Motor Assembly - Red */
+.ws-theme-5 { --ws-gradient: linear-gradient(90deg, #ef4444, #dc2626); --ws-accent: #ef4444; }
+.ws-theme-5 .ws-header::before { background: var(--ws-gradient); }
+
+/* WS-6: Final Assembly - Emerald */
+.ws-theme-6 { --ws-gradient: linear-gradient(90deg, #10b981, #059669); --ws-accent: #10b981; }
+.ws-theme-6 .ws-header::before { background: var(--ws-gradient); }
+
+/* WS-7: Plant Warehouse - Navy */
+.ws-theme-7 { --ws-gradient: linear-gradient(90deg, #2c5aa0, #1e3a5f); --ws-accent: #2c5aa0; }
+.ws-theme-7 .ws-header::before { background: var(--ws-gradient); }
+
+/* WS-8: Modules Supermarket - Pink */
+.ws-theme-8 { --ws-gradient: linear-gradient(90deg, #ec4899, #db2777); --ws-accent: #ec4899; }
+.ws-theme-8 .ws-header::before { background: var(--ws-gradient); }
+
+/* WS-9: Parts Supply - Lime */
+.ws-theme-9 { --ws-gradient: linear-gradient(90deg, #84cc16, #65a30d); --ws-accent: #84cc16; }
+.ws-theme-9 .ws-header::before { background: var(--ws-gradient); }
+
+/* Production Planning - Indigo */
+.ws-theme-planning { --ws-gradient: linear-gradient(90deg, #6366f1, #4f46e5); --ws-accent: #6366f1; }
+.ws-theme-planning .ws-header::before { background: var(--ws-gradient); }
+
+/* Production Control - Teal */
+.ws-theme-prod-control { --ws-gradient: linear-gradient(90deg, #14b8a6, #0d9488); --ws-accent: #14b8a6; }
+.ws-theme-prod-control .ws-header::before { background: var(--ws-gradient); }
+
+/* Assembly Control - Rose */
+.ws-theme-assy-control { --ws-gradient: linear-gradient(90deg, #f43f5e, #e11d48); --ws-accent: #f43f5e; }
+.ws-theme-assy-control .ws-header::before { background: var(--ws-gradient); }
+
+/* ============================================================================
+   MAIN CONTENT - 70/30 SPLIT LAYOUT
+   ============================================================================ */
+.ws-main-split {
+  display: flex;
+  gap: 1rem;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Left Column - Orders (70%) */
+.ws-main-left {
+  flex: 0 0 70%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Right Column - Activity + Inventory (30%) */
+.ws-main-right {
+  flex: 0 0 calc(30% - 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+/* Compact Activity Log Panel */
+.ws-activity-compact {
+  flex: 0 0 auto;
+  max-height: 200px;
+  overflow: hidden;
+}
+
+/* Inventory Panel - Takes remaining space */
+.ws-inventory-panel {
+  flex: 1;
+  min-height: 150px;
+  overflow: auto;
+}
+
+/* ============================================================================
+   WAREHOUSE LAYOUT (Legacy - 3-Column)
+   ============================================================================ */
+.ws-main-warehouse {
+  display: flex;
+  gap: 1rem;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Orders Column - Primary (55%) */
+.ws-orders-column-warehouse {
+  flex: 0 0 55%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Form & Inventory Column (25%) */
+.ws-form-column {
+  flex: 0 0 25%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+/* Activity Column (20%) */
+.ws-activity-column {
+  flex: 0 0 calc(20% - 2rem);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Form Panel Specific */
+.ws-form-panel {
+  flex: 0 0 auto;
+  max-height: 45%;
+  overflow: auto;
+}
+
+/* Inventory Panel in Warehouse */
+.ws-inventory-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Activity Panel in Warehouse */
+.ws-activity-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* ============================================================================
+   ORDER FORM STYLES (for warehouse create order)
+   ============================================================================ */
+.ws-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid rgba(100, 116, 139, 0.1);
+}
+
+.ws-form-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #1e3d66;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.ws-form-content {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ws-form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 0;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.06);
+}
+
+.ws-form-row:last-child {
+  border-bottom: none;
+}
+
+.ws-form-item-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 0.5rem;
+}
+
+.ws-form-qty-input {
+  width: 60px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 4px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.ws-form-qty-input:focus {
+  border-color: var(--ws-accent, #3b82f6);
+  outline: none;
+}
+
+.ws-form-footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgba(100, 116, 139, 0.1);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.ws-form-submit {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background: var(--ws-gradient, linear-gradient(90deg, #3b82f6, #06b6d4));
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.ws-form-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.ws-form-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Warehouse Responsive */
+@media (max-width: 1200px) {
+  .ws-main-warehouse {
+    flex-wrap: wrap;
+  }
+  
+  .ws-orders-column-warehouse {
+    flex: 1 1 100%;
+    min-height: 400px;
+  }
+  
+  .ws-form-column,
+  .ws-activity-column {
+    flex: 1 1 45%;
+    min-width: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ws-form-column,
+  .ws-activity-column {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  
+  .ws-orders-column-warehouse {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ws-orders-column-warehouse {
+    min-height: 250px;
+  }
+}
+
+/* ============================================================================
+   CONTROL DASHBOARD LAYOUT (2-Column: Main + Sidebar)
+   ============================================================================ */
+.ws-main-control {
+  display: flex;
+  gap: 1rem;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Primary Content (70%) */
+.ws-control-primary {
+  flex: 0 0 70%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Secondary Column (30%) */
+.ws-control-secondary {
+  flex: 0 0 calc(30% - 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.ws-control-secondary-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.ws-control-sidebar-panel {
+  flex: 0 0 auto;
+  max-height: 40%;
+  overflow: auto;
+}
+
+/* Control Dashboard Responsive */
+@media (max-width: 1200px) {
+  .ws-main-control {
+    flex-wrap: wrap;
+  }
+  
+  .ws-control-primary {
+    flex: 1 1 100%;
+    min-height: 400px;
+  }
+  
+  .ws-control-secondary {
+    flex: 1 1 100%;
+    flex-direction: row;
+  }
+  
+  .ws-control-secondary-panel,
+  .ws-control-sidebar-panel {
+    flex: 1 1 48%;
+    max-height: none;
+    min-width: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ws-control-secondary {
+    flex-direction: column;
+  }
+  
+  .ws-control-secondary-panel,
+  .ws-control-sidebar-panel {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  
+  .ws-control-primary {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ws-control-primary {
+    min-height: 250px;
+  }
+}
+
+/* ============================================================================
+   SIDEBAR SECTIONS (for Control Dashboards)
+   ============================================================================ */
+.ws-sidebar-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.ws-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ws-sidebar-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ws-sidebar-count {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.125rem 0.5rem;
+  border-radius: 10px;
+}
+
+.ws-sidebar-empty {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  padding: 1rem 0;
+  font-style: italic;
+}
+
+.ws-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ws-sidebar-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  transition: background 0.15s;
+}
+
+.ws-sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ws-sidebar-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ws-sidebar-item-title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.ws-sidebar-item-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.ws-sidebar-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.5);
+}

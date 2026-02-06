@@ -1,5 +1,7 @@
 package io.life.order.service;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -36,6 +38,8 @@ public class InventoryService {
      * @param quantity      The quantity needed
      * @return true if stock is available, false otherwise
      */
+    @CircuitBreaker(name = "inventoryService", fallbackMethod = "checkStockFallback")
+    @Retry(name = "inventoryService")
     public boolean checkStock(Long workstationId, Long itemId, Integer quantity) {
         try {
             // Determine item type based on workstation
@@ -103,6 +107,8 @@ public class InventoryService {
      * @param quantity      The quantity to deduct (positive number)
      * @return true if update was successful, false otherwise
      */
+    @CircuitBreaker(name = "inventoryService", fallbackMethod = "updateStockFallback")
+    @Retry(name = "inventoryService")
     public boolean updateStock(Long workstationId, Long itemId, Integer quantity) {
         try {
             String url = inventoryServiceUrl + "/api/stock/adjust";
@@ -125,7 +131,7 @@ public class InventoryService {
             request.put("itemType", itemType);
             request.put("itemId", itemId);
             request.put("delta", -Math.abs(quantity)); // Negative to deduct from stock
-            request.put("reason", "ORDER_FULFILLMENT");
+            request.put("reasonCode", "FULFILLMENT");
             request.put("notes", String.format("Stock deduction for %s fulfillment (workstation %d)", 
                     itemType.toLowerCase(), workstationId));
 
@@ -149,6 +155,8 @@ public class InventoryService {
      * @param quantity      The quantity to add (positive number)
      * @return true if update was successful, false otherwise
      */
+    @CircuitBreaker(name = "inventoryService", fallbackMethod = "creditStockFallback")
+    @Retry(name = "inventoryService")
     public boolean creditStock(Long workstationId, Long itemId, Integer quantity) {
         try {
             String url = inventoryServiceUrl + "/api/stock/adjust";
@@ -163,7 +171,7 @@ public class InventoryService {
             request.put("itemType", itemType);
             request.put("itemId", itemId);
             request.put("delta", Math.abs(quantity)); // Positive to credit stock
-            request.put("reason", "PRODUCTION_COMPLETION");
+            request.put("reasonCode", "PRODUCTION");
             request.put("notes", String.format("Stock credit for %s completion (workstation %d)", 
                     itemType.toLowerCase(), workstationId));
 
@@ -185,6 +193,8 @@ public class InventoryService {
      * @param itemId        The product/item ID
      * @return Available quantity, or -1 if unable to check
      */
+    @CircuitBreaker(name = "inventoryService", fallbackMethod = "getAvailableStockFallback")
+    @Retry(name = "inventoryService")
     public Integer getAvailableStock(Long workstationId, Long itemId) {
         try {
             String url = inventoryServiceUrl + "/api/stock/workstation/" + workstationId
@@ -238,6 +248,8 @@ public class InventoryService {
      * @param notes         Description for the stock adjustment
      * @return true if update was successful, false otherwise
      */
+    @CircuitBreaker(name = "inventoryService", fallbackMethod = "creditProductionStockFallback")
+    @Retry(name = "inventoryService")
     public boolean creditProductionStock(Long workstationId, String itemType, Long itemId, 
                                          Integer quantity, String notes) {
         try {
@@ -267,5 +279,65 @@ public class InventoryService {
      */
     public String getInventoryServiceUrl() {
         return inventoryServiceUrl;
+    }
+
+    // ================================================
+    // Circuit Breaker Fallback Methods
+    // ================================================
+
+    /**
+     * Fallback for checkStock when inventory service is unavailable.
+     * Returns false (assume no stock) to prevent orders from proceeding with unknown inventory state.
+     */
+    @SuppressWarnings("unused")
+    private boolean checkStockFallback(Long workstationId, Long itemId, Integer quantity, Throwable t) {
+        logger.warn("Circuit breaker fallback: checkStock failed for workstation {} item {} qty {}. Reason: {}",
+                workstationId, itemId, quantity, t.getMessage());
+        return false; // Conservative: assume stock unavailable when service is down
+    }
+
+    /**
+     * Fallback for updateStock when inventory service is unavailable.
+     * Returns false to indicate the operation failed - caller should handle accordingly.
+     */
+    @SuppressWarnings("unused")
+    private boolean updateStockFallback(Long workstationId, Long itemId, Integer quantity, Throwable t) {
+        logger.error("Circuit breaker fallback: updateStock failed for workstation {} item {} qty {}. Reason: {}",
+                workstationId, itemId, quantity, t.getMessage());
+        return false; // Operation failed - caller must handle
+    }
+
+    /**
+     * Fallback for creditStock when inventory service is unavailable.
+     * Returns false to indicate the operation failed - caller should handle accordingly.
+     */
+    @SuppressWarnings("unused")
+    private boolean creditStockFallback(Long workstationId, Long itemId, Integer quantity, Throwable t) {
+        logger.error("Circuit breaker fallback: creditStock failed for workstation {} item {} qty {}. Reason: {}",
+                workstationId, itemId, quantity, t.getMessage());
+        return false; // Operation failed - caller must handle
+    }
+
+    /**
+     * Fallback for getAvailableStock when inventory service is unavailable.
+     * Returns -1 to indicate unavailable/error state.
+     */
+    @SuppressWarnings("unused")
+    private Integer getAvailableStockFallback(Long workstationId, Long itemId, Throwable t) {
+        logger.warn("Circuit breaker fallback: getAvailableStock failed for workstation {} item {}. Reason: {}",
+                workstationId, itemId, t.getMessage());
+        return -1; // Indicates service unavailable
+    }
+
+    /**
+     * Fallback for creditProductionStock when inventory service is unavailable.
+     * Returns false to indicate the operation failed - caller should handle accordingly.
+     */
+    @SuppressWarnings("unused")
+    private boolean creditProductionStockFallback(Long workstationId, String itemType, Long itemId, 
+                                                   Integer quantity, String notes, Throwable t) {
+        logger.error("Circuit breaker fallback: creditProductionStock failed for workstation {} itemType {} item {} qty {}. Reason: {}",
+                workstationId, itemType, itemId, quantity, t.getMessage());
+        return false; // Operation failed - caller must handle
     }
 }

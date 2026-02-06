@@ -276,14 +276,16 @@ cd lego-sample-factory/deploy
 | `warehouse_operator` | `password` | PLANT_WAREHOUSE | Plant Warehouse (WS-7) | Customer order fulfillment |
 | `modules_supermarket` | `password` | MODULES_SUPERMARKET | Modules Supermarket (WS-8) | Module warehouse operations |
 | `production_planning` | `password` | PRODUCTION_PLANNING | - | Factory-wide scheduling |
-| `production_control` | `password` | PRODUCTION_CONTROL | Injection Molding (WS-1) | Manufacturing oversight |
-| `assembly_control` | `password` | ASSEMBLY_CONTROL | Gear Assembly (WS-4) | Assembly coordination |
-| 'motor_assembly'  | `password` | 
-| 'gear_assembly'  | `password` | 
-| 'parts_preproduction'  | `password` | 
-| 'part_finishing'  | `password` | 
-| 'injection_molding'  | `password` | 
-| 'part_supply'  | `password` | 
+| `production_control` | `password` | PRODUCTION_CONTROL | - | Manufacturing oversight |
+| `assembly_control` | `password` | ASSEMBLY_CONTROL | - | Assembly coordination |
+| `injection_molding` | `password` | MANUFACTURING | Injection Molding (WS-1) | Part manufacturing |
+| `parts_preproduction` | `password` | MANUFACTURING | Parts Pre-Production (WS-2) | Part manufacturing |
+| `part_finishing` | `password` | MANUFACTURING | Part Finishing (WS-3) | Part manufacturing |
+| `gear_assembly` | `password` | MANUFACTURING | Gear Assembly (WS-4) | Module assembly |
+| `motor_assembly` | `password` | MANUFACTURING | Motor Assembly (WS-5) | Module assembly |
+| `final_assembly` | `password` | MANUFACTURING | Final Assembly (WS-6) | Product assembly |
+| `parts_supply` | `password` | PARTS_SUPPLY | Parts Supply (WS-9) | Raw materials distribution |
+
 ---
 
 ## 📚 Documentation

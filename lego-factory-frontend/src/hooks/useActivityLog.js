@@ -1,88 +1,69 @@
 import { useState, useCallback, useEffect } from 'react';
 import { 
-  formatActivityMessage, 
-  extractOrderType, 
-  createLoginMessage 
+  ACTIVITY_TYPES,
+  WORKSTATIONS,
+  createLoginEntry,
+  createOrderEntry,
+  createSystemEntry
 } from '../utils/activityLogConfig';
 
 /**
  * Custom hook for managing activity log notifications
  * 
  * Features:
- * - Automatic login event tracking
- * - Message formatting (removes redundant words)
- * - Order type detection for color coding
+ * - Automatic login event tracking with station info
+ * - Standardized message format: "ORD-1234 started" / "User logged in"
+ * - Activity type detection with icons and colors
  * - Workstation-specific notifications
  * 
+ * Message Format Standards:
+ * - Order actions: "[orderNumber] [action]" (e.g., "ORD-1234 started")
+ * - Login: "User logged in" 
+ * - System: Custom message
+ * 
  * @param {object} session - Auth session object
- * @param {string} defaultStation - Default workstation identifier
- * @returns {object} - { notifications, addNotification, clearNotifications }
+ * @param {number} workstationId - Workstation ID for this dashboard
+ * @returns {object} - { notifications, addNotification, addOrderNotification, clearNotifications }
  */
-export function useActivityLog(session, defaultStation = 'SYSTEM') {
+export function useActivityLog(session, workstationId = null) {
   const [notifications, setNotifications] = useState([]);
   const [loginLogged, setLoginLogged] = useState(false);
+  
+  // Get workstation info
+  const wsInfo = workstationId ? WORKSTATIONS[workstationId] : null;
 
   // Add login event when user first accesses the dashboard
   useEffect(() => {
     if (session?.user && !loginLogged) {
-      const loginMessage = createLoginMessage(session.user);
-      const station = session.user.workstation?.name || 
-                     session.user.workstationName || 
-                     defaultStation;
+      const username = session.user.username || session.user.name || 'User';
+      const loginEntry = createLoginEntry(username, wsInfo);
       
-      const loginNotification = {
-        id: `login-${Date.now()}`,
-        message: loginMessage,
-        type: 'info',
-        timestamp: new Date().toISOString(),
-        station: station,
-        orderType: null,
-        userName: session.user.username
-      };
-      
-      setNotifications([loginNotification]);
+      setNotifications([loginEntry]);
       setLoginLogged(true);
     }
-  }, [session?.user, loginLogged, defaultStation]);
+  }, [session?.user, loginLogged, wsInfo]);
 
   /**
-   * Add a notification to the activity log
-   * @param {string} message - Raw notification message
-   * @param {string} type - Notification type (success, error, warning, info)
-   * @param {object} options - Additional options (orderNumber, skipFormatting)
+   * Add an order-related notification with standardized format
+   * @param {string} action - Action verb: 'started', 'completed', 'confirmed', 'submitted', 'halted', 'resumed', 'created', 'fulfilled'
+   * @param {string} orderNumber - Order number (e.g., 'ORD-1234')
+   * @param {string} type - Notification type: 'success', 'error', 'warning', 'info'
+   * @param {string} customMessage - Optional custom message override
    */
-  const addNotification = useCallback((message, type = 'info', options = {}) => {
-    const {
-      orderNumber = null,
-      skipFormatting = false,
-      station = null
-    } = options;
+  const addOrderNotification = useCallback((action, orderNumber, type = 'success', customMessage = null) => {
+    const entry = createOrderEntry(action, orderNumber, type, customMessage, wsInfo);
+    setNotifications(prev => [entry, ...prev]);
+  }, [wsInfo]);
 
-    // Format message unless explicitly skipped
-    const formattedMessage = skipFormatting ? message : formatActivityMessage(message);
-    
-    // Extract order type for color coding
-    const orderType = extractOrderType(formattedMessage, orderNumber || '');
-    
-    // Determine station
-    const notificationStation = station || 
-                                session?.user?.workstation?.name || 
-                                session?.user?.workstationName || 
-                                defaultStation;
-    
-    const newNotification = {
-      id: Date.now() + Math.random(),
-      message: formattedMessage,
-      type,
-      timestamp: new Date().toISOString(),
-      station: notificationStation,
-      orderType,
-      orderNumber,
-      userName: session?.user?.username
-    };
-    
-    setNotifications(prev => [newNotification, ...prev]);
-  }, [session?.user, defaultStation]);
+  /**
+   * Add a simple notification (for backward compatibility and system messages)
+   * @param {string} message - Notification message
+   * @param {string} type - Notification type (success, error, warning, info)
+   */
+  const addNotification = useCallback((message, type = 'info') => {
+    const entry = createSystemEntry(message, type, wsInfo);
+    setNotifications(prev => [entry, ...prev]);
+  }, [wsInfo]);
 
   /**
    * Clear all notifications
@@ -102,8 +83,10 @@ export function useActivityLog(session, defaultStation = 'SYSTEM') {
   return {
     notifications,
     addNotification,
+    addOrderNotification,
     clearNotifications,
-    removeNotification
+    removeNotification,
+    ACTIVITY_TYPES // Export for component usage
   };
 }
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import '../styles/Chart.css';
-import '../styles/DashboardLayout.css'; // Import for .component-title class
+import '../styles/utilities.css'; // Shared utility classes (.component-title)
 
 /**
  * BarChart - Reusable horizontal/vertical bar chart component

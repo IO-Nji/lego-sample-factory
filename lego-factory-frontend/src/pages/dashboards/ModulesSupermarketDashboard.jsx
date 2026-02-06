@@ -1,74 +1,94 @@
-import { useState, useEffect } from "react";
+/**
+ * ModulesSupermarketDashboard - WS-8 Modules Supermarket
+ * 
+ * Warehouse Order Management hub. Handles:
+ * - Warehouse orders (from Plant Warehouse)
+ * - Module inventory management
+ * - Production order triggering (Scenario 3)
+ * - Order fulfillment with Final Assembly creation
+ */
+
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
-import { StandardDashboardLayout, StatisticsGrid, InventoryTable, ActivityLog, OrdersSection, Card } from "../../components";
-import WarehouseOrderCard from "../../components/WarehouseOrderCard";
-import { getInventoryStatusColor, generateAcronym } from "../../utils/dashboardHelpers";
+import { logger } from "../../utils/logger";
+import { 
+  WarehouseDashboard,
+  ActivityPanel,
+  InventoryPanel,
+  OrdersGrid,
+  GridCard,
+  CompactCard,
+  ListRow,
+  DashboardPanel
+} from "../../components";
 import { useInventoryDisplay } from "../../hooks/useInventoryDisplay";
 import { useActivityLog } from "../../hooks/useActivityLog";
+import { generateAcronym } from "../../utils/dashboardHelpers";
+
+const WORKSTATION_ID = 8;
+
+const ORDER_ACTIONS = [
+  { type: 'CONFIRM', label: 'Confirm', icon: '✓', variant: 'info', showFor: ['PENDING'] },
+  { type: 'FULFILL', label: 'Fulfill', icon: '📦', variant: 'success', showFor: ['CONFIRMED'], condition: (order) => order.triggerScenario === 'DIRECT_FULFILLMENT' },
+  { type: 'ORDER_PRODUCTION', label: 'Order Production', icon: '🏭', variant: 'warning', showFor: ['CONFIRMED'], condition: (order) => order.triggerScenario === 'PRODUCTION_REQUIRED' },
+  { type: 'CANCEL', label: 'Cancel', icon: '✕', variant: 'danger', showFor: ['PENDING', 'CONFIRMED'] }
+];
+
+const FILTER_OPTIONS = [
+  { value: 'ALL', label: 'All Orders' },
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'CONFIRMED', label: 'Confirmed' },
+  { value: 'AWAITING_PRODUCTION', label: 'Awaiting Production' },
+  { value: 'FULFILLED', label: 'Fulfilled' },
+  { value: 'CANCELLED', label: 'Cancelled' }
+];
+
+const SORT_OPTIONS = [
+  { value: 'orderDate', label: 'Date (Newest)' },
+  { value: 'orderDateAsc', label: 'Date (Oldest)' },
+  { value: 'orderNumber', label: 'Order Number' },
+  { value: 'status', label: 'Status' }
+];
 
 function ModulesSupermarketDashboard() {
   const { session } = useAuth();
-  const [warehouseOrders, setWarehouseOrders] = useState([]);
   
-  // Use centralized inventory hook for modules management (hardcoded WS-8 for Modules Supermarket)
+  // Local state
+  const [warehouseOrders, setWarehouseOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [processingOrderId, setProcessingOrderId] = useState(null);
+  const [error, setError] = useState(null);
+  const [prioritySelection, setPrioritySelection] = useState({}); // Track orders in priority selection mode
+  
+  // Inventory hook for modules
   const { 
     inventory, 
     masterdata: modules,
     getItemName: getModuleName,
+    getStockLevel,
     fetchInventory 
-  } = useInventoryDisplay('MODULE', 8);
+  } = useInventoryDisplay('MODULE', WORKSTATION_ID);
   
-  // Use enhanced activity log hook with auto-login tracking
-  const { notifications, addNotification, clearNotifications } = useActivityLog(session, 'MODS-SP');
-  
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [fulfillmentInProgress, setFulfillmentInProgress] = useState({});
-  const [confirmationInProgress, setConfirmationInProgress] = useState({});
-  const [selectedModule, setSelectedModule] = useState(null);
-  const [showProductionOrderForm, setShowProductionOrderForm] = useState(false);
-  const [productionOrderForm, setProductionOrderForm] = useState({
-    sourceWarehouseOrderId: null,
-    priority: 'NORMAL',
-    notes: '',
-    missingModules: [],
-    warehouseOrderNumber: ''
-  });
-  const [creatingProductionOrder, setCreatingProductionOrder] = useState(false);
-  const [prioritySelectionMode, setPrioritySelectionMode] = useState({}); // Track which orders are in priority selection mode
-  const [orderMessages, setOrderMessages] = useState({}); // Store notification messages for each order
+  // Activity log hook - now uses workstation ID for unified formatting
+  const { notifications, addNotification, addOrderNotification, clearNotifications } = useActivityLog(session, WORKSTATION_ID);
 
-  // Module-aware display name function for warehouse order items
-  // Uses modules masterdata from useInventoryDisplay hook to get proper names
-  const getModuleDisplayName = (itemId, itemType) => {
+  // Module-aware display name function
+  const getModuleDisplayName = useCallback((itemId, itemType) => {
     if (itemType === 'MODULE') {
-      // Find module in masterdata by ID
       const moduleData = modules.find(m => m.id === itemId);
       if (moduleData?.name) {
         return generateAcronym(moduleData.name);
       }
-      return `M${itemId}`; // Fallback if module not found in masterdata
+      return `M${itemId}`;
     }
-    // For other item types, just generate acronym from type
     return generateAcronym(itemType);
-  };
+  }, [modules]);
 
-  useEffect(() => {
-    // Always fetch warehouse orders on mount (fallback to workstation 8 for Modules Supermarket)
-    fetchWarehouseOrders();
-    
-    const interval = setInterval(() => {
-      fetchWarehouseOrders();
-      fetchInventory(); // Manual refresh for periodic updates
-    }, 30000); // Increased to 30s to reduce page jump
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.workstationId]); // fetchInventory is stable from hook
-
-  const fetchWarehouseOrders = async () => {
+  // Fetch warehouse orders
+  const fetchWarehouseOrders = useCallback(async () => {
     try {
-      const workstationId = session?.user?.workstationId || 8;
+      const workstationId = session?.user?.workstationId || WORKSTATION_ID;
       const response = await api.get(`/warehouse-orders/workstation/${workstationId}`);
       const data = response.data;
       if (Array.isArray(data)) {
@@ -82,498 +102,358 @@ function ModulesSupermarketDashboard() {
         setWarehouseOrders([]);
         setError(null);
       } else {
-        setError("Failed to load warehouse orders: " + (err.response?.data?.message || err.message));
+        setError(`Failed to load warehouse orders: ${err.response?.data?.message || err.message}`);
       }
     }
-  };
+  }, [session?.user?.workstationId]);
 
-  // fetchInventory is now provided by useInventoryDisplay hook
+  // Initial load and refresh
+  useEffect(() => {
+    fetchWarehouseOrders();
+    fetchInventory();
+    
+    const interval = setInterval(() => {
+      fetchWarehouseOrders();
+      fetchInventory();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [fetchWarehouseOrders, fetchInventory]);
 
-  const handleConfirmOrder = async (orderId, orderNumber) => {
-    setConfirmationInProgress(prev => ({ ...prev, [orderId]: true }));
-    setError(null);
-
+  // Order action handlers
+  const handleConfirm = async (orderId) => {
+    setProcessingOrderId(orderId);
     try {
       const response = await api.put(`/warehouse-orders/${orderId}/confirm`);
       const confirmedOrder = response.data;
-      
-      // Log the confirmed order to verify triggerScenario is set
-      console.log('[ModulesSupermarket] Confirmed order:', confirmedOrder);
-      console.log('[ModulesSupermarket] Trigger scenario:', confirmedOrder.triggerScenario);
-      
-      // Determine notification message based on trigger scenario
-      const scenarioMsg = confirmedOrder.triggerScenario === 'PRODUCTION_REQUIRED' 
-        ? 'Production required - click "Order Production"'
-        : confirmedOrder.triggerScenario === 'DIRECT_FULFILLMENT'
-        ? 'Stock available - click "Fulfill"'
-        : 'Status updated';
-      
-      addNotification(`Order ${orderNumber} confirmed - ${scenarioMsg}`, 'success');
-      
-      // Fetch updated orders and inventory to check stock automatically
+      addOrderNotification('confirmed', confirmedOrder.orderNumber, 'success');
       await fetchWarehouseOrders();
       await fetchInventory();
-      
-      // After fetching, the needsProduction check will automatically determine 
-      // whether to show Fulfill or Production Order button based on triggerScenario
     } catch (err) {
-      setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
-      addNotification("Failed to confirm order", 'error');
+      setError(`Failed to confirm order: ${err.response?.data?.message || err.message}`);
     } finally {
-      setConfirmationInProgress(prev => ({ ...prev, [orderId]: false }));
+      setProcessingOrderId(null);
     }
   };
 
-  const handleFulfillOrder = async (orderId, orderNumber) => {
-    setFulfillmentInProgress(prev => ({ ...prev, [orderId]: true }));
-    setError(null);
-
+  const handleFulfill = async (orderId) => {
+    setProcessingOrderId(orderId);
     try {
       const response = await api.put(`/warehouse-orders/${orderId}/fulfill-modules`);
-      
-      if (response.data.status === 'FULFILLED') {
-        addNotification(`Order ${orderNumber} fulfilled - Final Assembly orders created`, 'success');
-        // Clear any notification messages for this order
-        setOrderMessages(prev => {
-          const updated = { ...prev };
-          delete updated[orderId];
-          return updated;
-        });
-      } else {
-        addNotification(`Order ${orderNumber} updated - Status: ${response.data.status}`, 'info');
-      }
-      
+      const orderNum = response.data.orderNumber || `WO-${orderId}`;
+      addOrderNotification('fulfilled', orderNum, 'success');
       await fetchWarehouseOrders();
       await fetchInventory();
     } catch (err) {
-      console.error('[Fulfillment] Error:', err);
-      setError("Failed to fulfill order: " + (err.response?.data?.message || err.message));
-      addNotification("Failed to fulfill order", 'error');
+      setError(`Failed to fulfill order: ${err.response?.data?.message || err.message}`);
     } finally {
-      setFulfillmentInProgress(prev => ({ ...prev, [orderId]: false }));
+      setProcessingOrderId(null);
+    }
+  };
+
+  const handleOrderProduction = (orderId) => {
+    // Show priority selection UI
+    setPrioritySelection(prev => ({ ...prev, [orderId]: true }));
+  };
+
+  const handleSelectPriority = async (orderId, priority) => {
+    const order = warehouseOrders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    setProcessingOrderId(orderId);
+    try {
+      const orderNum = order.orderNumber || `WO-${order.id}`;
+      const workstationId = session?.user?.workstationId;
+      
+      const payload = {
+        sourceWarehouseOrderId: orderId,
+        priority: priority,
+        notes: `Production order for warehouse order ${orderNum}`,
+        createdByWorkstationId: workstationId,
+        triggerScenario: 'SCENARIO_3'
+      };
+
+      await api.post('/production-orders/create', payload);
+      addOrderNotification('sent to production', orderNum, 'success');
+      
+      setPrioritySelection(prev => ({ ...prev, [orderId]: false }));
+      await fetchWarehouseOrders();
+    } catch (err) {
+      setError(`Failed to create production order: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setProcessingOrderId(null);
     }
   };
 
   const handleCancel = async (orderId) => {
     if (!globalThis.confirm("Cancel this warehouse order?")) return;
-    setError(null);
-    
+    setProcessingOrderId(orderId);
     try {
       await api.patch(`/warehouse-orders/${orderId}/status?status=CANCELLED`);
-      addNotification("Warehouse order cancelled", 'warning');
+      const order = warehouseOrders.find(o => o.id === orderId);
+      addOrderNotification('cancelled', order?.orderNumber || `WO-${orderId}`, 'warning');
       await fetchWarehouseOrders();
     } catch (err) {
-      setError("Failed to cancel order: " + (err.response?.data?.message || err.message));
-      addNotification("Failed to cancel order", 'error');
-    }
-  };
-
-  const handleCreateProductionOrder = async (warehouseOrder) => {
-    // Enter priority selection mode for this order
-    setPrioritySelectionMode(prev => ({
-      ...prev,
-      [warehouseOrder.id]: true
-    }));
-  };
-
-  const handleSelectPriority = async (warehouseOrder, priority) => {
-    setCreatingProductionOrder(true);
-    setError(null);
-
-    try {
-      const orderNum = warehouseOrder.orderNumber || warehouseOrder.warehouseOrderNumber || `ID-${warehouseOrder.id}`;
-      const workstationId = session?.user?.workstationId;
-      
-      const payload = {
-        sourceCustomerOrderId: null,
-        sourceWarehouseOrderId: warehouseOrder.id,
-        priority: priority,
-        dueDate: null,
-        notes: `Production order for warehouse order ${orderNum}`,
-        createdByWorkstationId: workstationId,
-        assignedWorkstationId: null,
-        triggerScenario: 'SCENARIO_3'
-      };
-
-      const response = await api.post('/production-orders/create', payload);
-      
-      // Exit priority selection mode
-      setPrioritySelectionMode(prev => ({
-        ...prev,
-        [warehouseOrder.id]: false
-      }));
-
-      // Create enhanced message with SimAL response (if available)
-      let messageText = `✓ PO-${response.data.productionOrderNumber} | Priority: ${priority}`;
-      
-      // If SimAL response is available in the response, include it
-      if (response.data.simAlScheduleId) {
-        messageText += ` | SimAL ID: ${response.data.simAlScheduleId}`;
-      }
-      if (response.data.plannedStartTime && response.data.plannedFinishTime) {
-        const startTime = new Date(response.data.plannedStartTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        const finishTime = new Date(response.data.plannedFinishTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        messageText += ` | Schedule: ${startTime} - ${finishTime}`;
-      }
-      
-      setOrderMessages(prev => ({
-        ...prev,
-        [warehouseOrder.id]: {
-          text: messageText,
-          type: 'success'
-        }
-      }));
-
-      addNotification(`Production order ${response.data.productionOrderNumber} created with priority ${priority}`, 'success');
-      
-      // Small delay to ensure backend transaction is committed before refresh
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await fetchWarehouseOrders();
-    } catch (err) {
-      setError("Failed to create production order: " + (err.response?.data?.message || err.message));
-      addNotification("Failed to create production order", 'error');
-      // Exit priority selection mode on error
-      setPrioritySelectionMode(prev => ({
-        ...prev,
-        [warehouseOrder.id]: false
-      }));
+      setError(`Failed to cancel order: ${err.response?.data?.message || err.message}`);
     } finally {
-      setCreatingProductionOrder(false);
+      setProcessingOrderId(null);
     }
   };
 
-  const handleSubmitProductionOrder = async (e) => {
-    e.preventDefault();
-    setCreatingProductionOrder(true);
-    setError(null);
-
-    try {
-      const payload = {
-        sourceCustomerOrderId: null,
-        sourceWarehouseOrderId: productionOrderForm.sourceWarehouseOrderId,
-        priority: productionOrderForm.priority,
-        dueDate: null,
-        notes: productionOrderForm.notes,
-        createdByWorkstationId: session?.user?.workstationId,
-        assignedWorkstationId: null, // Will be assigned by production planning
-        triggerScenario: 'SCENARIO_3'
-      };
-
-      const response = await api.post('/production-orders/create', payload);
-      addNotification(`Production order ${response.data.productionOrderNumber} created`, 'success');
-      setShowProductionOrderForm(false);
-      setProductionOrderForm({
-        sourceWarehouseOrderId: null,
-        priority: 'NORMAL',
-        notes: '',
-        missingModules: [],
-        warehouseOrderNumber: ''
-      });
-      await fetchWarehouseOrders();
-    } catch (err) {
-      setError("Failed to create production order: " + (err.response?.data?.message || err.message));
-      addNotification("Failed to create production order", 'error');
-    } finally {
-      setCreatingProductionOrder(false);
+  // Unified action handler
+  const handleAction = useCallback((actionType, orderId) => {
+    switch (actionType) {
+      case 'CONFIRM': handleConfirm(orderId); break;
+      case 'FULFILL': handleFulfill(orderId); break;
+      case 'ORDER_PRODUCTION': handleOrderProduction(orderId); break;
+      case 'CANCEL': handleCancel(orderId); break;
+      default: logger.warn('ModulesSupermarket', 'Unknown action:', actionType);
     }
+  }, []);
+
+  // Render helpers
+  const renderOrderItems = (order) => {
+    if (!order.orderItems || order.orderItems.length === 0) {
+      return <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>No items</span>;
+    }
+    return order.orderItems.slice(0, 3).map((item, idx) => (
+      <div key={idx} style={{ marginBottom: '0.25rem' }}>
+        <strong>{getModuleDisplayName(item.itemId, item.itemType)}</strong>
+        <span style={{ marginLeft: '0.5rem', color: '#64748b' }}>×{item.quantity}</span>
+      </div>
+    ));
   };
 
-  const getInventoryStatusColor = (quantity) => {
-    if (quantity === 0) return '#991b1b';
-    if (quantity <= 5) return '#ef4444';
-    if (quantity <= 20) return '#f59e0b';
-    return '#10b981';
-  };
-
-  // Stats data for StatisticsGrid
-  const statsData = [
-    { value: warehouseOrders.length, label: 'Total Orders', variant: 'default', icon: '📦' },
-    { value: warehouseOrders.filter(o => o.status === "PENDING").length, label: 'Pending', variant: 'pending', icon: '⏳' },
-    { value: warehouseOrders.filter(o => o.status === "CONFIRMED").length, label: 'Confirmed', variant: 'info', icon: '✓' },
-    { value: warehouseOrders.filter(o => o.status === "AWAITING_PRODUCTION").length, label: 'Production', variant: 'warning', icon: '🏭' },
-    { value: warehouseOrders.filter(o => o.status === "MODULES_READY").length, label: 'Ready', variant: 'success', icon: '✅' },
-    { value: warehouseOrders.filter(o => o.status === "PROCESSING").length, label: 'Processing', variant: 'processing', icon: '⚙️' },
-    { value: warehouseOrders.filter(o => o.status === "FULFILLED").length, label: 'Fulfilled', variant: 'success', icon: '✅' },
-    { value: inventory.length, label: 'Module Types', variant: 'info', icon: '🔧' },
-    { value: inventory.reduce((sum, item) => sum + item.quantity, 0), label: 'Total Stock', variant: 'default', icon: '📊' },
-    { value: inventory.filter(item => item.quantity < 10).length, label: 'Low Stock', variant: 'warning', icon: '⚠️' },
-    { value: inventory.filter(item => item.quantity === 0).length, label: 'Out of Stock', variant: 'danger', icon: '🚫' },
-  ];
-
-  // Check if production order is needed for a warehouse order
-  // CRITICAL ARCHITECTURE:
-  // - Warehouse Orders request PRODUCTS but are fulfilled using MODULES
-  // - Modules Supermarket has MODULE inventory
-  // - Backend resolves PRODUCT → MODULES mapping via ProductModule table
-  // - Backend sets triggerScenario during confirmation based on module availability
-  // - DIRECT_FULFILLMENT = modules available → show "Fulfill" button
-  // - PRODUCTION_REQUIRED = modules NOT available → show "Order Production" button
-  // - PRODUCTION_CREATED = production already ordered → show "Awaiting Production" (disabled)
-  const checkIfProductionNeeded = (warehouseOrder) => {
-    // If status is AWAITING_PRODUCTION, production order already exists - no need to order again
-    if (warehouseOrder.status === 'AWAITING_PRODUCTION') {
-      return false;
-    }
-    
-    // If triggerScenario indicates production was already created, return false
-    if (warehouseOrder.triggerScenario === 'PRODUCTION_CREATED') {
-      return false;
-    }
-    
-    // Only check orders in CONFIRMED status (after confirmation, ready for action)
-    if (warehouseOrder.status !== 'CONFIRMED') {
-      return false;
-    }
-    
-    // CRITICAL: Check specifically for PRODUCTION_REQUIRED
-    // This indicates production is needed and NOT yet created
-    if (warehouseOrder.triggerScenario === 'PRODUCTION_REQUIRED') {
-      return true;
-    }
-    
-    // DIRECT_FULFILLMENT means modules are available, no production needed
-    if (warehouseOrder.triggerScenario === 'DIRECT_FULFILLMENT') {
-      return false;
-    }
-    
-    // If no trigger scenario is set or unrecognized, default to false
-    return false;
-  };
-
-  // Render Module Inventory (Primary Content)
-  const renderModuleInventory = () => {
-    const moduleInventory = inventory.filter(item => item.itemType === "MODULE");
-    
-    return (
-      <InventoryTable
-        title="Module Inventory"
-        inventory={moduleInventory}
-        items={[]}
-        getStatusColor={getInventoryStatusColor}
-        getItemName={(item) => {
-          // Find module from fetched masterdata by itemId
-          const module = modules.find(m => m.id === item.itemId);
-          if (module?.name) {
-            const acronym = generateAcronym(module.name);
-            return `${acronym} (${module.name})`;
-          }
-          return `MODULE #${item.itemId}`;
-        }}
-        headerColor="purple"
-      />
-    );
-  };
-
-  // Render Warehouse Orders Section using standardized OrdersSection
-  const renderWarehouseOrdersSection = () => (
-    <OrdersSection
-      title="Warehouse Orders"
-      icon="📋"
-      orders={warehouseOrders}
-      filterOptions={[
-        { value: 'ALL', label: 'All Orders' },
-        { value: 'PENDING', label: 'Pending' },
-        { value: 'CONFIRMED', label: 'Confirmed' },
-        { value: 'AWAITING_PRODUCTION', label: 'Production' },
-        { value: 'MODULES_READY', label: 'Ready' },
-        { value: 'PROCESSING', label: 'Processing' },
-        { value: 'FULFILLED', label: 'Fulfilled' },
-        { value: 'CANCELLED', label: 'Cancelled' }
-      ]}
-      sortOptions={[
-        { value: 'warehouseOrderNumber', label: 'Order Number' },
-        { value: 'orderDate', label: 'Order Date' },
-        { value: 'status', label: 'Status' }
-      ]}
-      renderCard={(order) => (
-        <WarehouseOrderCard
-          key={order.id}
-          order={order}
-          onConfirm={handleConfirmOrder}
-          onFulfill={handleFulfillOrder}
-          onCancel={handleCancel}
-          onCreateProductionOrder={handleCreateProductionOrder}
-          onSelectPriority={handleSelectPriority}
-          needsProduction={checkIfProductionNeeded(order)}
-          isProcessing={fulfillmentInProgress[order.id]}
-          isConfirming={confirmationInProgress[order.id]}
-          showPrioritySelection={prioritySelectionMode[order.id]}
-          creatingOrder={creatingProductionOrder}
-          notificationMessage={orderMessages[order.id]}
-          getProductDisplayName={getModuleDisplayName}
-        />
-      )}
-      searchPlaceholder="Search by order number..."
-      emptyMessage="No warehouse orders found"
-    />
-  );
-
-  // Render Info Box - Compact version to fit row height
-  const renderInfoBox = () => (
-    <div className="dashboard-info-box" style={{ padding: '0.75rem' }}>
-      <h3 style={{ fontWeight: 'bold', fontSize: '0.875rem', marginBottom: '0.5rem', color: '#9a3412' }}>
-        Operations Guide
-      </h3>
-      <ul style={{ marginLeft: '1rem', fontSize: '0.8125rem', lineHeight: '1.4', color: '#9a3412', marginBottom: '0' }}>
-        <li><strong>Fulfill:</strong> Complete orders with available modules</li>
-        <li><strong>Production:</strong> Create order if modules insufficient</li>
-        <li><strong>Priority:</strong> Select urgency level for production</li>
-      </ul>
-    </div>
-  );
-
-  // Render Activity Log using standardized ActivityLog component
-  const renderActivity = () => (
-    <Card variant="framed" title="SUPERMARKET ACTIVITY" style={{ height: '100%' }}>
-      <ActivityLog
-        notifications={notifications}
-        onClear={clearNotifications}
-        showTitle={false}
-      />
-    </Card>
-  );
-
-  // Render Statistics
-  const renderStats = () => <StatisticsGrid stats={statsData} />;
-
-  return (
+  const renderOrderExtra = (order) => (
     <>
-      <StandardDashboardLayout
-        title="Modules Supermarket"
-        subtitle="Module Warehouse Operations | WS-8"
-        icon="🏭"
-        activityContent={renderActivity()}
-        statsContent={renderStats()}
-        formContent={renderInfoBox()}
-        contentGrid={renderWarehouseOrdersSection()}
-        inventoryContent={renderModuleInventory()}
-      />
-
-      {/* Production Order Creation Modal */}
-      {showProductionOrderForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowProductionOrderForm(false)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <form onSubmit={handleSubmitProductionOrder}>
-              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">Create Production Order</h2>
-                <button type="button" className="text-gray-400 hover:text-gray-600 text-2xl font-bold" onClick={() => setShowProductionOrderForm(false)}>×</button>
-              </div>
-              
-              <div className="px-6 py-4 space-y-4">
-                <p className="text-sm text-gray-600">
-                  Production order will be automatically created for missing modules from warehouse order <strong>{productionOrderForm.warehouseOrderNumber}</strong>.
-                </p>
-
-                {/* Display auto-loaded missing modules */}
-                {productionOrderForm.missingModules && productionOrderForm.missingModules.length > 0 && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Missing Modules (Auto-loaded)</h3>
-                    <div className="space-y-2">
-                      {productionOrderForm.missingModules.map((module, index) => (
-                        <div key={index} className="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
-                          <div>
-                            <span className="font-medium text-gray-900">{module.moduleName}</span>
-                            <span className="text-xs text-gray-500 ml-2">(ID: {module.moduleId})</span>
-                          </div>
-                          <span className="text-sm font-semibold text-blue-600">Qty: {module.quantityNeeded}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                  <select
-                    value={productionOrderForm.priority}
-                    onChange={(e) => setProductionOrderForm({ ...productionOrderForm, priority: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="LOW">Low</option>
-                    <option value="NORMAL">Normal</option>
-                    <option value="HIGH">High</option>
-                    <option value="URGENT">Urgent</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
-                  <textarea
-                    value={productionOrderForm.notes}
-                    onChange={(e) => setProductionOrderForm({ ...productionOrderForm, notes: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows="3"
-                    placeholder="Optional notes about this production order..."
-                  />
-                </div>
-              </div>
-              
-              <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowProductionOrderForm(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
-                  disabled={creatingProductionOrder}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
-                  disabled={creatingProductionOrder}
-                >
-                  {creatingProductionOrder ? 'Creating...' : 'Create Production Order'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {order.triggerScenario && (
+        <span style={{
+          fontSize: '0.625rem',
+          padding: '0.125rem 0.375rem',
+          borderRadius: '4px',
+          background: order.triggerScenario === 'DIRECT_FULFILLMENT' ? 'rgba(16, 185, 129, 0.1)' :
+                     order.triggerScenario === 'PRODUCTION_REQUIRED' ? 'rgba(245, 158, 11, 0.1)' :
+                     'rgba(59, 130, 246, 0.1)',
+          color: order.triggerScenario === 'DIRECT_FULFILLMENT' ? '#059669' :
+                 order.triggerScenario === 'PRODUCTION_REQUIRED' ? '#d97706' :
+                 '#2563eb',
+          fontWeight: 600
+        }}>
+          {order.triggerScenario.replace(/_/g, ' ')}
+        </span>
       )}
-
-      {/* Module Details Modal */}
-      {selectedModule && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setSelectedModule(null)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">Module Details</h2>
-              <button className="text-gray-400 hover:text-gray-600 text-2xl font-bold" onClick={() => setSelectedModule(null)}>×</button>
-            </div>
-            <div className="px-6 py-4 space-y-4">
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Item Type</dt>
-                <dd className="mt-1 text-lg font-semibold text-gray-900">{selectedModule.itemType}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Item ID</dt>
-                <dd className="mt-1 text-lg font-semibold text-gray-900">{selectedModule.itemId}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Stock Level</dt>
-                <dd className="mt-1 text-2xl font-bold" style={{ color: selectedModule.quantity > 0 ? '#059669' : '#dc2626' }}>
-                  {selectedModule.quantity} units
-                </dd>
-              </div>
-              {selectedModule.description && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Description</dt>
-                  <dd className="mt-1 text-sm text-gray-700">{selectedModule.description}</dd>
-                </div>
-              )}
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Last Updated</dt>
-                <dd className="mt-1 text-sm text-gray-700">{new Date(selectedModule.updatedAt).toLocaleString()}</dd>
-              </div>
-            </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
-              <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition" onClick={() => setSelectedModule(null)}>
-                Close
-              </button>
-            </div>
-          </div>
+      {order.productionOrderId && (
+        <span style={{
+          fontSize: '0.625rem',
+          padding: '0.125rem 0.375rem',
+          borderRadius: '4px',
+          background: 'rgba(139, 92, 246, 0.1)',
+          color: '#7c3aed',
+          fontWeight: 600
+        }}>
+          PO-{order.productionOrderId}
+        </span>
+      )}
+      {/* Priority selection UI */}
+      {prioritySelection[order.id] && (
+        <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
+          {['LOW', 'NORMAL', 'HIGH', 'URGENT'].map(priority => (
+            <button
+              key={priority}
+              onClick={(e) => { e.stopPropagation(); handleSelectPriority(order.id, priority); }}
+              style={{
+                padding: '0.125rem 0.375rem',
+                fontSize: '0.5625rem',
+                border: 'none',
+                borderRadius: '3px',
+                background: priority === 'URGENT' ? 'rgba(239, 68, 68, 0.1)' :
+                           priority === 'HIGH' ? 'rgba(245, 158, 11, 0.1)' :
+                           priority === 'NORMAL' ? 'rgba(59, 130, 246, 0.1)' :
+                           'rgba(100, 116, 139, 0.1)',
+                color: priority === 'URGENT' ? '#dc2626' :
+                       priority === 'HIGH' ? '#d97706' :
+                       priority === 'NORMAL' ? '#2563eb' :
+                       '#64748b',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              {priority}
+            </button>
+          ))}
         </div>
       )}
     </>
+  );
+
+  // Refresh handler (defined before panelRowContent to avoid reference error)
+  const handleRefresh = async () => {
+    await fetchInventory();
+    await fetchWarehouseOrders();
+  };
+
+  // Calculate stats for panels
+  const pendingCount = warehouseOrders.filter(o => o.status === 'PENDING').length;
+  const confirmedCount = warehouseOrders.filter(o => o.status === 'CONFIRMED').length;
+  const awaitingProd = warehouseOrders.filter(o => o.status === 'AWAITING_PRODUCTION').length;
+  const fulfilledCount = warehouseOrders.filter(o => o.status === 'FULFILLED').length;
+  const moduleStock = inventory.filter(i => i.itemType === 'MODULE');
+  const totalModules = moduleStock.reduce((sum, i) => sum + (i.quantity || 0), 0);
+  const lowStockModules = moduleStock.filter(i => (i.quantity || 0) < 10).length;
+  const directFulfillable = warehouseOrders.filter(o => o.triggerScenario === 'DIRECT_FULFILLMENT').length;
+  const needsProduction = warehouseOrders.filter(o => o.triggerScenario === 'PRODUCTION_REQUIRED').length;
+
+  const panelRowContent = (
+    <>
+      {/* Warehouse Orders Panel */}
+      <DashboardPanel
+        icon="📋"
+        title="Warehouse Orders"
+        badge={warehouseOrders.length > 0 ? `${warehouseOrders.length}` : null}
+        badgeVariant="info"
+        themeClass="ws-theme-8"
+        stats={[
+          { label: 'Pending', value: pendingCount, variant: 'pending' },
+          { label: 'Confirmed', value: confirmedCount, variant: 'info' },
+          { label: 'Awaiting', value: awaitingProd, variant: 'warning' },
+          { label: 'Fulfilled', value: fulfilledCount, variant: 'completed' },
+        ]}
+        alerts={awaitingProd > 0 ? [{ message: `${awaitingProd} awaiting production`, variant: 'warning' }] : []}
+      />
+
+      {/* Module Stock Panel */}
+      <DashboardPanel
+        icon="🔧"
+        title="Module Stock"
+        badge={lowStockModules > 0 ? `${lowStockModules} low` : 'OK'}
+        badgeVariant={lowStockModules > 0 ? 'warning' : 'success'}
+        themeClass="ws-theme-8"
+        stats={[
+          { label: 'Types', value: moduleStock.length, variant: 'total' },
+          { label: 'Total Qty', value: totalModules, variant: 'info' },
+          { label: 'Low Stock', value: lowStockModules, variant: lowStockModules > 0 ? 'warning' : 'success' },
+          { label: 'Avg/Type', value: moduleStock.length > 0 ? Math.round(totalModules / moduleStock.length) : 0, variant: 'total' },
+        ]}
+      />
+
+      {/* Production Status Panel */}
+      <DashboardPanel
+        icon="🏭"
+        title="Production Status"
+        badge={needsProduction > 0 ? 'Active' : 'Idle'}
+        badgeVariant={needsProduction > 0 ? 'progress' : 'success'}
+        themeClass="ws-theme-8"
+        stats={[
+          { label: 'Direct', value: directFulfillable, variant: 'completed' },
+          { label: 'Need Prod', value: needsProduction, variant: 'warning' },
+          { label: 'In Prod', value: awaitingProd, variant: 'progress' },
+          { label: 'From WS-4/5', value: fulfilledCount, variant: 'success' },
+        ]}
+        subStats={[
+          { label: 'Scenario', value: needsProduction > 0 ? '3: Production' : '2: Direct' },
+        ]}
+      />
+
+      {/* Quick Actions Panel */}
+      <DashboardPanel
+        icon="⚡"
+        title="Quick Actions"
+        themeClass="ws-theme-8"
+        actions={[
+          { label: 'Confirm', icon: '✓', variant: 'info', onClick: () => {
+            const nextOrder = warehouseOrders.find(o => o.status === 'PENDING');
+            if (nextOrder) handleConfirm(nextOrder.id);
+          }},
+          { label: 'Fulfill', icon: '📦', variant: 'success', onClick: () => {
+            const fulfillable = warehouseOrders.find(o => o.triggerScenario === 'DIRECT_FULFILLMENT');
+            if (fulfillable) handleFulfill(fulfillable.id);
+          }},
+          { label: 'Production', icon: '🏭', variant: 'warning', onClick: () => {
+            const prodNeeded = warehouseOrders.find(o => o.triggerScenario === 'PRODUCTION_REQUIRED');
+            if (prodNeeded) handleOrderProduction(prodNeeded.id, 'NORMAL');
+          }},
+          { label: 'Refresh', icon: '🔄', variant: 'secondary', onClick: handleRefresh },
+        ]}
+      />
+    </>
+  );
+
+  // Content sections
+  const ordersContent = (
+    <OrdersGrid
+      title="Warehouse Orders"
+      icon="📋"
+      orders={warehouseOrders}
+      filterOptions={FILTER_OPTIONS}
+      sortOptions={SORT_OPTIONS}
+      searchPlaceholder="Search WO-XXX..."
+      emptyMessage="No warehouse orders"
+      emptySubtext="Orders will appear when created from Plant Warehouse"
+      renderCard={(order) => (
+        <GridCard
+          order={order}
+          onAction={handleAction}
+          actions={ORDER_ACTIONS}
+          renderItems={renderOrderItems}
+          renderExtra={renderOrderExtra}
+          isProcessing={processingOrderId === order.id}
+        />
+      )}
+      renderCompactCard={(order) => (
+        <CompactCard
+          order={order}
+          onAction={handleAction}
+          actions={ORDER_ACTIONS}
+          isProcessing={processingOrderId === order.id}
+        />
+      )}
+      renderListItem={(order) => (
+        <ListRow
+          order={order}
+          onAction={handleAction}
+          actions={ORDER_ACTIONS}
+          columns={['orderNumber', 'status', 'date', 'items']}
+          isProcessing={processingOrderId === order.id}
+        />
+      )}
+    />
+  );
+
+  const inventoryContent = (
+    <InventoryPanel
+      title="Module Stock"
+      inventory={inventory.filter(i => i.itemType === 'MODULE')}
+      getItemName={getModuleName}
+      lowStockThreshold={10}
+      criticalStockThreshold={5}
+    />
+  );
+
+  const activityContent = (
+    <ActivityPanel
+      title="Activity"
+      notifications={notifications}
+      onClear={clearNotifications}
+      maxItems={5}
+      compact={true}
+    />
+  );
+
+  return (
+    <WarehouseDashboard
+      workstationId={WORKSTATION_ID}
+      title="Modules Supermarket"
+      subtitle="WS-8 • Warehouse Orders"
+      icon="🏪"
+      panelRowContent={panelRowContent}
+      ordersContent={ordersContent}
+      activityContent={activityContent}
+      inventoryContent={inventoryContent}
+      loading={loading}
+      error={error}
+      onRefresh={handleRefresh}
+      onDismissError={() => setError(null)}
+    />
   );
 }
 

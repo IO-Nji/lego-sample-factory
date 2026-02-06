@@ -1,0 +1,2421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>L.I.F.E Statistics Cards - Design System Mockup</title>
+  <style>
+    /* ============================================================================
+       DESIGN TOKENS - Extracted from Homepage
+       ============================================================================ */
+    :root {
+      /* Brand Colors */
+      --brand-primary: #2c5aa0;
+      --brand-primary-light: #3b82f6;
+      --brand-secondary: #33a7d9;
+      --brand-accent: #f59e0b;
+      --brand-cyan: #06b6d4;
+      
+      /* Semantic Colors */
+      --color-success: #10b981;
+      --color-success-light: #d1fae5;
+      --color-success-dark: #047857;
+      
+      --color-warning: #f59e0b;
+      --color-warning-light: #fef3c7;
+      --color-warning-dark: #b45309;
+      
+      --color-danger: #ef4444;
+      --color-danger-light: #fee2e2;
+      --color-danger-dark: #dc2626;
+      
+      --color-info: #3b82f6;
+      --color-info-light: #dbeafe;
+      --color-info-dark: #1d4ed8;
+      
+      --color-neutral: #64748b;
+      --color-neutral-light: #f1f5f9;
+      --color-neutral-dark: #475569;
+      
+      /* Text Colors */
+      --text-primary: #1e3d66;
+      --text-secondary: #4a5568;
+      --text-muted: #718096;
+      
+      /* Glassmorphism */
+      --glass-bg: rgba(255, 255, 255, 0.85);
+      --glass-bg-strong: rgba(255, 255, 255, 0.92);
+      --glass-border: rgba(255, 255, 255, 0.3);
+      --glass-blur: blur(10px);
+      
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 24px rgba(44, 90, 160, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 12px 40px rgba(44, 90, 160, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+      --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+      
+      /* Border Radius */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --radius-full: 9999px;
+      
+      /* Transitions */
+      --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      /* Typography */
+      --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      --font-mono: 'SF Mono', 'Consolas', 'Liberation Mono', Menlo, monospace;
+    }
+
+    /* ============================================================================
+       BASE STYLES
+       ============================================================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+      min-height: 100vh;
+      padding: 2rem;
+      color: var(--text-primary);
+    }
+
+    /* ============================================================================
+       LAYOUT CONTAINERS
+       ============================================================================ */
+    .mockup-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .mockup-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .mockup-title {
+      font-size: 2.5rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .mockup-subtitle {
+      font-size: 1rem;
+      color: var(--text-secondary);
+    }
+
+    .section {
+      margin-bottom: 4rem;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid rgba(44, 90, 160, 0.1);
+    }
+
+    .section-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+      border-radius: var(--radius-md);
+      color: white;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .section-description {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Card Grid Layouts */
+    .stats-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .stats-grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .stats-grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .stats-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .stats-grid-6 { grid-template-columns: repeat(6, 1fr); }
+    .stats-grid-auto { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+    @media (max-width: 1200px) {
+      .stats-grid-6 { grid-template-columns: repeat(3, 1fr); }
+      .stats-grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid-6, .stats-grid-4, .stats-grid-3 { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid-6, .stats-grid-4, .stats-grid-3, .stats-grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* ============================================================================
+       STAT CARD TYPE 1: BASIC METRIC CARD (Glassmorphism)
+       ============================================================================
+       Use Case: Simple metrics like Total Orders, Pending Count, etc.
+       Dashboards: All workstations for basic order/inventory counts
+    */
+    .stat-card {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition-normal);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+      border-color: rgba(44, 90, 160, 0.2);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--card-accent, var(--brand-primary)), var(--card-accent-end, var(--brand-secondary)));
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+
+    .stat-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card-icon {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      background: var(--icon-bg, rgba(59, 130, 246, 0.1));
+      border-radius: var(--radius-md);
+      color: var(--icon-color, var(--brand-primary));
+    }
+
+    .stat-card-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--value-color, var(--text-primary));
+      line-height: 1.1;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-card-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Color Variants */
+    .stat-card.primary { --card-accent: #3b82f6; --card-accent-end: #06b6d4; --icon-bg: rgba(59, 130, 246, 0.1); --icon-color: #3b82f6; --value-color: #1d4ed8; }
+    .stat-card.success { --card-accent: #10b981; --card-accent-end: #059669; --icon-bg: rgba(16, 185, 129, 0.1); --icon-color: #10b981; --value-color: #047857; }
+    .stat-card.warning { --card-accent: #f59e0b; --card-accent-end: #f97316; --icon-bg: rgba(245, 158, 11, 0.1); --icon-color: #f59e0b; --value-color: #b45309; }
+    .stat-card.danger { --card-accent: #ef4444; --card-accent-end: #dc2626; --icon-bg: rgba(239, 68, 68, 0.1); --icon-color: #ef4444; --value-color: #dc2626; }
+    .stat-card.info { --card-accent: #06b6d4; --card-accent-end: #0891b2; --icon-bg: rgba(6, 182, 212, 0.1); --icon-color: #06b6d4; --value-color: #0e7490; }
+    .stat-card.neutral { --card-accent: #64748b; --card-accent-end: #475569; --icon-bg: rgba(100, 116, 139, 0.1); --icon-color: #64748b; --value-color: #475569; }
+
+    /* ============================================================================
+       STAT CARD TYPE 2: METRIC WITH TREND INDICATOR
+       ============================================================================
+       Use Case: Metrics with change comparison (vs yesterday, vs last week)
+       Dashboards: Admin, Production Planning, Warehouse fulfillment stats
+    */
+    .stat-card-trend {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition-normal);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card-trend:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .stat-card-trend-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .stat-card-trend-icon {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, var(--icon-bg-start, rgba(59, 130, 246, 0.15)) 0%, var(--icon-bg-end, rgba(6, 182, 212, 0.1)) 100%);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--icon-border, rgba(59, 130, 246, 0.2));
+    }
+
+    .trend-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-full);
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .trend-badge.up {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--color-success-dark);
+    }
+
+    .trend-badge.down {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--color-danger-dark);
+    }
+
+    .trend-badge.neutral {
+      background: rgba(100, 116, 139, 0.15);
+      color: var(--color-neutral-dark);
+    }
+
+    .stat-card-trend-value {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-card-trend-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card-trend-comparison {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* ============================================================================
+       STAT CARD TYPE 3: PROGRESS/GAUGE CARD
+       ============================================================================
+       Use Case: Completion rates, utilization percentages, capacity
+       Dashboards: Production Planning (utilization), Workstations (progress)
+    */
+    .stat-card-progress {
+      background: var(--glass-bg-strong);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition-normal);
+    }
+
+    .stat-card-progress:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .stat-card-progress-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .stat-card-progress-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .stat-card-progress-value {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    .progress-bar-container {
+      height: 8px;
+      background: rgba(0, 0, 0, 0.06);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width 0.5s ease-out;
+      background: linear-gradient(90deg, var(--progress-start, #3b82f6), var(--progress-end, #06b6d4));
+    }
+
+    .progress-bar-fill.success { --progress-start: #10b981; --progress-end: #059669; }
+    .progress-bar-fill.warning { --progress-start: #f59e0b; --progress-end: #f97316; }
+    .progress-bar-fill.danger { --progress-start: #ef4444; --progress-end: #dc2626; }
+
+    .stat-card-progress-detail {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* ============================================================================
+       STAT CARD TYPE 4: MINI SPARKLINE CARD
+       ============================================================================
+       Use Case: Trending metrics with historical visualization
+       Dashboards: Admin (orders/hour), Production Planning (throughput)
+    */
+    .stat-card-sparkline {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition-normal);
+      position: relative;
+    }
+
+    .stat-card-sparkline:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .stat-card-sparkline-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card-sparkline-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-card-sparkline-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 0.75rem;
+    }
+
+    /* SVG Sparkline simulation */
+    .sparkline-container {
+      height: 40px;
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      padding: 0 4px;
+    }
+
+    .sparkline-bar {
+      flex: 1;
+      background: linear-gradient(180deg, rgba(59, 130, 246, 0.6) 0%, rgba(59, 130, 246, 0.2) 100%);
+      border-radius: 2px 2px 0 0;
+      min-width: 6px;
+      transition: var(--transition-fast);
+    }
+
+    .sparkline-bar:hover {
+      background: linear-gradient(180deg, rgba(59, 130, 246, 0.9) 0%, rgba(59, 130, 246, 0.4) 100%);
+    }
+
+    /* ============================================================================
+       STAT CARD TYPE 5: THRESHOLD ALERT CARD
+       ============================================================================
+       Use Case: Stock levels with threshold warnings
+       Dashboards: Warehouses (WS-7, 8, 9), Inventory monitoring
+    */
+    .stat-card-threshold {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition-normal);
+      position: relative;
+    }
+
+    .stat-card-threshold:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .stat-card-threshold.alert {
+      border-color: rgba(239, 68, 68, 0.3);
+      background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(254, 226, 226, 0.5) 100%);
+    }
+
+    .stat-card-threshold.alert::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: var(--radius-lg);
+      animation: alertPulse 2s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes alertPulse {
+      0%, 100% { box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.2); }
+      50% { box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.5); }
+    }
+
+    .stat-card-threshold.warning {
+      border-color: rgba(245, 158, 11, 0.3);
+      background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(254, 243, 199, 0.5) 100%);
+    }
+
+    .stat-card-threshold-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .threshold-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-full);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .threshold-status-badge.critical {
+      background: var(--color-danger-light);
+      color: var(--color-danger-dark);
+    }
+
+    .threshold-status-badge.low {
+      background: var(--color-warning-light);
+      color: var(--color-warning-dark);
+    }
+
+    .threshold-status-badge.ok {
+      background: var(--color-success-light);
+      color: var(--color-success-dark);
+    }
+
+    .stat-card-threshold-value {
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-card-threshold-value.critical { color: var(--color-danger); }
+    .stat-card-threshold-value.low { color: var(--color-warning-dark); }
+    .stat-card-threshold-value.ok { color: var(--text-primary); }
+
+    .stat-card-threshold-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+
+    .threshold-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .threshold-indicator-line {
+      flex: 1;
+      height: 4px;
+      background: rgba(0, 0, 0, 0.06);
+      border-radius: var(--radius-full);
+      position: relative;
+    }
+
+    .threshold-indicator-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width 0.3s ease-out;
+    }
+
+    .threshold-indicator-mark {
+      position: absolute;
+      top: -4px;
+      width: 2px;
+      height: 12px;
+      background: var(--color-neutral);
+      border-radius: 1px;
+    }
+
+    /* ============================================================================
+       STAT CARD TYPE 6: COMPACT INLINE CARD
+       ============================================================================
+       Use Case: Dense information display, sidebar stats
+       Dashboards: Compact layouts, mobile views, sidebars
+    */
+    .stat-card-compact {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition-fast);
+    }
+
+    .stat-card-compact:hover {
+      box-shadow: var(--shadow-md);
+      border-color: rgba(44, 90, 160, 0.2);
+    }
+
+    .stat-card-compact-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      background: var(--icon-bg, rgba(59, 130, 246, 0.1));
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+    }
+
+    .stat-card-compact-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .stat-card-compact-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .stat-card-compact-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .stat-card-compact.success .stat-card-compact-icon { --icon-bg: rgba(16, 185, 129, 0.1); color: var(--color-success); }
+    .stat-card-compact.warning .stat-card-compact-icon { --icon-bg: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
+    .stat-card-compact.danger .stat-card-compact-icon { --icon-bg: rgba(239, 68, 68, 0.1); color: var(--color-danger); }
+    .stat-card-compact.info .stat-card-compact-icon { --icon-bg: rgba(6, 182, 212, 0.1); color: var(--color-info); }
+
+    /* ============================================================================
+       STAT CARD TYPE 7: MULTI-METRIC CARD
+       ============================================================================
+       Use Case: Related metrics grouped together
+       Dashboards: Inventory summary, Order breakdown by type
+    */
+    .stat-card-multi {
+      background: var(--glass-bg-strong);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition-normal);
+    }
+
+    .stat-card-multi:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .stat-card-multi-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .stat-card-multi-icon {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+      border-radius: var(--radius-md);
+      color: white;
+    }
+
+    .stat-card-multi-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .stat-card-multi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .stat-card-multi-item {
+      text-align: center;
+      padding: 0.5rem;
+      background: rgba(0, 0, 0, 0.02);
+      border-radius: var(--radius-sm);
+    }
+
+    .stat-card-multi-item-value {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .stat-card-multi-item-label {
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    /* ============================================================================
+       STAT CARD TYPE 8: STATUS TIMELINE CARD
+       ============================================================================
+       Use Case: Order status distribution, pipeline visualization
+       Dashboards: Production Planning, Admin overview
+    */
+    .stat-card-timeline {
+      background: var(--glass-bg-strong);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition-normal);
+    }
+
+    .stat-card-timeline:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat-card-timeline-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .stat-card-timeline-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .stat-card-timeline-total {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .timeline-flow {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .timeline-step {
+      flex: 1;
+      text-align: center;
+    }
+
+    .timeline-step-bar {
+      height: 24px;
+      background: var(--step-color, #e2e8f0);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: white;
+      position: relative;
+    }
+
+    .timeline-step-bar.pending { --step-color: #fbbf24; color: #92400e; }
+    .timeline-step-bar.confirmed { --step-color: #3b82f6; }
+    .timeline-step-bar.in-progress { --step-color: #06b6d4; }
+    .timeline-step-bar.completed { --step-color: #10b981; }
+
+    .timeline-step-label {
+      font-size: 0.6rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .timeline-arrow {
+      width: 16px;
+      height: 16px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      opacity: 0.5;
+    }
+
+    /* ============================================================================
+       STAT CARD TYPE 9: DONUT CHART CARD
+       ============================================================================
+       Use Case: Distribution visualization, completion percentage
+       Dashboards: Admin (order types), Inventory (stock distribution)
+    */
+    .stat-card-donut {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition-normal);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .stat-card-donut:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .donut-chart {
+      width: 80px;
+      height: 80px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .donut-chart svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .donut-chart circle {
+      fill: none;
+      stroke-width: 8;
+    }
+
+    .donut-bg { stroke: rgba(0, 0, 0, 0.06); }
+    .donut-fill { 
+      stroke: url(#donutGradient);
+      stroke-linecap: round;
+      transition: stroke-dasharray 0.5s ease-out;
+    }
+
+    .donut-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .donut-center-value {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .donut-center-label {
+      font-size: 0.5rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .stat-card-donut-content {
+      flex: 1;
+    }
+
+    .stat-card-donut-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .donut-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .donut-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+
+    .donut-legend-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+
+    /* ============================================================================
+       STAT CARD TYPE 10: KPI HERO CARD
+       ============================================================================
+       Use Case: Primary dashboard metric, featured KPI
+       Dashboards: Admin main metric, Revenue, Critical alerts
+    */
+    .stat-card-hero {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(239, 246, 255, 0.95) 50%, rgba(219, 234, 254, 0.95) 100%);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1.5px solid rgba(59, 130, 246, 0.25);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      box-shadow: 
+        0 6px 24px rgba(44, 90, 160, 0.12),
+        0 3px 12px rgba(59, 130, 246, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      transition: var(--transition-normal);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, rgba(6, 182, 212, 0.05) 40%, transparent 70%);
+      animation: heroShimmer 8s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes heroShimmer {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(25%, 25%); }
+    }
+
+    .stat-card-hero::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 50%, #f59e0b 100%);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+
+    .stat-card-hero:hover {
+      box-shadow: 
+        0 12px 40px rgba(44, 90, 160, 0.18),
+        0 6px 20px rgba(59, 130, 246, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      transform: translateY(-4px);
+    }
+
+    .stat-card-hero-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-card-hero-icon {
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+      border-radius: var(--radius-lg);
+      color: white;
+      box-shadow: 0 4px 12px rgba(44, 90, 160, 0.25);
+    }
+
+    .stat-card-hero-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-card-hero-value {
+      font-size: 3.5rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--brand-primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-card-hero-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-card-hero-trend {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-full);
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-left: 0.5rem;
+    }
+
+    .stat-card-hero-trend.up {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--color-success-dark);
+    }
+
+    .stat-card-hero-trend.down {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--color-danger-dark);
+    }
+
+    /* ============================================================================
+       STAT CARD TYPE 11: WORKSTATION STATUS CARD
+       ============================================================================
+       Use Case: Workstation operational status, active/idle indicators
+       Dashboards: Admin, Production Control, Assembly Control
+    */
+    .stat-card-workstation {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition-normal);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .stat-card-workstation:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .workstation-status-indicator {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      border-radius: var(--radius-md);
+      position: relative;
+    }
+
+    .workstation-status-indicator.active {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.1) 100%);
+      border: 2px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .workstation-status-indicator.active::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 10px;
+      height: 10px;
+      background: var(--color-success);
+      border-radius: 50%;
+      border: 2px solid white;
+      animation: statusPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes statusPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+      50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    }
+
+    .workstation-status-indicator.idle {
+      background: linear-gradient(135deg, rgba(100, 116, 139, 0.15) 0%, rgba(71, 85, 105, 0.1) 100%);
+      border: 2px solid rgba(100, 116, 139, 0.3);
+    }
+
+    .workstation-status-indicator.alert {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%);
+      border: 2px solid rgba(239, 68, 68, 0.4);
+      animation: alertBorder 2s ease-in-out infinite;
+    }
+
+    @keyframes alertBorder {
+      0%, 100% { border-color: rgba(239, 68, 68, 0.4); }
+      50% { border-color: rgba(239, 68, 68, 0.8); }
+    }
+
+    .workstation-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .workstation-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .workstation-detail {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .workstation-metrics {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.25rem;
+    }
+
+    .workstation-metric {
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .workstation-metric.orders { color: var(--brand-primary); }
+    .workstation-metric.time { color: var(--text-muted); }
+
+    /* ============================================================================
+       STAT CARD TYPE 12: SCENARIO BREAKDOWN CARD
+       ============================================================================
+       Use Case: Business scenario distribution (Scenario 1/2/3/4)
+       Dashboards: Plant Warehouse, Admin analytics
+    */
+    .stat-card-scenario {
+      background: var(--glass-bg-strong);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition-normal);
+    }
+
+    .stat-card-scenario:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat-card-scenario-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .stat-card-scenario-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+    }
+
+    .scenario-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      transition: var(--transition-fast);
+    }
+
+    .scenario-item:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .scenario-badge {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 800;
+      border-radius: var(--radius-sm);
+      color: white;
+    }
+
+    .scenario-badge.s1 { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .scenario-badge.s2 { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    .scenario-badge.s3 { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+    .scenario-badge.s4 { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+
+    .scenario-info {
+      flex: 1;
+    }
+
+    .scenario-name {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .scenario-count {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    /* ============================================================================
+       UTILITIES & ANIMATIONS
+       ============================================================================ */
+    .clickable {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .loading {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .loading::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: loadingShimmer 1.5s infinite;
+    }
+
+    @keyframes loadingShimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    /* Responsive text truncation */
+    .truncate {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Number formatting helper */
+    .stat-number {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ============================================================================
+       DEMO SECTIONS
+       ============================================================================ */
+    .demo-row {
+      margin-bottom: 1rem;
+    }
+
+    .demo-label {
+      display: inline-block;
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--brand-primary);
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG Definitions for Gradients -->
+  <svg width="0" height="0">
+    <defs>
+      <linearGradient id="donutGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#3b82f6"/>
+        <stop offset="100%" style="stop-color:#06b6d4"/>
+      </linearGradient>
+      <linearGradient id="successGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#10b981"/>
+        <stop offset="100%" style="stop-color:#059669"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <div class="mockup-container">
+    <!-- Header -->
+    <header class="mockup-header">
+      <h1 class="mockup-title">L.I.F.E Statistics Cards</h1>
+      <p class="mockup-subtitle">Design System Mockup — February 2026</p>
+    </header>
+
+    <!-- ============================================================================
+         SECTION 1: BASIC METRIC CARDS
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">📊</div>
+        <div>
+          <h2 class="section-title">Type 1: Basic Metric Cards</h2>
+          <p class="section-description">Simple metric display with icon and color variant. Use for order counts, totals, and basic KPIs.</p>
+        </div>
+      </div>
+
+      <div class="demo-row">
+        <span class="demo-label">All Workstations — Order Statistics</span>
+      </div>
+      <div class="stats-grid stats-grid-6">
+        <div class="stat-card primary">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">📦</div>
+          </div>
+          <div class="stat-card-value">142</div>
+          <div class="stat-card-label">Total Orders</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">⏳</div>
+          </div>
+          <div class="stat-card-value">23</div>
+          <div class="stat-card-label">Pending</div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">✓</div>
+          </div>
+          <div class="stat-card-value">18</div>
+          <div class="stat-card-label">Confirmed</div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">⚙️</div>
+          </div>
+          <div class="stat-card-value">35</div>
+          <div class="stat-card-label">In Progress</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">✅</div>
+          </div>
+          <div class="stat-card-value">58</div>
+          <div class="stat-card-label">Completed</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">⏸️</div>
+          </div>
+          <div class="stat-card-value">8</div>
+          <div class="stat-card-label">Halted</div>
+        </div>
+      </div>
+
+      <div class="demo-row" style="margin-top: 1.5rem;">
+        <span class="demo-label">Warehouse — Inventory Statistics</span>
+      </div>
+      <div class="stats-grid stats-grid-4">
+        <div class="stat-card neutral">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">🎨</div>
+          </div>
+          <div class="stat-card-value">12</div>
+          <div class="stat-card-label">Product Types</div>
+        </div>
+        <div class="stat-card primary">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">📊</div>
+          </div>
+          <div class="stat-card-value">1,247</div>
+          <div class="stat-card-label">Total Stock</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">⚠️</div>
+          </div>
+          <div class="stat-card-value">5</div>
+          <div class="stat-card-label">Low Stock</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">🚨</div>
+          </div>
+          <div class="stat-card-value">2</div>
+          <div class="stat-card-label">Out of Stock</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================================
+         SECTION 2: METRIC WITH TREND
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">📈</div>
+        <div>
+          <h2 class="section-title">Type 2: Metric with Trend Indicator</h2>
+          <p class="section-description">Metrics with comparison data showing changes over time. Use for Admin and Planning dashboards.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid stats-grid-4">
+        <div class="stat-card-trend">
+          <div class="stat-card-trend-header">
+            <div class="stat-card-trend-icon">📦</div>
+            <span class="trend-badge up">↑ 12%</span>
+          </div>
+          <div class="stat-card-trend-value">847</div>
+          <div class="stat-card-trend-label">Orders This Week</div>
+          <div class="stat-card-trend-comparison">vs 756 last week</div>
+        </div>
+
+        <div class="stat-card-trend">
+          <div class="stat-card-trend-header">
+            <div class="stat-card-trend-icon">⏱️</div>
+            <span class="trend-badge down">↓ 8%</span>
+          </div>
+          <div class="stat-card-trend-value">4.2h</div>
+          <div class="stat-card-trend-label">Avg Lead Time</div>
+          <div class="stat-card-trend-comparison">vs 4.6h yesterday</div>
+        </div>
+
+        <div class="stat-card-trend">
+          <div class="stat-card-trend-header">
+            <div class="stat-card-trend-icon">✅</div>
+            <span class="trend-badge up">↑ 5%</span>
+          </div>
+          <div class="stat-card-trend-value">94.2%</div>
+          <div class="stat-card-trend-label">Completion Rate</div>
+          <div class="stat-card-trend-comparison">vs 89.7% last month</div>
+        </div>
+
+        <div class="stat-card-trend">
+          <div class="stat-card-trend-header">
+            <div class="stat-card-trend-icon">🚚</div>
+            <span class="trend-badge neutral">→ 0%</span>
+          </div>
+          <div class="stat-card-trend-value">156</div>
+          <div class="stat-card-trend-label">Shipped Today</div>
+          <div class="stat-card-trend-comparison">same as yesterday</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================================
+         SECTION 3: PROGRESS/GAUGE CARDS
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">⚡</div>
+        <div>
+          <h2 class="section-title">Type 3: Progress & Gauge Cards</h2>
+          <p class="section-description">Visual progress indicators for rates, utilization, and completion percentages.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid stats-grid-3">
+        <div class="stat-card-progress">
+          <div class="stat-card-progress-header">
+            <span class="stat-card-progress-label">Production Utilization</span>
+            <span class="stat-card-progress-value">78%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" style="width: 78%;"></div>
+          </div>
+          <div class="stat-card-progress-detail">
+            <span>7/9 workstations active</span>
+            <span>Target: 85%</span>
+          </div>
+        </div>
+
+        <div class="stat-card-progress">
+          <div class="stat-card-progress-header">
+            <span class="stat-card-progress-label">Daily Target Progress</span>
+            <span class="stat-card-progress-value">92%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill success" style="width: 92%;"></div>
+          </div>
+          <div class="stat-card-progress-detail">
+            <span>138 / 150 orders</span>
+            <span>On Track</span>
+          </div>
+        </div>
+
+        <div class="stat-card-progress">
+          <div class="stat-card-progress-header">
+            <span class="stat-card-progress-label">Capacity Used</span>
+            <span class="stat-card-progress-value">96%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill danger" style="width: 96%;"></div>
+          </div>
+          <div class="stat-card-progress-detail">
+            <span>Near maximum</span>
+            <span>Critical: 95%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================================
+         SECTION 4: SPARKLINE CARDS
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">📉</div>
+        <div>
+          <h2 class="section-title">Type 4: Sparkline Trend Cards</h2>
+          <p class="section-description">Mini chart visualization for historical trends. Use for orders/hour, throughput tracking.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid stats-grid-3">
+        <div class="stat-card-sparkline">
+          <div class="stat-card-sparkline-header">
+            <span class="stat-card-sparkline-label">Orders / Hour</span>
+            <span class="trend-badge up">↑ 15%</span>
+          </div>
+          <div class="stat-card-sparkline-value">24</div>
+          <div class="sparkline-container">
+            <div class="sparkline-bar" style="height: 45%;"></div>
+            <div class="sparkline-bar" style="height: 60%;"></div>
+            <div class="sparkline-bar" style="height: 35%;"></div>
+            <div class="sparkline-bar" style="height: 80%;"></div>
+            <div class="sparkline-bar" style="height: 65%;"></div>
+            <div class="sparkline-bar" style="height: 90%;"></div>
+            <div class="sparkline-bar" style="height: 75%;"></div>
+            <div class="sparkline-bar" style="height: 100%;"></div>
+          </div>
+        </div>
+
+        <div class="stat-card-sparkline">
+          <div class="stat-card-sparkline-header">
+            <span class="stat-card-sparkline-label">Parts Produced</span>
+            <span class="trend-badge down">↓ 3%</span>
+          </div>
+          <div class="stat-card-sparkline-value">1,847</div>
+          <div class="sparkline-container">
+            <div class="sparkline-bar" style="height: 90%;"></div>
+            <div class="sparkline-bar" style="height: 85%;"></div>
+            <div class="sparkline-bar" style="height: 70%;"></div>
+            <div class="sparkline-bar" style="height: 75%;"></div>
+            <div class="sparkline-bar" style="height: 60%;"></div>
+            <div class="sparkline-bar" style="height: 65%;"></div>
+            <div class="sparkline-bar" style="height: 55%;"></div>
+            <div class="sparkline-bar" style="height: 70%;"></div>
+          </div>
+        </div>
+
+        <div class="stat-card-sparkline">
+          <div class="stat-card-sparkline-header">
+            <span class="stat-card-sparkline-label">Modules Assembled</span>
+            <span class="trend-badge neutral">→ 0%</span>
+          </div>
+          <div class="stat-card-sparkline-value">456</div>
+          <div class="sparkline-container">
+            <div class="sparkline-bar" style="height: 70%;"></div>
+            <div class="sparkline-bar" style="height: 65%;"></div>
+            <div class="sparkline-bar" style="height: 72%;"></div>
+            <div class="sparkline-bar" style="height: 68%;"></div>
+            <div class="sparkline-bar" style="height: 70%;"></div>
+            <div class="sparkline-bar" style="height: 74%;"></div>
+            <div class="sparkline-bar" style="height: 69%;"></div>
+            <div class="sparkline-bar" style="height: 71%;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================================
+         SECTION 5: THRESHOLD ALERT CARDS
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">🚨</div>
+        <div>
+          <h2 class="section-title">Type 5: Threshold Alert Cards</h2>
+          <p class="section-description">Inventory and stock alerts with visual threshold indicators. Use for warehouse dashboards.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid stats-grid-3">
+        <div class="stat-card-threshold alert">
+          <div class="stat-card-threshold-header">
+            <span>🔧</span>
+            <span class="threshold-status-badge critical">● Critical</span>
+          </div>
+          <div class="stat-card-threshold-value critical">3</div>
+          <div class="stat-card-threshold-label">Gear Module Stock</div>
+          <div class="threshold-indicator">
+            <span>0</span>
+            <div class="threshold-indicator-line">
+              <div class="threshold-indicator-fill" style="width: 15%; background: var(--color-danger);"></div>
+              <div class="threshold-indicator-mark" style="left: 50%;"></div>
+            </div>
+            <span>20</span>
+          </div>
+        </div>
+
+        <div class="stat-card-threshold warning">
+          <div class="stat-card-threshold-header">
+            <span>⚙️</span>
+            <span class="threshold-status-badge low">● Low</span>
+          </div>
+          <div class="stat-card-threshold-value low">8</div>
+          <div class="stat-card-threshold-label">Motor Module Stock</div>
+          <div class="threshold-indicator">
+            <span>0</span>
+            <div class="threshold-indicator-line">
+              <div class="threshold-indicator-fill" style="width: 40%; background: var(--color-warning);"></div>
+              <div class="threshold-indicator-mark" style="left: 50%;"></div>
+            </div>
+            <span>20</span>
+          </div>
+        </div>
+
+        <div class="stat-card-threshold">
+          <div class="stat-card-threshold-header">
+            <span>🧱</span>
+            <span class="threshold-status-badge ok">● OK</span>
+          </div>
+          <div class="stat-card-threshold-value ok">45</div>
+          <div class="stat-card-threshold-label">Chassis Parts Stock</div>
+          <div class="threshold-indicator">
+            <span>0</span>
+            <div class="threshold-indicator-line">
+              <div class="threshold-indicator-fill" style="width: 90%; background: var(--color-success);"></div>
+              <div class="threshold-indicator-mark" style="left: 25%;"></div>
+            </div>
+            <span>50</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================================
+         SECTION 6: COMPACT INLINE CARDS
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">📱</div>
+        <div>
+          <h2 class="section-title">Type 6: Compact Inline Cards</h2>
+          <p class="section-description">Dense information display for sidebars, mobile views, and compact layouts.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid stats-grid-4">
+        <div class="stat-card-compact">
+          <div class="stat-card-compact-icon">📦</div>
+          <div class="stat-card-compact-content">
+            <div class="stat-card-compact-label">Total Orders</div>
+            <div class="stat-card-compact-value">142</div>
+          </div>
+        </div>
+
+        <div class="stat-card-compact success">
+          <div class="stat-card-compact-icon">✅</div>
+          <div class="stat-card-compact-content">
+            <div class="stat-card-compact-label">Completed</div>
+            <div class="stat-card-compact-value">98</div>
+          </div>
+        </div>
+
+        <div class="stat-card-compact warning">
+          <div class="stat-card-compact-icon">⏳</div>
+          <div class="stat-card-compact-content">
+            <div class="stat-card-compact-label">Pending</div>
+            <div class="stat-card-compact-value">23</div>
+          </div>
+        </div>
+
+        <div class="stat-card-compact danger">
+          <div class="stat-card-compact-icon">🚨</div>
+          <div class="stat-card-compact-content">
+            <div class="stat-card-compact-label">Alerts</div>
+            <div class="stat-card-compact-value">5</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================================
+         SECTION 7: MULTI-METRIC CARDS
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">🎯</div>
+        <div>
+          <h2 class="section-title">Type 7: Multi-Metric Cards</h2>
+          <p class="section-description">Related metrics grouped in a single card. Use for inventory summaries, order breakdowns.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid stats-grid-3">
+        <div class="stat-card-multi">
+          <div class="stat-card-multi-header">
+            <div class="stat-card-multi-icon">📦</div>
+            <span class="stat-card-multi-title">Order Summary</span>
+          </div>
+          <div class="stat-card-multi-grid">
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">142</div>
+              <div class="stat-card-multi-item-label">Total</div>
+            </div>
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">23</div>
+              <div class="stat-card-multi-item-label">Pending</div>
+            </div>
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">35</div>
+              <div class="stat-card-multi-item-label">Active</div>
+            </div>
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">84</div>
+              <div class="stat-card-multi-item-label">Done</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card-multi">
+          <div class="stat-card-multi-header">
+            <div class="stat-card-multi-icon">🏭</div>
+            <span class="stat-card-multi-title">Production Stats</span>
+          </div>
+          <div class="stat-card-multi-grid">
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">1,847</div>
+              <div class="stat-card-multi-item-label">Parts</div>
+            </div>
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">456</div>
+              <div class="stat-card-multi-item-label">Modules</div>
+            </div>
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">189</div>
+              <div class="stat-card-multi-item-label">Products</div>
+            </div>
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">98.5%</div>
+              <div class="stat-card-multi-item-label">Quality</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card-multi">
+          <div class="stat-card-multi-header">
+            <div class="stat-card-multi-icon">📊</div>
+            <span class="stat-card-multi-title">Inventory Health</span>
+          </div>
+          <div class="stat-card-multi-grid">
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">28</div>
+              <div class="stat-card-multi-item-label">Items</div>
+            </div>
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">2,451</div>
+              <div class="stat-card-multi-item-label">Total Qty</div>
+            </div>
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">5</div>
+              <div class="stat-card-multi-item-label">Low</div>
+            </div>
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">2</div>
+              <div class="stat-card-multi-item-label">Critical</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================================
+         SECTION 8: STATUS TIMELINE CARDS
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">🔄</div>
+        <div>
+          <h2 class="section-title">Type 8: Status Timeline Cards</h2>
+          <p class="section-description">Order pipeline visualization showing distribution across statuses.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid stats-grid-2">
+        <div class="stat-card-timeline">
+          <div class="stat-card-timeline-header">
+            <span class="stat-card-timeline-title">Customer Order Pipeline</span>
+            <span class="stat-card-timeline-total">142 orders</span>
+          </div>
+          <div class="timeline-flow">
+            <div class="timeline-step">
+              <div class="timeline-step-bar pending">23</div>
+              <div class="timeline-step-label">Pending</div>
+            </div>
+            <svg class="timeline-arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l5-5-5-5v10z"/></svg>
+            <div class="timeline-step">
+              <div class="timeline-step-bar confirmed">18</div>
+              <div class="timeline-step-label">Confirmed</div>
+            </div>
+            <svg class="timeline-arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l5-5-5-5v10z"/></svg>
+            <div class="timeline-step">
+              <div class="timeline-step-bar in-progress">35</div>
+              <div class="timeline-step-label">Processing</div>
+            </div>
+            <svg class="timeline-arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l5-5-5-5v10z"/></svg>
+            <div class="timeline-step">
+              <div class="timeline-step-bar completed">66</div>
+              <div class="timeline-step-label">Completed</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card-timeline">
+          <div class="stat-card-timeline-header">
+            <span class="stat-card-timeline-title">Production Order Pipeline</span>
+            <span class="stat-card-timeline-total">87 orders</span>
+          </div>
+          <div class="timeline-flow">
+            <div class="timeline-step">
+              <div class="timeline-step-bar pending">12</div>
+              <div class="timeline-step-label">Created</div>
+            </div>
+            <svg class="timeline-arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l5-5-5-5v10z"/></svg>
+            <div class="timeline-step">
+              <div class="timeline-step-bar confirmed">8</div>
+              <div class="timeline-step-label">Scheduled</div>
+            </div>
+            <svg class="timeline-arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l5-5-5-5v10z"/></svg>
+            <div class="timeline-step">
+              <div class="timeline-step-bar in-progress">25</div>
+              <div class="timeline-step-label">In Production</div>
+            </div>
+            <svg class="timeline-arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l5-5-5-5v10z"/></svg>
+            <div class="timeline-step">
+              <div class="timeline-step-bar completed">42</div>
+              <div class="timeline-step-label">Completed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================================
+         SECTION 9: DONUT CHART CARDS
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">🍩</div>
+        <div>
+          <h2 class="section-title">Type 9: Donut Chart Cards</h2>
+          <p class="section-description">Distribution visualization with legend. Use for stock types, order distribution.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid stats-grid-3">
+        <div class="stat-card-donut">
+          <div class="donut-chart">
+            <svg viewBox="0 0 36 36">
+              <circle class="donut-bg" cx="18" cy="18" r="14"/>
+              <circle class="donut-fill" cx="18" cy="18" r="14" 
+                stroke-dasharray="75 100" stroke-dashoffset="0"/>
+            </svg>
+            <div class="donut-center">
+              <div class="donut-center-value">75%</div>
+              <div class="donut-center-label">Complete</div>
+            </div>
+          </div>
+          <div class="stat-card-donut-content">
+            <div class="stat-card-donut-title">Order Completion</div>
+            <div class="donut-legend">
+              <div class="donut-legend-item">
+                <div class="donut-legend-color" style="background: #3b82f6;"></div>
+                <span>Completed (75%)</span>
+              </div>
+              <div class="donut-legend-item">
+                <div class="donut-legend-color" style="background: #e2e8f0;"></div>
+                <span>Remaining (25%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card-donut">
+          <div class="donut-chart">
+            <svg viewBox="0 0 36 36">
+              <circle class="donut-bg" cx="18" cy="18" r="14"/>
+              <circle cx="18" cy="18" r="14" fill="none" stroke-width="8"
+                stroke="#10b981" stroke-dasharray="40 100" stroke-dashoffset="0" style="transform: rotate(-90deg); transform-origin: center;"/>
+              <circle cx="18" cy="18" r="14" fill="none" stroke-width="8"
+                stroke="#3b82f6" stroke-dasharray="35 100" stroke-dashoffset="-40" style="transform: rotate(-90deg); transform-origin: center;"/>
+              <circle cx="18" cy="18" r="14" fill="none" stroke-width="8"
+                stroke="#f59e0b" stroke-dasharray="25 100" stroke-dashoffset="-75" style="transform: rotate(-90deg); transform-origin: center;"/>
+            </svg>
+            <div class="donut-center">
+              <div class="donut-center-value">2.4k</div>
+              <div class="donut-center-label">Items</div>
+            </div>
+          </div>
+          <div class="stat-card-donut-content">
+            <div class="stat-card-donut-title">Inventory by Type</div>
+            <div class="donut-legend">
+              <div class="donut-legend-item">
+                <div class="donut-legend-color" style="background: #10b981;"></div>
+                <span>Parts (40%)</span>
+              </div>
+              <div class="donut-legend-item">
+                <div class="donut-legend-color" style="background: #3b82f6;"></div>
+                <span>Modules (35%)</span>
+              </div>
+              <div class="donut-legend-item">
+                <div class="donut-legend-color" style="background: #f59e0b;"></div>
+                <span>Products (25%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card-donut">
+          <div class="donut-chart">
+            <svg viewBox="0 0 36 36">
+              <circle class="donut-bg" cx="18" cy="18" r="14"/>
+              <circle cx="18" cy="18" r="14" fill="none" stroke-width="8" stroke-linecap="round"
+                stroke="url(#successGradient)" stroke-dasharray="92 100" stroke-dashoffset="0" style="transform: rotate(-90deg); transform-origin: center;"/>
+            </svg>
+            <div class="donut-center">
+              <div class="donut-center-value">92%</div>
+              <div class="donut-center-label">Health</div>
+            </div>
+          </div>
+          <div class="stat-card-donut-content">
+            <div class="stat-card-donut-title">Stock Health Score</div>
+            <div class="donut-legend">
+              <div class="donut-legend-item">
+                <div class="donut-legend-color" style="background: #10b981;"></div>
+                <span>In Stock (92%)</span>
+              </div>
+              <div class="donut-legend-item">
+                <div class="donut-legend-color" style="background: #ef4444;"></div>
+                <span>Critical (8%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================================
+         SECTION 10: KPI HERO CARDS
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">⭐</div>
+        <div>
+          <h2 class="section-title">Type 10: KPI Hero Cards</h2>
+          <p class="section-description">Featured primary metrics for dashboard headlines and executive summaries.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid stats-grid-2">
+        <div class="stat-card-hero">
+          <div class="stat-card-hero-header">
+            <div class="stat-card-hero-icon">💰</div>
+            <span class="stat-card-hero-title">Today's Revenue</span>
+          </div>
+          <div class="stat-card-hero-value">$47,850</div>
+          <div class="stat-card-hero-subtitle">
+            From 156 completed orders
+            <span class="stat-card-hero-trend up">↑ 18%</span>
+          </div>
+        </div>
+
+        <div class="stat-card-hero">
+          <div class="stat-card-hero-header">
+            <div class="stat-card-hero-icon">🏆</div>
+            <span class="stat-card-hero-title">Production Efficiency</span>
+          </div>
+          <div class="stat-card-hero-value">94.7%</div>
+          <div class="stat-card-hero-subtitle">
+            Best month this quarter
+            <span class="stat-card-hero-trend up">↑ 5.2%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================================
+         SECTION 11: WORKSTATION STATUS CARDS
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">🏭</div>
+        <div>
+          <h2 class="section-title">Type 11: Workstation Status Cards</h2>
+          <p class="section-description">Operational status indicators for workstation monitoring.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid stats-grid-3">
+        <div class="stat-card-workstation">
+          <div class="workstation-status-indicator active">
+            💉
+          </div>
+          <div class="workstation-info">
+            <div class="workstation-name">WS-1 Injection Molding</div>
+            <div class="workstation-detail">Active since 08:15</div>
+          </div>
+          <div class="workstation-metrics">
+            <span class="workstation-metric orders">12 orders</span>
+            <span class="workstation-metric time">2h 15m</span>
+          </div>
+        </div>
+
+        <div class="stat-card-workstation">
+          <div class="workstation-status-indicator idle">
+            🔧
+          </div>
+          <div class="workstation-info">
+            <div class="workstation-name">WS-4 Gear Assembly</div>
+            <div class="workstation-detail">Waiting for parts</div>
+          </div>
+          <div class="workstation-metrics">
+            <span class="workstation-metric orders">0 orders</span>
+            <span class="workstation-metric time">—</span>
+          </div>
+        </div>
+
+        <div class="stat-card-workstation">
+          <div class="workstation-status-indicator alert">
+            ⚙️
+          </div>
+          <div class="workstation-info">
+            <div class="workstation-name">WS-5 Motor Assembly</div>
+            <div class="workstation-detail">Maintenance required</div>
+          </div>
+          <div class="workstation-metrics">
+            <span class="workstation-metric orders">3 orders</span>
+            <span class="workstation-metric time">HALTED</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================================
+         SECTION 12: SCENARIO BREAKDOWN CARDS
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">🎯</div>
+        <div>
+          <h2 class="section-title">Type 12: Scenario Breakdown Cards</h2>
+          <p class="section-description">Business scenario distribution for workflow analysis.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid stats-grid-2">
+        <div class="stat-card-scenario">
+          <div class="stat-card-scenario-header">
+            <span class="stat-card-scenario-title">Order Fulfillment Scenarios</span>
+          </div>
+          <div class="scenario-grid">
+            <div class="scenario-item">
+              <div class="scenario-badge s1">S1</div>
+              <div class="scenario-info">
+                <div class="scenario-name">Direct Fulfillment</div>
+                <div class="scenario-count">45</div>
+              </div>
+            </div>
+            <div class="scenario-item">
+              <div class="scenario-badge s2">S2</div>
+              <div class="scenario-info">
+                <div class="scenario-name">Via Warehouse</div>
+                <div class="scenario-count">38</div>
+              </div>
+            </div>
+            <div class="scenario-item">
+              <div class="scenario-badge s3">S3</div>
+              <div class="scenario-info">
+                <div class="scenario-name">Full Production</div>
+                <div class="scenario-count">42</div>
+              </div>
+            </div>
+            <div class="scenario-item">
+              <div class="scenario-badge s4">S4</div>
+              <div class="scenario-info">
+                <div class="scenario-name">High Volume</div>
+                <div class="scenario-count">17</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card-scenario">
+          <div class="stat-card-scenario-header">
+            <span class="stat-card-scenario-title">Today's Performance by Scenario</span>
+          </div>
+          <div class="scenario-grid">
+            <div class="scenario-item">
+              <div class="scenario-badge s1">S1</div>
+              <div class="scenario-info">
+                <div class="scenario-name">Avg 12 min</div>
+                <div class="scenario-count">↓ 8%</div>
+              </div>
+            </div>
+            <div class="scenario-item">
+              <div class="scenario-badge s2">S2</div>
+              <div class="scenario-info">
+                <div class="scenario-name">Avg 45 min</div>
+                <div class="scenario-count">↑ 3%</div>
+              </div>
+            </div>
+            <div class="scenario-item">
+              <div class="scenario-badge s3">S3</div>
+              <div class="scenario-info">
+                <div class="scenario-name">Avg 2.5 hrs</div>
+                <div class="scenario-count">→ 0%</div>
+              </div>
+            </div>
+            <div class="scenario-item">
+              <div class="scenario-badge s4">S4</div>
+              <div class="scenario-info">
+                <div class="scenario-name">Avg 4 hrs</div>
+                <div class="scenario-count">↓ 15%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================================
+         REAL-WORLD DASHBOARD EXAMPLES
+         ============================================================================ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon">🖥️</div>
+        <div>
+          <h2 class="section-title">Real-World Dashboard Examples</h2>
+          <p class="section-description">Complete statistics layouts as they would appear in actual dashboards.</p>
+        </div>
+      </div>
+
+      <!-- Plant Warehouse Example -->
+      <div class="demo-row" style="margin-top: 1.5rem;">
+        <span class="demo-label">Plant Warehouse (WS-7) Dashboard</span>
+      </div>
+      <div class="stats-grid stats-grid-4" style="margin-bottom: 1rem;">
+        <div class="stat-card primary">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">📦</div>
+          </div>
+          <div class="stat-card-value">142</div>
+          <div class="stat-card-label">Total Orders</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">⏳</div>
+          </div>
+          <div class="stat-card-value">23</div>
+          <div class="stat-card-label">Pending</div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">⚙️</div>
+          </div>
+          <div class="stat-card-value">35</div>
+          <div class="stat-card-label">Processing</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">✅</div>
+          </div>
+          <div class="stat-card-value">84</div>
+          <div class="stat-card-label">Completed</div>
+        </div>
+      </div>
+      <div class="stats-grid stats-grid-4">
+        <div class="stat-card neutral">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">🎨</div>
+          </div>
+          <div class="stat-card-value">12</div>
+          <div class="stat-card-label">Product Types</div>
+        </div>
+        <div class="stat-card primary">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">📊</div>
+          </div>
+          <div class="stat-card-value">1,247</div>
+          <div class="stat-card-label">Total Stock</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">⚠️</div>
+          </div>
+          <div class="stat-card-value">5</div>
+          <div class="stat-card-label">Low Stock</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-card-header">
+            <div class="stat-card-icon">🚨</div>
+          </div>
+          <div class="stat-card-value">2</div>
+          <div class="stat-card-label">Out of Stock</div>
+        </div>
+      </div>
+
+      <!-- Admin Dashboard Example -->
+      <div class="demo-row" style="margin-top: 2rem;">
+        <span class="demo-label">Admin Dashboard — Executive Overview</span>
+      </div>
+      <div class="stats-grid stats-grid-2" style="margin-bottom: 1rem;">
+        <div class="stat-card-hero">
+          <div class="stat-card-hero-header">
+            <div class="stat-card-hero-icon">💰</div>
+            <span class="stat-card-hero-title">Today's Revenue</span>
+          </div>
+          <div class="stat-card-hero-value">$47,850</div>
+          <div class="stat-card-hero-subtitle">
+            From 156 completed orders
+            <span class="stat-card-hero-trend up">↑ 18%</span>
+          </div>
+        </div>
+        <div class="stat-card-timeline">
+          <div class="stat-card-timeline-header">
+            <span class="stat-card-timeline-title">System-Wide Order Pipeline</span>
+            <span class="stat-card-timeline-total">847 total</span>
+          </div>
+          <div class="timeline-flow">
+            <div class="timeline-step">
+              <div class="timeline-step-bar pending">123</div>
+              <div class="timeline-step-label">Pending</div>
+            </div>
+            <svg class="timeline-arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l5-5-5-5v10z"/></svg>
+            <div class="timeline-step">
+              <div class="timeline-step-bar confirmed">89</div>
+              <div class="timeline-step-label">Confirmed</div>
+            </div>
+            <svg class="timeline-arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l5-5-5-5v10z"/></svg>
+            <div class="timeline-step">
+              <div class="timeline-step-bar in-progress">187</div>
+              <div class="timeline-step-label">Active</div>
+            </div>
+            <svg class="timeline-arrow" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l5-5-5-5v10z"/></svg>
+            <div class="timeline-step">
+              <div class="timeline-step-bar completed">448</div>
+              <div class="timeline-step-label">Done</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="stats-grid stats-grid-4">
+        <div class="stat-card-trend">
+          <div class="stat-card-trend-header">
+            <div class="stat-card-trend-icon">📦</div>
+            <span class="trend-badge up">↑ 12%</span>
+          </div>
+          <div class="stat-card-trend-value">847</div>
+          <div class="stat-card-trend-label">Total Orders</div>
+          <div class="stat-card-trend-comparison">vs 756 last week</div>
+        </div>
+        <div class="stat-card-trend">
+          <div class="stat-card-trend-header">
+            <div class="stat-card-trend-icon">🏭</div>
+            <span class="trend-badge neutral">→ 0%</span>
+          </div>
+          <div class="stat-card-trend-value">9/9</div>
+          <div class="stat-card-trend-label">Active Stations</div>
+          <div class="stat-card-trend-comparison">All operational</div>
+        </div>
+        <div class="stat-card-trend">
+          <div class="stat-card-trend-header">
+            <div class="stat-card-trend-icon">👥</div>
+            <span class="trend-badge up">↑ 2</span>
+          </div>
+          <div class="stat-card-trend-value">24</div>
+          <div class="stat-card-trend-label">Active Users</div>
+          <div class="stat-card-trend-comparison">vs 22 yesterday</div>
+        </div>
+        <div class="stat-card-trend">
+          <div class="stat-card-trend-header">
+            <div class="stat-card-trend-icon">⚠️</div>
+            <span class="trend-badge down">↓ 3</span>
+          </div>
+          <div class="stat-card-trend-value">7</div>
+          <div class="stat-card-trend-label">Low Stock Items</div>
+          <div class="stat-card-trend-comparison">vs 10 yesterday</div>
+        </div>
+      </div>
+
+      <!-- Production Planning Example -->
+      <div class="demo-row" style="margin-top: 2rem;">
+        <span class="demo-label">Production Planning Dashboard</span>
+      </div>
+      <div class="stats-grid stats-grid-3">
+        <div class="stat-card-progress">
+          <div class="stat-card-progress-header">
+            <span class="stat-card-progress-label">Production Utilization</span>
+            <span class="stat-card-progress-value">78%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" style="width: 78%;"></div>
+          </div>
+          <div class="stat-card-progress-detail">
+            <span>7/9 workstations active</span>
+            <span>Target: 85%</span>
+          </div>
+        </div>
+        <div class="stat-card-multi">
+          <div class="stat-card-multi-header">
+            <div class="stat-card-multi-icon">📊</div>
+            <span class="stat-card-multi-title">Production Orders</span>
+          </div>
+          <div class="stat-card-multi-grid">
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">87</div>
+              <div class="stat-card-multi-item-label">Total</div>
+            </div>
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">12</div>
+              <div class="stat-card-multi-item-label">Scheduled</div>
+            </div>
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">25</div>
+              <div class="stat-card-multi-item-label">Active</div>
+            </div>
+            <div class="stat-card-multi-item">
+              <div class="stat-card-multi-item-value">50</div>
+              <div class="stat-card-multi-item-label">Done</div>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card-sparkline">
+          <div class="stat-card-sparkline-header">
+            <span class="stat-card-sparkline-label">Throughput / Hour</span>
+            <span class="trend-badge up">↑ 15%</span>
+          </div>
+          <div class="stat-card-sparkline-value">24</div>
+          <div class="sparkline-container">
+            <div class="sparkline-bar" style="height: 45%;"></div>
+            <div class="sparkline-bar" style="height: 60%;"></div>
+            <div class="sparkline-bar" style="height: 35%;"></div>
+            <div class="sparkline-bar" style="height: 80%;"></div>
+            <div class="sparkline-bar" style="height: 65%;"></div>
+            <div class="sparkline-bar" style="height: 90%;"></div>
+            <div class="sparkline-bar" style="height: 75%;"></div>
+            <div class="sparkline-bar" style="height: 100%;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="text-align: center; margin-top: 4rem; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+      <p>L.I.F.E Statistics Cards Design System — Version 1.0</p>
+      <p>February 2026 • Glassmorphism UI • Industry 4.0 MES</p>
+    </footer>
+  </div>
+</body>
+</html>
