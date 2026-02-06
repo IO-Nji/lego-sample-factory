@@ -1,27 +1,58 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
+import { logger } from "../../utils/logger";
 import { 
-  StandardDashboardLayout,
-  OrdersSection,
-  ActivityLog,
-  StatisticsGrid, 
+  OrdersGrid,
+  GridCard,
+  CompactCard,
+  ListRow,
   Button, 
-  Card, 
-  Badge
+  Badge,
+  DashboardPanel
 } from "../../components";
-import UnifiedOrderCard, { ORDER_TYPES, ACTION_TYPES } from "../../components/orders/UnifiedOrderCard";
-import "../../styles/DashboardLayout.css";
+import { WorkstationDashboard, ActivityPanel, DashboardPanelRow } from "../../components/dashboard";
+import "../../styles/WorkstationDashboard.css";
+import "../../styles/DashboardHeader.css";
+import "../../styles/DashboardPanels.css";
+
+// Order actions for assembly control orders
+const ORDER_ACTIONS = [
+  { type: 'CONFIRM', label: 'Confirm', icon: '✓', variant: 'info', showFor: ['PENDING'] },
+  { type: 'REQUEST_PARTS', label: 'Request Parts', icon: '📦', variant: 'primary', showFor: ['CONFIRMED'], condition: (order) => !order.supplyOrderId },
+  { type: 'WAITING', label: 'Waiting for Parts', icon: '⏳', variant: 'default', showFor: ['CONFIRMED'], condition: (order) => order.supplyOrderId && order.supplyOrderStatus !== 'FULFILLED', disabled: true },
+  { type: 'DISPATCH', label: 'Dispatch', icon: '🚀', variant: 'success', showFor: ['CONFIRMED'], condition: (order) => order.supplyOrderStatus === 'FULFILLED' },
+  { type: 'START', label: 'Start', icon: '▶️', variant: 'primary', showFor: ['ASSIGNED'] },
+  { type: 'COMPLETE', label: 'Complete', icon: '✅', variant: 'success', showFor: ['IN_PROGRESS'] },
+  { type: 'HALT', label: 'Halt', icon: '⏸️', variant: 'warning', showFor: ['IN_PROGRESS'] },
+  { type: 'RESUME', label: 'Resume', icon: '▶️', variant: 'info', showFor: ['HALTED'] }
+];
+
+const FILTER_OPTIONS = [
+  { value: 'ALL', label: 'All Orders' },
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'CONFIRMED', label: 'Confirmed' },
+  { value: 'ASSIGNED', label: 'Assigned' },
+  { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'HALTED', label: 'Halted' }
+];
+
+const SORT_OPTIONS = [
+  { value: 'orderDate', label: 'Date (Newest)' },
+  { value: 'orderDateAsc', label: 'Date (Oldest)' },
+  { value: 'orderNumber', label: 'Order Number' },
+  { value: 'status', label: 'Status' },
+  { value: 'priority', label: 'Priority' }
+];
 
 function AssemblyControlDashboard() {
   const { session } = useAuth();
   const [controlOrders, setControlOrders] = useState([]);
-  const [filteredOrders, setFilteredOrders] = useState([]);
   const [supplyOrders, setSupplyOrders] = useState([]);
-  const [filterStatus, setFilterStatus] = useState("ALL");
   const [loading, setLoading] = useState(false);
+  const [processingOrderId, setProcessingOrderId] = useState(null);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [notifications, setNotifications] = useState([]);
 
   const addNotification = (message, type = 'info') => {
@@ -92,7 +123,6 @@ function AssemblyControlDashboard() {
       );
       
       setControlOrders(enrichedOrders);
-      applyFilter(enrichedOrders, filterStatus);
     } catch (err) {
       setError("Failed to load control orders: " + (err.response?.data?.message || err.message));
     } finally {
@@ -140,88 +170,88 @@ function AssemblyControlDashboard() {
     }
   }, [session?.user]);
 
-  useEffect(() => {
-    applyFilter(controlOrders, filterStatus);
-  }, [filterStatus, controlOrders]);
-
-  const applyFilter = (ordersList, status) => {
-    if (status === "ALL") {
-      setFilteredOrders(ordersList);
-    } else {
-      setFilteredOrders(ordersList.filter(order => order.status === status));
-    }
-  };
-
   const handleConfirmOrder = async (orderId) => {
+    setProcessingOrderId(orderId);
     try {
       await api.put(`/assembly-control-orders/${orderId}/confirm`);
-      setSuccess("Order confirmed successfully");
       addNotification("Order confirmed - ready to request parts", "success");
       fetchControlOrders();
     } catch (err) {
       setError("Failed to confirm order: " + (err.response?.data?.message || err.message));
       addNotification("Failed to confirm order", "error");
+    } finally {
+      setProcessingOrderId(null);
     }
   };
 
   const handleStartAssembly = async (orderId) => {
+    setProcessingOrderId(orderId);
     try {
       await api.put(`/assembly-control-orders/${orderId}/start`);
-      setSuccess("Assembly started successfully");
       addNotification("Assembly started", "success");
       fetchControlOrders();
     } catch (err) {
       setError("Failed to start assembly: " + (err.response?.data?.message || err.message));
       addNotification("Failed to start assembly", "error");
+    } finally {
+      setProcessingOrderId(null);
     }
   };
 
   const handleCompleteAssembly = async (orderId) => {
+    setProcessingOrderId(orderId);
     try {
       await api.put(`/assembly-control-orders/${orderId}/complete`);
-      setSuccess("Assembly completed successfully");
       addNotification("Assembly completed", "success");
       fetchControlOrders();
     } catch (err) {
       setError("Failed to complete assembly: " + (err.response?.data?.message || err.message));
       addNotification("Failed to complete assembly", "error");
+    } finally {
+      setProcessingOrderId(null);
     }
   };
 
   const handleHaltAssembly = async (orderId, reason) => {
+    setProcessingOrderId(orderId);
     try {
       await api.post(`/assembly-control-orders/${orderId}/halt`, { reason });
-      setSuccess("Assembly halted");
       addNotification("Assembly halted", "warning");
       fetchControlOrders();
     } catch (err) {
       setError("Failed to halt assembly: " + (err.response?.data?.message || err.message));
       addNotification("Failed to halt assembly", "error");
+    } finally {
+      setProcessingOrderId(null);
     }
   };
 
   const handleResumeAssembly = async (orderId) => {
+    setProcessingOrderId(orderId);
     try {
       await api.post(`/assembly-control-orders/${orderId}/resume`);
-      setSuccess("Assembly resumed");
       addNotification("Assembly resumed", "success");
       fetchControlOrders();
     } catch (err) {
       setError("Failed to resume assembly: " + (err.response?.data?.message || err.message));
       addNotification("Failed to resume assembly", "error");
+    } finally {
+      setProcessingOrderId(null);
     }
   };
 
   // Dispatch order to workstation (CONFIRMED → ASSIGNED)
   const handleDispatchToWorkstation = async (orderId) => {
+    setProcessingOrderId(orderId);
     try {
       await api.post(`/assembly-control-orders/${orderId}/dispatch`);
-      setSuccess("Order dispatched to workstation");
       addNotification("Order dispatched to workstation", "success");
       fetchControlOrders();
     } catch (err) {
       setError("Failed to dispatch order: " + (err.response?.data?.message || err.message));
       addNotification("Failed to dispatch order", "error");
+    } finally {
+      setProcessingOrderId(null);
     }
   };
 
@@ -232,7 +262,7 @@ function AssemblyControlDashboard() {
 
   // Create supply order with automatic BOM lookup (no manual part selection needed)
   const handleCreateSupplyOrder = async (order) => {
-    setLoading(true);
+    setProcessingOrderId(order.id);
     setError(null);
     
     try {
@@ -242,10 +272,9 @@ function AssemblyControlDashboard() {
         priority: order.priority || "MEDIUM"
       };
 
-      console.log('Creating supply order from control order:', requestBody);
+      logger.info('AssemblyControl', 'Creating supply order from control order', requestBody);
       await api.post('/supply-orders/from-control-order', requestBody);
       
-      setSuccess("Supply order created successfully - parts determined from BOM");
       addNotification("Supply order created from BOM", "success");
       fetchSupplyOrders();
       fetchControlOrders(); // Refresh control orders to update card button states
@@ -254,9 +283,23 @@ function AssemblyControlDashboard() {
       setError("Failed to create supply order: " + (err.response?.data?.message || err.message));
       addNotification("Failed to create supply order", "error");
     } finally {
-      setLoading(false);
+      setProcessingOrderId(null);
     }
   };
+
+  // Unified action handler for OrdersGrid
+  const handleAction = useCallback((actionType, orderId, order) => {
+    switch (actionType) {
+      case 'CONFIRM': handleConfirmOrder(orderId); break;
+      case 'START': handleStartAssembly(orderId); break;
+      case 'COMPLETE': handleCompleteAssembly(orderId); break;
+      case 'HALT': handleHaltAssembly(orderId, "Operator initiated halt"); break;
+      case 'RESUME': handleResumeAssembly(orderId); break;
+      case 'REQUEST_PARTS': handleCreateSupplyOrder(order); break;
+      case 'DISPATCH': handleDispatchToWorkstation(orderId); break;
+      default: logger.warn('AssemblyControl', 'Unknown action:', actionType);
+    }
+  }, []);
 
   // Legacy handlers for manual part selection (kept for reference but not used)
   const handleAddPart = () => {
@@ -318,7 +361,7 @@ function AssemblyControlDashboard() {
         notes: supplyOrderForm.notes
       };
 
-      console.log('Creating supply order with:', requestBody);
+      logger.info('AssemblyControl', 'Creating supply order', requestBody);
       await api.post('/supply-orders', requestBody);
       
       setSuccess("Supply order created successfully");
@@ -334,116 +377,182 @@ function AssemblyControlDashboard() {
     }
   };
 
-  // Stats cards
-  // Stats data for StatisticsGrid
-  const statsData = (() => {
-    const total = controlOrders.length;
-    const pending = controlOrders.filter(o => o.status === "PENDING").length;
-    const confirmed = controlOrders.filter(o => o.status === "CONFIRMED").length;
-    const assigned = controlOrders.filter(o => o.status === "ASSIGNED").length;
-    const inProgress = controlOrders.filter(o => o.status === "IN_PROGRESS").length;
-    const completed = controlOrders.filter(o => o.status === "COMPLETED").length;
-    const halted = controlOrders.filter(o => o.status === "HALTED").length;
+  // Stats data for panel row
+  const total = controlOrders.length;
+  const pending = controlOrders.filter(o => o.status === "PENDING").length;
+  const confirmed = controlOrders.filter(o => o.status === "CONFIRMED").length;
+  const assigned = controlOrders.filter(o => o.status === "ASSIGNED").length;
+  const inProgress = controlOrders.filter(o => o.status === "IN_PROGRESS").length;
+  const completed = controlOrders.filter(o => o.status === "COMPLETED").length;
+  const halted = controlOrders.filter(o => o.status === "HALTED").length;
+  const activeSupply = supplyOrders.filter(o => o.status !== "FULFILLED" && o.status !== "REJECTED").length;
 
-    return [
-      { value: total, label: 'Total Orders', variant: 'default', icon: '📦' },
-      { value: pending, label: 'Pending', variant: 'pending', icon: '⏳' },
-      { value: confirmed, label: 'Confirmed', variant: 'info', icon: '✓' },
-      { value: assigned, label: 'Assigned', variant: 'info', icon: '📝' },
-      { value: inProgress, label: 'In Progress', variant: 'warning', icon: '⚙️' },
-      { value: completed, label: 'Completed', variant: 'success', icon: '✅' },
-      { value: halted, label: 'Halted', variant: 'warning', icon: '⏸️' },
-      { value: supplyOrders.length, label: 'Supply Orders', variant: 'info', icon: '🚚' },
-    ];
-  })();
-
-  // Activity log rendering
-  const renderActivity = () => (
-    <Card variant="framed" title="CONTROL ACTIVITY" style={{ height: '100%' }}>
-      <ActivityLog 
-        notifications={notifications}
-        onClear={clearNotifications}
-        showTitle={false}
+  // Panel Row Content (4 panels like warehouse dashboards)
+  const panelRowContent = (
+    <>
+      {/* Control Orders Panel */}
+      <DashboardPanel
+        icon="⚙️"
+        title="Assembly Orders"
+        badge={total > 0 ? `${total}` : null}
+        badgeVariant="info"
+        themeClass="assembly-control-theme"
+        stats={[
+          { label: 'Pending', value: pending, variant: 'pending' },
+          { label: 'Confirmed', value: confirmed, variant: 'info' },
+          { label: 'Active', value: inProgress, variant: 'progress' },
+          { label: 'Done', value: completed, variant: 'completed' },
+        ]}
+        alerts={halted > 0 ? [{ message: `${halted} halted`, variant: 'warning' }] : []}
       />
-    </Card>
+
+      {/* Supply Orders Panel */}
+      <DashboardPanel
+        icon="🚚"
+        title="Supply Orders"
+        badge={supplyOrders.length > 0 ? `${supplyOrders.length}` : null}
+        badgeVariant={activeSupply > 0 ? "warning" : "default"}
+        themeClass="assembly-control-theme"
+        stats={[
+          { label: 'Active', value: activeSupply, variant: 'warning' },
+          { label: 'Fulfilled', value: supplyOrders.filter(o => o.status === "FULFILLED").length, variant: 'completed' },
+        ]}
+      />
+
+      {/* Workstations Panel */}
+      <DashboardPanel
+        icon="🔧"
+        title="Workstations"
+        themeClass="assembly-control-theme"
+        stats={[
+          { label: 'WS-4', value: controlOrders.filter(o => o.assignedWorkstationId === 4).length },
+          { label: 'WS-5', value: controlOrders.filter(o => o.assignedWorkstationId === 5).length },
+          { label: 'WS-6', value: controlOrders.filter(o => o.assignedWorkstationId === 6).length },
+        ]}
+        subStats={[{ icon: '🔄', label: 'Assigned', value: assigned }]}
+      />
+
+      {/* Status Panel */}
+      <DashboardPanel
+        icon="📊"
+        title="Status"
+        themeClass="assembly-control-theme"
+        stats={[
+          { label: 'Efficiency', value: total > 0 ? `${Math.round(completed / total * 100)}%` : '—', variant: completed > 0 ? 'completed' : 'default' },
+          { label: 'Halted', value: halted, variant: halted > 0 ? 'warning' : 'default' },
+        ]}
+      />
+    </>
   );
 
-  // Control orders display using OrdersSection
-  const renderControlOrders = () => (
-    <OrdersSection
+  // Render order extra info (workstation, priority)
+  const renderOrderExtra = (order) => (
+    <>
+      {order.assignedWorkstationId && (
+        <span style={{
+          fontSize: '0.625rem',
+          padding: '0.125rem 0.375rem',
+          borderRadius: '4px',
+          background: 'rgba(59, 130, 246, 0.1)',
+          color: '#2563eb',
+          fontWeight: 600
+        }}>
+          WS-{order.assignedWorkstationId}
+        </span>
+      )}
+      {order.supplyOrderStatus && (
+        <span style={{
+          fontSize: '0.625rem',
+          padding: '0.125rem 0.375rem',
+          borderRadius: '4px',
+          background: order.supplyOrderStatus === 'FULFILLED' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+          color: order.supplyOrderStatus === 'FULFILLED' ? '#059669' : '#d97706',
+          fontWeight: 600
+        }}>
+          Supply: {order.supplyOrderStatus}
+        </span>
+      )}
+    </>
+  );
+
+  // Control orders display using OrdersGrid
+  const ordersContent = (
+    <OrdersGrid
       title="Assembly Control Orders"
+      icon="⚙️"
       orders={controlOrders}
-      filterOptions={[
-        { value: "ALL", label: "All Orders" },
-        { value: "PENDING", label: "Pending" },
-        { value: "CONFIRMED", label: "Confirmed" },
-        { value: "ASSIGNED", label: "Assigned" },
-        { value: "IN_PROGRESS", label: "In Progress" },
-        { value: "COMPLETED", label: "Completed" },
-        { value: "HALTED", label: "Halted" }
-      ]}
-      sortOptions={[
-        { value: "orderNumber", label: "Order Number" },
-        { value: "priority", label: "Priority" },
-        { value: "status", label: "Status" }
-      ]}
-      filterKey="status"
-      sortKey="controlOrderNumber"
+      filterOptions={FILTER_OPTIONS}
+      sortOptions={SORT_OPTIONS}
+      searchPlaceholder="Search ACO-XXX..."
+      emptyMessage="No control orders"
+      emptySubtext="Control orders will appear here when assigned by Production Planning"
       searchKeys={['controlOrderNumber', 'assemblyInstructions']}
       renderCard={(order) => (
-        <UnifiedOrderCard
-          key={order.id}
-          orderType={ORDER_TYPES.ASSEMBLY_CONTROL_ORDER}
+        <GridCard
           order={order}
-          onAction={(action, orderId) => {
-            if (action === ACTION_TYPES.CONFIRM) handleConfirmOrder(orderId);
-            else if (action === ACTION_TYPES.START) handleStartAssembly(orderId);
-            else if (action === ACTION_TYPES.COMPLETE) handleCompleteAssembly(orderId);
-            else if (action === ACTION_TYPES.HALT) handleHaltAssembly(orderId, "Operator initiated halt");
-            else if (action === ACTION_TYPES.RESUME) handleResumeAssembly(orderId);
-            else if (action === ACTION_TYPES.REQUEST_PARTS) handleCreateSupplyOrder(order);
-            else if (action === ACTION_TYPES.DISPATCH) handleDispatchToWorkstation(orderId);
-          }}
+          onAction={(type, id) => handleAction(type, id, order)}
+          actions={ORDER_ACTIONS}
+          renderExtra={renderOrderExtra}
+          isProcessing={processingOrderId === order.id}
         />
       )}
-      emptyMessage="Control orders will appear here when assigned by Production Planning"
-      searchPlaceholder="Search by order number or instructions..."
+      renderCompactCard={(order) => (
+        <CompactCard
+          order={order}
+          onAction={(type, id) => handleAction(type, id, order)}
+          actions={ORDER_ACTIONS}
+          isProcessing={processingOrderId === order.id}
+        />
+      )}
+      renderListItem={(order) => (
+        <ListRow
+          order={order}
+          onAction={(type, id) => handleAction(type, id, order)}
+          actions={ORDER_ACTIONS}
+          columns={['orderNumber', 'status', 'date', 'priority']}
+          isProcessing={processingOrderId === order.id}
+        />
+      )}
     />
   );
 
-  // Render supply orders list
+  // Render supply orders list (compact for sidebar)
   const renderSupplyOrders = () => {
-    if (supplyOrders.length === 0) {
-      return (
-        <div className="dashboard-empty-state">
-          <p className="dashboard-empty-state-text">No active supply orders</p>
-        </div>
-      );
-    }
-
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        {supplyOrders.slice(0, 5).map((order) => (
-          <Card key={order.id} style={{ padding: "0.75rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontWeight: "500", fontSize: "0.875rem" }}>{order.supplyOrderNumber}</span>
-              <Badge 
-                variant={
-                  order.status === "FULFILLED" ? "success" :
-                  order.status === "IN_PROGRESS" ? "warning" :
-                  order.status === "REJECTED" ? "danger" :
-                  "default"
-                }
-              >
-                {order.status}
-              </Badge>
-            </div>
-            <div style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "#6b7280", display: "flex", gap: "1rem" }}>
-              <span>{order.supplyOrderItems?.length || 0} items</span>
-              <span>Priority: {order.priority}</span>
-            </div>
-          </Card>
-        ))}
+      <div className="ws-sidebar-section">
+        <div className="ws-sidebar-header">
+          <span className="ws-sidebar-title">🚚 Supply Orders</span>
+          <span className="ws-sidebar-count">{supplyOrders.length}</span>
+        </div>
+        {supplyOrders.length === 0 ? (
+          <div className="ws-sidebar-empty">No active supply orders</div>
+        ) : (
+          <div className="ws-sidebar-list">
+            {supplyOrders.slice(0, 5).map((order) => (
+              <div key={order.id} className="ws-sidebar-item">
+                <div className="ws-sidebar-item-header">
+                  <span className="ws-sidebar-item-title">{order.supplyOrderNumber}</span>
+                  <Badge 
+                    variant={
+                      order.status === "FULFILLED" ? "success" :
+                      order.status === "IN_PROGRESS" ? "warning" :
+                      order.status === "REJECTED" ? "danger" :
+                      "default"
+                    }
+                    size="small"
+                  >
+                    {order.status}
+                  </Badge>
+                </div>
+                <div className="ws-sidebar-item-meta">
+                  <span>{order.supplyOrderItems?.length || 0} items</span>
+                  <span>•</span>
+                  <span>{order.priority}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
@@ -593,20 +702,34 @@ function AssemblyControlDashboard() {
     );
   };
 
+  // Activity content (sidebar)
+  const activityContent = (
+    <>
+      <ActivityPanel
+        title="Activity"
+        notifications={notifications}
+        onClear={clearNotifications}
+        maxItems={5}
+        compact={true}
+      />
+      {renderSupplyOrders()}
+    </>
+  );
+
   return (
     <>
-      <StandardDashboardLayout
+      <WorkstationDashboard
         title="Assembly Control"
-        subtitle="Manage production assembly control orders across all assembly workstations"
+        subtitle="Assembly Operations • WS-4,5,6"
         icon="⚙️"
-        activityContent={renderActivity()}
-        statsContent={<StatisticsGrid stats={statsData} />}
-        formContent={renderSupplyOrders()}
-        contentGrid={renderControlOrders()}
-        inventoryContent={null}
-        messages={{ error, success }}
+        theme="assembly-control-theme"
+        panelRowContent={panelRowContent}
+        ordersContent={ordersContent}
+        activityContent={activityContent}
+        loading={loading}
+        error={error}
+        onRefresh={fetchControlOrders}
         onDismissError={() => setError(null)}
-        onDismissSuccess={() => setSuccess(null)}
       />
       {renderDetailsModal()}
       {renderSupplyOrderModal()}

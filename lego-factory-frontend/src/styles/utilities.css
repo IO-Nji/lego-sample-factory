@@ -1,0 +1,49 @@
+/* ============================================================================
+   UTILITY STYLES
+   Shared utility classes used across multiple components.
+   Created: February 2026 - Extracted from DashboardLayout.css during cleanup
+   ============================================================================ */
+
+/* Standard Component Title Styling
+   Used by: PieChart, BarChart, Notification components
+*/
+.component-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-gray-700, #374151);
+  margin: 0 0 0.4rem 0;
+  text-align: center;
+}
+
+/* Loading State Utility */
+.utility-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--color-gray-500, #6b7280);
+  font-size: 0.875rem;
+}
+
+/* Empty State Utility */
+.utility-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--color-gray-500, #6b7280);
+  text-align: center;
+}
+
+.utility-empty-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.6;
+}
+
+.utility-empty-text {
+  font-size: 0.875rem;
+}

@@ -101,12 +101,29 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
   }, [workstationId, itemType]);
 
   // Get item name from masterdata by itemId
-  const getItemName = useCallback((item) => {
-    if (!item || !item.itemId) {
+  // Supports both: getItemName(item) where item has itemId, or getItemName(itemId, itemType)
+  const getItemName = useCallback((itemOrId, itemTypeArg) => {
+    // Handle different calling conventions
+    let itemId;
+    if (typeof itemOrId === 'object' && itemOrId !== null) {
+      // Called with item object: getItemName({ itemId: 1, itemType: 'PRODUCT' })
+      itemId = itemOrId.itemId;
+    } else {
+      // Called with itemId directly: getItemName(1, 'PRODUCT')
+      itemId = itemOrId;
+    }
+
+    if (!itemId) {
+      console.warn(`[useInventoryDisplay.getItemName] No itemId provided, itemOrId:`, itemOrId);
       return 'Unknown Item';
     }
 
-    const masterdataItem = masterdata.find(m => m.id === item.itemId);
+    // Debug logging
+    if (masterdata.length === 0) {
+      console.warn(`[useInventoryDisplay.getItemName] Masterdata not loaded yet for ${itemType}, returning placeholder for itemId ${itemId}`);
+    }
+
+    const masterdataItem = masterdata.find(m => m.id === itemId);
     
     if (masterdataItem?.name) {
       return masterdataItem.name;
@@ -115,31 +132,40 @@ export const useInventoryDisplay = (itemType, workstationId = null) => {
     // Fallback display names
     switch (itemType) {
       case 'PRODUCT':
-        return `Product #${item.itemId}`;
+        return `Product #${itemId}`;
       case 'MODULE':
-        return `Module #${item.itemId}`;
+        return `Module #${itemId}`;
       case 'PART':
-        return `Part #${item.itemId}`;
+        return `Part #${itemId}`;
       default:
-        return `Item #${item.itemId}`;
+        return `Item #${itemId}`;
     }
   }, [masterdata, itemType]);
 
   // Get item name with description (more verbose version)
-  const getItemNameWithDescription = useCallback((item) => {
-    if (!item || !item.itemId) {
+  // Supports both: getItemNameWithDescription(item) or getItemNameWithDescription(itemId, itemType)
+  const getItemNameWithDescription = useCallback((itemOrId, itemTypeArg) => {
+    // Handle different calling conventions
+    let itemId;
+    if (typeof itemOrId === 'object' && itemOrId !== null) {
+      itemId = itemOrId.itemId;
+    } else {
+      itemId = itemOrId;
+    }
+
+    if (!itemId) {
       return 'Unknown Item';
     }
 
-    const masterdataItem = masterdata.find(m => m.id === item.itemId);
+    const masterdataItem = masterdata.find(m => m.id === itemId);
     
     if (masterdataItem) {
-      const name = masterdataItem.name || `Item #${item.itemId}`;
+      const name = masterdataItem.name || `Item #${itemId}`;
       const description = masterdataItem.description;
       return description ? `${name} (${description})` : name;
     }
 
-    return getItemName(item);
+    return getItemName(itemId, itemTypeArg);
   }, [masterdata, getItemName]);
 
   // Get stock quantity for a specific item

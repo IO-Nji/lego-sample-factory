@@ -51,9 +51,15 @@ inventoryClient.creditStock(7L, "PRODUCT", productId, qty, "FULFILLMENT", "reaso
 ```javascript
 session?.user?.workstationId   // ✅ FLAT field
 session?.user?.workstation?.id // ❌ WRONG - not nested
-// All dashboards use StandardDashboardLayout (DashboardLayout.jsx DEPRECATED)
-// Import hooks from src/hooks/index.js: useWorkstationOrders, useActivityLog, useInventoryDisplay
 ```
+- **Dashboard header:** ALL dashboards use `DashboardHeader` component (modular, unified design)
+- **Dashboard system:** Use new unified components from `src/components/dashboard/`
+  - `DashboardHeader` – Unified header for ALL dashboards (icon + title + refresh)
+  - `WorkstationDashboard` – WS-1 to WS-6 (Manufacturing/Assembly)
+  - `WarehouseDashboard` – WS-7, WS-8, WS-9 (3-column: Orders + Form/Inventory + Activity)
+  - `ControlDashboard` – Production/Assembly Control (70/30 split)
+- Import hooks from `src/hooks/index.js`: `useWorkstationOrders`, `useDashboardData`
+- CSS: `src/styles/WorkstationDashboard.css` (layout), `src/styles/DashboardHeader.css` (unified header)
 - API client: `src/api/api.js` (axios with auto-JWT injection)
 - Workstation dashboards: `src/pages/dashboards/{WorkstationName}Dashboard.jsx`
 
@@ -62,9 +68,13 @@ session?.user?.workstation?.id // ❌ WRONG - not nested
 |---------|----------|
 | Gateway routes | `api-gateway/.../application.properties` |
 | Order orchestration | `order-processing-service/.../OrderOrchestrationService.java` |
-| Fulfillment logic | `order-processing-service/.../orchestration/FulfillmentOrchestrationService.java` |
+| Dashboard components | `lego-factory-frontend/src/components/dashboard/index.js` |
+| Dashboard CSS | `lego-factory-frontend/src/styles/WorkstationDashboard.css` |
+| Dashboard header | `lego-factory-frontend/src/components/dashboard/DashboardHeader.jsx` |
+| Header CSS | `lego-factory-frontend/src/styles/DashboardHeader.css` |
+| Shared utilities | `lego-factory-frontend/src/styles/utilities.css` |
 | Workstation config | `lego-factory-frontend/src/config/workstationConfig.js` |
-| Dashboard wrapper | `lego-factory-frontend/src/components/StandardDashboardLayout.jsx` |
+| Dashboard config | `lego-factory-frontend/src/components/dashboard/dashboardConfig.js` |
 
 ## Test Credentials (all use password: `password`)
 - **Admin:** `lego_admin` | **WS-7:** `warehouse_operator` | **WS-8:** `modules_supermarket` | **WS-9:** `parts_supply`

@@ -1,6 +1,6 @@
 import React from 'react';
 import '../styles/Chart.css';
-import '../styles/DashboardLayout.css'; // Import for .component-title class
+import '../styles/utilities.css'; // Shared utility classes (.component-title)
 
 /**
  * PieChart - Reusable pie chart component using CSS conic-gradient

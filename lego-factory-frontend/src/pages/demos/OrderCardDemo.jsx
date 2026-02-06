@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import UnifiedOrderCard, { ORDER_TYPES } from '../../components/orders/UnifiedOrderCard';
+import { logger } from '../../utils/logger';
 
 // Sample order data for each type
 const SAMPLE_ORDERS = {
@@ -125,7 +126,7 @@ const OrderCardDemo = () => {
   const [notifications, setNotifications] = useState({});
   
   const handleAction = (action, orderId, payload) => {
-    console.log('Action:', action, 'Order:', orderId, 'Payload:', payload);
+    logger.debug('OrderCardDemo', `Action: ${action}`, { orderId, payload });
     
     // Show notification for demo
     const orderType = payload.order.orderNumber?.split('-')[0] || 'ORDER';

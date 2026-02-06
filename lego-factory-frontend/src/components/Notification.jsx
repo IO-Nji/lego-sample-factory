@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import Button from './Button';
 import styles from './Notification.module.css';
-import '../styles/DashboardLayout.css'; // Import for .component-title class
+import '../styles/utilities.css'; // Shared utility classes (.component-title)
 
 /**
  * Notification Component - Console-like notification display

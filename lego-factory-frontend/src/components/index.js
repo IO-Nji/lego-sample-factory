@@ -54,9 +54,35 @@ export { default as Alert } from './Alert';
 export { default as Notification } from './Notification';
 
 // Layout Components
-export { default as DashboardLayout } from './DashboardLayout';
+// Note: DashboardLayout was removed in Feb 2026 cleanup - use StandardDashboardLayout
 export { default as StandardDashboardLayout } from './StandardDashboardLayout';
 export { default as PageHeader } from './PageHeader';
+
+// Dashboard System Components
+export {
+  BaseDashboard,
+  SectionCard,
+  EmptyState,
+  HeroStatsSection,
+  ActivityLogSection,
+  WorkstationMonitorSection,
+  DASHBOARD_TYPES,
+  SECTION_DEFAULTS,
+  getDashboardConfig,
+  resolveDashboardType,
+  // New unified workstation dashboard components
+  WorkstationDashboard,
+  WarehouseDashboard,
+  ControlDashboard,
+  ActivityPanel,
+  InventoryPanel,
+  FormPanel,
+  QuickOrderPanel,
+  // Panel row components (Feb 2026)
+  DashboardHeader,
+  DashboardPanel,
+  DashboardPanelRow,
+} from './dashboard';
 
 // Reusable Dashboard Components
 export { default as InventoryTable } from './InventoryTable';
@@ -67,6 +93,15 @@ export { default as ActivityLog } from './ActivityLog';
 // Unified Order Card (use this for all order card implementations)
 export { default as UnifiedOrderCard, ORDER_TYPES } from './orders/UnifiedOrderCard';
 export * from './orders/orderCardConfig';
+
+// New Order Grid System (use for migrated dashboards)
+export { 
+  default as OrdersGrid, 
+  VIEW_MODES, 
+  DEFAULT_FILTER_OPTIONS, 
+  DEFAULT_SORT_OPTIONS 
+} from './orders/OrdersGrid';
+export { GridCard, CompactCard, ListRow } from './orders/OrderCardVariants';
 
 // Feedback & Interaction
 export { default as Tooltip } from './Tooltip';
