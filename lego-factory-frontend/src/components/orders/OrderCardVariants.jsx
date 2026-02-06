@@ -132,8 +132,9 @@ export function GridCard({
             return (
               <button
                 key={action.type}
+                type="button"
                 className={`order-card__btn order-card__btn--${action.variant || 'default'}`}
-                onClick={() => onAction(action.type, order.id, order)}
+                onClick={(e) => { e.preventDefault(); onAction(action.type, order.id, order); }}
                 disabled={isProcessing || action.disabled}
               >
                 {action.icon && <span>{action.icon}</span>}
@@ -202,8 +203,9 @@ export function CompactCard({
               return (
                 <button
                   key={action.type}
+                  type="button"
                   className={`order-card__btn order-card__btn--compact order-card__btn--${action.variant || 'default'}`}
-                  onClick={() => onAction(action.type, order.id, order)}
+                  onClick={(e) => { e.preventDefault(); onAction(action.type, order.id, order); }}
                   disabled={isProcessing || action.disabled}
                   title={action.label}
                 >
@@ -293,8 +295,9 @@ export function ListRow({
             return (
               <button
                 key={action.type}
+                type="button"
                 className={`order-card__btn order-card__btn--list order-card__btn--${action.variant || 'default'}`}
-                onClick={() => onAction(action.type, order.id, order)}
+                onClick={(e) => { e.preventDefault(); onAction(action.type, order.id, order); }}
                 disabled={action.disabled}
               >
                 {action.icon && <span>{action.icon}</span>}
